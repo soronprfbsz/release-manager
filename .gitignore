@@ -1,0 +1,74 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+!.idea/codeStyles/
+!.idea/encodings.xml
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### Eclipse ###
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Environment Variables ###
+.env
+.env.local
+.env.*.local
+application-local.yml
+application-prod.yml
+
+### AI ###
+.claude
+/claudedocs/
+CLAUDE.md
+
+### Windows Reserved Names (prevent git errors) ###
+nul
+NUL
+CON
+PRN
+AUX
+com[1-9]
+lpt[1-9]
+

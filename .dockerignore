@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Gradle
+.gradle
+build/*
+!build/libs/*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Test
+TEST_REPORT.md
+
+# Documentation
+README.md
+claudedocs/
+
+# CI/CD
+.gitlab-ci.yml
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml

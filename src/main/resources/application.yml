@@ -1,0 +1,76 @@
+spring:
+  # MariaDB Database Configuration
+  datasource:
+    url: ${MARIADB_URL}
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+    username: ${MARIADB_USERNAME}
+    password: ${MARIADB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${MARIADB_POOL_SIZE:10}
+      minimum-idle: ${MARIADB_POOL_MIN_IDLE:5}
+      connection-timeout: ${MARIADB_CONNECTION_TIMEOUT:30000}
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.MariaDBDialect
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Flyway Configuration
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+    baseline-on-migrate: true  # 기존 DB에 flyway_schema_history 없으면 baseline 생성
+    baseline-version: 0        # 기존 스키마는 V0으로 간주
+    validate-on-migrate: true  # 마이그레이션 전 검증
+    out-of-order: false        # 순서 어긋난 마이그레이션 불허
+    locations: classpath:db/migration
+
+# Server Configuration
+server:
+  name: ${SERVER_NAME}
+  host: ${SERVER_HOST:localhost}
+  port: ${SERVER_PORT}
+
+# Swagger/OpenAPI Configuration
+springdoc:
+  swagger-ui:
+    path: /swagger
+  api-docs:
+    path: /api-docs
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+# gRPC Configuration
+grpc:
+  server:
+    host: ${GRPC_HOST:localhost}
+    port: ${GRPC_PORT:9090}
+    timeout: ${GRPC_TIMEOUT:30}
+    maxRetryAttempts: ${GRPC_MAX_RETRY:3}
+
+# Logging Configuration
+logging:
+  level:
+    com.sb: INFO
+    org.hibernate.SQL: DEBUG
+    org.springframework.web: INFO

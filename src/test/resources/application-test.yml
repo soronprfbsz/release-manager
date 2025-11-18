@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: Sb-Test
+
+  # H2 Database Configuration (테스트용 인메모리 DB)
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MariaDB
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Flyway Configuration (테스트에서는 비활성화)
+  flyway:
+    enabled: false
+
+# Logging Configuration
+logging:
+  level:
+    com.sb: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.web: DEBUG
