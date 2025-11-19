@@ -123,6 +123,7 @@ harbor-push-job:
     - echo "  - ${HARBOR_IMAGE_NAME}:latest"
   after_script:
     - docker logout $HARBOR_REGISTRY || true
+  when: manual  # 수동 실행 (필요시에만)
 
 # ========================================
 # 배포 단계 (GitLab Runner 호스트)
