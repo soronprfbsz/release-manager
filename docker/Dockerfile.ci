@@ -1,25 +1,5 @@
 # ========================================
-# Build Stage (로컬 개발용 - 선택적)
-# ========================================
-FROM gradle:8.5-jdk17-alpine AS builder
-
-WORKDIR /build
-
-# Gradle 캐시 최적화를 위해 의존성 파일만 먼저 복사
-COPY build.gradle settings.gradle ./
-COPY gradle ./gradle
-
-# 의존성 다운로드 (캐시 레이어)
-RUN gradle dependencies --no-daemon || true
-
-# 소스 코드 복사
-COPY src ./src
-
-# 빌드 실행
-RUN gradle clean build -x test --no-daemon
-
-# ========================================
-# Runtime Stage
+# CI/CD용 Dockerfile (이미 빌드된 JAR 사용)
 # ========================================
 FROM eclipse-temurin:17-jre-alpine
 
@@ -39,8 +19,8 @@ RUN apk add --no-cache tzdata && \
 # 애플리케이션 사용자 생성 (보안)
 RUN addgroup -S spring && adduser -S spring -G spring
 
-# Build 스테이지에서 빌드된 JAR 복사
-COPY --from=builder --chown=spring:spring /build/build/libs/*.jar app.jar
+# CI/CD에서 빌드된 JAR 복사
+COPY --chown=spring:spring build/libs/*.jar app.jar
 
 USER spring:spring
 

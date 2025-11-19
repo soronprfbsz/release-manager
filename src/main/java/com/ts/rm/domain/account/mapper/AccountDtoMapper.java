@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 /**
- * Account Entity ↔ DTO 변환 Mapper (MapStruct)
+ * Account Entity ↔ DTO 변환 Mapper (MapStruct로 구현)
  */
 @Mapper(componentModel = "spring")
 public interface AccountDtoMapper {

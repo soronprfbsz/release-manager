@@ -34,9 +34,9 @@ public class Account extends BaseEntity {
     @Column(name = "account_name", nullable = false, length = 50)
     private String accountName;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "role", nullable = false, length = 100)
     private String role;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "status", nullable = false, length = 100)
     private String status;
 }
