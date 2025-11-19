@@ -193,7 +193,7 @@ deploy:
       echo "=== Redis 헬스체크 ==="
       max_attempts=30
       attempt=0
-      until docker exec rm-mariadb redis-cli ping || [ $attempt -eq $max_attempts ]; do
+      until docker exec rm-redis redis-cli ping || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
         sleep 2
       done
