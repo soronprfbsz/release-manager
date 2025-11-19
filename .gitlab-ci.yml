@@ -23,8 +23,8 @@ stages:
   - build
   - test
   - docker-build
-  - deploy
   - harbor-push
+  - deploy
 
 # ========================================
 # 빌드 단계
@@ -89,7 +89,7 @@ docker-build-job:
   only:
     - main
   dependencies:
-    - build
+    - build-job
   script:
     - echo "Docker 이미지 빌드 시작..."
     - docker build -f docker/Dockerfile.ci -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} . --progress=plain --force-rm
@@ -107,7 +107,7 @@ harbor-push-job:
   only:
     - main
   dependencies:
-    - docker-build
+    - docker-build-job
   before_script:
     - echo "Harbor 로그인 중..."
     - echo "$HARBOR_PASSWORD" | docker login $HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin
@@ -134,7 +134,7 @@ deploy-job:
   only:
     - main
   dependencies:
-    - docker-build
+    - docker-build-job
   before_script:
     - |
       echo "=== 필수 도구 설치 중 ==="
