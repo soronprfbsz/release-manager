@@ -199,7 +199,7 @@ deploy:
       done
       if [ $attempt -eq $max_attempts ]; then
         echo "✗ Redis 헬스체크 실패"
-        docker logs --tail 20 sb-redis
+        docker logs --tail 20 rm-redis
         exit 1
       fi
       echo "✓ Redis 준비 완료"
