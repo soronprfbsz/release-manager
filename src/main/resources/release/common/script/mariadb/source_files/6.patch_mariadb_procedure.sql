@@ -1,0 +1,420 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `NMS_DB`.`SP_NMS_CONFMON_MCH_ADD_AGENT`$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `NMS_DB`.`SP_NMS_CONFMON_MCH_ADD_AGENT`(
+    IN _UNIT_ID INT,
+    IN _NMS_SVR_ID INT,
+    IN _MCH_IP VARCHAR(50),
+    IN _MCH_NM VARCHAR(256),
+    IN _VENDOR_CD VARCHAR(50),
+    IN _MODEL_NM VARCHAR(256),
+    IN _OS_INFO VARCHAR(256),
+    IN _MODEL_ID INT,
+    IN _GROUP_ID INT,
+    IN _NW_GRP_ID INT,
+    IN _SYS_OBJECTID VARCHAR(50),
+    IN _SYS_NAME VARCHAR(256),
+    IN _SYS_DESC VARCHAR(600),
+    IN _SYS_UPTIME VARCHAR(256),
+    IN _SYS_LOCATION VARCHAR(256),
+    IN _SYS_CONTACT VARCHAR(256),
+    IN _SERIAL_NO VARCHAR(256),
+    IN _SNMP_TMPL_ID INT,
+    IN _SNMP_VER INT,
+    IN _SNMP_CMNT_RO VARCHAR(256),
+    IN _ICMP_RESULT INT,
+    IN _TERMINAL_TMPL_ID INT,
+    OUT _MCH_ID INT,
+    OUT _AGENT_ID INT
+)
+ERR_TRAN:
+BEGIN
+	-- 프로시저 시작 부분에 추가
+	DECLARE _EXISTING_MCH_ID INT DEFAULT 0;
+	DECLARE v_lock_key VARCHAR(128) DEFAULT NULL;
+	DECLARE v_lock_ok  INT DEFAULT 0;
+
+	-- 추가: CD_INFO용 잠금과 순번 변수
+	DECLARE v_cd_lock_key   VARCHAR(128) DEFAULT NULL;
+	DECLARE v_cd_lock_ok    INT DEFAULT 0;
+	DECLARE _NEXT_CD_ORDER  INT DEFAULT 0;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            SET _MCH_ID = 0;
+			SET _AGENT_ID = 0;
+
+            GET DIAGNOSTICS CONDITION 1 @P1 = MYSQL_ERRNO, @P2 = MESSAGE_TEXT;
+            INSERT INTO NMS_DB.ERROR_DB(ERR_TYPE, ERR_DEST, ERR_CD, ERR_MSG)
+            VALUES ('SP', 'SP_NMS_CONFMON_MCH_ADD_AGENT', @P1, @P2);
+
+            DO RELEASE_LOCK(v_cd_lock_key);
+            DO RELEASE_LOCK(v_lock_key);            
+        END;
+
+            
+	SET _MCH_IP = TRIM(_MCH_IP);
+	SET v_lock_key = CONCAT('mch_ip:', _MCH_IP);
+	SELECT GET_LOCK(v_lock_key, 10) INTO v_lock_ok;
+	IF v_lock_ok <> 1 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='registration busy for this IP'; END IF;
+      
+            
+    START TRANSACTION;
+
+	-- model_id
+	select MODEL_ID
+		INTO _MODEL_ID
+	FROM NMS_DB.MCH_MODEL_INFO 
+	WHERE VENDOR_CD=_VENDOR_CD and MODEL_NM = _MODEL_NM
+	LIMIT 1;
+
+    -- 존재하지 않으면 INSERT
+    IF IFNULL(_MODEL_ID, 0) = 0 THEN
+    
+	    -- 1) 벤더코드를 CD_INFO(그룹=2031)에 보장 
+	    IF NOT EXISTS (
+	        SELECT 1 FROM CM_DB.CD_INFO
+	         WHERE CD_GROUP_ID='2031' AND CD_ID=_VENDOR_CD
+	    ) THEN
+	        -- 그룹 단위 직렬화(경쟁 방지)
+	        SET v_cd_lock_key = CONCAT('cd_info:','2031');
+	        SELECT GET_LOCK(v_cd_lock_key, 5) INTO v_cd_lock_ok;
+	        IF v_cd_lock_ok <> 1 THEN
+	            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='cd_info order allocation busy';
+	        END IF;
+	
+	        -- 다음 순번 계산 (잠금 하에서)
+	        SELECT IFNULL(MAX(CD_ORDER),0)+1
+	          INTO _NEXT_CD_ORDER
+	          FROM CM_DB.CD_INFO
+	         WHERE CD_GROUP_ID='2031';	
+	        
+	        -- 삽입 (동시에 다른 세션이 넣었더라도 no-op)
+	        INSERT INTO CM_DB.CD_INFO
+	            (CD_GROUP_ID, CD_ID, CD_NM, CD_NM_EN, CD_DESC, CD_DESC_EN, CD_ORDER, USE_YN)
+	        VALUES
+	            ('2031', _VENDOR_CD, _VENDOR_CD, _VENDOR_CD, NULL, NULL, _NEXT_CD_ORDER, 'Y')
+	        ON DUPLICATE KEY UPDATE CD_ID = CD_ID;  -- no-op
+	
+	        DO RELEASE_LOCK(v_cd_lock_key);
+	        SET v_cd_lock_key = NULL;
+	    END IF;
+        
+	    -- 2) 모델 정보 생성
+        INSERT INTO NMS_DB.MCH_MODEL_INFO
+            (MCH_TYPE_CD, VENDOR_CD, MODEL_NM, DEFAULT_YN, PVT_MIB_YN, REG_DT)
+        VALUES
+            ('SVR_01', _VENDOR_CD, _MODEL_NM, 'Y', 'N', NOW());
+        
+        -- 새로 생성된 ID 저장
+        SET _MODEL_ID = LAST_INSERT_ID();
+    END IF;
+	     
+        
+	SELECT MCH_ID INTO _MCH_ID
+	FROM NMS_DB.MCH_INFO
+	WHERE MCH_IP = _MCH_IP
+	ORDER BY MCH_ID ASC
+	LIMIT 1;
+	
+	IF IFNULL(_MCH_ID,0) = 0 THEN
+	    INSERT INTO NMS_DB.MCH_INFO (MCH_IP, MODEL_ID, SYS_OBJECTID, SYS_NAME, SYS_DESC)
+	    VALUES (_MCH_IP, _MODEL_ID, _SYS_OBJECTID, _SYS_NAME, _SYS_DESC);
+	    SET _MCH_ID = LAST_INSERT_ID();
+	END IF;        
+        
+
+    INSERT INTO NMS_DB.TARGET_INFO
+        (TARGET_ID, TARGET_CD, TARGET_NM)
+    VALUES (_MCH_ID, '01', _MCH_NM);
+
+    INSERT INTO NMS_DB.MCH_ACCOUNT
+        (MCH_ID, SNMP_TMPL_ID, TERMINAL_TMPL_ID)
+    VALUES (_MCH_ID, _SNMP_TMPL_ID, _TERMINAL_TMPL_ID);
+
+    IF LENGTH(_SYS_UPTIME) > 0 THEN
+        INSERT INTO NMS_DB.MCH_ADD_INFO
+            (MCH_ID, SYS_UPTIME, SYS_LOCATION, SYS_CONTACT, SERIAL_NO)
+        VALUES (_MCH_ID, _SYS_UPTIME, _SYS_LOCATION, _SYS_CONTACT, _SERIAL_NO);
+    ELSE
+        INSERT INTO NMS_DB.MCH_ADD_INFO
+            (MCH_ID, SYS_LOCATION, SYS_CONTACT, SERIAL_NO)
+        VALUES (_MCH_ID, _SYS_LOCATION, _SYS_CONTACT, _SERIAL_NO);
+    END IF;
+
+    -- agent 자동등록시 무조건 N 
+    SET @CHG_MNG_YN = 'N';
+
+    IF _MODEL_ID > 1 THEN
+    	-- agent 자동등록시 무조건 N 
+        SET @PERF_COLLECT_YN = 'N';
+
+        SELECT R.PERF_POLL_INTERVAL,
+               R.ICMP_TMPL_ID,
+               R.MCH_PERF_TMPL_ID,
+               R.MCH_MNG_LEVEL,
+               MT.IMG_CD,
+               MT.MCH_TYPE_CD,
+               MT.MCH_TYPE_NM,
+               MG.MCH_GB_NM,
+               R.UDI_TMPL_ID,
+               R.CONFIBACK_TMPL_ID,
+               R.NOTI_TMPL_ID
+        INTO @PERF_POLL_INTERVAL, @ICMP_TMPL_ID, @PERF_TMPL_ID, @MNG_LEVEL, @IMG_CD, @MCH_TYPE_CD, @MCH_TYPE_NM, @MCH_GB_NM, @UDI_TMPL_ID, @CONFIBACK_TMPL_ID, @NOTI_TMPL_ID
+        FROM NMS_DB.REG_POLICY R
+                 JOIN NMS_DB.MCH_TYPE_INFO MT ON MT.POLICY_ID = R.POLICY_ID
+                 JOIN NMS_DB.MCH_GB_INFO MG ON MG.MCH_GB_CD = MT.MCH_GB_CD
+                 JOIN NMS_DB.MCH_MODEL_INFO MM ON MM.MCH_TYPE_CD = MT.MCH_TYPE_CD
+        WHERE MM.MODEL_ID = _MODEL_ID;
+
+        INSERT INTO NMS_DB.SMCH_COLLECT_POLICY (MCH_ID, SMCH_GB, BASE_POLICY_ID, PERF_POLL_INTERVAL)
+        SELECT _MCH_ID, SMCH_GB, BASE_POLICY_ID, PERF_POLL_INTERVAL
+        FROM NMS_DB.SMCH_MODEL_SETUP
+        WHERE MODEL_ID = _MODEL_ID
+          AND BASE_POLICY_ID > 0;
+
+    ELSE
+
+        SET @PERF_COLLECT_YN = 'N';
+
+        SET @REG_POLICY_ID = 0;
+        SELECT R.POLICY_ID,
+               R.PERF_POLL_INTERVAL,
+               R.ICMP_TMPL_ID,
+               R.MCH_PERF_TMPL_ID,
+               R.MCH_MNG_LEVEL,
+               MT.IMG_CD,
+               MT.MCH_TYPE_CD,
+               MT.MCH_TYPE_NM,
+               MG.MCH_GB_NM,
+               R.UDI_TMPL_ID,
+               R.CONFIBACK_TMPL_ID,
+               R.NOTI_TMPL_ID
+        INTO @REG_POLICY_ID, @PERF_POLL_INTERVAL, @ICMP_TMPL_ID, @PERF_TMPL_ID, @MNG_LEVEL, @IMG_CD, @MCH_TYPE_CD, @MCH_TYPE_NM, @MCH_GB_NM, @UDI_TMPL_ID, @CONFIBACK_TMPL_ID, @NOTI_TMPL_ID
+        FROM NMS_DB.REG_POLICY R
+                 JOIN NMS_DB.MCH_TYPE_INFO MT ON MT.POLICY_ID = R.POLICY_ID
+                 JOIN NMS_DB.MCH_GB_INFO MG ON MG.MCH_GB_CD = MT.MCH_GB_CD
+                 JOIN NMS_DB.MCH_MODEL_INFO MM ON MM.MCH_TYPE_CD = MT.MCH_TYPE_CD
+        WHERE MM.MODEL_ID = 1;
+
+        IF @REG_POLICY_ID <= 0 THEN
+            SET @PERF_POLL_INTERVAL = 300;
+            SET @ICMP_TMPL_ID = 1;
+            SET @PERF_TMPL_ID = 0;
+            SET @MNG_LEVEL = 5;
+            SET @IMG_CD = '';
+            SET @UDI_TMPL_ID = 0;
+            SET @CONFIBACK_TMPL_ID = 0;
+            SET @NOTI_TMPL_ID = 0;
+
+            SELECT IMG_CD INTO @IMG_CD FROM IMG_INFO WHERE IMG_TYPE_GB = '2' AND IMG_CD LIKE 'NM%' LIMIT 1;
+        END IF;
+    END IF;
+
+    -- IF _ICMP_RESULT = 1 AND @ICMP_TMPL_ID > 0 THEN
+    --    SET @FAULT_COLLECT_YN = 'Y';
+    -- ELSE
+    --    SET @FAULT_COLLECT_YN = 'N';
+    -- END IF;
+
+    -- agent 자동등록시 무조건 N        
+    SET @FAULT_COLLECT_YN = 'N';
+    SET @LOG_COLLECT_YN = 'N';
+    SET @MNG_YN = 'N';
+            
+    INSERT INTO NMS_DB.MCH_COLLECT_POLICY
+    (MCH_ID, ICMP_TMPL_ID, PERF_TMPL_ID, NMS_SVR_ID, PERF_COLLECT_YN, PERF_POLL_INTERVAL, FAULT_COLLECT_YN, CHG_MNG_YN,
+     LOG_COLLECT_YN, MNG_YN, MNG_LEVEL, UDI_TMPL_ID, CONFIBACK_TMPL_ID, NOTI_TMPL_ID)
+    VALUES (_MCH_ID, @ICMP_TMPL_ID, @PERF_TMPL_ID, _NMS_SVR_ID, @PERF_COLLECT_YN, @PERF_POLL_INTERVAL,
+            @FAULT_COLLECT_YN, @CHG_MNG_YN, @LOG_COLLECT_YN, @MNG_YN, @MNG_LEVEL, @UDI_TMPL_ID, @CONFIBACK_TMPL_ID, @NOTI_TMPL_ID);
+
+    IF @NOTI_TMPL_ID > 0 THEN
+        INSERT INTO NMS_DB.NOTI_MCH_SETUP(MCH_ID, TMPL_ID) VALUES (_MCH_ID, @NOTI_TMPL_ID);
+    END IF;
+
+    SELECT SERIAL_NO INTO @SERIAL_NO FROM CONF_MCH_REQ WHERE UNIT_ID = _UNIT_ID;
+    IF LENGTH(@SERIAL_NO) > 0 THEN
+        SET _SERIAL_NO = @SERIAL_NO;
+    END IF;
+
+    INSERT INTO NMS_DB.MCH_UI_INFO
+    (MCH_ID, IMG_CD, MCH_TYPE_CD, UI_SYS_NAME, UI_SYS_DESC, UI_SYS_LOCATION, UI_SYS_CONTACT, UI_SERIAL_NO)
+    VALUES (_MCH_ID, @IMG_CD, @MCH_TYPE_CD, _SYS_NAME, _SYS_DESC, _SYS_LOCATION, _SYS_CONTACT, _SERIAL_NO);
+
+    SET @INVEN_MCH_ID = 0;
+    SELECT INVEN_MCH_ID INTO @INVEN_MCH_ID FROM INVEN_MCH_INFO WHERE MCH_IP = _MCH_IP AND INVEN_DEL_YN = 'N';
+    SELECT MODEL_NM, VENDOR_CD INTO @MODEL_NM, @VENDOR_CD FROM MCH_MODEL_INFO WHERE MODEL_ID = _MODEL_ID;
+
+    IF @INVEN_MCH_ID > 0 THEN
+        UPDATE INVEN_MCH_INFO
+        SET MCH_ID=_MCH_ID
+          , UPD_DT=NOW()
+          , MCH_GB_NM=@MCH_GB_NM
+          , MCH_TYPE_NM=@MCH_TYPE_NM
+          , VENDOR_NM=FC_CM_GET_CD_NM('2031', @VENDOR_CD)
+          , MODEL_NM=@MODEL_NM
+          , INVEN_DEL_YN='N'
+          , OPER_FL='Y'
+          , SERIAL_NO=_SERIAL_NO
+        WHERE INVEN_MCH_ID = @INVEN_MCH_ID;
+
+        SET @CNT = 0;
+
+        SELECT COUNT(*) INTO @CNT FROM NMS_DB.INVEN_CSF_DATA WHERE INVEN_ID = @INVEN_MCH_ID AND DEST_GB = 'M';
+
+        IF @CNT > 0 THEN
+            INSERT INTO CSF_DATA(DEST_ID, DEST_GB, INDICATOR_ID, VAL_TEXT, UPD_DT)
+            SELECT IM.MCH_ID, ICSF.DEST_GB, ICSF.INDICATOR_ID, ICSF.VAL_TEXT, NOW()
+            FROM INVEN_MCH_INFO IM
+                     LEFT OUTER JOIN INVEN_CSF_DATA ICSF ON IM.INVEN_MCH_ID = ICSF.INVEN_ID AND DEST_GB = 'M'
+            WHERE INVEN_MCH_ID = @INVEN_MCH_ID;
+        END IF;
+
+    ELSE
+        SET @SERIAL_NO_INVEN_MCH_ID = 0;
+        SELECT INVEN_MCH_ID
+        INTO @SERIAL_NO_INVEN_MCH_ID
+        FROM INVEN_MCH_INFO
+        WHERE INVEN_DEL_YN = 'N'
+          AND (MCH_IP = _MCH_IP OR (SERIAL_NO != '' AND SERIAL_NO = _SERIAL_NO));
+
+        IF @SERIAL_NO_INVEN_MCH_ID > 0 THEN
+            UPDATE INVEN_MCH_INFO
+            SET MCH_ID=_MCH_ID
+              , UPD_DT=NOW()
+              , MCH_GB_NM=@MCH_GB_NM
+              , MCH_TYPE_NM=@MCH_TYPE_NM
+              , VENDOR_NM=FC_CM_GET_CD_NM('2031', @VENDOR_CD)
+              , MODEL_NM=@MODEL_NM
+              , MCH_DEL_YN='N'
+              , INVEN_DEL_YN='N'
+              , OPER_FL='Y'
+              , MCH_IP = _MCH_IP
+              , MCH_NM = _MCH_NM
+            WHERE INVEN_MCH_ID = @SERIAL_NO_INVEN_MCH_ID;
+
+            SET @CNT = 0;
+
+            SELECT COUNT(*)
+            INTO @CNT
+            FROM NMS_DB.INVEN_CSF_DATA
+            WHERE INVEN_ID = @SERIAL_NO_INVEN_MCH_ID
+              AND DEST_GB = 'M';
+
+            IF @CNT > 0 THEN
+                INSERT INTO CSF_DATA(DEST_ID, DEST_GB, INDICATOR_ID, VAL_TEXT, UPD_DT)
+                SELECT IM.MCH_ID, ICSF.DEST_GB, ICSF.INDICATOR_ID, ICSF.VAL_TEXT, NOW()
+                FROM INVEN_MCH_INFO IM
+                         LEFT OUTER JOIN INVEN_CSF_DATA ICSF ON IM.INVEN_MCH_ID = ICSF.INVEN_ID AND DEST_GB = 'M'
+                WHERE INVEN_MCH_ID = @SERIAL_NO_INVEN_MCH_ID;
+            END IF;
+        ELSE
+            INSERT INTO INVEN_MCH_INFO(MCH_ID, MCH_NM, SYS_NAME, MCH_IP, MCH_GB_NM, MCH_TYPE_NM, VENDOR_NM, MODEL_NM,
+                                       SERIAL_NO, OPER_FL)
+            SELECT _MCH_ID,
+                   _MCH_NM,
+                   _SYS_NAME,
+                   _MCH_IP,
+                   @MCH_GB_NM,
+                   @MCH_TYPE_NM,
+                   FC_CM_GET_CD_NM('2031', @VENDOR_CD),
+                   @MODEL_NM,
+                   _SERIAL_NO,
+                   'Y';
+        END IF;
+    END IF;
+
+    IF _GROUP_ID > 0 THEN
+        INSERT INTO GROUP_OBJ_LIST (GROUP_ID, OBJ_ID, REG_ID) VALUES (_GROUP_ID, _MCH_ID, 'NC_CONF');
+
+    END IF;
+
+    IF _NW_GRP_ID > 0 THEN
+
+        INSERT INTO MAP_TEXT_PROP (FONT, FONT_COLOR, BOLD_YN, FONT_SIZE, DIRECTION)
+        VALUES ('NC', '#000000', 'N', 14, '1');
+
+        INSERT INTO MAP_MCH_OBJ (NW_GRP_ID, TEXT_PROP_ID, MCH_ID, POS_X, POS_Y, SCALE_X, SCALE_Y, LAYER_IDX)
+        SELECT _NW_GRP_ID,
+               LAST_INSERT_ID(),
+               _MCH_ID,
+               50.00,
+               50.00,
+               FC_NMS_GET_DEFAULT_ICON_SCALE('X'),
+               FC_NMS_GET_DEFAULT_ICON_SCALE('Y'),
+               IFNULL((SELECT MAX(MCH.LAYER_IDX) + 1 AS LAYER FROM MAP_MCH_OBJ MCH), 1);
+
+    END IF;
+
+    INSERT INTO NMC_DB.MCH_CHG_HIST (MCH_ID, MCH_IP, MCH_NM, CHG_GB, CHG_STATE)
+    VALUES (_MCH_ID, _MCH_IP, _MCH_NM, 'M', 1);
+
+    UPDATE IPAM_HOST_LIST SET REG_YN = 'Y', UPD_DT = NOW() WHERE HOST_IP = _MCH_IP;
+	
+		
+	
+	-- =========================================================
+	--  SMS_AGENT, SMS_INFO 생성 + 기본 수집/이벤트 정책 매핑
+	-- =========================================================
+
+
+	-- 1) 에이전트 존재 여부 확인 후 생성/업데이트
+	-- AGENT 생성 (존재하면 재사용)
+	SELECT AGENT_ID INTO _AGENT_ID
+	FROM NMS_DB.SMS_AGENT
+	WHERE MCH_ID = _MCH_ID
+	ORDER BY AGENT_ID ASC
+	LIMIT 1;
+	
+	IF IFNULL(_AGENT_ID,0) = 0 THEN
+	  INSERT INTO NMS_DB.SMS_AGENT (AGENT_STATUS, LAST_SEEN_AT, MCH_ID, FILE_ID)
+	  VALUES ('ACTIVE', NULL, _MCH_ID, 1);
+	  SET _AGENT_ID = LAST_INSERT_ID();
+	END IF;    
+
+	-- 2) SMS_INFO insert
+	-- INSERT INTO NMS_DB.SMS_INFO (MCH_ID, OS, MAKER, PRODUCT_ID, REG_DT)
+	-- VALUES (_MCH_ID, _OS_INFO, NULL, NULL, NOW());
+
+	IF NOT EXISTS (SELECT 1 FROM NMS_DB.SMS_INFO WHERE MCH_ID=_MCH_ID) THEN 
+		INSERT INTO NMS_DB.SMS_INFO (MCH_ID, OS, MAKER, PRODUCT_ID, REG_DT) 
+			VALUES (_MCH_ID, _OS_INFO, NULL, NULL, NOW()); 
+	END IF;	
+	
+	-- 3) 수집 정책 템플릿 매핑 
+--	INSERT INTO NMS_DB.SMS_AGENT_POLICY_MAPPING
+--		(AGENT_ID, AGENT_POLICY_TMPL_ID, CREATED_BY, CREATED_AT, UPDATED_BY)
+--	VALUES (_AGENT_ID, 1, 'default_agent', NOW(), 'default_agent');
+
+	IF NOT EXISTS (
+	  SELECT 1 FROM NMS_DB.SMS_AGENT_POLICY_MAPPING
+	  WHERE AGENT_ID=_AGENT_ID AND AGENT_POLICY_TMPL_ID=1
+	) THEN
+	  INSERT INTO NMS_DB.SMS_AGENT_POLICY_MAPPING
+	    (AGENT_ID, AGENT_POLICY_TMPL_ID, CREATED_BY, CREATED_AT, UPDATED_BY)
+	  VALUES (_AGENT_ID, 1, 'default_agent', NOW(), 'default_agent');
+	END IF;
+	
+	-- 4)이벤트 정책 템플릿 매핑
+	
+--	INSERT INTO NMS_DB.SMS_EVENT_POLICY_MAPPING
+--		(AGENT_ID, EVENT_POLICY_TMPL_ID, CREATED_BY, CREATED_AT)
+--	VALUES (_AGENT_ID, 1, 'default_agent', NOW());	
+
+	IF NOT EXISTS (
+	  SELECT 1 FROM NMS_DB.SMS_EVENT_POLICY_MAPPING
+	  WHERE AGENT_ID=_AGENT_ID AND EVENT_POLICY_TMPL_ID=1
+	) THEN
+	  INSERT INTO NMS_DB.SMS_EVENT_POLICY_MAPPING
+	    (AGENT_ID, EVENT_POLICY_TMPL_ID, CREATED_BY, CREATED_AT)
+	  VALUES (_AGENT_ID, 1, 'default_agent', NOW());
+	END IF;
+
+    COMMIT;
+	
+    DO RELEASE_LOCK(v_lock_key);
+END$$
+DELIMITER ;
+SELECT '프로시저 패치 완료' AS RESULT;
