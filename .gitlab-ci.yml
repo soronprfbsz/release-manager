@@ -24,6 +24,7 @@ stages:
   - test
   - docker-build
   - deploy
+  - harbor-push
 
 # ========================================
 # 빌드 단계
@@ -100,7 +101,7 @@ docker-build-job:
 # ========================================
 # Harbor에 이미지를 등록하려면 이 Job을 수동으로 실행하세요
 harbor-push-job:
-  stage: deploy
+  stage: harbor-push
   tags:
     - 17-runner
   only:
