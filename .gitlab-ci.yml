@@ -123,7 +123,6 @@ harbor-push-job:
     - echo "  - ${HARBOR_IMAGE_NAME}:latest"
   after_script:
     - docker logout $HARBOR_REGISTRY || true
-  needs: ["docker-build-job"]
 
 # ========================================
 # 배포 단계 (GitLab Runner 호스트)
@@ -237,4 +236,3 @@ deploy-job:
   environment:
     name: production
     url: http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}
-  needs: ["docker-build-job"]
