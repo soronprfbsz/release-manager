@@ -1,7 +1,7 @@
 services:
   mariadb:
     image: mariadb:10.11.5
-    container_name: sb-mariadb
+    container_name: rm-mariadb
     ports:
       - "0.0.0.0:${MARIADB_PORT}:3306"
     command:
@@ -32,7 +32,7 @@ services:
 
   redis:
     image: redis:latest
-    container_name: sb-redis
+    container_name: rm-redis
     ports:
       - "0.0.0.0:${REDIS_PORT}:6379"
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --appendfilename "appendonly.aof" --dir /data
@@ -49,7 +49,7 @@ services:
       start_period: 10s
 
   app:
-    image: ts/spring-boilerplate:latest
+    image: ${DOCKER_IMAGE:-ts/release-manager:latest}
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -58,13 +58,15 @@ services:
     env_file:
       - .env
     environment:
-      # Docker 전용 오버라이드 (컨테이너 네트워킹)
-      MARIADB_URL: jdbc:p6spy:mariadb://mariadb:3306/${MARIADB_DATABASE}
-      REDIS_HOST: sb-redis
+      # Docker 컨테이너 네트워킹 전용 오버라이드
+      # .env 값을 무시하고 Docker 환경에 맞는 값으로 강제 설정
+      MARIADB_HOST: mariadb      # 컨테이너 서비스 이름
+      MARIADB_PORT: 3306         # 컨테이너 내부 포트
       # JVM 설정
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
     ports:
-      - "${SERVER_PORT}:8081"
+      # 호스트:컨테이너 포트 매핑
+      - "${SERVER_EXTERNAL_PORT:-18080}:${SERVER_PORT:-8081}"
       - "${GRPC_PORT}:9090"
     networks:
       - network-ts
@@ -74,7 +76,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:$${SERVER_PORT}/actuator/health || exit 1"]
+      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:${SERVER_PORT:-8081}/actuator/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

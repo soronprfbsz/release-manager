@@ -7,13 +7,13 @@ default:
 
 variables:
   # Docker 이미지 설정
-  DOCKER_IMAGE_NAME: "ts/spring-boilerplate"
+  DOCKER_IMAGE_NAME: "ts/release-manager"
   DOCKER_IMAGE_TAG: "latest"
 
   # Harbor Registry 설정 (선택적)
-  HARBOR_REGISTRY: "harbor.example.com"
-  HARBOR_PROJECT: "spring-boilerplate"
-  HARBOR_IMAGE_NAME: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/sb-app"
+  HARBOR_REGISTRY: "10.230.1.17"
+  HARBOR_PROJECT: "release-manager"
+  HARBOR_IMAGE_NAME: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/release-manager-api"
 
   # Gradle 설정
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
@@ -49,11 +49,6 @@ build:
     paths:
       - build/libs/*.jar
     expire_in: 1 hour
-  retry:
-    max: 2
-    when:
-      - runner_system_failure
-      - stuck_or_timeout_failure
 
 # ========================================
 # 테스트 단계 (수동 실행)
@@ -95,17 +90,11 @@ docker-build:
     - main
   dependencies:
     - build
-  before_script:
-    - echo "이 프로젝트의 기존 dangling 이미지 정리 중..."
-    - docker images -f "dangling=true" -f "label=project=spring-boilerplate" -q | xargs -r docker rmi -f || true
   script:
     - echo "Docker 이미지 빌드 시작..."
     - docker build -f docker/Dockerfile -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} . --progress=plain --force-rm
     - 'echo "이미지 빌드 완료: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"'
     - docker images | grep ${DOCKER_IMAGE_NAME}
-  after_script:
-    - echo "빌드 후 이 프로젝트의 dangling 이미지 정리..."
-    - docker images -f "dangling=true" -f "label=project=spring-boilerplate" -q | xargs -r docker rmi -f || true
 
 # ========================================
 # Harbor Push 단계 (선택적)
@@ -149,72 +138,85 @@ deploy:
     - docker-build
   before_script:
     - |
-      # curl 설치 확인
-      command -v curl &> /dev/null || apk add --no-cache curl || apt-get update && apt-get install -y curl || yum install -y curl
+      echo "=== 필수 도구 설치 중 ==="
+      apk add --no-cache curl 2>/dev/null || apt-get update && apt-get install -y curl 2>/dev/null || yum install -y curl 2>/dev/null || true
+      command -v curl && echo "✓ curl 설치됨" || echo "✗ curl 설치 실패"
     - |
-      # .env 파일 생성
+      echo "=== Gitlab Variables로 .env 파일 생성 중 ==="
       env | grep -vE '^(CI=|CI_|GITLAB_|FF_|RUNNER_|DOCKER_|DIND_|PATH=|HOME=|HOSTNAME=|PWD=|OLDPWD=|SHELL=|SHLVL=|USER=|_=|LANG=|LC_|TERM=|DEBIAN_|GRADLE_)' > .env
-      sed -i "s|^MARIADB_URL=.*|MARIADB_URL=jdbc:p6spy:mariadb://mariadb:3306/$MARIADB_DATABASE|" .env
-      echo ".env 생성 완료 ($(wc -l < .env)개 변수)"
+
+      # Docker 이미지 정보 추가
+      echo "DOCKER_IMAGE=${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" >> .env
+
+      cat .env
       cp .env docker/.env
     - |
-      # Docker 네트워크 생성
-      docker network ls | grep -q network-ts || docker network create network-ts
+      echo "=== Docker 네트워크 확인 ==="
+      docker network ls | grep -q network-ts && echo "✓ network-ts 존재" || (docker network create network-ts && echo "✓ network-ts 생성")
   script:
     - |
-      # 중지된 컨테이너 정리
+      echo "=== 배포 시작 ==="
       docker-compose -f docker/docker-compose.yml rm -f mariadb redis app || true
     - |
-      # MariaDB 시작
-      if docker ps --format '{{.Names}}' | grep -q '^sb-mariadb$'; then
-        echo "MariaDB 실행 중"
-      elif docker ps -a --format '{{.Names}}' | grep -q '^sb-mariadb$'; then
-        docker start sb-mariadb
+      echo "=== MariaDB 시작 ==="
+      if docker ps --format '{{.Names}}' | grep -q '^rm-mariadb$'; then
+        echo "✓ MariaDB 실행 중"
+      elif docker ps -a --format '{{.Names}}' | grep -q '^rm-mariadb$'; then
+        docker start rm-mariadb && echo "✓ MariaDB 재시작됨"
       else
-        docker-compose -f docker/docker-compose.yml up -d mariadb
+        docker-compose -f docker/docker-compose.yml up -d mariadb && echo "✓ MariaDB 생성됨"
       fi
     - |
-      # Redis 시작
-      if docker ps --format '{{.Names}}' | grep -q '^sb-redis$'; then
-        echo "Redis 실행 중"
-      elif docker ps -a --format '{{.Names}}' | grep -q '^sb-redis$'; then
-        docker start sb-redis
+      echo "=== Redis 시작 ==="
+      if docker ps --format '{{.Names}}' | grep -q '^rm-redis$'; then
+        echo "✓ Redis 실행 중"
+      elif docker ps -a --format '{{.Names}}' | grep -q '^rm-redis$'; then
+        docker start rm-mariadb && echo "✓ Redis 재시작됨"
       else
-        docker-compose -f docker/docker-compose.yml up -d redis
+        docker-compose -f docker/docker-compose.yml up -d redis && echo "✓ Redis 생성됨"
       fi
     - |
-      # MariaDB 헬스체크
+      echo "=== MariaDB 헬스체크 ==="
       max_attempts=30
       attempt=0
-      until docker exec sb-mariadb healthcheck.sh --connect --innodb_initialized || [ $attempt -eq $max_attempts ]; do
+      until docker exec rm-mariadb healthcheck.sh --connect --innodb_initialized || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
         sleep 2
       done
-      [ $attempt -eq $max_attempts ] && echo "MariaDB 헬스체크 실패" && docker logs sb-mariadb && exit 1
-      echo "MariaDB 준비 완료"
+      if [ $attempt -eq $max_attempts ]; then
+        echo "✗ MariaDB 헬스체크 실패"
+        docker logs --tail 20 rm-mariadb
+        exit 1
+      fi
+      echo "✓ MariaDB 준비 완료"
     - |
-      # Redis 헬스체크
+      echo "=== Redis 헬스체크 ==="
       max_attempts=30
       attempt=0
-      until docker exec sb-redis redis-cli ping || [ $attempt -eq $max_attempts ]; do
+      until docker exec rm-mariadb redis-cli ping || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
         sleep 2
       done
-      [ $attempt -eq $max_attempts ] && echo "Redis 헬스체크 실패" && docker logs sb-redis && exit 1
-      echo "Redis 준비 완료"
+      if [ $attempt -eq $max_attempts ]; then
+        echo "✗ Redis 헬스체크 실패"
+        docker logs --tail 20 sb-redis
+        exit 1
+      fi
+      echo "✓ Redis 준비 완료"
     - |
-      # 애플리케이션 컨테이너 재시작
+      echo "=== 애플리케이션 배포 ==="
       docker stop ${SERVER_NAME} || true
       docker rm -f ${SERVER_NAME} || true
-      cat docker/.env
       docker-compose -f docker/docker-compose.yml up -d --no-deps app
+      echo "✓ 컨테이너 시작됨"
       sleep 10
     - |
-      # 애플리케이션 헬스체크
+      echo "=== 애플리케이션 헬스체크 ==="
       max_attempts=30
       attempt=0
-      until curl -f http://${SERVER_HOST}:${SERVER_PORT}/actuator/health || [ $attempt -eq $max_attempts ]; do
+      until curl -f http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}/actuator/health || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
+        echo "  대기 중... ($attempt/$max_attempts)"
         sleep 2
       done
       if [ $attempt -eq $max_attempts ]; then
@@ -222,9 +224,18 @@ deploy:
         docker logs ${SERVER_NAME}
         exit 1
       fi
-      echo "배포 완료!"
+      echo "✓ 애플리케이션 준비 완료"
+      echo "=== 배포 성공 ==="
   after_script:
-    - docker ps
+    - echo "=== 정리 작업 ==="
+    - docker images -f "dangling=true" -f "label=project=${HARBOR_PROJECT}" -q | xargs -r docker rmi -f 2>/dev/null || true
+    - docker image prune -f --filter "label=project=${HARBOR_PROJECT}" --filter "dangling=true" 2>/dev/null || true
+    - echo "✓ Dangling 이미지 정리 완료"
+    - echo ""
+    - echo "=== 배포 상태 ==="
+    - docker ps --filter "name=${SERVER_NAME}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+    - echo ""
+    - docker images --filter "reference=${DOCKER_IMAGE_NAME}" --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}"
   environment:
     name: production
-    url: http://${SERVER_HOST}:${SERVER_PORT}
+    url: http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}

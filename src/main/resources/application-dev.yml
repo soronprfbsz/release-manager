@@ -1,0 +1,16 @@
+# Development Profile Configuration
+# 개발 환경에서는 상세한 로깅을 제공하여 디버깅을 용이하게 합니다.
+
+# API Logging Configuration
+app:
+  api-logging:
+    enabled: true  # dev 환경에서는 API 로깅 활성화
+
+# Logging Configuration - Development
+logging:
+  level:
+    com.ts.rm: DEBUG
+    com.ts.rm.global.common.filter.ApiLoggingFilter: DEBUG  # API 요청/응답 상세 로깅 (헤더, 바디 포함)
+    org.springframework.web: INFO  # Spring Web 프레임워크 로그는 INFO 레벨로 (ApiLoggingFilter에서 이미 상세 로깅 중)
+    org.springframework.web.servlet.DispatcherServlet: INFO  # DispatcherServlet 중복 로그 방지
+    org.springframework.web.servlet.mvc: INFO  # RequestMappingHandlerMapping 등 중복 로그 방지

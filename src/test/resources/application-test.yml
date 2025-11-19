@@ -1,6 +1,6 @@
 spring:
   application:
-    name: Sb-Test
+    name: rm-Test
 
   # H2 Database Configuration (테스트용 인메모리 DB)
   datasource:
@@ -26,6 +26,6 @@ spring:
 # Logging Configuration
 logging:
   level:
-    com.sb: DEBUG
+    com.rm: DEBUG
     org.hibernate.SQL: DEBUG
     org.springframework.web: DEBUG

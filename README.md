@@ -33,7 +33,7 @@ Account CRUD 예제 포함
 ```bash
 # 저장소 클론
 git clone <repository-url>
-cd spring_boilerplate
+cd release-manager
 
 # 환경 변수 설정
 cp .env.example .env
@@ -80,7 +80,7 @@ cd ..
 ## 프로젝트 구조
 
 ```
-src/main/java/com/sb/
+src/main/java/com/rm/
 ├── domain/                 # 도메인별 비즈니스 로직
 │   └── account/
 │       ├── controller/     # REST API 엔드포인트
@@ -191,7 +191,7 @@ curl http://localhost:8081/api/accounts/1
 ./gradlew test
 
 # 특정 도메인 테스트
-./gradlew test --tests "com.sb.domain.account.*"
+./gradlew test --tests "com.ts.rm.domain.account.*"
 
 # 테스트 커버리지
 ./gradlew test jacocoTestReport
@@ -249,7 +249,7 @@ Settings → CI/CD → Variables에 다음 변수 추가:
 
 | 변수명 | 값 예시 | 설명 |
 |--------|---------|------|
-| `SERVER_NAME` | `sb` | 애플리케이션 이름 |
+| `SERVER_NAME` | `rm` | 애플리케이션 이름 |
 | `SERVER_HOST` | `10.230.1.17` | 서버 IP |
 | `SERVER_PORT` | `8081` | 애플리케이션 포트 |
 | `MARIADB_*` | - | MariaDB 접속 정보 |

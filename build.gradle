@@ -5,9 +5,9 @@ plugins {
 	id 'com.google.protobuf' version '0.9.4'  // Protobuf 플러그인
 }
 
-group = 'com'
+group = 'com.ts'
 version = '0.0.1-SNAPSHOT'
-description = 'Spring Boilerplate'
+description = 'Release Manager'
 
 java {
 	toolchain {
@@ -64,7 +64,7 @@ dependencies {
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
-	runtimeOnly 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.12.0'
+	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.12.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testRuntimeOnly 'com.h2database:h2'

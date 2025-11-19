@@ -7,7 +7,7 @@
 ```
 docker/
 ├── docker-compose.yml    # Docker Compose 설정
-├── Dockerfile           # Spring Boot 애플리케이션 이미지 빌드
+├── Dockerfile           # 애플리케이션 이미지 빌드
 ├── init-mariadb.sql     # MariaDB 초기화 SQL
 └── README.md           # 이 문서
 ```
@@ -73,8 +73,31 @@ MariaDB 컨테이너 초기 실행 시 자동으로 실행되는 SQL 스크립�
 
 ## 🔧 환경변수
 
-환경변수는 프로젝트 루트의 `.env` 파일에서 관리됩니다.
-`.env.example`을 참고하여 `.env` 파일을 생성하세요.
+환경변수는 `docker/.env` 파일에서 관리됩니다.
+
+### 주요 환경변수
+
+- `SERVER_PORT`: 호스트에서 접근할 외부 포트 (기본: 8080)
+- `GRPC_PORT`: gRPC 외부 포트 (기본: 9090)
+- **내부 포트는 8080(HTTP), 9090(gRPC)으로 고정됩니다**
+
+### 포트 매핑 구조
+
+```
+호스트:${SERVER_PORT} → 컨테이너:8080 (고정)
+호스트:${GRPC_PORT} → 컨테이너:9090 (고정)
+```
+
+### 외부 포트 변경 방법
+
+`docker/.env` 파일에서 `SERVER_PORT` 값을 수정:
+
+```bash
+# 예: 외부 포트를 9000으로 변경
+SERVER_PORT=9000
+```
+
+컨테이너 내부 애플리케이션은 항상 8080 포트로 실행됩니다.
 
 ## 🌐 네트워크
 
