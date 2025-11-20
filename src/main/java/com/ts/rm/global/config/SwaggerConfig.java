@@ -25,10 +25,10 @@ public class SwaggerConfig {
 
     private Info apiInfo() {
         return new Info()
-                .title("Springboot Boilerplate Documentation")
-                .description("Springboot Boilerplate REST API 문서")
+                .title("Release Manager Documentation")
+                .description("Release Manager REST API 문서")
                 .version("v0.0.1")
-                .contact(new Contact().name("Springboot Boilerplate Team")
-                        .email("support@sb.com"));
+                .contact(new Contact().name("Tscientific Dev#2 Team")
+                        .email("jhlee@tscientific.co.kr"));
     }
 }

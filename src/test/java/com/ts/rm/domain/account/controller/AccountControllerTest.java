@@ -3,6 +3,8 @@ package com.ts.rm.domain.account.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
@@ -166,7 +168,7 @@ class AccountControllerTest {
     @DisplayName("GET /api/accounts - 전체 계정 조회 성공")
     void getAllAccounts_Success() throws Exception {
         // given
-        given(accountService.getAllAccounts()).willReturn(
+        given(accountService.getAccounts(isNull(), isNull())).willReturn(
                 List.of(simpleResponse));
 
         // when & then
@@ -181,7 +183,7 @@ class AccountControllerTest {
     @DisplayName("GET /api/accounts?status=ACTIVE - 상태별 계정 조회 성공")
     void getAccountsByStatus_Success() throws Exception {
         // given
-        given(accountService.getAccountsByStatus(anyString())).willReturn(
+        given(accountService.getAccounts(eq(AccountStatus.ACCOUNT_STATUS_ACTIVE), isNull())).willReturn(
                 List.of(simpleResponse));
 
         // when & then
@@ -193,14 +195,14 @@ class AccountControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/accounts/search?keyword=테스트 - 계정 검색 성공")
+    @DisplayName("GET /api/accounts?keyword=테스트 - 계정 검색 성공")
     void searchAccounts_Success() throws Exception {
         // given
-        given(accountService.searchAccountsByName(anyString())).willReturn(
+        given(accountService.getAccounts(isNull(), eq("테스트"))).willReturn(
                 List.of(simpleResponse));
 
         // when & then
-        mockMvc.perform(get("/api/accounts/search").param("keyword", "테스트"))
+        mockMvc.perform(get("/api/accounts").param("keyword", "테스트"))
                 .andDo(print()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data").isArray())
@@ -255,25 +257,29 @@ class AccountControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/accounts/{id}/activate - 계정 활성화 성공")
+    @DisplayName("PATCH /api/accounts/{id}/status - 계정 활성화 성공")
     void activateAccount_Success() throws Exception {
         // given
-        willDoNothing().given(accountService).activateAccount(anyLong());
+        willDoNothing().given(accountService).updateAccountStatus(eq(1L), eq(AccountStatus.ACCOUNT_STATUS_ACTIVE));
 
         // when & then
-        mockMvc.perform(patch("/api/accounts/1/activate")).andDo(print())
+        mockMvc.perform(patch("/api/accounts/1/status")
+                        .param("status", AccountStatus.ACCOUNT_STATUS_ACTIVE.name()))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"));
     }
 
     @Test
-    @DisplayName("PATCH /api/accounts/{id}/deactivate - 계정 비활성화 성공")
+    @DisplayName("PATCH /api/accounts/{id}/status - 계정 비활성화 성공")
     void deactivateAccount_Success() throws Exception {
         // given
-        willDoNothing().given(accountService).deactivateAccount(anyLong());
+        willDoNothing().given(accountService).updateAccountStatus(eq(1L), eq(AccountStatus.ACCOUNT_STATUS_INACTIVE));
 
         // when & then
-        mockMvc.perform(patch("/api/accounts/1/deactivate")).andDo(print())
+        mockMvc.perform(patch("/api/accounts/1/status")
+                        .param("status", AccountStatus.ACCOUNT_STATUS_INACTIVE.name()))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"));
     }

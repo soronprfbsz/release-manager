@@ -26,6 +26,19 @@ public enum ErrorCode {
   ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "A001", "error.account.not_found"),
   ACCOUNT_EMAIL_CONFLICT(HttpStatus.CONFLICT, "A002", "error.account.email_conflict"),
 
+  // Customer - 고객사
+  CUSTOMER_NOT_FOUND(HttpStatus.NOT_FOUND, "CU001", "error.customer.not_found"),
+  CUSTOMER_CODE_CONFLICT(HttpStatus.CONFLICT, "CU002", "error.customer.code_conflict"),
+  CUSTOMER_ID_REQUIRED(HttpStatus.BAD_REQUEST, "CU003", "error.customer.id_required"),
+
+  // Release - 릴리즈
+  RELEASE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "R001", "error.release.type_not_found"),
+  RELEASE_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "R002", "error.release.version_not_found"),
+  RELEASE_VERSION_CONFLICT(HttpStatus.CONFLICT, "R003", "error.release.version_conflict"),
+  INVALID_VERSION_FORMAT(HttpStatus.BAD_REQUEST, "R004", "error.release.invalid_version_format"),
+  DATABASE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "R005", "error.release.database_type_not_found"),
+  PATCH_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "R006", "error.release.patch_file_not_found"),
+
   // ========================================
   // ERROR - 서버 에러 (5xx)
   // ========================================

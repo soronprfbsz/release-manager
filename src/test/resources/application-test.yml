@@ -13,15 +13,22 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create-drop  # 테스트 시작시 엔티티 기반 테이블 자동 생성, 종료시 삭제
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
   # Flyway Configuration (테스트에서는 비활성화)
+  # 이유: H2는 MariaDB 구문과 완전 호환되지 않음
+  # 엔티티-스키마 불일치는 코드 리뷰와 프로덕션 배포 전 검증으로 방지
   flyway:
     enabled: false
+
+# Application Configuration
+app:
+  release:
+    base-path: build/test-release  # 테스트 전용 격리 경로
 
 # Logging Configuration
 logging:

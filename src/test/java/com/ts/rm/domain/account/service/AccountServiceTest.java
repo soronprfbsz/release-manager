@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -12,6 +14,7 @@ import static org.mockito.Mockito.times;
 
 import com.ts.rm.domain.account.dto.AccountDto;
 import com.ts.rm.domain.account.entity.Account;
+import com.ts.rm.domain.account.enums.AccountStatus;
 import com.ts.rm.domain.account.mapper.AccountDtoMapper;
 import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.global.common.exception.BusinessException;
@@ -159,7 +162,7 @@ class AccountServiceTest {
         given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
 
         // when
-        List<AccountDto.SimpleResponse> result = accountService.getAllAccounts();
+        List<AccountDto.SimpleResponse> result = accountService.getAccounts(null, null);
 
         // then
         assertThat(result).hasSize(1);
@@ -179,7 +182,8 @@ class AccountServiceTest {
         given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
 
         // when
-        List<AccountDto.SimpleResponse> result = accountService.getAccountsByStatus("ACCOUNT_STATUS_ACTIVE");
+        List<AccountDto.SimpleResponse> result = accountService.getAccounts(
+                AccountStatus.ACCOUNT_STATUS_ACTIVE, null);
 
         // then
         assertThat(result).hasSize(1);
@@ -242,7 +246,7 @@ class AccountServiceTest {
         given(accountRepository.activateByAccountId(anyLong())).willReturn(1L);
 
         // when
-        accountService.activateAccount(1L);
+        accountService.updateAccountStatus(1L, AccountStatus.ACCOUNT_STATUS_ACTIVE);
 
         // then
         then(accountRepository).should(times(1)).activateByAccountId(1L);
@@ -256,7 +260,7 @@ class AccountServiceTest {
         given(accountRepository.deactivateByAccountId(anyLong())).willReturn(1L);
 
         // when
-        accountService.deactivateAccount(1L);
+        accountService.updateAccountStatus(1L, AccountStatus.ACCOUNT_STATUS_INACTIVE);
 
         // then
         then(accountRepository).should(times(1)).deactivateByAccountId(1L);
@@ -275,7 +279,7 @@ class AccountServiceTest {
         given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
 
         // when
-        List<AccountDto.SimpleResponse> result = accountService.searchAccountsByName("테스트");
+        List<AccountDto.SimpleResponse> result = accountService.getAccounts(null, "테스트");
 
         // then
         assertThat(result).hasSize(1);

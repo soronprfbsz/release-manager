@@ -52,23 +52,15 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "계정 목록 조회", description = "전체 계정 또는 상태별 계정 목록을 조회합니다")
+    @Operation(summary = "계정 목록 조회",
+            description = "계정 목록을 조회합니다. status로 상태 필터링, keyword로 계정명 검색 가능")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AccountDto.SimpleResponse>>> getAllAccounts(
-            @Parameter(description = "계정 상태") @RequestParam(required = false) AccountStatus status) {
-        List<AccountDto.SimpleResponse> response =
-                status != null
-                        ? accountService.getAccountsByStatus(status.name())
-                        : accountService.getAllAccounts();
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    @Operation(summary = "계정 검색", description = "이름으로 계정을 검색합니다")
-    @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<AccountDto.SimpleResponse>>> searchAccounts(
-            @Parameter(description = "검색 키워드", required = true) @RequestParam String keyword) {
-        List<AccountDto.SimpleResponse> response = accountService.searchAccountsByName(
-                keyword);
+    public ResponseEntity<ApiResponse<List<AccountDto.SimpleResponse>>> getAccounts(
+            @Parameter(description = "계정 상태 (ACTIVE, INACTIVE 등)")
+            @RequestParam(required = false) AccountStatus status,
+            @Parameter(description = "계정명 검색 키워드")
+            @RequestParam(required = false) String keyword) {
+        List<AccountDto.SimpleResponse> response = accountService.getAccounts(status, keyword);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -90,19 +82,12 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    @Operation(summary = "계정 활성화", description = "비활성화된 계정을 활성화합니다")
-    @PatchMapping("/{id}/activate")
-    public ResponseEntity<ApiResponse<Void>> activateAccount(
-            @Parameter(description = "계정 ID", required = true) @PathVariable Long id) {
-        accountService.activateAccount(id);
-        return ResponseEntity.ok(ApiResponse.success(null));
-    }
-
-    @Operation(summary = "계정 비활성화", description = "활성화된 계정을 비활성화합니다")
-    @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<ApiResponse<Void>> deactivateAccount(
-            @Parameter(description = "계정 ID", required = true) @PathVariable Long id) {
-        accountService.deactivateAccount(id);
+    @Operation(summary = "계정 상태 변경", description = "계정의 활성화 상태를 변경합니다")
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<Void>> updateAccountStatus(
+            @Parameter(description = "계정 ID", required = true) @PathVariable Long id,
+            @Parameter(description = "계정 상태", required = true) @RequestParam AccountStatus status) {
+        accountService.updateAccountStatus(id, status);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

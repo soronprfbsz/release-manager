@@ -2,6 +2,7 @@ package com.ts.rm.domain.account.service;
 
 import com.ts.rm.domain.account.dto.AccountDto;
 import com.ts.rm.domain.account.entity.Account;
+import com.ts.rm.domain.account.enums.AccountStatus;
 import com.ts.rm.domain.account.mapper.AccountDtoMapper;
 import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.global.common.exception.BusinessException;
@@ -47,13 +48,30 @@ public class AccountService {
         return mapper.toDetailResponse(account);
     }
 
-    public List<AccountDto.SimpleResponse> getAllAccounts() {
-        return mapper.toSimpleResponseList(accountRepository.findAll());
-    }
+    /**
+     * 계정 목록 조회 (필터링 및 검색)
+     *
+     * @param status  계정 상태 필터 (ACCOUNT_STATUS_ACTIVE, ACCOUNT_STATUS_INACTIVE 등, null이면 전체)
+     * @param keyword 계정명 검색 키워드
+     * @return 계정 목록
+     */
+    public List<AccountDto.SimpleResponse> getAccounts(AccountStatus status, String keyword) {
+        List<Account> accounts;
 
-    public List<AccountDto.SimpleResponse> getAccountsByStatus(String status) {
-        return mapper.toSimpleResponseList(
-                accountRepository.findAllByStatus(status));
+        // 키워드 검색이 있는 경우
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            accounts = accountRepository.findByAccountNameContaining(keyword.trim());
+        }
+        // 상태 필터링
+        else if (status != null) {
+            accounts = accountRepository.findAllByStatus(status.name());
+        }
+        // 전체 조회
+        else {
+            accounts = accountRepository.findAll();
+        }
+
+        return mapper.toSimpleResponseList(accounts);
     }
 
     @Transactional
@@ -91,26 +109,26 @@ public class AccountService {
         log.info("Account deleted successfully with accountId: {}", accountId);
     }
 
+    /**
+     * 계정 상태 변경
+     *
+     * @param accountId 계정 ID
+     * @param status    변경할 상태
+     */
     @Transactional
-    public void activateAccount(Long accountId) {
-        // Verify account exists before activation
-        findAccountByAccountId(accountId);
-        accountRepository.activateByAccountId(accountId);
-        log.info("Account activated with accountId: {}", accountId);
-    }
+    public void updateAccountStatus(Long accountId, AccountStatus status) {
+        log.info("Updating account status - accountId: {}, status: {}", accountId, status);
 
-    @Transactional
-    public void deactivateAccount(Long accountId) {
-        // Verify account exists before deactivation
+        // 계정 존재 검증
         findAccountByAccountId(accountId);
-        accountRepository.deactivateByAccountId(accountId);
-        log.info("Account deactivated with accountId: {}", accountId);
-    }
 
-    public List<AccountDto.SimpleResponse> searchAccountsByName(
-            String keyword) {
-        return mapper.toSimpleResponseList(
-                accountRepository.findByAccountNameContaining(keyword));
+        if (status == AccountStatus.ACCOUNT_STATUS_ACTIVE) {
+            accountRepository.activateByAccountId(accountId);
+        } else if (status == AccountStatus.ACCOUNT_STATUS_INACTIVE) {
+            accountRepository.deactivateByAccountId(accountId);
+        }
+
+        log.info("Account status updated - accountId: {}, status: {}", accountId, status);
     }
 
     private Account findAccountByAccountId(Long accountId) {

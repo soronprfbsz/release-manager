@@ -41,11 +41,13 @@ public class GlobalExceptionHandler {
 
     // ErrorCode의 HttpStatus에 따라 fail(4xx) 또는 error(5xx) 자동 분류
     if ("fail".equals(responseStatus)) {
-      log.warn("Business error (client): {}", message);
+      log.warn("Business error (client): [{}] {} - {}", errorCode.getCode(), errorCode.name(),
+          message, e);
       return ResponseEntity.status(errorCode.getStatus())
           .body(ApiResponse.fail(errorCode.getCode(), message));
     } else {
-      log.error("Business error (server): {}", message);
+      log.error("Business error (server): [{}] {} - {}", errorCode.getCode(), errorCode.name(),
+          message, e);
       return ResponseEntity.status(errorCode.getStatus())
           .body(ApiResponse.error(errorCode.getCode(), message));
     }
@@ -55,8 +57,6 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ApiResponse<ApiResponse.FailDetail>> handleValidationException(
       MethodArgumentNotValidException e, Locale locale) {
-    log.warn("Validation error: {}", e.getMessage());
-
     Map<String, String> errors = new HashMap<>();
     e.getBindingResult().getAllErrors().forEach(error -> {
       String fieldName = ((FieldError) error).getField();
@@ -67,6 +67,9 @@ public class GlobalExceptionHandler {
     String message =
         messageSource.getMessage(ErrorCode.INVALID_INPUT_VALUE.getMessageKey(), null, locale);
 
+    log.error("Validation error: [{}] {} - Fields: {}", ErrorCode.INVALID_INPUT_VALUE.getCode(),
+        message, errors, e);
+
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(ApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE.getCode(), message, errors));
   }
@@ -75,10 +78,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
   public ResponseEntity<ApiResponse<ApiResponse.FailDetail>> handleMethodNotAllowed(
       HttpRequestMethodNotSupportedException e, Locale locale) {
-    log.warn("Method not allowed: {}", e.getMessage());
-
     String message =
         messageSource.getMessage(ErrorCode.METHOD_NOT_ALLOWED.getMessageKey(), null, locale);
+
+    log.error("Method not allowed: [{}] {} - Supported methods: {}",
+        ErrorCode.METHOD_NOT_ALLOWED.getCode(), message, e.getSupportedHttpMethods(), e);
 
     return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
         .body(ApiResponse.fail(ErrorCode.METHOD_NOT_ALLOWED.getCode(), message));

@@ -1,0 +1,47 @@
+package com.ts.rm.domain.customer.repository;
+
+import com.ts.rm.domain.customer.entity.Customer;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+/**
+ * Customer Repository
+ *
+ * <p>고객사 정보 조회 및 관리를 위한 Repository
+ */
+public interface CustomerRepository extends JpaRepository<Customer, Long>,
+        CustomerRepositoryCustom {
+
+    /**
+     * 고객사 코드로 고객사 조회
+     *
+     * @param customerCode 고객사 코드
+     * @return Customer
+     */
+    Optional<Customer> findByCustomerCode(String customerCode);
+
+    /**
+     * 활성화된 고객사 목록 조회
+     *
+     * @param isActive 활성 여부
+     * @return 고객사 목록
+     */
+    List<Customer> findAllByIsActive(Boolean isActive);
+
+    /**
+     * 고객사 코드 존재 여부 확인
+     *
+     * @param customerCode 고객사 코드
+     * @return 존재 여부
+     */
+    boolean existsByCustomerCode(String customerCode);
+
+    /**
+     * 고객사명으로 검색 (부분 일치)
+     *
+     * @param keyword 검색 키워드
+     * @return 고객사 목록
+     */
+    List<Customer> findByCustomerNameContaining(String keyword);
+}
