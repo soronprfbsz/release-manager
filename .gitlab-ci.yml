@@ -154,6 +154,24 @@ deploy-job:
       echo "=== Docker 네트워크 확인 ==="
       docker network ls | grep -q network-ts && echo "✓ network-ts 존재" || (docker network create network-ts && echo "✓ network-ts 생성")
   script:
+    # 1. 초기 릴리즈 파일 복사 (최초 배포 시에만)
+    - |
+      echo "=== 배포 시작 ==="
+      mkdir -p /data/rm/release_files
+      if [ ! -f /data/rm/release_files/.initialized ]; then
+        # 기존 파일 백업 (혹시 모를 상황 대비)
+        if [ -d "/data/rm/release_files/releases" ]; then
+          echo "⚠️  기존 파일 발견, 백업 중..."
+          tar czf "/data/rm/release_files_backup_$(date +%Y%m%d_%H%M%S).tar.gz" \
+                  -C /data/rm release_files
+        fi
+        echo "📦 초기 릴리즈 파일 복사 중..."
+        cp -r src/main/resources/release/* /data/rm/release_files/
+        touch /data/rm/release_files/.initialized
+        echo "✅ 초기화 완료"
+      else
+        echo "ℹ️  릴리즈 파일 이미 초기화됨, 건너뜀"
+      fi
     - |
       echo "=== 배포 시작 ==="
       docker-compose -f docker/docker-compose.yml rm -f mariadb redis app || true

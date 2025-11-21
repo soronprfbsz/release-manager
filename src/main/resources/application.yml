@@ -72,6 +72,12 @@ grpc:
     timeout: ${GRPC_TIMEOUT:30}
     maxRetryAttempts: ${GRPC_MAX_RETRY:3}
 
+# Application Configuration
+app:
+  release:
+    # 로컬: src/main/resources/release, 도커: /app/release-files
+    base-path: ${RELEASE_BASE_PATH}
+
 # Logging Configuration
 logging:
   level:

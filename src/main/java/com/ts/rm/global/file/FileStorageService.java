@@ -33,9 +33,11 @@ public class FileStorageService {
             Files.createDirectories(this.baseStorageLocation);
             log.info("파일 저장소 초기화 완료: {}", this.baseStorageLocation);
         } catch (IOException e) {
-            log.error("파일 저장소 초기화 실패", e);
+            log.error("파일 저장소 초기화 실패 - 경로: {}, 오류: {}",
+                    this.baseStorageLocation, e.getMessage(), e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "파일 저장소를 초기화할 수 없습니다: " + e.getMessage());
+                    String.format("파일 저장소를 초기화할 수 없습니다: %s (경로: %s)",
+                            e.getMessage(), this.baseStorageLocation));
         }
     }
 

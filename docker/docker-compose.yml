@@ -12,8 +12,8 @@ services:
       - --long-query-time=5
       - --slow-query-log-file=/var/log/mysql/slow-query.log
     volumes:
-      - /data/mariadb/log:/var/lib/mysql
-      - /data/mariadb/data:/var/log/mysql
+      - /data/rm/mariadb/log:/var/lib/mysql
+      - /data/rm/mariadb/data:/var/log/mysql
       - ./docker/init-mariadb.sql:/docker-entrypoint-initdb.d/init.sql
     restart: always
     networks:
@@ -37,7 +37,7 @@ services:
       - "0.0.0.0:${REDIS_PORT}:6379"
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --appendfilename "appendonly.aof" --dir /data
     volumes:
-      - redis_data:/data
+      - /data/rm/redis/data:/data
     networks:
       - network-ts
     restart: always
@@ -64,6 +64,8 @@ services:
       MARIADB_PORT: 3306         # 컨테이너 내부 포트
       # JVM 설정
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
+    volumes:
+      - /data/rm/release_files:/app/release-files
     ports:
       # 호스트:컨테이너 포트 매핑
       - "${SERVER_EXTERNAL_PORT:-18080}:${SERVER_PORT:-8081}"
@@ -85,8 +87,3 @@ services:
 networks:
   network-ts:
     external: true
-
-volumes:
-  mariadb_data:
-  mariadb_log:
-  redis_data:
