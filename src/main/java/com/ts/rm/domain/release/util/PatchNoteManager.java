@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -183,5 +185,118 @@ public class PatchNoteManager {
             log.error("Failed to remove version entry from patch_note.md: {}", version, e);
             // 롤백 작업이므로 예외를 던지지 않음
         }
+    }
+
+    /**
+     * patch_note.md에서 특정 버전의 메타데이터 조회
+     *
+     * @param releaseType  릴리즈 타입 (STANDARD/CUSTOM)
+     * @param customerCode 고객사 코드 (CUSTOM인 경우 필수)
+     * @param version      버전 번호
+     * @return 버전 메타데이터 (없으면 null)
+     */
+    public VersionMetadata getVersionMetadata(String releaseType, String customerCode, String version) {
+        try {
+            // patch_note.md 경로 결정
+            Path patchNotePath;
+            if ("STANDARD".equals(releaseType)) {
+                patchNotePath = Paths.get(baseReleasePath, "releases/standard/patch_note.md");
+            } else {
+                if (customerCode == null) {
+                    log.warn("customerCode is required for CUSTOM release type");
+                    return null;
+                }
+                patchNotePath = Paths.get(baseReleasePath, "releases/custom", customerCode, "patch_note.md");
+            }
+
+            if (!Files.exists(patchNotePath)) {
+                log.warn("patch_note.md does not exist: {}", patchNotePath);
+                return null;
+            }
+
+            // 파일 읽기
+            String content = Files.readString(patchNotePath);
+
+            // 버전 엔트리 파싱
+            return parseVersionEntry(content, version);
+
+        } catch (IOException e) {
+            log.error("Failed to get version metadata from patch_note.md: {}", version, e);
+            return null;
+        }
+    }
+
+    /**
+     * patch_note.md에서 특정 버전 엔트리 파싱
+     */
+    private VersionMetadata parseVersionEntry(String content, String targetVersion) {
+        String[] lines = content.split("\n");
+        Map<String, String> metadata = new HashMap<>();
+        boolean inTargetEntry = false;
+
+        for (String line : lines) {
+            // 구분선 만나면 엔트리 종료
+            if (line.startsWith(SEPARATOR_LINE)) {
+                if (inTargetEntry) {
+                    // 타겟 버전 엔트리 완료
+                    break;
+                }
+                continue;
+            }
+
+            // VERSION 확인
+            if (line.startsWith("VERSION: ")) {
+                String version = line.substring("VERSION: ".length()).trim();
+                if (version.equals(targetVersion)) {
+                    inTargetEntry = true;
+                    metadata.put("version", version);
+                } else {
+                    inTargetEntry = false;
+                    metadata.clear();
+                }
+                continue;
+            }
+
+            // 타겟 버전 엔트리 내의 메타데이터 수집
+            if (inTargetEntry) {
+                if (line.startsWith("CREATED_AT: ")) {
+                    metadata.put("createdAt", line.substring("CREATED_AT: ".length()).trim());
+                } else if (line.startsWith("CREATED_BY: ")) {
+                    metadata.put("createdBy", line.substring("CREATED_BY: ".length()).trim());
+                } else if (line.startsWith("COMMENT: ")) {
+                    metadata.put("comment", line.substring("COMMENT: ".length()).trim());
+                } else if (line.startsWith("CUSTOM_VERSION: ")) {
+                    metadata.put("customVersion", line.substring("CUSTOM_VERSION: ".length()).trim());
+                }
+            }
+        }
+
+        // 메타데이터가 수집되었으면 VersionMetadata 생성
+        if (!metadata.isEmpty() && metadata.containsKey("version")) {
+            return new VersionMetadata(
+                    metadata.get("version"),
+                    metadata.get("createdAt"),
+                    metadata.get("createdBy"),
+                    metadata.get("comment"),
+                    metadata.get("customVersion"),
+                    false // isInstall 정보는 patch_note.md에 없으므로 false
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * 버전 메타데이터 (patch_note.md에서 읽어온 정보)
+     */
+    public record VersionMetadata(
+            String version,
+            String createdAt,
+            String createdBy,
+            String comment,
+            String customVersion,
+            Boolean isInstall
+    ) {
+
     }
 }

@@ -162,4 +162,75 @@ public final class ReleaseVersionDto {
     ) {
 
     }
+
+    /**
+     * 릴리즈 버전 트리 응답 (프론트엔드 트리 렌더링용)
+     */
+    @Schema(description = "릴리즈 버전 트리 응답")
+    public record TreeResponse(
+            @Schema(description = "릴리즈 타입", example = "STANDARD")
+            String releaseType,
+
+            @Schema(description = "고객사 코드 (커스텀인 경우)", example = "company_a")
+            String customerCode,
+
+            @Schema(description = "메이저.마이너 그룹 목록")
+            List<MajorMinorNode> majorMinorGroups
+    ) {
+
+    }
+
+    /**
+     * 메이저.마이너 버전 그룹 노드 (예: 1.1.x)
+     */
+    @Schema(description = "메이저.마이너 버전 그룹 노드")
+    public record MajorMinorNode(
+            @Schema(description = "메이저.마이너", example = "1.1.x")
+            String majorMinor,
+
+            @Schema(description = "해당 메이저.마이너에 속한 버전 목록")
+            List<VersionNode> versions
+    ) {
+
+    }
+
+    /**
+     * 버전 노드 (예: 1.1.0)
+     */
+    @Schema(description = "버전 노드")
+    public record VersionNode(
+            @Schema(description = "버전", example = "1.1.0")
+            String version,
+
+            @Schema(description = "생성일자", example = "2025-11-20")
+            String createdAt,
+
+            @Schema(description = "생성자", example = "jhlee@tscientific")
+            String createdBy,
+
+            @Schema(description = "코멘트", example = "새로운 기능 추가")
+            String comment,
+
+            @Schema(description = "설치본 여부", example = "false")
+            Boolean isInstall,
+
+            @Schema(description = "데이터베이스별 패치 파일 목록")
+            List<DatabaseNode> databases
+    ) {
+
+    }
+
+    /**
+     * 데이터베이스 노드 (예: MARIADB, CRATEDB)
+     */
+    @Schema(description = "데이터베이스 노드")
+    public record DatabaseNode(
+            @Schema(description = "데이터베이스 타입", example = "MARIADB")
+            String databaseType,
+
+            @Schema(description = "SQL 파일 목록")
+            List<String> files
+    ) {
+
+    }
 }

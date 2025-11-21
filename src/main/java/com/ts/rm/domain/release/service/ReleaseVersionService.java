@@ -532,4 +532,221 @@ public class ReleaseVersionService {
             return entries.findAny().isEmpty();
         }
     }
+
+    /**
+     * 표준 릴리즈 버전 트리 조회
+     *
+     * @return 릴리즈 버전 트리
+     */
+    public ReleaseVersionDto.TreeResponse getStandardReleaseTree() {
+        log.info("Getting standard release tree");
+        return buildReleaseTree("STANDARD", null);
+    }
+
+    /**
+     * 커스텀 릴리즈 버전 트리 조회
+     *
+     * @param customerCode 고객사 코드
+     * @return 릴리즈 버전 트리
+     */
+    public ReleaseVersionDto.TreeResponse getCustomReleaseTree(String customerCode) {
+        log.info("Getting custom release tree for customer: {}", customerCode);
+        return buildReleaseTree("CUSTOM", customerCode);
+    }
+
+    /**
+     * 릴리즈 버전 트리 빌드
+     *
+     * @param releaseType  릴리즈 타입 (STANDARD, CUSTOM)
+     * @param customerCode 고객사 코드 (CUSTOM인 경우 필수)
+     * @return 릴리즈 버전 트리
+     */
+    private ReleaseVersionDto.TreeResponse buildReleaseTree(String releaseType, String customerCode) {
+        try {
+            // 릴리즈 디렉토리 경로 결정
+            Path releasePath = determineReleasePath(releaseType, customerCode);
+
+            if (!Files.exists(releasePath)) {
+                log.warn("Release path does not exist: {}", releasePath);
+                return new ReleaseVersionDto.TreeResponse(releaseType, customerCode, List.of());
+            }
+
+            // 메이저.마이너 그룹 수집
+            List<ReleaseVersionDto.MajorMinorNode> majorMinorGroups = collectMajorMinorGroups(releasePath,
+                    releaseType, customerCode);
+
+            return new ReleaseVersionDto.TreeResponse(releaseType, customerCode, majorMinorGroups);
+
+        } catch (IOException e) {
+            log.error("Failed to build release tree", e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "릴리즈 트리 조회 중 오류가 발생했습니다");
+        }
+    }
+
+    /**
+     * 릴리즈 경로 결정
+     */
+    private Path determineReleasePath(String releaseType, String customerCode) {
+        if ("STANDARD".equals(releaseType)) {
+            return Paths.get(baseReleasePath, "releases/standard");
+        } else {
+            if (customerCode == null) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "커스텀 릴리즈는 고객사 코드가 필요합니다");
+            }
+            return Paths.get(baseReleasePath, "releases/custom", customerCode);
+        }
+    }
+
+    /**
+     * 메이저.마이너 그룹 수집
+     */
+    private List<ReleaseVersionDto.MajorMinorNode> collectMajorMinorGroups(
+            Path releasePath, String releaseType, String customerCode) throws IOException {
+
+        List<ReleaseVersionDto.MajorMinorNode> majorMinorGroups = new ArrayList<>();
+
+        // 메이저.마이너 디렉토리 탐색 (1.1.x, 1.2.x 등)
+        try (var majorMinorDirs = Files.list(releasePath)
+                .filter(Files::isDirectory)
+                .filter(p -> !p.getFileName().toString().equals("patch_note.md"))
+                .sorted((a, b) -> compareVersionPaths(b, a))) { // 내림차순 정렬
+
+            majorMinorDirs.forEach(majorMinorDir -> {
+                try {
+                    String majorMinor = majorMinorDir.getFileName().toString();
+
+                    // 버전 목록 수집
+                    List<ReleaseVersionDto.VersionNode> versions = collectVersions(majorMinorDir, releaseType,
+                            customerCode);
+
+                    if (!versions.isEmpty()) {
+                        majorMinorGroups.add(new ReleaseVersionDto.MajorMinorNode(majorMinor, versions));
+                    }
+                } catch (IOException e) {
+                    log.error("Failed to collect versions from: {}", majorMinorDir, e);
+                }
+            });
+        }
+
+        return majorMinorGroups;
+    }
+
+    /**
+     * 버전 목록 수집
+     */
+    private List<ReleaseVersionDto.VersionNode> collectVersions(
+            Path majorMinorDir, String releaseType, String customerCode) throws IOException {
+
+        List<ReleaseVersionDto.VersionNode> versions = new ArrayList<>();
+
+        // 버전 디렉토리 탐색 (1.1.0, 1.1.1 등)
+        try (var versionDirs = Files.list(majorMinorDir)
+                .filter(Files::isDirectory)
+                .sorted((a, b) -> compareVersionPaths(b, a))) { // 내림차순 정렬
+
+            versionDirs.forEach(versionDir -> {
+                try {
+                    String version = versionDir.getFileName().toString();
+
+                    // patch_note.md에서 메타데이터 추출
+                    var versionMetadata = patchNoteManager.getVersionMetadata(releaseType, customerCode, version);
+
+                    if (versionMetadata == null) {
+                        log.warn("Version metadata not found for: {}", version);
+                        return;
+                    }
+
+                    // 데이터베이스 파일 목록 수집
+                    List<ReleaseVersionDto.DatabaseNode> databases = collectDatabases(versionDir);
+
+                    ReleaseVersionDto.VersionNode versionNode = new ReleaseVersionDto.VersionNode(
+                            version,
+                            versionMetadata.createdAt(),
+                            versionMetadata.createdBy(),
+                            versionMetadata.comment(),
+                            versionMetadata.isInstall(),
+                            databases
+                    );
+
+                    versions.add(versionNode);
+                } catch (Exception e) {
+                    log.error("Failed to collect version: {}", versionDir, e);
+                }
+            });
+        }
+
+        return versions;
+    }
+
+    /**
+     * 데이터베이스 파일 목록 수집
+     */
+    private List<ReleaseVersionDto.DatabaseNode> collectDatabases(Path versionDir) throws IOException {
+        List<ReleaseVersionDto.DatabaseNode> databases = new ArrayList<>();
+
+        Path patchDir = versionDir.resolve("patch");
+        if (!Files.exists(patchDir)) {
+            return databases;
+        }
+
+        // mariadb, cratedb 디렉토리 탐색
+        try (var dbDirs = Files.list(patchDir)
+                .filter(Files::isDirectory)) {
+
+            dbDirs.forEach(dbDir -> {
+                try {
+                    String dbType = dbDir.getFileName().toString().toUpperCase();
+
+                    // SQL 파일 목록 수집
+                    List<String> files = new ArrayList<>();
+                    try (var sqlFiles = Files.list(dbDir)
+                            .filter(Files::isRegularFile)
+                            .filter(p -> p.getFileName().toString().endsWith(".sql"))
+                            .sorted()) {
+
+                        sqlFiles.forEach(sqlFile -> {
+                            files.add(sqlFile.getFileName().toString());
+                        });
+                    }
+
+                    if (!files.isEmpty()) {
+                        databases.add(new ReleaseVersionDto.DatabaseNode(dbType, files));
+                    }
+                } catch (IOException e) {
+                    log.error("Failed to collect database files from: {}", dbDir, e);
+                }
+            });
+        }
+
+        return databases;
+    }
+
+    /**
+     * 버전 경로 비교 (버전 정렬용)
+     */
+    private int compareVersionPaths(Path a, Path b) {
+        try {
+            String versionA = a.getFileName().toString();
+            String versionB = b.getFileName().toString();
+
+            // x.x.x 형식인 경우 버전 비교
+            if (versionA.matches("\\d+\\.\\d+\\.\\d+") && versionB.matches("\\d+\\.\\d+\\.\\d+")) {
+                String[] partsA = versionA.split("\\.");
+                String[] partsB = versionB.split("\\.");
+
+                for (int i = 0; i < 3; i++) {
+                    int numA = Integer.parseInt(partsA[i]);
+                    int numB = Integer.parseInt(partsB[i]);
+                    if (numA != numB) {
+                        return Integer.compare(numA, numB);
+                    }
+                }
+            }
+
+            // 그 외의 경우 문자열 비교
+            return versionA.compareTo(versionB);
+        } catch (Exception e) {
+            return a.toString().compareTo(b.toString());
+        }
+    }
 }

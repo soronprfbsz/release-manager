@@ -182,4 +182,33 @@ public class ReleaseVersionController {
         releaseVersionService.deleteVersion(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    /**
+     * 표준 릴리즈 버전 트리 조회
+     *
+     * @return 릴리즈 버전 트리 (계층 구조)
+     */
+    @Operation(summary = "표준 릴리즈 버전 트리 조회",
+               description = "표준 릴리즈 버전들을 계층 구조로 조회합니다 (프론트엔드 트리 렌더링용)")
+    @GetMapping("/standard/tree")
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getStandardReleaseTree() {
+        ReleaseVersionDto.TreeResponse response = releaseVersionService.getStandardReleaseTree();
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 커스텀 릴리즈 버전 트리 조회
+     *
+     * @param customerCode 고객사 코드
+     * @return 릴리즈 버전 트리 (계층 구조)
+     */
+    @Operation(summary = "커스텀 릴리즈 버전 트리 조회",
+               description = "특정 고객사의 커스텀 릴리즈 버전들을 계층 구조로 조회합니다 (프론트엔드 트리 렌더링용)")
+    @GetMapping("/custom/{customerCode}/tree")
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getCustomReleaseTree(
+            @Parameter(description = "고객사 코드", required = true, example = "company_a")
+            @PathVariable String customerCode) {
+        ReleaseVersionDto.TreeResponse response = releaseVersionService.getCustomReleaseTree(customerCode);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }
