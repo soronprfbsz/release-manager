@@ -1,5 +1,5 @@
 # ========================================
-# GitLab CI/CD Pipeline Configuration
+# GitLab CI/CD Pipeline Configuration (Optimized)
 # ========================================
 
 default:
@@ -15,8 +15,8 @@ variables:
   HARBOR_PROJECT: "release-manager"
   HARBOR_IMAGE_NAME: "${HARBOR_HOST}/${HARBOR_PROJECT}/${SERVER_NAME}"
 
-  # Gradle 설정
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  # Gradle 설정 (최적화)
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
   GRADLE_USER_HOME: $CI_PROJECT_DIR/.gradle
 
 stages:
@@ -27,7 +27,7 @@ stages:
   - deploy
 
 # ========================================
-# 빌드 단계
+# 빌드 단계 (최적화)
 # ========================================
 build-job:
   stage: build
@@ -37,21 +37,35 @@ build-job:
   only:
     - main
   cache:
-    key: ${CI_COMMIT_REF_SLUG}
+    # 브랜치별 캐시 사용
+    key: gradle-${CI_COMMIT_REF_SLUG}
     paths:
-      - .gradle/
-      - build/
+      - .gradle/wrapper/       # Gradle wrapper 캐시
+      - .gradle/caches/        # 의존성 캐시
+      - build/classes/         # 컴파일된 클래스 캐시
+      - build/generated/       # 생성된 소스 캐시
+      - build/resources/       # 리소스 캐시
+    policy: pull-push
+  before_script:
+    # Gradle 캐시 디렉토리 생성
+    - mkdir -p .gradle
   script:
-    - echo "프로젝트 빌드 시작..."
-    - gradle clean build -x test --no-daemon
-    - echo "빌드 완료"
+    - echo "📦 프로젝트 빌드 시작..."
+
+    # clean 제거 → 증분 빌드 활성화
+    - gradle build -x test --build-cache --no-daemon
+
+    - echo "✅ 빌드 완료"
+
+    # 빌드 정보 출력
+    - ls -lh build/libs/
   artifacts:
     paths:
       - build/libs/*.jar
     expire_in: 1 hour
 
 # ========================================
-# 테스트 단계 (수동 실행)
+# 테스트 단계 (최적화)
 # ========================================
 test-job:
   stage: test
@@ -61,13 +75,15 @@ test-job:
   only:
     - main
   cache:
-    key: ${CI_COMMIT_REF_SLUG}
+    key: gradle-${CI_COMMIT_REF_SLUG}
     paths:
-      - .gradle/
+      - .gradle/wrapper/
+      - .gradle/caches/
+    policy: pull  # 읽기만 (빌드 단계에서 이미 캐시됨)
   script:
-    - echo "테스트 실행 중..."
-    - gradle test --no-daemon
-    - echo "테스트 완료"
+    - echo "🧪 테스트 실행 중..."
+    - gradle test --build-cache --no-daemon
+    - echo "✅ 테스트 완료"
   artifacts:
     when: always
     reports:
@@ -77,10 +93,10 @@ test-job:
       - build/reports/
     expire_in: 1 weeks
   coverage: '/Total.*?([0-9]{1,3})%/'
-  when: manual  # 수동 실행 (필요시에만)
+  when: manual
 
 # ========================================
-# Docker 이미지 빌드 단계 (로컬)
+# Docker 이미지 빌드 단계 (BuildKit 캐시 활용)
 # ========================================
 docker-build-job:
   stage: docker-build
@@ -90,16 +106,30 @@ docker-build-job:
     - main
   dependencies:
     - build-job
+  variables:
+    # BuildKit 활성화 (레이어 캐시 최적화)
+    DOCKER_BUILDKIT: "1"
+    BUILDKIT_PROGRESS: "plain"
   script:
-    - echo "Docker 이미지 빌드 시작..."
-    - docker build -f docker/Dockerfile.ci -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} . --progress=plain --force-rm
-    - 'echo "이미지 빌드 완료: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"'
+    - echo "🐳 Docker 이미지 빌드 시작..."
+
+    # BuildKit 캐시를 사용한 빌드
+    - |
+      docker build \
+        -f docker/Dockerfile.ci \
+        -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        --cache-from ${DOCKER_IMAGE_NAME}:latest \
+        --progress=plain \
+        --force-rm \
+        .
+
+    - 'echo "✅ 이미지 빌드 완료: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"'
     - docker images | grep ${DOCKER_IMAGE_NAME}
 
 # ========================================
-# Harbor Push 단계 (선택적)
+# Harbor Push 단계
 # ========================================
-# Harbor에 이미지를 등록하려면 이 Job을 수동으로 실행하세요
 harbor-push-job:
   stage: harbor-push
   tags:
@@ -109,24 +139,26 @@ harbor-push-job:
   dependencies:
     - docker-build-job
   before_script:
-    - echo "Harbor 로그인 중..."
+    - echo "🔑 Harbor 로그인 중..."
     - echo "$HARBOR_PASSWORD" | docker login $HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin
   script:
-    - echo "로컬 이미지를 Harbor 형식으로 태깅..."
+    - echo "🏷️  로컬 이미지를 Harbor 형식으로 태깅..."
     - docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${HARBOR_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
     - docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${HARBOR_IMAGE_NAME}:latest
-    - echo "Harbor에 이미지 Push 중..."
+
+    - echo "⬆️  Harbor에 이미지 Push 중..."
     - docker push ${HARBOR_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
     - docker push ${HARBOR_IMAGE_NAME}:latest
-    - echo "이미지가 Harbor에 성공적으로 등록되었습니다!"
+
+    - echo "✅ 이미지가 Harbor에 성공적으로 등록되었습니다!"
     - echo "  - ${HARBOR_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
     - echo "  - ${HARBOR_IMAGE_NAME}:latest"
   after_script:
     - docker logout $HARBOR_REGISTRY || true
-  when: manual  # 수동 실행 (필요시에만)
+  when: manual
 
 # ========================================
-# 배포 단계 (GitLab Runner 호스트)
+# 배포 단계
 # ========================================
 deploy-job:
   stage: deploy
@@ -154,73 +186,84 @@ deploy-job:
       echo "=== Docker 네트워크 확인 ==="
       docker network ls | grep -q network-ts && echo "✓ network-ts 존재" || (docker network create network-ts && echo "✓ network-ts 생성")
   script:
-    # 1. 초기 릴리즈 파일 복사 (최초 배포 시에만)
+    # 1. 초기 릴리즈 파일 복사
     - |
-      echo "=== 배포 시작 ==="
-      mkdir -p /data/rm/release_files
-      if [ ! -f /data/rm/release_files/.initialized ]; then
-        # 기존 파일 백업 (혹시 모를 상황 대비)
-        if [ -d "/data/rm/release_files/releases" ]; then
-          echo "⚠️  기존 파일 발견, 백업 중..."
-          tar czf "/data/rm/release_files_backup_$(date +%Y%m%d_%H%M%S).tar.gz" \
-                  -C /data/rm release_files
+      echo "=== 릴리즈 파일 초기화 ==="
+      mkdir -p /data/release_manager/release_files
+      if [ ! -f /data/release_manager/release_files/.initialized ]; then
+        if [ -d "/data/release_manager/release_files/releases" ]; then
+          echo "⚠️  기존 파일 백업 중..."
+          tar czf "/data/release_manager/release_files_backup_$(date +%Y%m%d_%H%M%S).tar.gz" \
+                  -C /data/release_manager release_files
         fi
         echo "📦 초기 릴리즈 파일 복사 중..."
-        cp -r src/main/resources/release/* /data/rm/release_files/
-        touch /data/rm/release_files/.initialized
+        cp -r src/main/resources/release/* /data/release_manager/release_files/
+        touch /data/release_manager/release_files/.initialized
         echo "✅ 초기화 완료"
       else
-        echo "ℹ️  릴리즈 파일 이미 초기화됨, 건너뜀"
+        echo "ℹ️  릴리즈 파일 이미 초기화됨"
       fi
+
+    # 2. 기존 컨테이너 정리
     - |
-      echo "=== 배포 시작 ==="
+      echo "=== 기존 컨테이너 정리 ==="
       docker-compose -f docker/docker-compose.yml rm -f mariadb redis app || true
+
+    # 3. MariaDB 시작
     - |
       echo "=== MariaDB 시작 ==="
       if docker ps --format '{{.Names}}' | grep -q '^rm-mariadb$'; then
         echo "✓ MariaDB 실행 중"
       elif docker ps -a --format '{{.Names}}' | grep -q '^rm-mariadb$'; then
-        docker start rm-mariadb && echo "✓ MariaDB 재시작됨"
+        docker start release-manager-mariadb && echo "✓ MariaDB 재시작됨"
       else
         docker-compose -f docker/docker-compose.yml up -d mariadb && echo "✓ MariaDB 생성됨"
       fi
+
+    # 4. Redis 시작
     - |
       echo "=== Redis 시작 ==="
       if docker ps --format '{{.Names}}' | grep -q '^rm-redis$'; then
         echo "✓ Redis 실행 중"
       elif docker ps -a --format '{{.Names}}' | grep -q '^rm-redis$'; then
-        docker start rm-mariadb && echo "✓ Redis 재시작됨"
+        docker start release-manager-redis && echo "✓ Redis 재시작됨"
       else
         docker-compose -f docker/docker-compose.yml up -d redis && echo "✓ Redis 생성됨"
       fi
+
+    # 5. MariaDB 헬스체크
     - |
       echo "=== MariaDB 헬스체크 ==="
       max_attempts=30
       attempt=0
-      until docker exec rm-mariadb healthcheck.sh --connect --innodb_initialized || [ $attempt -eq $max_attempts ]; do
+      until docker exec release-manager-mariadb healthcheck.sh --connect --innodb_initialized || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
         sleep 2
       done
       if [ $attempt -eq $max_attempts ]; then
         echo "✗ MariaDB 헬스체크 실패"
-        docker logs --tail 20 rm-mariadb
+        docker logs --tail 20 release-manager-mariadb
         exit 1
       fi
       echo "✓ MariaDB 준비 완료"
+
+    # 6. Redis 헬스체크
     - |
       echo "=== Redis 헬스체크 ==="
       max_attempts=30
       attempt=0
-      until docker exec rm-redis redis-cli ping || [ $attempt -eq $max_attempts ]; do
+      until docker exec release-manager-redis redis-cli ping || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
         sleep 2
       done
       if [ $attempt -eq $max_attempts ]; then
         echo "✗ Redis 헬스체크 실패"
-        docker logs --tail 20 rm-redis
+        docker logs --tail 20 release-manager-redis
         exit 1
       fi
       echo "✓ Redis 준비 완료"
+
+    # 7. 애플리케이션 배포
     - |
       echo "=== 애플리케이션 배포 ==="
       docker stop ${SERVER_NAME} || true
@@ -228,6 +271,8 @@ deploy-job:
       docker-compose -f docker/docker-compose.yml up -d --no-deps app
       echo "✓ 컨테이너 시작됨"
       sleep 10
+
+    # 8. 애플리케이션 헬스체크
     - |
       echo "=== 애플리케이션 헬스체크 ==="
       max_attempts=30
@@ -242,16 +287,19 @@ deploy-job:
         docker logs ${SERVER_NAME}
         exit 1
       fi
-      echo "✓ 애플리케이션 준비 완료"
+      echo "✅ 애플리케이션 준비 완료"
       echo "=== 배포 성공 ==="
+
   after_script:
     - echo "=== 정리 작업 ==="
     - docker images -f "dangling=true" -f "label=project=${HARBOR_PROJECT}" -q | xargs -r docker rmi -f 2>/dev/null || true
     - docker image prune -f --filter "label=project=${HARBOR_PROJECT}" --filter "dangling=true" 2>/dev/null || true
     - echo "✓ Dangling 이미지 정리 완료"
+
     - echo "=== 배포 상태 ==="
     - docker ps --filter "name=${SERVER_NAME}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
     - docker images --filter "reference=${DOCKER_IMAGE_NAME}" --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}"
+
   environment:
     name: production
     url: http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}
