@@ -75,7 +75,7 @@ grpc:
 # Application Configuration
 app:
   release:
-    # 로컬: src/main/resources/release, 도커: /app/release-files
+    # 로컬: src/main/resources/release, 도커: /app/release_files
     base-path: ${RELEASE_BASE_PATH}
 
 # Logging Configuration

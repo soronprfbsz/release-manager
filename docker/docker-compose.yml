@@ -65,7 +65,7 @@ services:
       # JVM 설정
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
     volumes:
-      - /data/rm/release_files:/app/release-files
+      - /data/rm/release_files:/app/release_files
     ports:
       # 호스트:컨테이너 포트 매핑
       - "${SERVER_EXTERNAL_PORT:-18080}:${SERVER_PORT:-8081}"
