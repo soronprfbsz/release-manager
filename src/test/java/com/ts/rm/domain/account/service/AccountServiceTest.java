@@ -208,11 +208,7 @@ class AccountServiceTest {
                 .status("ACCOUNT_STATUS_ACTIVE")
                 .build();
 
-        given(accountRepository.findByAccountId(anyLong()))
-                .willReturn(Optional.of(testAccount))
-                .willReturn(Optional.of(updatedAccount));
-        given(accountRepository.updateAccountNameByAccountId(anyLong(), anyString())).willReturn(1L);
-        given(accountRepository.updatePasswordByAccountId(anyLong(), anyString())).willReturn(1L);
+        given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
         given(mapper.toDetailResponse(any(Account.class))).willReturn(detailResponse);
 
         // when
@@ -220,22 +216,21 @@ class AccountServiceTest {
 
         // then
         assertThat(result).isNotNull();
-        then(accountRepository).should(times(1)).updateAccountNameByAccountId(1L, "새이름");
-        then(accountRepository).should(times(1)).updatePasswordByAccountId(1L, "newPassword");
+        // JPA Dirty Checking 사용 - 엔티티 조회만 검증
+        then(accountRepository).should(times(1)).findByAccountId(1L);
+        then(mapper).should(times(1)).toDetailResponse(any(Account.class));
     }
 
     @Test
     @DisplayName("계정 삭제 - 성공")
     void deleteAccount_Success() {
-        // given
-        given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
-        given(accountRepository.deleteAccountByAccountId(anyLong())).willReturn(1L);
+        // given - JpaRepository의 deleteById 사용
 
         // when
         accountService.deleteAccount(1L);
 
         // then
-        then(accountRepository).should(times(1)).deleteAccountByAccountId(1L);
+        then(accountRepository).should(times(1)).deleteById(1L);
     }
 
     @Test
@@ -243,13 +238,13 @@ class AccountServiceTest {
     void activateAccount_Success() {
         // given
         given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
-        given(accountRepository.activateByAccountId(anyLong())).willReturn(1L);
 
         // when
         accountService.updateAccountStatus(1L, AccountStatus.ACCOUNT_STATUS_ACTIVE);
 
         // then
-        then(accountRepository).should(times(1)).activateByAccountId(1L);
+        // JPA Dirty Checking 사용 - 엔티티 조회만 검증
+        then(accountRepository).should(times(1)).findByAccountId(1L);
     }
 
     @Test
@@ -257,13 +252,13 @@ class AccountServiceTest {
     void deactivateAccount_Success() {
         // given
         given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
-        given(accountRepository.deactivateByAccountId(anyLong())).willReturn(1L);
 
         // when
         accountService.updateAccountStatus(1L, AccountStatus.ACCOUNT_STATUS_INACTIVE);
 
         // then
-        then(accountRepository).should(times(1)).deactivateByAccountId(1L);
+        // JPA Dirty Checking 사용 - 엔티티 조회만 검증
+        then(accountRepository).should(times(1)).findByAccountId(1L);
     }
 
     @Test

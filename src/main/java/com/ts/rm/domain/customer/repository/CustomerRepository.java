@@ -9,9 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * Customer Repository
  *
  * <p>고객사 정보 조회 및 관리를 위한 Repository
+ * <p>업데이트는 JPA Dirty Checking 사용 (Service에서 엔티티 조회 후 setter 호출)
  */
-public interface CustomerRepository extends JpaRepository<Customer, Long>,
-        CustomerRepositoryCustom {
+public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     /**
      * 고객사 코드로 고객사 조회

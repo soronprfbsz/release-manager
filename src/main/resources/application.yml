@@ -68,15 +68,9 @@ management:
 grpc:
   server:
     host: ${GRPC_HOST:localhost}
-    port: 9090
+    port: ${GRPC_PORT:9090}
     timeout: ${GRPC_TIMEOUT:30}
     maxRetryAttempts: ${GRPC_MAX_RETRY:3}
-
-# Application Configuration
-app:
-  release:
-    # 로컬: src/main/resources/release, 도커: /app/release_files
-    base-path: ${RELEASE_BASE_PATH}
 
 # Logging Configuration
 logging:
@@ -90,3 +84,9 @@ logging:
     # p6spy SQL 로거 (INFO: SQL만, DEBUG: 상세)
     p6spy: INFO
     org.springframework.web: INFO
+
+# Application Configuration
+app:
+  release:
+    # 로컬: src/main/resources/release, 도커: /app/release_files
+    base-path: ${RELEASE_BASE_PATH:/app/release_files}

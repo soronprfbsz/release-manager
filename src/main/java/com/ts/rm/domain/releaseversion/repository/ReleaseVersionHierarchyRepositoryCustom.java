@@ -1,0 +1,39 @@
+package com.ts.rm.domain.releaseversion.repository;
+
+import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
+import java.util.List;
+
+/**
+ * ReleaseVersionHierarchy Custom Repository
+ *
+ * <p>클로저 테이블 기반 계층 구조 조회를 위한 커스텀 쿼리
+ */
+public interface ReleaseVersionHierarchyRepositoryCustom {
+
+    /**
+     * 특정 릴리즈 타입의 모든 버전을 계층 구조로 조회
+     *
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @return 릴리즈 버전 목록 (버전 순서대로 정렬)
+     */
+    List<ReleaseVersion> findAllByReleaseTypeWithHierarchy(String releaseType);
+
+    /**
+     * 특정 릴리즈 타입 + 고객사 코드의 모든 버전을 계층 구조로 조회
+     *
+     * @param releaseType  릴리즈 타입 (CUSTOM)
+     * @param customerCode 고객사 코드
+     * @return 릴리즈 버전 목록 (버전 순서대로 정렬)
+     */
+    List<ReleaseVersion> findAllByReleaseTypeAndCustomerWithHierarchy(String releaseType,
+            String customerCode);
+
+    /**
+     * 특정 Major.Minor 그룹의 모든 버전을 계층 구조로 조회
+     *
+     * @param releaseType 릴리즈 타입
+     * @param majorMinor  Major.Minor (예: 1.1.x)
+     * @return 릴리즈 버전 목록 (패치 버전 순서대로 정렬)
+     */
+    List<ReleaseVersion> findAllByMajorMinorWithHierarchy(String releaseType, String majorMinor);
+}

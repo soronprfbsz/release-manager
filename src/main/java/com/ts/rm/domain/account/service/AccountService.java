@@ -79,32 +79,29 @@ public class AccountService {
             AccountDto.UpdateRequest request) {
         log.info("Updating account with accountId: {}", accountId);
 
+        // 엔티티 조회
         Account account = findAccountByAccountId(accountId);
 
+        // Setter를 통한 수정 (JPA Dirty Checking)
         if (request.accountName() != null) {
-            accountRepository.updateAccountNameByAccountId(accountId,
-                    request.accountName());
+            account.setAccountName(request.accountName());
         }
 
         if (request.password() != null) {
-            accountRepository.updatePasswordByAccountId(accountId,
-                    request.password());
+            account.setPassword(request.password());
         }
 
-        // Re-fetch the updated account to return latest data
-        Account updatedAccount = findAccountByAccountId(accountId);
-
+        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Account updated successfully with accountId: {}", accountId);
-        return mapper.toDetailResponse(updatedAccount);
+        return mapper.toDetailResponse(account);
     }
 
     @Transactional
     public void deleteAccount(Long accountId) {
         log.info("Deleting account with accountId: {}", accountId);
 
-        // Verify account exists before delete
-        findAccountByAccountId(accountId);
-        accountRepository.deleteAccountByAccountId(accountId);
+        // JpaRepository의 deleteById 사용 (존재하지 않으면 EmptyResultDataAccessException 발생)
+        accountRepository.deleteById(accountId);
 
         log.info("Account deleted successfully with accountId: {}", accountId);
     }
@@ -119,15 +116,11 @@ public class AccountService {
     public void updateAccountStatus(Long accountId, AccountStatus status) {
         log.info("Updating account status - accountId: {}, status: {}", accountId, status);
 
-        // 계정 존재 검증
-        findAccountByAccountId(accountId);
+        // 엔티티 조회 후 setter를 통한 수정 (JPA Dirty Checking)
+        Account account = findAccountByAccountId(accountId);
+        account.setStatus(status.name());
 
-        if (status == AccountStatus.ACCOUNT_STATUS_ACTIVE) {
-            accountRepository.activateByAccountId(accountId);
-        } else if (status == AccountStatus.ACCOUNT_STATUS_INACTIVE) {
-            accountRepository.deactivateByAccountId(accountId);
-        }
-
+        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Account status updated - accountId: {}, status: {}", accountId, status);
     }
 

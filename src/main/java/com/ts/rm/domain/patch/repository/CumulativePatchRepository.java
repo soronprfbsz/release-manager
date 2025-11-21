@@ -10,9 +10,9 @@ import org.springframework.data.repository.query.Param;
  * CumulativePatch Repository
  *
  * <p>누적 패치 생성 이력 조회 및 관리를 위한 Repository
+ * <p>업데이트는 JPA Dirty Checking 사용 (Service에서 엔티티 조회 후 setter 호출)
  */
-public interface CumulativePatchRepository extends JpaRepository<CumulativePatch, Long>,
-        CumulativePatchRepositoryCustom {
+public interface CumulativePatchRepository extends JpaRepository<CumulativePatch, Long> {
 
     /**
      * 릴리즈 타입별 누적 패치 이력 조회 (최신순)

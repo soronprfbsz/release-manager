@@ -145,73 +145,12 @@ class CustomerRepositoryTest {
         assertThat(results.get(0).getCustomerName()).contains("A회사");
     }
 
-    @Test
-    @DisplayName("고객사 활성화 - QueryDSL")
-    void activateByCustomerId_Success() {
-        // given
-        Customer inactiveCustomer = Customer.builder()
-                .customerCode("company_b")
-                .customerName("B회사")
-                .description("설명")
-                .isActive(false)
-                .build();
-        Customer saved = customerRepository.save(inactiveCustomer);
-
-        // when
-        long updatedCount = customerRepository.activateByCustomerId(saved.getCustomerId());
-
-        // then
-        assertThat(updatedCount).isEqualTo(1);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        Customer activated = customerRepository.findById(saved.getCustomerId()).get();
-        assertThat(activated.getIsActive()).isTrue();
-    }
-
-    @Test
-    @DisplayName("고객사 비활성화 - QueryDSL")
-    void deactivateByCustomerId_Success() {
-        // given
-        Customer saved = customerRepository.save(testCustomer);
-
-        // when
-        long updatedCount = customerRepository.deactivateByCustomerId(saved.getCustomerId());
-
-        // then
-        assertThat(updatedCount).isEqualTo(1);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        Customer deactivated = customerRepository.findById(saved.getCustomerId()).get();
-        assertThat(deactivated.getIsActive()).isFalse();
-    }
-
-    @Test
-    @DisplayName("고객사 정보 업데이트 - QueryDSL")
-    void updateCustomerInfoByCustomerId_Success() {
-        // given
-        Customer saved = customerRepository.save(testCustomer);
-
-        // when
-        long updatedCount = customerRepository.updateCustomerInfoByCustomerId(
-                saved.getCustomerId(), "새이름", "새설명");
-
-        // then
-        assertThat(updatedCount).isEqualTo(1);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        Customer updated = customerRepository.findById(saved.getCustomerId()).get();
-        assertThat(updated.getCustomerName()).isEqualTo("새이름");
-        assertThat(updated.getDescription()).isEqualTo("새설명");
-    }
-
     /**
-     * QueryDSL 테스트용 설정
+     * JPA Auditing 및 QueryDSL 설정
+     *
+     * <p>Customer 도메인은 QueryDSL Custom을 사용하지 않지만,
+     * <p>다른 Repository들(ReleaseVersion, ReleaseFile 등)이 아직 Custom Impl을 사용하므로
+     * <p>JPAQueryFactory 빈이 필요함
      */
     @org.springframework.boot.test.context.TestConfiguration
     @org.springframework.data.jpa.repository.config.EnableJpaAuditing

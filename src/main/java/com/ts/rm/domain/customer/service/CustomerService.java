@@ -109,29 +109,23 @@ public class CustomerService {
             CustomerDto.UpdateRequest request) {
         log.info("Updating customer with customerId: {}", customerId);
 
-        // 고객사 존재 검증
-        findCustomerById(customerId);
+        // 엔티티 조회
+        Customer customer = findCustomerById(customerId);
 
-        // 고객사 정보 업데이트
-        if (request.customerName() != null && request.description() != null) {
-            customerRepository.updateCustomerInfoByCustomerId(customerId,
-                    request.customerName(), request.description());
+        // Setter를 통한 수정 (JPA Dirty Checking)
+        if (request.customerName() != null) {
+            customer.setCustomerName(request.customerName());
         }
-
-        // 활성 상태 업데이트
+        if (request.description() != null) {
+            customer.setDescription(request.description());
+        }
         if (request.isActive() != null) {
-            if (request.isActive()) {
-                customerRepository.activateByCustomerId(customerId);
-            } else {
-                customerRepository.deactivateByCustomerId(customerId);
-            }
+            customer.setIsActive(request.isActive());
         }
 
-        // 최신 데이터 조회
-        Customer updatedCustomer = findCustomerById(customerId);
-
+        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Customer updated successfully with customerId: {}", customerId);
-        return mapper.toDetailResponse(updatedCustomer);
+        return mapper.toDetailResponse(customer);
     }
 
     /**
@@ -145,15 +139,11 @@ public class CustomerService {
         log.info("Updating customer status - customerId: {}, isActive: {}", customerId,
                 isActive);
 
-        // 고객사 존재 검증
-        findCustomerById(customerId);
+        // 엔티티 조회 후 setter를 통한 수정 (JPA Dirty Checking)
+        Customer customer = findCustomerById(customerId);
+        customer.setIsActive(isActive);
 
-        if (isActive) {
-            customerRepository.activateByCustomerId(customerId);
-        } else {
-            customerRepository.deactivateByCustomerId(customerId);
-        }
-
+        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Customer status updated - customerId: {}, isActive: {}", customerId, isActive);
     }
 

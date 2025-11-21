@@ -9,10 +9,10 @@ import static org.mockito.Mockito.verify;
 
 import com.ts.rm.domain.patch.entity.CumulativePatch;
 import com.ts.rm.domain.patch.repository.CumulativePatchRepository;
-import com.ts.rm.domain.release.entity.ReleaseFile;
-import com.ts.rm.domain.release.entity.ReleaseVersion;
-import com.ts.rm.domain.release.repository.ReleaseFileRepository;
-import com.ts.rm.domain.release.repository.ReleaseVersionRepository;
+import com.ts.rm.domain.releasefile.entity.ReleaseFile;
+import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
+import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
+import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.common.exception.BusinessException;
 import java.nio.file.Files;
 import java.nio.file.Path;

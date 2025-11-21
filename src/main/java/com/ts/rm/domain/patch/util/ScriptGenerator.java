@@ -1,7 +1,7 @@
 package com.ts.rm.domain.patch.util;
 
-import com.ts.rm.domain.release.entity.ReleaseFile;
-import com.ts.rm.domain.release.entity.ReleaseVersion;
+import com.ts.rm.domain.releasefile.entity.ReleaseFile;
+import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.global.common.exception.BusinessException;
 import com.ts.rm.global.common.exception.ErrorCode;
 import java.io.IOException;

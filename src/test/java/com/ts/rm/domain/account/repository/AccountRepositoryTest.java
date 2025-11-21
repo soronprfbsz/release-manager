@@ -17,7 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
  * Account Repository 단위 테스트
  *
  * <p>[@DataJpaTest] - JPA 관련 컴포넌트만 로드 (빠른 테스트) - H2 인메모리 DB 사용 - 트랜잭션 자동 롤백
- * <p>[@Import(TestConfig.class)] - QueryDSL 설정 임포트 (JPAQueryFactory 빈 등록)
+ * <p>[@Import(TestConfig.class)] - JPA Auditing 활성화
  */
 @DataJpaTest
 @Import(AccountRepositoryTest.TestConfig.class)
@@ -27,9 +27,6 @@ class AccountRepositoryTest {
 
     @Autowired
     private AccountRepository accountRepository;
-
-    @Autowired
-    private jakarta.persistence.EntityManager entityManager;
 
     private Account testAccount;
 
@@ -164,107 +161,12 @@ class AccountRepositoryTest {
         assertThat(results.get(0).getAccountName()).contains("테스트");
     }
 
-    @Test
-    @DisplayName("계정 이름 업데이트 - QueryDSL")
-    void updateAccountNameByAccountId_Success() {
-        // given
-        Account saved = accountRepository.save(testAccount);
-
-        // when
-        long updatedCount = accountRepository.updateAccountNameByAccountId(
-                saved.getAccountId(), "새이름");
-
-        // then
-        assertThat(updatedCount).isEqualTo(1);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        Account updated = accountRepository.findByAccountId(saved.getAccountId()).get();
-        assertThat(updated.getAccountName()).isEqualTo("새이름");
-    }
-
-    @Test
-    @DisplayName("비밀번호 업데이트 - QueryDSL")
-    void updatePasswordByAccountId_Success() {
-        // given
-        Account saved = accountRepository.save(testAccount);
-
-        // when
-        long updatedCount = accountRepository.updatePasswordByAccountId(
-                saved.getAccountId(), "newPassword456");
-
-        // then
-        assertThat(updatedCount).isEqualTo(1);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        Account updated = accountRepository.findByAccountId(saved.getAccountId()).get();
-        assertThat(updated.getPassword()).isEqualTo("newPassword456");
-    }
-
-    @Test
-    @DisplayName("계정 활성화 - QueryDSL")
-    void activateByAccountId_Success() {
-        // given
-        Account inactiveAccount = Account.builder()
-                .email("inactive@example.com")
-                .password("password123")
-                .accountName("비활성계정")
-                .role("ACCOUNT_ROLE_USER")
-                .status("ACCOUNT_STATUS_INACTIVE")
-                .build();
-        Account saved = accountRepository.save(inactiveAccount);
-
-        // when
-        long updatedCount = accountRepository.activateByAccountId(saved.getAccountId());
-
-        // then
-        assertThat(updatedCount).isEqualTo(1);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        Account activated = accountRepository.findByAccountId(saved.getAccountId()).get();
-        assertThat(activated.getStatus()).isEqualTo("ACCOUNT_STATUS_ACTIVE");
-    }
-
-    @Test
-    @DisplayName("계정 비활성화 - QueryDSL")
-    void deactivateByAccountId_Success() {
-        // given
-        Account saved = accountRepository.save(testAccount);
-
-        // when
-        long updatedCount = accountRepository.deactivateByAccountId(saved.getAccountId());
-
-        // then
-        assertThat(updatedCount).isEqualTo(1);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        Account deactivated = accountRepository.findByAccountId(saved.getAccountId()).get();
-        assertThat(deactivated.getStatus()).isEqualTo("ACCOUNT_STATUS_INACTIVE");
-    }
-
-    @Test
-    @DisplayName("계정 삭제 - QueryDSL")
-    void deleteAccountByAccountId_Success() {
-        // given
-        Account saved = accountRepository.save(testAccount);
-
-        // when
-        long deletedCount = accountRepository.deleteAccountByAccountId(saved.getAccountId());
-
-        // then
-        assertThat(deletedCount).isEqualTo(1);
-        assertThat(accountRepository.findByAccountId(saved.getAccountId())).isEmpty();
-    }
-
     /**
-     * QueryDSL 테스트용 설정 및 JPA Auditing 활성화
+     * JPA Auditing 및 QueryDSL 설정
+     *
+     * <p>Account 도메인은 QueryDSL Custom을 사용하지 않지만,
+     * <p>다른 Repository들(Customer, ReleaseVersion 등)이 아직 Custom Impl을 사용하므로
+     * <p>JPAQueryFactory 빈이 필요함
      */
     @org.springframework.boot.test.context.TestConfiguration
     @org.springframework.data.jpa.repository.config.EnableJpaAuditing

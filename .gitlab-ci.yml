@@ -11,8 +11,6 @@ variables:
   DOCKER_IMAGE_TAG: "latest"
 
   # Harbor Registry 설정 (선택적)
-  HARBOR_HOST: "10.230.1.17"
-  HARBOR_PROJECT: "release-manager"
   HARBOR_IMAGE_NAME: "${HARBOR_HOST}/${HARBOR_PROJECT}/${SERVER_NAME}"
 
   # Gradle 설정 (최적화)
@@ -51,21 +49,15 @@ build-job:
     - mkdir -p .gradle
   script:
     - echo "📦 프로젝트 빌드 시작..."
-
-    # clean 제거 → 증분 빌드 활성화
     - gradle build -x test --build-cache --no-daemon
-
     - echo "✅ 빌드 완료"
-
-    # 빌드 정보 출력
-    - ls -lh build/libs/
   artifacts:
     paths:
       - build/libs/*.jar
     expire_in: 1 hour
 
 # ========================================
-# 테스트 단계 (최적화)
+# 테스트 단계
 # ========================================
 test-job:
   stage: test
@@ -79,7 +71,7 @@ test-job:
     paths:
       - .gradle/wrapper/
       - .gradle/caches/
-    policy: pull  # 읽기만 (빌드 단계에서 이미 캐시됨)
+    policy: pull
   script:
     - echo "🧪 테스트 실행 중..."
     - gradle test --build-cache --no-daemon
@@ -112,7 +104,6 @@ docker-build-job:
     BUILDKIT_PROGRESS: "plain"
   script:
     - echo "🐳 Docker 이미지 빌드 시작..."
-
     # BuildKit 캐시를 사용한 빌드
     - |
       docker build \
@@ -140,7 +131,7 @@ harbor-push-job:
     - docker-build-job
   before_script:
     - echo "🔑 Harbor 로그인 중..."
-    - echo "$HARBOR_PASSWORD" | docker login $HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin
+    - echo "$HARBOR_PASSWORD" | docker login $HARBOR_HOST -u $HARBOR_USERNAME --password-stdin
   script:
     - echo "🏷️  로컬 이미지를 Harbor 형식으로 태깅..."
     - docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${HARBOR_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
@@ -154,7 +145,7 @@ harbor-push-job:
     - echo "  - ${HARBOR_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
     - echo "  - ${HARBOR_IMAGE_NAME}:latest"
   after_script:
-    - docker logout $HARBOR_REGISTRY || true
+    - docker logout $HARBOR_HOST || true
   when: manual
 
 # ========================================
@@ -186,7 +177,7 @@ deploy-job:
       echo "=== Docker 네트워크 확인 ==="
       docker network ls | grep -q network-ts && echo "✓ network-ts 존재" || (docker network create network-ts && echo "✓ network-ts 생성")
   script:
-    # 1. 초기 릴리즈 파일 복사
+    # 초기 릴리즈 파일 복사
     - |
       echo "=== 릴리즈 파일 초기화 ==="
       mkdir -p /data/release_manager/release_files
@@ -204,12 +195,10 @@ deploy-job:
         echo "ℹ️  릴리즈 파일 이미 초기화됨"
       fi
 
-    # 2. 기존 컨테이너 정리
     - |
       echo "=== 기존 컨테이너 정리 ==="
-      docker-compose -f docker/docker-compose.yml rm -f mariadb redis app || true
+      docker-compose -p release_manager -f docker/docker-compose.yml rm -f mariadb redis app || true
 
-    # 3. MariaDB 시작
     - |
       echo "=== MariaDB 시작 ==="
       if docker ps --format '{{.Names}}' | grep -q '^rm-mariadb$'; then
@@ -217,10 +206,9 @@ deploy-job:
       elif docker ps -a --format '{{.Names}}' | grep -q '^rm-mariadb$'; then
         docker start release-manager-mariadb && echo "✓ MariaDB 재시작됨"
       else
-        docker-compose -f docker/docker-compose.yml up -d mariadb && echo "✓ MariaDB 생성됨"
+        docker-compose -p release_manager -f docker/docker-compose.yml up -d mariadb && echo "✓ MariaDB 생성됨"
       fi
 
-    # 4. Redis 시작
     - |
       echo "=== Redis 시작 ==="
       if docker ps --format '{{.Names}}' | grep -q '^rm-redis$'; then
@@ -228,10 +216,9 @@ deploy-job:
       elif docker ps -a --format '{{.Names}}' | grep -q '^rm-redis$'; then
         docker start release-manager-redis && echo "✓ Redis 재시작됨"
       else
-        docker-compose -f docker/docker-compose.yml up -d redis && echo "✓ Redis 생성됨"
+        docker-compose -p release_manager -f docker/docker-compose.yml up -d redis && echo "✓ Redis 생성됨"
       fi
 
-    # 5. MariaDB 헬스체크
     - |
       echo "=== MariaDB 헬스체크 ==="
       max_attempts=30
@@ -247,7 +234,6 @@ deploy-job:
       fi
       echo "✓ MariaDB 준비 완료"
 
-    # 6. Redis 헬스체크
     - |
       echo "=== Redis 헬스체크 ==="
       max_attempts=30
@@ -263,16 +249,14 @@ deploy-job:
       fi
       echo "✓ Redis 준비 완료"
 
-    # 7. 애플리케이션 배포
     - |
       echo "=== 애플리케이션 배포 ==="
       docker stop ${SERVER_NAME} || true
       docker rm -f ${SERVER_NAME} || true
-      docker-compose -f docker/docker-compose.yml up -d --no-deps app
+      docker-compose -p release_manager -f docker/docker-compose.yml up -d --no-deps app
       echo "✓ 컨테이너 시작됨"
       sleep 10
 
-    # 8. 애플리케이션 헬스체크
     - |
       echo "=== 애플리케이션 헬스체크 ==="
       max_attempts=30
@@ -292,8 +276,8 @@ deploy-job:
 
   after_script:
     - echo "=== 정리 작업 ==="
-    - docker images -f "dangling=true" -f "label=project=${HARBOR_PROJECT}" -q | xargs -r docker rmi -f 2>/dev/null || true
-    - docker image prune -f --filter "label=project=${HARBOR_PROJECT}" --filter "dangling=true" 2>/dev/null || true
+    - docker images -f "dangling=true" -f "label=project=${SERVER_NAME}" -q | xargs -r docker rmi -f 2>/dev/null || true
+    - docker image prune -f --filter "label=project=${SERVER_NAME}" --filter "dangling=true" 2>/dev/null || true
     - echo "✓ Dangling 이미지 정리 완료"
 
     - echo "=== 배포 상태 ==="

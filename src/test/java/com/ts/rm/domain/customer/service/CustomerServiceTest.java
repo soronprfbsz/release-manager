@@ -220,9 +220,6 @@ class CustomerServiceTest {
                 .build();
 
         given(customerRepository.findById(anyLong())).willReturn(Optional.of(testCustomer));
-        given(customerRepository.updateCustomerInfoByCustomerId(anyLong(), anyString(),
-                anyString())).willReturn(1L);
-        given(customerRepository.findById(anyLong())).willReturn(Optional.of(testCustomer));
         given(mapper.toDetailResponse(any(Customer.class))).willReturn(detailResponse);
 
         // when
@@ -230,9 +227,9 @@ class CustomerServiceTest {
 
         // then
         assertThat(result).isNotNull();
-
-        then(customerRepository).should(times(1))
-                .updateCustomerInfoByCustomerId(anyLong(), anyString(), anyString());
+        // JPA Dirty Checking 사용 - 엔티티 조회만 검증
+        then(customerRepository).should(times(1)).findById(1L);
+        then(mapper).should(times(1)).toDetailResponse(any(Customer.class));
     }
 
     @Test
@@ -240,13 +237,13 @@ class CustomerServiceTest {
     void activateCustomer_Success() {
         // given
         given(customerRepository.findById(anyLong())).willReturn(Optional.of(testCustomer));
-        given(customerRepository.activateByCustomerId(anyLong())).willReturn(1L);
 
         // when
         customerService.updateCustomerStatus(1L, true);
 
         // then
-        then(customerRepository).should(times(1)).activateByCustomerId(1L);
+        // JPA Dirty Checking 사용 - 엔티티 조회만 검증
+        then(customerRepository).should(times(1)).findById(1L);
     }
 
     @Test
@@ -254,13 +251,13 @@ class CustomerServiceTest {
     void deactivateCustomer_Success() {
         // given
         given(customerRepository.findById(anyLong())).willReturn(Optional.of(testCustomer));
-        given(customerRepository.deactivateByCustomerId(anyLong())).willReturn(1L);
 
         // when
         customerService.updateCustomerStatus(1L, false);
 
         // then
-        then(customerRepository).should(times(1)).deactivateByCustomerId(1L);
+        // JPA Dirty Checking 사용 - 엔티티 조회만 검증
+        then(customerRepository).should(times(1)).findById(1L);
     }
 
     @Test

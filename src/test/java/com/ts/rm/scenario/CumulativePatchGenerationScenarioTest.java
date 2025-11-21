@@ -10,9 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ts.rm.config.TestQueryDslConfig;
 import com.ts.rm.domain.patch.repository.CumulativePatchRepository;
-import com.ts.rm.domain.release.dto.ReleaseVersionDto;
-import com.ts.rm.domain.release.repository.ReleaseFileRepository;
-import com.ts.rm.domain.release.repository.ReleaseVersionRepository;
+import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
+import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
+import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
