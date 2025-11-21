@@ -144,7 +144,6 @@ harbor-push-job:
   script:
     - |
       echo "=== Harbor Push 확인 ==="
-      # VERSION 환경변수가 없으면 SHA 사용
       VERSION=${VERSION:-$CI_COMMIT_SHORT_SHA}
       echo "📦 사용할 버전: ${VERSION}"
       LOCAL_IMAGE="${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
