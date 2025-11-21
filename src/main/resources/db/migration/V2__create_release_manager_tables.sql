@@ -153,29 +153,34 @@ CREATE TABLE IF NOT EXISTS version_history
   COLLATE = utf8mb4_unicode_ci COMMENT ='패치 버전 이력 테이블';
 
 -- =========================================================
--- Step 6: 샘플 데이터 추가 (선택사항)
+-- Step 6: 실제 릴리즈 데이터 추가
 -- =========================================================
 
--- 샘플 고객사 데이터
-INSERT INTO customer (customer_code, customer_name, description, is_active) VALUES
-('company_a', 'A회사', '샘플 고객사 A', TRUE),
-('company_b', 'B회사', '샘플 고객사 B', TRUE);
-
--- 샘플 릴리즈 버전 데이터 (표준 릴리즈)
+-- 실제 표준 릴리즈 버전 데이터
 INSERT INTO release_version (
     release_type, customer_id, version,
     major_version, minor_version, patch_version, major_minor,
-    created_by, comment, is_install
+    created_by, comment, is_install, created_at
 ) VALUES
-('STANDARD', NULL, '1.0.0', 1, 0, 0, '1.0.x', 'admin@tscientific', '초기 릴리즈 버전', FALSE),
-('STANDARD', NULL, '1.1.0', 1, 1, 0, '1.1.x', 'admin@tscientific', '기능 개선 버전', FALSE);
+('STANDARD', NULL, '1.0.0', 1, 0, 0, '1.0.x', 'TS', '최초 설치본', TRUE, '2025-01-01 00:00:00'),
+('STANDARD', NULL, '1.1.0', 1, 1, 0, '1.1.x', 'jhlee@tscientific', '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경', FALSE, '2025-10-31 00:00:00'),
+('STANDARD', NULL, '1.1.1', 1, 1, 1, '1.1.x', 'jhlee@tscientific', '운영관리 - 파일 기능 관련 테이블 추가', FALSE, '2025-11-05 00:00:00');
 
--- 샘플 릴리즈 파일 데이터
+-- 1.1.0 버전 릴리즈 파일 데이터 (MariaDB)
 INSERT INTO release_file (
     release_version_id, database_type, file_name, file_path,
     file_size, checksum, execution_order, description
 ) VALUES
-(1, 'MARIADB', '001_init_schema.sql', '/release/1.0.0/mariadb/001_init_schema.sql',
- 2048, 'a1b2c3d4e5f6', 1, '초기 스키마 생성'),
-(1, 'MARIADB', '002_init_data.sql', '/release/1.0.0/mariadb/002_init_data.sql',
- 1024, 'f6e5d4c3b2a1', 2, '초기 데이터 등록');
+-- 1.1.0 - MariaDB
+(2, 'MARIADB', '1.patch_mariadb_ddl.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/1.patch_mariadb_ddl.sql', 34879, 'f8b9f64345555c9a4a9c9101aaa8b701', 1, 'DDL 변경'),
+(2, 'MARIADB', '2.patch_mariadb_view.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/2.patch_mariadb_view.sql', 10742, '6735c7267bedc684f155ce05eaa5b7df', 2, 'View 변경'),
+(2, 'MARIADB', '3.patch_mariadb_데이터코드.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/3.patch_mariadb_데이터코드.sql', 134540, 'faec479bf1582dfb20199fdd468676f7', 3, '데이터 코드 추가'),
+(2, 'MARIADB', '4.patch_mariadb_이벤트코드.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/4.patch_mariadb_이벤트코드.sql', 36847, 'e2e818dfa626c93894b5774badee0219', 4, '이벤트 코드 추가'),
+(2, 'MARIADB', '5.patch_mariadb_메뉴코드.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/5.patch_mariadb_메뉴코드.sql', 25144, '3eb290c91cf66dacbc02a746bec2bef0', 5, '메뉴 코드 추가'),
+(2, 'MARIADB', '6.patch_mariadb_procedure.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/6.patch_mariadb_procedure.sql', 22183, '25942f2c2201629efcc333278f8eac38', 6, 'Procedure 변경'),
+(2, 'MARIADB', '7.patch_mariadb_dml.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/7.patch_mariadb_dml.sql', 37330, '3fa1ec88b5a638fb6d67a41119d61854', 7, 'DML 변경'),
+-- 1.1.0 - CrateDB
+(2, 'CRATEDB', '1.patch_cratedb_ddl.sql', 'releases/standard/1.1.x/1.1.0/patch/cratedb/1.patch_cratedb_ddl.sql', 19363, '1b68614d70c52cade269e5accca724d5', 1, 'CrateDB DDL 변경'),
+-- 1.1.1 - MariaDB
+(3, 'MARIADB', '1.patch_mariadb_ddl.sql', 'releases/standard/1.1.x/1.1.1/patch/mariadb/1.patch_mariadb_ddl.sql', 4867, '848ecec66ce257e0fcec4088294c816d', 1, '파일 기능 관련 DDL 추가'),
+(3, 'MARIADB', '2.patch_mariadb_dml.sql', 'releases/standard/1.1.x/1.1.1/patch/mariadb/2.patch_mariadb_dml.sql', 660, '63fe833edd62599db2ce8c758eae0240', 2, '파일 기능 관련 DML 추가');
