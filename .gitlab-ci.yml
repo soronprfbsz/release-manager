@@ -138,27 +138,32 @@ harbor-push-job:
     - main
   dependencies:
     - docker-build-job
+  variables:
+    VERSION:
+      value: "$CI_COMMIT_SHORT_SHA"
+      description: "Docker image version (default: commit SHA)"
   before_script:
     - echo "🔑 Harbor 로그인 중..."
     - echo "$HARBOR_PASSWORD" | docker login http://$HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin
   script:
     - |
       echo "=== Harbor Push 확인 ==="
+      echo "📦 사용할 버전: ${VERSION}"
       LOCAL_IMAGE="${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
 
       if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${LOCAL_IMAGE}$"; then
         echo "✓ 로컬 이미지 존재 → Harbor에 Push 시작"
 
         echo "🏷️  이미지 태깅..."
-        docker tag ${LOCAL_IMAGE} ${HARBOR_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+        docker tag ${LOCAL_IMAGE} ${HARBOR_IMAGE_NAME}:${VERSION}
         docker tag ${LOCAL_IMAGE} ${HARBOR_IMAGE_NAME}:latest
 
         echo "⬆️  Harbor에 Push 중..."
-        docker push ${HARBOR_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+        docker push ${HARBOR_IMAGE_NAME}:${VERSION}
         docker push ${HARBOR_IMAGE_NAME}:latest
 
         echo "✅ 이미지가 Harbor에 성공적으로 등록되었습니다!"
-        echo "  - ${HARBOR_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
+        echo "  - ${HARBOR_IMAGE_NAME}:${VERSION}"
         echo "  - ${HARBOR_IMAGE_NAME}:latest"
       else
         echo "⏭️  로컬 이미지 없음 (빌드 스킵됨) → Push 스킵"
