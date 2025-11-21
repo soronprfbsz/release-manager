@@ -12,8 +12,8 @@ services:
       - --long-query-time=5
       - --slow-query-log-file=/var/log/mysql/slow-query.log
     volumes:
-      - /data/release_manager/mariadb/log:/var/lib/mysql
-      - /data/release_manager/mariadb/data:/var/log/mysql
+      - /data/release_manager/mariadb/lib:/var/lib/mysql
+      - /data/release_manager/mariadb/log:/var/log/mysql
       - ./docker/init-mariadb.sql:/docker-entrypoint-initdb.d/init.sql
     restart: always
     networks:
@@ -58,10 +58,6 @@ services:
     env_file:
       - .env
     environment:
-      # Docker 컨테이너 네트워킹 전용 오버라이드
-      # .env 값을 무시하고 Docker 환경에 맞는 값으로 강제 설정
-      MARIADB_HOST: mariadb      # 컨테이너 서비스 이름
-      MARIADB_PORT: 3306         # 컨테이너 내부 포트
       # JVM 설정
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
     volumes:
