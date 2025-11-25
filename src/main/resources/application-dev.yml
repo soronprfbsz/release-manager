@@ -5,6 +5,15 @@
 app:
   api-logging:
     enabled: true  # dev 환경에서는 API 로깅 활성화
+  jwt:
+    refresh-token-expiration-ms: 604800000  # 7일 (밀리초)
+
+# Server Configuration - Development
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false  # 개발 환경에서는 HTTP 허용 (HTTPS 불필요)
 
 # Logging Configuration - Development
 logging:

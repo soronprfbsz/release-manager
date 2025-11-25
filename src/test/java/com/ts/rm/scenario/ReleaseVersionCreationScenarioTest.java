@@ -62,7 +62,7 @@ import org.springframework.transaction.annotation.Transactional;
  * </pre>
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @Transactional
 @org.springframework.context.annotation.Import(TestQueryDslConfig.class)  // ← DB 변경사항 자동 롤백

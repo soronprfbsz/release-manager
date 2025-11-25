@@ -213,8 +213,13 @@ public class ReleaseVersionService {
      */
     public List<ReleaseVersionDto.SimpleResponse> getVersionsByMajorMinor(String typeName,
             String majorMinor) {
+        // majorMinor 파싱 (예: "1.1.x" -> major=1, minor=1)
+        String[] parts = majorMinor.replace(".x", "").split("\\.");
+        Integer majorVersion = Integer.parseInt(parts[0]);
+        Integer minorVersion = Integer.parseInt(parts[1]);
+
         List<ReleaseVersion> versions = releaseVersionRepository
-                .findAllByMajorMinorOrderByPatchVersionDesc(majorMinor);
+                .findAllByMajorMinorOrderByPatchVersionDesc(majorVersion, minorVersion);
         return mapper.toSimpleResponseList(versions);
     }
 
@@ -302,7 +307,6 @@ public class ReleaseVersionService {
                 .majorVersion(versionInfo.getMajorVersion())
                 .minorVersion(versionInfo.getMinorVersion())
                 .patchVersion(versionInfo.getPatchVersion())
-                .majorMinor(versionInfo.getMajorMinor())
                 .createdBy(request.createdBy())
                 .comment(request.comment())
                 .customVersion(request.customVersion())

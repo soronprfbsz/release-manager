@@ -98,7 +98,6 @@ class ReleaseVersionRepositoryCustomTest {
                 .majorVersion(Integer.parseInt(parts[0]))
                 .minorVersion(Integer.parseInt(parts[1]))
                 .patchVersion(Integer.parseInt(parts[2]))
-                .majorMinor(parts[0] + "." + parts[1] + ".x")
                 .createdBy("system")
                 .comment("테스트 버전")
                 .isInstall(false)

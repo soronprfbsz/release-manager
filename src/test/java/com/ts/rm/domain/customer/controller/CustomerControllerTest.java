@@ -15,27 +15,35 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.customer.dto.CustomerDto;
 import com.ts.rm.domain.customer.service.CustomerService;
 import com.ts.rm.global.config.MessageConfig;
 import com.ts.rm.global.common.exception.GlobalExceptionHandler;
+import com.ts.rm.global.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.CustomUserDetailsService;
+import com.ts.rm.global.security.JwtAuthenticationFilter;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Customer Controller 통합 테스트
  */
-@WebMvcTest(CustomerController.class)
+@WebMvcTest(controllers = CustomerController.class,
+        excludeAutoConfiguration = org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import({GlobalExceptionHandler.class, MessageConfig.class})
 @ActiveProfiles("test")
 @DisplayName("CustomerController 테스트")
@@ -49,6 +57,22 @@ class CustomerControllerTest {
 
     @MockitoBean
     private CustomerService customerService;
+
+    // Security 관련 MockBean 추가
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private AccountRepository accountRepository;
+
+    @MockitoBean
+    private PasswordEncoder passwordEncoder;
 
     private CustomerDto.DetailResponse detailResponse;
     private CustomerDto.SimpleResponse simpleResponse;

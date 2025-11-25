@@ -20,21 +20,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ts.rm.domain.account.dto.AccountDto;
 import com.ts.rm.domain.account.enums.AccountStatus;
+import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.account.service.AccountService;
 import com.ts.rm.global.config.MessageConfig;
 import com.ts.rm.global.common.exception.BusinessException;
 import com.ts.rm.global.common.exception.ErrorCode;
 import com.ts.rm.global.common.exception.GlobalExceptionHandler;
+import com.ts.rm.global.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.CustomUserDetailsService;
+import com.ts.rm.global.security.JwtAuthenticationFilter;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -45,7 +51,9 @@ import org.springframework.test.web.servlet.MockMvc;
  * HTTP 요청/응답 검증
  * <p>[@Import] - GlobalExceptionHandler와 MessageConfig 포함
  */
-@WebMvcTest(AccountController.class)
+@WebMvcTest(controllers = AccountController.class,
+        excludeAutoConfiguration = org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import({GlobalExceptionHandler.class, MessageConfig.class})
 @ActiveProfiles("test")
 @DisplayName("AccountController 테스트")
@@ -59,6 +67,22 @@ class AccountControllerTest {
 
     @MockitoBean
     private AccountService accountService;
+
+    // Security 관련 MockBean 추가
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private AccountRepository accountRepository;
+
+    @MockitoBean
+    private PasswordEncoder passwordEncoder;
 
     private AccountDto.CreateRequest createRequest;
     private AccountDto.DetailResponse detailResponse;

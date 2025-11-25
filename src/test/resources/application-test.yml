@@ -29,6 +29,8 @@ spring:
 app:
   release:
     base-path: build/test-release  # 테스트 전용 격리 경로
+  api-logging:
+    enabled: true  # ApiLoggingFilter 테스트를 위해 활성화
 
 # Logging Configuration
 logging:

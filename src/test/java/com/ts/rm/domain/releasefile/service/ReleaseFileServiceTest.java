@@ -62,7 +62,6 @@ class ReleaseFileServiceTest {
                 .majorVersion(1)
                 .minorVersion(1)
                 .patchVersion(0)
-                .majorMinor("1.1.x")
                 .build();
 
         testReleaseFile = ReleaseFile.builder()

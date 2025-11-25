@@ -536,19 +536,19 @@ WITH (
 --------------------------------------------------------------------------------
 
 CREATE TABLE infraeye.server_metric_log (
-    collected_at TIMESTAMP WITH TIME ZONE NOT NULL, -- 실제 수집 시각
-	 partition_day TEXT NOT NULL,
-    policy_id int4, -- 정책 ID
-    detail_id int4, -- 상세 ID
+    collected_at TIMESTAMP WITH TIME ZONE NOT NULL,                -- 실제 수집 시각
+    partition_day TEXT NOT NULL,
+    policy_id int4,                           -- 정책 ID
+    detail_id int4,                           -- 상세 ID
     agent_id int,
-    host_name TEXT NOT NULL, -- 호스트명
-    host_ip TEXT NOT NULL, -- CrateDB는 IP 타입 지원 (검색 최적화)
-    os_type TEXT NOT NULL, -- OS 타입
-    log_type TEXT NOT NULL, -- 로그 유형 (INFO / ERROR / etc.)
-    log_contents TEXT INDEX USING FULLTEXT WITH (analyzer = 'standard'), -- 전문 검색용
-    log_writed_at timestamptz, -- 로그가 기록된 시각
-    created_at timestamptz DEFAULT CURRENT_TIMESTAMP, -- 생성 시각
-    created_by TEXT NOT NULL, -- 생성자 정보
+    host_name TEXT NOT NULL,                          -- 호스트명
+    host_ip TEXT NOT NULL,                              -- CrateDB는 IP 타입 지원 (검색 최적화)
+    os_type TEXT NOT NULL,                            -- OS 타입
+    log_type TEXT NOT NULL,                           -- 로그 유형 (INFO / ERROR / etc.)
+    log_contents TEXT INDEX USING FULLTEXT WITH (analyzer = 'standard'),  -- 전문 검색용
+    log_written_at timestamptz,               -- 로그가 기록된 시각
+    created_at timestamptz DEFAULT CURRENT_TIMESTAMP,  -- 생성 시각
+    created_by TEXT NOT NULL,                         -- 생성자 정보
     PRIMARY KEY (partition_day, agent_id, collected_at)
 )
 CLUSTERED INTO 3 SHARDS

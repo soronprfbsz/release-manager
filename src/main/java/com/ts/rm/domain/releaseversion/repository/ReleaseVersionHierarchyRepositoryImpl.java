@@ -73,6 +73,11 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
         QReleaseVersionHierarchy h = QReleaseVersionHierarchy.releaseVersionHierarchy;
 
+        // majorMinor 파싱 (예: "1.1.x" -> major=1, minor=1)
+        String[] parts = majorMinor.replace(".x", "").split("\\.");
+        Integer majorVersion = Integer.parseInt(parts[0]);
+        Integer minorVersion = Integer.parseInt(parts[1]);
+
         return queryFactory
                 .selectDistinct(rv)
                 .from(h)
@@ -80,9 +85,10 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
                 .where(
                         h.depth.eq(0),
                         rv.releaseType.eq(releaseType),
-                        rv.majorMinor.eq(majorMinor)
+                        rv.majorVersion.eq(majorVersion),
+                        rv.minorVersion.eq(minorVersion)
                 )
-                .orderBy(rv.patchVersion.desc())  // 내림차순으로 변경
+                .orderBy(rv.patchVersion.desc())
                 .fetch();
     }
 }

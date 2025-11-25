@@ -57,7 +57,6 @@ class ReleaseVersionRepositoryTest {
                 .majorVersion(1)
                 .minorVersion(1)
                 .patchVersion(0)
-                .majorMinor("1.1.x")
                 .createdBy("jhlee@tscientific")
                 .comment("새로운 기능 추가")
                 .isInstall(false)
@@ -71,6 +70,7 @@ class ReleaseVersionRepositoryTest {
         assertThat(saved.getVersion()).isEqualTo("1.1.0");
         assertThat(saved.getReleaseType()).isEqualTo("STANDARD");
         assertThat(saved.getCustomer()).isNull();
+        assertThat(saved.getMajorMinor()).isEqualTo("1.1.x"); // @Transient 계산 필드 검증
         assertThat(saved.getCreatedAt()).isNotNull();
         assertThat(saved.getUpdatedAt()).isNotNull();
     }
@@ -86,7 +86,6 @@ class ReleaseVersionRepositoryTest {
                 .majorVersion(1)
                 .minorVersion(0)
                 .patchVersion(0)
-                .majorMinor("1.0.x")
                 .createdBy("admin@tscientific")
                 .comment("고객사 맞춤 기능")
                 .customVersion("1.0.0-company_a")
@@ -162,7 +161,6 @@ class ReleaseVersionRepositoryTest {
                 .majorVersion(1)
                 .minorVersion(0)
                 .patchVersion(0)
-                .majorMinor("1.0.x")
                 .createdBy("admin@tscientific")
                 .comment("첫번째 버전")
                 .isInstall(false)
@@ -176,7 +174,6 @@ class ReleaseVersionRepositoryTest {
                 .majorVersion(1)
                 .minorVersion(0)
                 .patchVersion(1)
-                .majorMinor("1.0.x")
                 .createdBy("admin@tscientific")
                 .comment("두번째 버전")
                 .isInstall(false)
@@ -197,9 +194,9 @@ class ReleaseVersionRepositoryTest {
         // given
         createAndSaveStandardVersions();
 
-        // when
+        // when - 이제 majorVersion, minorVersion을 파라미터로 받음
         List<ReleaseVersion> versions = releaseVersionRepository
-                .findAllByMajorMinorOrderByPatchVersionDesc("1.1.x");
+                .findAllByMajorMinorOrderByPatchVersionDesc(1, 1);
 
         // then
         assertThat(versions).hasSize(2);
@@ -262,7 +259,6 @@ class ReleaseVersionRepositoryTest {
                 .majorVersion(1)
                 .minorVersion(0)
                 .patchVersion(0)
-                .majorMinor("1.0.x")
                 .createdBy("admin@tscientific")
                 .comment("커스텀 버전")
                 .isInstall(false)
@@ -285,7 +281,6 @@ class ReleaseVersionRepositoryTest {
                 .majorVersion(major)
                 .minorVersion(minor)
                 .patchVersion(patch)
-                .majorMinor(major + "." + minor + ".x")
                 .createdBy("jhlee@tscientific")
                 .comment("테스트 버전")
                 .isInstall(false)

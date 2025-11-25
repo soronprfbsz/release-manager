@@ -26,6 +26,13 @@ public enum ErrorCode {
   ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "A001", "error.account.not_found"),
   ACCOUNT_EMAIL_CONFLICT(HttpStatus.CONFLICT, "A002", "error.account.email_conflict"),
 
+  // Auth - 인증
+  INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AU001", "error.auth.invalid_credentials"),
+  DUPLICATE_EMAIL(HttpStatus.CONFLICT, "AU002", "error.auth.duplicate_email"),
+  INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AU003", "error.auth.invalid_refresh_token"),
+  EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AU004", "error.auth.expired_refresh_token"),
+  REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "AU005", "error.auth.refresh_token_not_found"),
+
   // Customer - 고객사
   CUSTOMER_NOT_FOUND(HttpStatus.NOT_FOUND, "CU001", "error.customer.not_found"),
   CUSTOMER_CODE_CONFLICT(HttpStatus.CONFLICT, "CU002", "error.customer.code_conflict"),

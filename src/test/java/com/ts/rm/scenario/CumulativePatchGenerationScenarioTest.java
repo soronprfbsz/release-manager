@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ts.rm.config.TestQueryDslConfig;
-import com.ts.rm.domain.patch.repository.CumulativePatchRepository;
+import com.ts.rm.domain.patch.repository.PatchHistoryRepository;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
  * - 버전 1.0.0, 1.1.0, 1.1.1이 이미 생성되어 있음
  * - 각 버전마다 MariaDB, CrateDB SQL 파일이 업로드되어 있음
  *
- * 1. POST /api/cumulative-patches - 누적 패치 생성 (1.0.0 → 1.1.1)
+ * 1. POST /api/patch-histories - 패치 이력 생성 (1.0.0 → 1.1.1)
  *    → 버전 범위 조회: 1.0.0 < version <= 1.1.1 → [1.1.0, 1.1.1]
  *    → 출력 디렉토리 생성: releases/standard/1.1.x/1.1.1/from-1.0.0/
  *    → SQL 파일 복사:
@@ -55,10 +55,10 @@ import org.springframework.transaction.annotation.Transactional;
  *      - mariadb_patch.sh (실행 가능한 Shell 스크립트)
  *        - VERSION_METADATA 배열 포함 (버전 메타데이터)
  *        - SQL 실행 명령 동적 생성
- *        - VERSION_HISTORY INSERT 문 포함
+ *        - RELEASE_VERSION_HISTORY INSERT 문 포함
  *      - cratedb_patch.sh (실행 가능한 Shell 스크립트)
  *    → README.md 생성
- *    → DB: cumulative_patch_history 테이블에 이력 INSERT
+ *    → DB: patch_history 테이블에 이력 INSERT
  *
  * 2. 생성된 스크립트 검증
  *    → mariadb_patch.sh 내용 확인
@@ -67,7 +67,7 @@ import org.springframework.transaction.annotation.Transactional;
  * </pre>
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @Transactional
 @org.springframework.context.annotation.Import(TestQueryDslConfig.class)
@@ -86,7 +86,7 @@ public class CumulativePatchGenerationScenarioTest {
     private ReleaseFileRepository releaseFileRepository;
 
     @Autowired
-    private CumulativePatchRepository cumulativePatchRepository;
+    private PatchHistoryRepository patchHistoryRepository;
 
     @Value("${app.release.base-path:src/main/resources/release}")
     private String baseReleasePath;
@@ -252,7 +252,7 @@ public class CumulativePatchGenerationScenarioTest {
                 }
                 """;
 
-        String patchResponse = mockMvc.perform(post("/api/cumulative-patches/generate")
+        String patchResponse = mockMvc.perform(post("/api/patch-histories/generate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andDo(print())
@@ -264,23 +264,23 @@ public class CumulativePatchGenerationScenarioTest {
                 .andReturn().getResponse().getContentAsString();
 
         Long patchId = objectMapper.readTree(patchResponse)
-                .path("data").path("cumulativePatchId").asLong();
+                .path("data").path("patchHistoryId").asLong();
 
         System.out.println("✅ 누적 패치 생성 완료 (ID: " + patchId + ")");
 
         // ============================================================
-        // Step 2: DB 검증 - cumulative_patch_history 테이블
+        // Step 2: DB 검증 - patch_history 테이블
         // ============================================================
-        System.out.println("\n[검증 1] DB 확인 - cumulative_patch_history 테이블");
+        System.out.println("\n[검증 1] DB 확인 - patch_history 테이블");
 
-        var savedPatch = cumulativePatchRepository.findById(patchId).orElseThrow();
+        var savedPatch = patchHistoryRepository.findById(patchId).orElseThrow();
         assertThat(savedPatch.getFromVersion()).isEqualTo("1.0.0");
         assertThat(savedPatch.getToVersion()).isEqualTo("1.1.1");
         assertThat(savedPatch.getStatus()).isEqualTo("SUCCESS");
         assertThat(savedPatch.getGeneratedBy()).isEqualTo("jhlee@tscientific.co.kr");
 
         String outputPath = savedPatch.getOutputPath();
-        System.out.println("  - cumulative_patch_history 레코드 INSERT 완료");
+        System.out.println("  - patch_history 레코드 INSERT 완료");
         System.out.println("    from_version: " + savedPatch.getFromVersion());
         System.out.println("    to_version: " + savedPatch.getToVersion());
         System.out.println("    output_path: " + outputPath);
@@ -348,12 +348,12 @@ public class CumulativePatchGenerationScenarioTest {
         assertThat(scriptContent).contains("execute_sql");
         System.out.println("    - SQL 실행 명령 포함");
 
-        // VERSION_HISTORY INSERT 구문 포함 확인
-        assertThat(scriptContent).contains("INSERT INTO version_history");
-        assertThat(scriptContent).contains("version_id");
+        // RELEASE_VERSION_HISTORY INSERT 구문 포함 확인
+        assertThat(scriptContent).contains("INSERT INTO release_version_history");
+        assertThat(scriptContent).contains("release_version_id");
         assertThat(scriptContent).contains("standard_version");
         assertThat(scriptContent).contains("ON DUPLICATE KEY UPDATE");
-        System.out.println("    - VERSION_HISTORY INSERT 구문 포함");
+        System.out.println("    - RELEASE_VERSION_HISTORY INSERT 구문 포함");
         System.out.println("    - ON DUPLICATE KEY UPDATE (재실행 안전성)");
 
         // cratedb_patch.sh 확인
@@ -403,9 +403,9 @@ public class CumulativePatchGenerationScenarioTest {
                 .limit(10)
                 .forEach(line -> System.out.println("  " + line));
 
-        System.out.println("\n--- VERSION_HISTORY INSERT 부분 ---");
+        System.out.println("\n--- RELEASE_VERSION_HISTORY INSERT 부분 ---");
         scriptContent.lines()
-                .filter(line -> line.contains("INSERT INTO version_history"))
+                .filter(line -> line.contains("INSERT INTO release_version_history"))
                 .limit(3)
                 .forEach(line -> System.out.println("  " + line));
 
@@ -474,12 +474,12 @@ public class CumulativePatchGenerationScenarioTest {
         System.out.println("       [INFO] 실행: 001_bugfix.sql");
         System.out.println("       [SUCCESS] 버전 1.1.1 패치 완료!");
 
-        System.out.println("\n   [5] VERSION_HISTORY 업데이트");
-        System.out.println("       [STEP] VERSION_HISTORY 업데이트 중...");
-        System.out.println("       [INFO] VERSION_HISTORY 업데이트: 1.1.0");
+        System.out.println("\n   [5] RELEASE_VERSION_HISTORY 업데이트");
+        System.out.println("       [STEP] RELEASE_VERSION_HISTORY 업데이트 중...");
+        System.out.println("       [INFO] RELEASE_VERSION_HISTORY 업데이트: 1.1.0");
         System.out.println("       실행 SQL:");
-        System.out.println("         INSERT INTO version_history (");
-        System.out.println("           version_id, standard_version, custom_version,");
+        System.out.println("         INSERT INTO release_version_history (");
+        System.out.println("           release_version_id, standard_version, custom_version,");
         System.out.println("           version_created_at, version_created_by,");
         System.out.println("           system_applied_by, system_applied_at, comment");
         System.out.println("         ) VALUES (");
@@ -488,8 +488,8 @@ public class CumulativePatchGenerationScenarioTest {
         System.out.println("           'patch_script', NOW(), '신규 기능 추가'");
         System.out.println("         ) ON DUPLICATE KEY UPDATE system_applied_at = NOW();");
 
-        System.out.println("\n       [INFO] VERSION_HISTORY 업데이트: 1.1.1");
-        System.out.println("       [SUCCESS] 모든 VERSION_HISTORY 업데이트 완료!");
+        System.out.println("\n       [INFO] RELEASE_VERSION_HISTORY 업데이트: 1.1.1");
+        System.out.println("       [SUCCESS] 모든 RELEASE_VERSION_HISTORY 업데이트 완료!");
 
         System.out.println("\n   [6] 완료");
         System.out.println("       ==========================================");
@@ -499,15 +499,15 @@ public class CumulativePatchGenerationScenarioTest {
         System.out.println("         - 적용된 버전 개수: 2");
         System.out.println("         - 버전 범위: 1.0.0 → 1.1.1");
 
-        System.out.println("\n4. VERSION_HISTORY 조회 (API):");
-        System.out.println("   $ curl http://localhost:8081/api/version-history?appliedOnly=true");
+        System.out.println("\n4. RELEASE_VERSION_HISTORY 조회 (API):");
+        System.out.println("   $ curl http://localhost:8081/api/release-version-history?appliedOnly=true");
 
         System.out.println("\n   응답 예시:");
         System.out.println("   {");
         System.out.println("     \"success\": true,");
         System.out.println("     \"data\": [");
         System.out.println("       {");
-        System.out.println("         \"versionId\": \"1.1.1\",");
+        System.out.println("         \"releaseVersionId\": \"1.1.1\",");
         System.out.println("         \"standardVersion\": \"1.1.1\",");
         System.out.println("         \"versionCreatedAt\": \"2025-11-20T10:30:00\",");
         System.out.println("         \"versionCreatedBy\": \"jhlee\",");
@@ -516,7 +516,7 @@ public class CumulativePatchGenerationScenarioTest {
         System.out.println("         \"comment\": \"버그 수정\"");
         System.out.println("       },");
         System.out.println("       {");
-        System.out.println("         \"versionId\": \"1.1.0\",");
+        System.out.println("         \"releaseVersionId\": \"1.1.0\",");
         System.out.println("         \"standardVersion\": \"1.1.0\",");
         System.out.println("         \"versionCreatedAt\": \"2025-11-20T10:00:00\",");
         System.out.println("         \"versionCreatedBy\": \"jhlee\",");

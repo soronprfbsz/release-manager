@@ -14,7 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import jakarta.persistence.Transient;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -56,9 +56,6 @@ public class ReleaseVersion extends BaseEntity {
     @Column(name = "patch_version", nullable = false)
     private Integer patchVersion;
 
-    @Column(name = "major_minor", nullable = false, length = 10)
-    private String majorMinor;
-
     @Column(name = "created_by", nullable = false, length = 100)
     private String createdBy;
 
@@ -94,5 +91,15 @@ public class ReleaseVersion extends BaseEntity {
         }
         key.append(version);
         return key.toString();
+    }
+
+    /**
+     * Major.Minor 버전 계산 (예: 1.1.x)
+     *
+     * <p>DB 컬럼 없이 majorVersion, minorVersion으로 동적 계산
+     */
+    @Transient
+    public String getMajorMinor() {
+        return majorVersion + "." + minorVersion + ".x";
     }
 }

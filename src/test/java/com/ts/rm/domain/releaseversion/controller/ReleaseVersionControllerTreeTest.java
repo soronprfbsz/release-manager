@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
  * ReleaseVersion 트리 조회 API 테스트
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @Transactional
 @ActiveProfiles("test")
 @Import(TestQueryDslConfig.class)

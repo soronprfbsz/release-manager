@@ -198,10 +198,10 @@ public class ScriptGenerator {
     }
 
     /**
-     * VERSION_HISTORY INSERT 문 생성
+     * RELEASE_VERSION_HISTORY INSERT 문 생성
      *
      * <pre>
-     * INSERT INTO version_history (version_id, standard_version, custom_version, ...)
+     * INSERT INTO release_version_history (release_version_id, standard_version, custom_version, ...)
      * VALUES ('1.1.0', '1.1.0', NULL, ...)
      * ON DUPLICATE KEY UPDATE system_applied_at = NOW();
      * </pre>
@@ -211,7 +211,7 @@ public class ScriptGenerator {
 
         for (ReleaseVersion version : versions) {
             String insertSql = String.format(
-                    "INSERT INTO version_history (version_id, standard_version, custom_version, "
+                    "INSERT INTO release_version_history (release_version_id, standard_version, custom_version, "
                             +
                             "version_created_at, version_created_by, system_applied_by, system_applied_at, comment) "
                             +
@@ -229,7 +229,7 @@ public class ScriptGenerator {
             );
 
             inserts.append(String.format("execute_sql_string \"%s\"\n", insertSql));
-            inserts.append(String.format("log_info \"VERSION_HISTORY 업데이트: %s\"\n",
+            inserts.append(String.format("log_info \"RELEASE_VERSION_HISTORY 업데이트: %s\"\n",
                     version.getVersion()));
         }
 

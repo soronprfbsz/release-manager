@@ -88,6 +88,41 @@ public class GlobalExceptionHandler {
         .body(ApiResponse.fail(ErrorCode.METHOD_NOT_ALLOWED.getCode(), message));
   }
 
+  // 인증 실패 (잘못된 인증 정보)
+  @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+  public ResponseEntity<ApiResponse<?>> handleBadCredentials(
+      org.springframework.security.authentication.BadCredentialsException e, Locale locale) {
+    String message =
+        messageSource.getMessage(ErrorCode.INVALID_CREDENTIALS.getMessageKey(), null, locale);
+
+    log.warn("Authentication failed: [{}] {} - {}", ErrorCode.INVALID_CREDENTIALS.getCode(),
+        message, e.getMessage());
+
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(ApiResponse.fail(ErrorCode.INVALID_CREDENTIALS.getCode(), message));
+  }
+
+  // 잘못된 인자 (이메일 중복 등)
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<ApiResponse<?>> handleIllegalArgument(IllegalArgumentException e,
+      Locale locale) {
+    log.warn("Illegal argument: {}", e.getMessage());
+
+    // 메시지에 '이메일'이 포함되면 이메일 중복 에러로 처리
+    if (e.getMessage() != null && e.getMessage().contains("이메일")) {
+      String message =
+          messageSource.getMessage(ErrorCode.DUPLICATE_EMAIL.getMessageKey(), null, locale);
+      return ResponseEntity.status(HttpStatus.CONFLICT)
+          .body(ApiResponse.fail(ErrorCode.DUPLICATE_EMAIL.getCode(), message));
+    }
+
+    // 일반 잘못된 입력으로 처리
+    String message =
+        messageSource.getMessage(ErrorCode.INVALID_INPUT_VALUE.getMessageKey(), null, locale);
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(ApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE.getCode(), message));
+  }
+
   // 예상치 못한 서버 에러 (국제화 지원)
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<ApiResponse.ErrorDetail>> handleInternalError(Exception e,

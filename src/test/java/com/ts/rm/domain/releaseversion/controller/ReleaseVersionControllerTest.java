@@ -13,19 +13,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.service.ReleaseVersionService;
 import com.ts.rm.global.common.exception.GlobalExceptionHandler;
 import com.ts.rm.global.config.MessageConfig;
+import com.ts.rm.global.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.CustomUserDetailsService;
+import com.ts.rm.global.security.JwtAuthenticationFilter;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,7 +39,9 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * ReleaseVersion Controller 통합 테스트
  */
-@WebMvcTest(ReleaseVersionController.class)
+@WebMvcTest(controllers = ReleaseVersionController.class,
+        excludeAutoConfiguration = org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import({GlobalExceptionHandler.class, MessageConfig.class})
 @ActiveProfiles("test")
 @DisplayName("ReleaseVersionController 테스트")
@@ -47,6 +55,22 @@ class ReleaseVersionControllerTest {
 
     @MockitoBean
     private ReleaseVersionService releaseVersionService;
+
+    // Security 관련 MockBean 추가
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private AccountRepository accountRepository;
+
+    @MockitoBean
+    private PasswordEncoder passwordEncoder;
 
     private ReleaseVersionDto.SimpleResponse simpleResponse;
     private ReleaseVersionDto.DetailResponse detailResponse;

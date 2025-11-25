@@ -54,12 +54,16 @@ public interface ReleaseVersionRepository extends JpaRepository<ReleaseVersion, 
     List<ReleaseVersion> findAllByCustomerIdOrderByCreatedAtDesc(@Param("customerId") Long customerId);
 
     /**
-     * Major.Minor 버전으로 버전 목록 조회
+     * Major, Minor 버전으로 버전 목록 조회
      *
-     * @param majorMinor Major.Minor 버전 (예: 1.1.x)
+     * @param majorVersion Major 버전 (예: 1)
+     * @param minorVersion Minor 버전 (예: 1)
      * @return 버전 목록
      */
-    List<ReleaseVersion> findAllByMajorMinorOrderByPatchVersionDesc(String majorMinor);
+    @Query("SELECT rv FROM ReleaseVersion rv WHERE rv.majorVersion = :majorVersion AND rv.minorVersion = :minorVersion ORDER BY rv.patchVersion DESC")
+    List<ReleaseVersion> findAllByMajorMinorOrderByPatchVersionDesc(
+            @Param("majorVersion") Integer majorVersion,
+            @Param("minorVersion") Integer minorVersion);
 
     /**
      * 버전 존재 여부 확인

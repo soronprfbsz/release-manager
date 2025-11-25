@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>릴리즈 버전 생성 + SQL 파일 업로드를 하나의 API로 처리하는 테스트
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @Transactional
 @org.springframework.context.annotation.Import(TestQueryDslConfig.class)
