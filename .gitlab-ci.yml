@@ -7,11 +7,11 @@ default:
 
 variables:
   # Docker 이미지 설정
-  DOCKER_IMAGE_NAME: "ts/release-manager-api"
+  DOCKER_IMAGE_NAME: "ts/${SERVER_NAME}"
   DOCKER_IMAGE_TAG: "latest"
 
   # Harbor Registry 설정 (선택적)
-  HARBOR_IMAGE_NAME: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/release-manager-api"
+  HARBOR_IMAGE_NAME: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${SERVER_NAME}"
 
   # Gradle 설정 (최적화)
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
