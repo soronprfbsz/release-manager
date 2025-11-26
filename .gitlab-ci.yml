@@ -242,9 +242,9 @@ deploy-job:
 
     - |
       echo "=== MariaDB 시작 ==="
-      if docker ps --format '{{.Names}}' | grep -q '^rm-mariadb$'; then
+      if docker ps --format '{{.Names}}' | grep -q '^release-manager-mariadb$'; then
         echo "✓ MariaDB 실행 중"
-      elif docker ps -a --format '{{.Names}}' | grep -q '^rm-mariadb$'; then
+      elif docker ps -a --format '{{.Names}}' | grep -q '^release-manager-mariadb$'; then
         docker start release-manager-mariadb && echo "✓ MariaDB 재시작됨"
       else
         docker-compose -p release_manager -f docker/docker-compose.yml up -d mariadb && echo "✓ MariaDB 생성됨"
@@ -252,9 +252,9 @@ deploy-job:
 
     - |
       echo "=== Redis 시작 ==="
-      if docker ps --format '{{.Names}}' | grep -q '^rm-redis$'; then
+      if docker ps --format '{{.Names}}' | grep -q '^release-manager-redis$'; then
         echo "✓ Redis 실행 중"
-      elif docker ps -a --format '{{.Names}}' | grep -q '^rm-redis$'; then
+      elif docker ps -a --format '{{.Names}}' | grep -q '^release-manager-redis$'; then
         docker start release-manager-redis && echo "✓ Redis 재시작됨"
       else
         docker-compose -p release_manager -f docker/docker-compose.yml up -d redis && echo "✓ Redis 생성됨"
