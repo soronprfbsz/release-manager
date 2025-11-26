@@ -190,11 +190,11 @@ deploy-job:
       echo "=== Gitlab Variables로 .env 파일 생성 중 ==="
       env | grep -vE '^(CI=|CI_|GITLAB_|FF_|RUNNER_|DOCKER_|DIND_|PATH=|HOME=|HOSTNAME=|PWD=|OLDPWD=|SHELL=|SHLVL=|USER=|_=|LANG=|LC_|TERM=|DEBIAN_|GRADLE_)' > .env
 
-      # Docker 이미지 정보 추가
+      # Docker 환경 설정 추가
       echo "DOCKER_IMAGE=${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" >> .env
+      echo "RELEASE_BASE_PATH=/app/release_files" >> .env
 
       cat .env
-      cp .env docker/.env
     - |
       echo "=== Docker 네트워크 확인 ==="
       docker network ls | grep -q network-ts && echo "✓ network-ts 존재" || (docker network create network-ts && echo "✓ network-ts 생성")
@@ -280,14 +280,17 @@ deploy-job:
       echo "=== Redis 헬스체크 ==="
       max_attempts=60
       attempt=0
-      until docker exec release-manager-redis redis-cli ping || [ $attempt -eq $max_attempts ]; do
+      until docker exec release-manager-redis redis-cli -a "${REDIS_PASSWORD}" ping 2>/dev/null | grep -q PONG || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
         echo "  Redis 대기 중... ($attempt/$max_attempts)"
         sleep 3
       done
       if [ $attempt -eq $max_attempts ]; then
         echo "✗ Redis 헬스체크 실패"
+        echo "=== Redis 로그 ==="
         docker logs --tail 20 release-manager-redis
+        echo "=== Redis 연결 테스트 ==="
+        docker exec release-manager-redis redis-cli -a "${REDIS_PASSWORD}" ping 2>&1 || true
         exit 1
       fi
       echo "✓ Redis 준비 완료 (${attempt}회 시도)"
