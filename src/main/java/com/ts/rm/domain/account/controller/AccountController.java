@@ -4,9 +4,10 @@ import com.ts.rm.domain.account.dto.AccountDto;
 import com.ts.rm.domain.account.enums.AccountStatus;
 import com.ts.rm.domain.account.service.AccountService;
 import com.ts.rm.global.common.response.ApiResponse;
-import com.ts.rm.global.common.response.SwaggerResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -24,11 +25,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Account", description = "계정 관리 API")
+@Tag(name = "계정", description = "계정 관리 API")
 @RestController
 @RequestMapping("/api/accounts")
 @RequiredArgsConstructor
-@SwaggerResponse
 public class AccountController {
 
     private final AccountService accountService;

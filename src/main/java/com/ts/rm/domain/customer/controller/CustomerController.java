@@ -3,13 +3,17 @@ package com.ts.rm.domain.customer.controller;
 import com.ts.rm.domain.customer.dto.CustomerDto;
 import com.ts.rm.domain.customer.service.CustomerService;
 import com.ts.rm.global.common.response.ApiResponse;
-import com.ts.rm.global.common.response.SwaggerResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,11 +32,10 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>고객사 관리 REST API
  */
-@Tag(name = "Customer", description = "고객사 관리 API")
+@Tag(name = "고객사", description = "고객사 관리 API")
 @RestController
-@RequestMapping("/api/v1/customers")
+@RequestMapping("/api/customers")
 @RequiredArgsConstructor
-@SwaggerResponse
 public class CustomerController {
 
     private final CustomerService customerService;
@@ -67,22 +70,23 @@ public class CustomerController {
     }
 
     /**
-     * 고객사 목록 조회
+     * 고객사 목록 조회 (페이징)
      *
      * @param isActive 활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
      * @param keyword  고객사명 검색 키워드 (optional)
-     * @return 고객사 목록
+     * @param pageable 페이징 정보
+     * @return 고객사 페이지
      */
     @Operation(summary = "고객사 목록 조회",
-            description = "고객사 목록을 조회합니다. isActive로 활성화 여부 필터링, keyword로 고객사명 검색 가능")
+            description = "고객사 목록을 페이징하여 조회합니다. isActive로 활성화 여부 필터링, keyword로 고객사명 검색 가능. page, size, sort 파라미터 사용 가능")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CustomerDto.DetailResponse>>> getCustomers(
+    public ResponseEntity<ApiResponse<Page<CustomerDto.DetailResponse>>> getCustomers(
             @Parameter(description = "활성화 여부 (true: 활성화만, false: 비활성화만, null: 전체)")
             @RequestParam(required = false) Boolean isActive,
             @Parameter(description = "고객사명 검색 키워드")
-            @RequestParam(required = false) String keyword) {
-        List<CustomerDto.DetailResponse> response = customerService.getCustomers(isActive,
-                keyword);
+            @RequestParam(required = false) String keyword,
+            @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+        Page<CustomerDto.DetailResponse> response = customerService.getCustomersWithPaging(isActive, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

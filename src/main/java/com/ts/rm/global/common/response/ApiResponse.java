@@ -1,11 +1,13 @@
 package com.ts.rm.global.common.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @Schema(description = "API 공통 응답")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(
-        @Schema(description = "응답 상태 (success | fail | error)") String status,
-        @Schema(description = "응답 데이터") T data) {
+        @Schema(description = "응답 상태 (success | fail | error)", example = "success") String status,
+        @Schema(description = "응답 데이터 (제네릭 타입)") T data) {
 
     // 성공
     public static <T> ApiResponse<T> success(T data) {

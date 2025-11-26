@@ -9,6 +9,8 @@ import com.ts.rm.global.common.exception.ErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,7 +74,7 @@ public class CustomerService {
     }
 
     /**
-     * 고객사 목록 조회 (필터링 및 검색)
+     * 고객사 목록 조회 (필터링 및 검색) - 비페이징
      *
      * @param isActive 활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
      * @param keyword  고객사명 검색 키워드
@@ -95,6 +97,33 @@ public class CustomerService {
         }
 
         return mapper.toDetailResponseList(customers);
+    }
+
+    /**
+     * 고객사 목록 페이징 조회 (필터링 및 검색)
+     *
+     * @param isActive 활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
+     * @param keyword  고객사명 검색 키워드
+     * @param pageable 페이징 정보
+     * @return 고객사 페이지
+     */
+    public Page<CustomerDto.DetailResponse> getCustomersWithPaging(Boolean isActive, String keyword, Pageable pageable) {
+        Page<Customer> customers;
+
+        // 키워드 검색이 있는 경우
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            customers = customerRepository.findByCustomerNameContaining(keyword.trim(), pageable);
+        }
+        // 활성화 여부 필터링
+        else if (isActive != null) {
+            customers = customerRepository.findAllByIsActive(isActive, pageable);
+        }
+        // 전체 조회
+        else {
+            customers = customerRepository.findAll(pageable);
+        }
+
+        return customers.map(mapper::toDetailResponse);
     }
 
     /**

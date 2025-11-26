@@ -8,11 +8,11 @@ import java.time.LocalDateTime;
 import lombok.Builder;
 
 /**
- * PatchHistory DTO 통합 클래스
+ * Patch DTO 통합 클래스
  */
-public final class PatchHistoryDto {
+public final class PatchDto {
 
-    private PatchHistoryDto() {
+    private PatchDto() {
     }
 
     // ========================================
@@ -20,10 +20,10 @@ public final class PatchHistoryDto {
     // ========================================
 
     /**
-     * 패치 이력 생성 요청
+     * 패치 생성 요청
      */
     @Builder
-    @Schema(description = "패치 이력 생성 요청")
+    @Schema(description = "패치 생성 요청")
     public record GenerateRequest(
             @Schema(description = "릴리즈 타입", example = "standard")
             @NotBlank(message = "릴리즈 타입은 필수입니다")
@@ -65,12 +65,12 @@ public final class PatchHistoryDto {
     // ========================================
 
     /**
-     * 패치 이력 상세 응답
+     * 패치 상세 응답
      */
-    @Schema(description = "패치 이력 상세 응답")
+    @Schema(description = "패치 상세 응답")
     public record DetailResponse(
-            @Schema(description = "패치 이력 ID", example = "1")
-            Long patchHistoryId,
+            @Schema(description = "패치 ID", example = "1")
+            Long patchId,
 
             @Schema(description = "릴리즈 타입", example = "standard")
             String releaseType,
@@ -105,12 +105,6 @@ public final class PatchHistoryDto {
             @Schema(description = "패치 담당자", example = "홍길동")
             String patchedBy,
 
-            @Schema(description = "상태", example = "SUCCESS")
-            String status,
-
-            @Schema(description = "에러 메시지")
-            String errorMessage,
-
             @Schema(description = "등록일시")
             LocalDateTime createdAt,
 
@@ -121,12 +115,12 @@ public final class PatchHistoryDto {
     }
 
     /**
-     * 패치 이력 간단 응답
+     * 패치 간단 응답
      */
-    @Schema(description = "패치 이력 간단 응답")
+    @Schema(description = "패치 간단 응답")
     public record SimpleResponse(
-            @Schema(description = "패치 이력 ID", example = "1")
-            Long patchHistoryId,
+            @Schema(description = "패치 ID", example = "1")
+            Long patchId,
 
             @Schema(description = "릴리즈 타입", example = "standard")
             String releaseType,
@@ -156,10 +150,7 @@ public final class PatchHistoryDto {
             String description,
 
             @Schema(description = "패치 담당자", example = "홍길동")
-            String patchedBy,
-
-            @Schema(description = "상태", example = "SUCCESS")
-            String status
+            String patchedBy
     ) {
 
     }

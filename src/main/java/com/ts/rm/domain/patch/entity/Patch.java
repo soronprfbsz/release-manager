@@ -19,23 +19,23 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * PatchHistory Entity
+ * Patch Entity (Cumulative Patch)
  *
- * <p>패치 이력 테이블 - 누적 패치 생성 기록 관리
+ * <p>누적 패치 테이블 - 누적 패치 생성 기록 관리
  */
 @Entity
-@Table(name = "patch_history")
+@Table(name = "cumulative_patch")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PatchHistory extends BaseEntity {
+public class Patch extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "patch_history_id")
-    private Long patchHistoryId;
+    @Column(name = "patch_id")
+    private Long patchId;
 
     @Column(name = "release_type", nullable = false, length = 20)
     private String releaseType;
@@ -70,11 +70,4 @@ public class PatchHistory extends BaseEntity {
      */
     @Column(name = "patched_by", length = 100)
     private String patchedBy;
-
-    @Column(length = 20)
-    @Builder.Default
-    private String status = "SUCCESS";
-
-    @Column(name = "error_message", columnDefinition = "TEXT")
-    private String errorMessage;
 }

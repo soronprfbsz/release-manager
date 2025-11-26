@@ -3,6 +3,8 @@ package com.ts.rm.domain.customer.repository;
 import com.ts.rm.domain.customer.entity.Customer;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -30,6 +32,15 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findAllByIsActive(Boolean isActive);
 
     /**
+     * 활성화된 고객사 페이징 조회
+     *
+     * @param isActive 활성 여부
+     * @param pageable 페이징 정보
+     * @return 고객사 페이지
+     */
+    Page<Customer> findAllByIsActive(Boolean isActive, Pageable pageable);
+
+    /**
      * 고객사 코드 존재 여부 확인
      *
      * @param customerCode 고객사 코드
@@ -44,4 +55,13 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
      * @return 고객사 목록
      */
     List<Customer> findByCustomerNameContaining(String keyword);
+
+    /**
+     * 고객사명으로 검색 페이징 (부분 일치)
+     *
+     * @param keyword  검색 키워드
+     * @param pageable 페이징 정보
+     * @return 고객사 페이지
+     */
+    Page<Customer> findByCustomerNameContaining(String keyword, Pageable pageable);
 }

@@ -14,6 +14,8 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @Slf4j
 @RestControllerAdvice
@@ -121,6 +123,41 @@ public class GlobalExceptionHandler {
         messageSource.getMessage(ErrorCode.INVALID_INPUT_VALUE.getMessageKey(), null, locale);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(ApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE.getCode(), message));
+  }
+
+  // Path Variable 또는 Request Parameter 타입 불일치 (클라이언트 에러)
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ApiResponse<?>> handleTypeMismatch(
+      MethodArgumentTypeMismatchException e, Locale locale) {
+    String paramName = e.getName();
+    String invalidValue = e.getValue() != null ? e.getValue().toString() : "null";
+
+    log.warn("Type mismatch: parameter '{}' = '{}' (expected type: {})",
+        paramName, invalidValue, e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "unknown");
+
+    String message =
+        messageSource.getMessage(ErrorCode.INVALID_INPUT_VALUE.getMessageKey(), null, locale);
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(ApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE.getCode(),
+            message + " (파라미터: " + paramName + ", 값: " + invalidValue + ")"));
+  }
+
+  // 필수 Request Parameter 누락 (클라이언트 에러)
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ApiResponse<?>> handleMissingParam(
+      MissingServletRequestParameterException e, Locale locale) {
+    String paramName = e.getParameterName();
+    String paramType = e.getParameterType();
+
+    log.warn("Missing required parameter: '{}' (type: {})", paramName, paramType);
+
+    String message =
+        messageSource.getMessage(ErrorCode.INVALID_INPUT_VALUE.getMessageKey(), null, locale);
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(ApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE.getCode(),
+            message + " (필수 파라미터 누락: " + paramName + ")"));
   }
 
   // 예상치 못한 서버 에러 (국제화 지원)

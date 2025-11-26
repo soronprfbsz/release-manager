@@ -3,10 +3,10 @@ package com.ts.rm.domain.releaseversion.controller;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.service.ReleaseVersionService;
 import com.ts.rm.global.common.response.ApiResponse;
-import com.ts.rm.global.common.response.SwaggerResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -31,11 +31,10 @@ import org.springframework.web.multipart.MultipartFile;
  *
  * <p>릴리즈 버전 관리 REST API
  */
-@Tag(name = "ReleaseVersion", description = "릴리즈 버전 관리 API")
+@Tag(name = "릴리즈 버전", description = "릴리즈 버전 관리 API")
 @RestController
-@RequestMapping("/api/v1/releases")
+@RequestMapping("/api/releases")
 @RequiredArgsConstructor
-@SwaggerResponse
 public class ReleaseVersionController {
 
     private final ReleaseVersionService releaseVersionService;

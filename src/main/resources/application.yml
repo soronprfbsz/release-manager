@@ -53,6 +53,9 @@ springdoc:
     path: /swagger
   api-docs:
     path: /api-docs
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+  override-with-generic-response: false
 
 # Actuator Configuration
 management:

@@ -1,7 +1,7 @@
 package com.ts.rm.domain.patch.service;
 
-import com.ts.rm.domain.patch.entity.PatchHistory;
-import com.ts.rm.domain.patch.repository.PatchHistoryRepository;
+import com.ts.rm.domain.patch.entity.Patch;
+import com.ts.rm.domain.patch.repository.PatchRepository;
 import com.ts.rm.domain.patch.util.ScriptGenerator;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
@@ -21,21 +21,23 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * PatchHistory Service
+ * Patch Service
  *
- * <p>패치 이력 생성 및 관리를 담당하는 서비스
+ * <p>패치 생성 및 관리를 담당하는 서비스
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PatchHistoryService {
+public class PatchService {
 
-    private final PatchHistoryRepository patchHistoryRepository;
+    private final PatchRepository patchRepository;
     private final ReleaseVersionRepository releaseVersionRepository;
     private final ReleaseFileRepository releaseFileRepository;
     private final ScriptGenerator scriptGenerator;
@@ -44,7 +46,7 @@ public class PatchHistoryService {
     private String releaseBasePath;
 
     /**
-     * 패치 이력 생성 (버전 문자열 기반)
+     * 패치 생성 (버전 문자열 기반)
      *
      * @param releaseType  릴리즈 타입 (STANDARD/CUSTOM)
      * @param customerId   고객사 ID (CUSTOM인 경우)
@@ -54,10 +56,10 @@ public class PatchHistoryService {
      * @param description  설명 (선택)
      * @param patchedBy    패치 담당자 (선택)
      * @param patchName    패치 이름 (선택, 미입력 시 자동 생성)
-     * @return 생성된 패치 이력
+     * @return 생성된 패치
      */
     @Transactional
-    public PatchHistory generatePatchHistoryByVersion(String releaseType, Long customerId,
+    public Patch generatePatchByVersion(String releaseType, Long customerId,
             String fromVersion, String toVersion, String createdBy, String description,
             String patchedBy, String patchName) {
 
@@ -72,12 +74,12 @@ public class PatchHistoryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                         "To 버전을 찾을 수 없습니다: " + toVersion));
 
-        return generatePatchHistory(from.getReleaseVersionId(), to.getReleaseVersionId(),
+        return generatePatch(from.getReleaseVersionId(), to.getReleaseVersionId(),
                 createdBy, description, patchedBy, patchName);
     }
 
     /**
-     * 패치 이력 생성 (버전 ID 기반)
+     * 패치 생성 (버전 ID 기반)
      *
      * @param fromVersionId From 버전 ID
      * @param toVersionId   To 버전 ID
@@ -85,10 +87,10 @@ public class PatchHistoryService {
      * @param description   설명 (선택)
      * @param patchedBy     패치 담당자 (선택)
      * @param patchName     패치 이름 (선택, 미입력 시 자동 생성)
-     * @return 생성된 패치 이력
+     * @return 생성된 패치
      */
     @Transactional
-    public PatchHistory generatePatchHistory(Long fromVersionId, Long toVersionId,
+    public Patch generatePatch(Long fromVersionId, Long toVersionId,
             String createdBy, String description, String patchedBy, String patchName) {
         try {
             // 1. 버전 조회 및 검증
@@ -115,7 +117,7 @@ public class PatchHistoryService {
                                 fromVersion.getVersion(), toVersion.getVersion()));
             }
 
-            log.info("패치 이력 생성 시작 - From: {}, To: {}, 포함 버전: {}",
+            log.info("패치 생성 시작 - From: {}, To: {}, 포함 버전: {}",
                     fromVersion.getVersion(), toVersion.getVersion(),
                     betweenVersions.stream().map(ReleaseVersion::getVersion).toList());
 
@@ -134,8 +136,8 @@ public class PatchHistoryService {
             // 7. 패치 이름 결정 (입력값이 없으면 자동 생성: 날짜_fromversion_toversion)
             String resolvedPatchName = resolvePatchName(patchName, fromVersion.getVersion(), toVersion.getVersion());
 
-            // 8. 패치 이력 저장
-            PatchHistory patchHistory = PatchHistory.builder()
+            // 8. 패치 저장
+            Patch patch = Patch.builder()
                     .releaseType(fromVersion.getReleaseType())
                     .customer(fromVersion.getCustomer())
                     .fromVersion(fromVersion.getVersion())
@@ -146,12 +148,11 @@ public class PatchHistoryService {
                     .generatedBy(createdBy)
                     .description(description)
                     .patchedBy(patchedBy)
-                    .status("SUCCESS")
                     .build();
 
-            PatchHistory saved = patchHistoryRepository.save(patchHistory);
+            Patch saved = patchRepository.save(patch);
 
-            log.info("패치 이력 생성 완료 - ID: {}, Path: {}", saved.getPatchHistoryId(),
+            log.info("패치 생성 완료 - ID: {}, Path: {}", saved.getPatchId(),
                     outputPath);
 
             return saved;
@@ -159,9 +160,9 @@ public class PatchHistoryService {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("패치 이력 생성 실패", e);
+            log.error("패치 생성 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "패치 이력 생성 중 오류가 발생했습니다: " + e.getMessage());
+                    "패치 생성 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 
@@ -410,50 +411,66 @@ public class PatchHistoryService {
     }
 
     /**
-     * 패치 이력 조회
+     * 패치 조회
      */
     @Transactional(readOnly = true)
-    public PatchHistory getPatchHistory(Long patchHistoryId) {
-        return patchHistoryRepository.findById(patchHistoryId)
+    public Patch getPatch(Long patchId) {
+        return patchRepository.findById(patchId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                        "패치 이력을 찾을 수 없습니다: " + patchHistoryId));
+                        "패치를 찾을 수 없습니다: " + patchId));
     }
 
     /**
-     * 패치 이력 목록 조회
+     * 패치 목록 조회 (비페이징)
      */
     @Transactional(readOnly = true)
-    public List<PatchHistory> listPatchHistories(String releaseType) {
+    public List<Patch> listPatches(String releaseType) {
         if (releaseType != null) {
-            return patchHistoryRepository.findAllByReleaseTypeOrderByGeneratedAtDesc(
+            return patchRepository.findAllByReleaseTypeOrderByGeneratedAtDesc(
                     releaseType);
         }
-        return patchHistoryRepository.findAll();
+        return patchRepository.findAll();
     }
 
     /**
-     * 패치 이력 ZIP 다운로드
+     * 패치 목록 페이징 조회
      *
-     * @param patchHistoryId 패치 이력 ID
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM, null이면 전체)
+     * @param pageable    페이징 정보
+     * @return 패치 페이지
+     */
+    @Transactional(readOnly = true)
+    public Page<Patch> listPatchesWithPaging(String releaseType, Pageable pageable) {
+        if (releaseType != null) {
+            return patchRepository.findAllByReleaseTypeOrderByGeneratedAtDesc(
+                    releaseType.toUpperCase(), pageable);
+        }
+        return patchRepository.findAllByOrderByGeneratedAtDesc(pageable);
+    }
+
+    /**
+     * 패치 ZIP 다운로드
+     *
+     * @param patchId 패치 ID
      * @return ZIP 파일 바이트 배열
      */
     @Transactional(readOnly = true)
-    public byte[] downloadPatchHistoryAsZip(Long patchHistoryId) {
-        PatchHistory patch = getPatchHistory(patchHistoryId);
+    public byte[] downloadPatchAsZip(Long patchId) {
+        Patch patch = getPatch(patchId);
 
         Path patchDir = Paths.get(releaseBasePath, patch.getOutputPath());
 
         if (!Files.exists(patchDir)) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "패치 이력 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
+                    "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
         }
 
         try {
             return createZipFromDirectory(patchDir, patch.getPatchName());
         } catch (IOException e) {
-            log.error("패치 이력 ZIP 생성 실패: {}", patch.getOutputPath(), e);
+            log.error("패치 ZIP 생성 실패: {}", patch.getOutputPath(), e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "패치 이력 ZIP 생성 실패: " + e.getMessage());
+                    "패치 ZIP 생성 실패: " + e.getMessage());
         }
     }
 
@@ -483,13 +500,13 @@ public class PatchHistoryService {
     }
 
     /**
-     * 패치 이력 ZIP 파일명 생성
+     * 패치 ZIP 파일명 생성
      *
-     * @param patchHistoryId 패치 이력 ID
+     * @param patchId 패치 ID
      * @return ZIP 파일명
      */
-    public String getZipFileName(Long patchHistoryId) {
-        PatchHistory patch = getPatchHistory(patchHistoryId);
+    public String getZipFileName(Long patchId) {
+        Patch patch = getPatch(patchId);
         return String.format("patch_%s_to_%s.zip",
                 patch.getFromVersion(), patch.getToVersion());
     }

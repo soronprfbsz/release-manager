@@ -64,9 +64,7 @@ public class ScriptGenerator {
                     .replace("{{TO_VERSION}}", toVersion)
                     .replace("{{VERSION_COUNT}}", String.valueOf(versions.size()))
                     .replace("{{VERSION_METADATA}}", buildVersionMetadata(versions))
-                    .replace("{{SQL_EXECUTION_COMMANDS}}", buildSqlExecutionCommands(mariadbFiles))
-                    .replace("{{VERSION_HISTORY_INSERTS}}",
-                            buildVersionHistoryInserts(versions));
+                    .replace("{{SQL_EXECUTION_COMMANDS}}", buildSqlExecutionCommands(mariadbFiles));
 
             // 스크립트 파일 저장
             Path scriptPath = Paths.get(baseReleasePath, outputDirPath, "mariadb_patch.sh");
@@ -195,44 +193,5 @@ public class ScriptGenerator {
         });
 
         return commands.toString();
-    }
-
-    /**
-     * RELEASE_VERSION_HISTORY INSERT 문 생성
-     *
-     * <pre>
-     * INSERT INTO release_version_history (release_version_id, standard_version, custom_version, ...)
-     * VALUES ('1.1.0', '1.1.0', NULL, ...)
-     * ON DUPLICATE KEY UPDATE system_applied_at = NOW();
-     * </pre>
-     */
-    private String buildVersionHistoryInserts(List<ReleaseVersion> versions) {
-        StringBuilder inserts = new StringBuilder();
-
-        for (ReleaseVersion version : versions) {
-            String insertSql = String.format(
-                    "INSERT INTO release_version_history (release_version_id, standard_version, custom_version, "
-                            +
-                            "version_created_at, version_created_by, system_applied_by, system_applied_at, comment) "
-                            +
-                            "VALUES ('%s', '%s', %s, '%s', '%s', 'patch_script', NOW(), %s) "
-                            +
-                            "ON DUPLICATE KEY UPDATE system_applied_at = NOW();",
-                    version.getVersion(),
-                    version.getVersion(),
-                    version.getCustomVersion() != null ? "'" + version.getCustomVersion() + "'"
-                            : "NULL",
-                    version.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                    version.getCreatedBy(),
-                    version.getComment() != null ? "'" + version.getComment().replace("'", "\\'") + "'"
-                            : "NULL"
-            );
-
-            inserts.append(String.format("execute_sql_string \"%s\"\n", insertSql));
-            inserts.append(String.format("log_info \"RELEASE_VERSION_HISTORY 업데이트: %s\"\n",
-                    version.getVersion()));
-        }
-
-        return inserts.toString();
     }
 }

@@ -3,9 +3,11 @@ package com.ts.rm.domain.releasefile.controller;
 import com.ts.rm.domain.releasefile.dto.ReleaseFileDto;
 import com.ts.rm.domain.releasefile.service.ReleaseFileService;
 import com.ts.rm.global.common.response.ApiResponse;
-import com.ts.rm.global.common.response.SwaggerResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -31,11 +33,10 @@ import org.springframework.web.multipart.MultipartFile;
  *
  * <p>릴리즈 파일 관리 REST API
  */
-@Tag(name = "ReleaseFile", description = "릴리즈 파일 관리 API")
+@Tag(name = "릴리즈 파일", description = "릴리즈 파일 관리 API")
 @RestController
-@RequestMapping("/api/v1/releases")
+@RequestMapping("/api/releases")
 @RequiredArgsConstructor
-@SwaggerResponse
 public class ReleaseFileController {
 
     private final ReleaseFileService releaseFileService;

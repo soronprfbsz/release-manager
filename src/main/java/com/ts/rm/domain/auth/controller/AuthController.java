@@ -9,6 +9,8 @@ import com.ts.rm.domain.auth.service.AuthService;
 import com.ts.rm.domain.refreshtoken.service.RefreshTokenService;
 import com.ts.rm.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;

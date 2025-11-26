@@ -2,7 +2,7 @@
 
 ################################################################################
 # MariaDB 누적 패치 실행 스크립트
-# 생성일: 2025-11-25 13:01:34
+# 생성일: 2025-11-26 15:14:03
 # 버전 범위: 1.0.0 → 1.1.1
 ################################################################################
 
@@ -216,17 +216,6 @@ cd ..
 log_success "버전 1.1.1 패치 완료!"
 
 
-
-# VERSION_HISTORY 테이블에 버전 정보 INSERT
-log_step "VERSION_HISTORY 업데이트 중..."
-
-execute_sql_string "INSERT INTO version_history (version_id, standard_version, custom_version, version_created_at, version_created_by, system_applied_by, system_applied_at, comment) VALUES ('1.1.0', '1.1.0', NULL, '2025-10-31 00:00:00', 'jhlee@tscientific', 'patch_script', NOW(), '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경') ON DUPLICATE KEY UPDATE system_applied_at = NOW();"
-log_info "VERSION_HISTORY 업데이트: 1.1.0"
-execute_sql_string "INSERT INTO version_history (version_id, standard_version, custom_version, version_created_at, version_created_by, system_applied_by, system_applied_at, comment) VALUES ('1.1.1', '1.1.1', NULL, '2025-11-05 00:00:00', 'jhlee@tscientific', 'patch_script', NOW(), '운영관리 - 파일 기능 관련 테이블 추가') ON DUPLICATE KEY UPDATE system_applied_at = NOW();"
-log_info "VERSION_HISTORY 업데이트: 1.1.1"
-
-
-log_success "모든 VERSION_HISTORY 업데이트 완료!"
 
 echo ""
 echo "=========================================="

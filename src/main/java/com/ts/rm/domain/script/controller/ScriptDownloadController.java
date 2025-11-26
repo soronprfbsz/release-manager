@@ -5,6 +5,8 @@ import com.ts.rm.domain.script.service.ScriptDownloadService;
 import com.ts.rm.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/scripts")
 @RequiredArgsConstructor
-@Tag(name = "스크립트 다운로드", description = "DB 백업/복원 스크립트 다운로드 API")
+@Tag(name = "스크립트", description = "DB 백업/복원 스크립트 다운로드 API")
 public class ScriptDownloadController {
 
     private final ScriptDownloadService scriptDownloadService;

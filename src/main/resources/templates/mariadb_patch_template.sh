@@ -188,13 +188,6 @@ cd "$SCRIPT_DIR/mariadb/source_files"
 
 {{SQL_EXECUTION_COMMANDS}}
 
-# VERSION_HISTORY 테이블에 버전 정보 INSERT
-log_step "VERSION_HISTORY 업데이트 중..."
-
-{{VERSION_HISTORY_INSERTS}}
-
-log_success "모든 VERSION_HISTORY 업데이트 완료!"
-
 echo ""
 echo "=========================================="
 log_success "누적 패치 실행 완료!"

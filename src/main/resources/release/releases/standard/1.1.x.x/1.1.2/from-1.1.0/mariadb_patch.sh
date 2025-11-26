@@ -2,8 +2,8 @@
 
 ################################################################################
 # MariaDB 누적 패치 실행 스크립트
-# 생성일: 2025-11-26 16:13:28
-# 버전 범위: 1.0.0 → 1.1.2
+# 생성일: 2025-11-26 16:13:38
+# 버전 범위: 1.1.0 → 1.1.2
 ################################################################################
 
 set -e
@@ -47,7 +47,6 @@ DEFAULT_DB_NAME="infraeye2"
 
 # 버전 메타데이터 배열
 declare -a VERSION_METADATA=(
-    "1.1.0:2025-10-31:jhlee@tscientific:데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경"
     "1.1.1:2025-11-05:jhlee@tscientific:운영관리 - 파일 기능 관련 테이블 추가"
     "1.1.2:2025-11-25:jhlee@tscientific:SMS 로그 모니터링 정책 상세 테이블 추가"
 )
@@ -57,8 +56,8 @@ echo "=========================================="
 echo "  MariaDB 누적 패치 실행 스크립트"
 echo "=========================================="
 echo ""
-echo "패치 버전 범위: 1.0.0 → 1.1.2"
-echo "포함된 버전 개수: 3"
+echo "패치 버전 범위: 1.1.0 → 1.1.2"
+echo "포함된 버전 개수: 2"
 echo ""
 
 # 실행 방식 선택
@@ -195,25 +194,6 @@ execute_sql "1.patch_mariadb_ddl.sql"
 cd ..
 log_success "버전 1.1.2 패치 완료!"
 
-log_step "버전 1.1.0 패치 적용 중..."
-cd "1.1.0"
-log_info "실행: 1.patch_mariadb_ddl.sql"
-execute_sql "1.patch_mariadb_ddl.sql"
-log_info "실행: 2.patch_mariadb_view.sql"
-execute_sql "2.patch_mariadb_view.sql"
-log_info "실행: 3.patch_mariadb_데이터코드.sql"
-execute_sql "3.patch_mariadb_데이터코드.sql"
-log_info "실행: 4.patch_mariadb_이벤트코드.sql"
-execute_sql "4.patch_mariadb_이벤트코드.sql"
-log_info "실행: 5.patch_mariadb_메뉴코드.sql"
-execute_sql "5.patch_mariadb_메뉴코드.sql"
-log_info "실행: 6.patch_mariadb_procedure.sql"
-execute_sql "6.patch_mariadb_procedure.sql"
-log_info "실행: 7.patch_mariadb_dml.sql"
-execute_sql "7.patch_mariadb_dml.sql"
-cd ..
-log_success "버전 1.1.0 패치 완료!"
-
 log_step "버전 1.1.1 패치 적용 중..."
 cd "1.1.1"
 log_info "실행: 1.patch_mariadb_ddl.sql"
@@ -231,6 +211,6 @@ log_success "누적 패치 실행 완료!"
 echo "=========================================="
 echo ""
 echo "실행 요약:"
-echo "  - 적용된 버전 개수: 3"
-echo "  - 버전 범위: 1.0.0 → 1.1.2"
+echo "  - 적용된 버전 개수: 2"
+echo "  - 버전 범위: 1.1.0 → 1.1.2"
 echo ""

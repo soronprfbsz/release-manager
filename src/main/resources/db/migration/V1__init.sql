@@ -54,7 +54,27 @@ CREATE TABLE IF NOT EXISTS account (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='계정 테이블';
 
 -- =========================================================
--- Section 3: Customer 테이블 생성
+-- Section 3: Refresh Token 테이블 생성
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS refresh_token (
+    token_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '토큰 ID',
+    account_id BIGINT NOT NULL COMMENT '계정 ID',
+    token VARCHAR(500) NOT NULL UNIQUE COMMENT 'Refresh Token',
+    expires_at DATETIME NOT NULL COMMENT '만료일시',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_token (token),
+    INDEX idx_account_id (account_id),
+    INDEX idx_expires_at (expires_at),
+
+    CONSTRAINT fk_refresh_token_account FOREIGN KEY (account_id)
+        REFERENCES account(account_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Refresh Token 테이블';
+
+-- =========================================================
+-- Section 4: Customer 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS customer (
@@ -72,7 +92,7 @@ CREATE TABLE IF NOT EXISTS customer (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사 테이블';
 
 -- =========================================================
--- Section 4: Release Version 테이블 생성
+-- Section 5: Release Version 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS release_version (
@@ -101,7 +121,7 @@ CREATE TABLE IF NOT EXISTS release_version (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 버전 테이블';
 
 -- =========================================================
--- Section 5: Release File 테이블 생성
+-- Section 6: Release File 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS release_file (
@@ -127,11 +147,11 @@ CREATE TABLE IF NOT EXISTS release_file (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 파일 테이블';
 
 -- =========================================================
--- Section 6: Patch History 테이블 생성
+-- Section 7: Cumulative Patch 테이블 생성 (구 patch_history)
 -- =========================================================
 
-CREATE TABLE IF NOT EXISTS patch_history (
-    patch_history_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '패치 이력 ID',
+CREATE TABLE IF NOT EXISTS cumulative_patch (
+    patch_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '패치 ID',
     release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
     customer_id BIGINT COMMENT '고객사 ID (커스텀 패치인 경우)',
     from_version VARCHAR(50) NOT NULL COMMENT '시작 버전',
@@ -142,41 +162,18 @@ CREATE TABLE IF NOT EXISTS patch_history (
     generated_by VARCHAR(100) NOT NULL COMMENT '생성자',
     description TEXT COMMENT '설명',
     patched_by VARCHAR(100) COMMENT '패치 담당자',
-    status VARCHAR(20) NOT NULL DEFAULT 'SUCCESS' COMMENT '생성 상태 (SUCCESS/FAILED/IN_PROGRESS)',
-    error_message TEXT COMMENT '에러 메시지',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
-    INDEX idx_ph_release_type (release_type),
-    INDEX idx_ph_customer_id (customer_id),
-    INDEX idx_ph_from_version (from_version),
-    INDEX idx_ph_to_version (to_version),
-    INDEX idx_ph_status (status),
-    INDEX idx_ph_generated_at (generated_at),
+    INDEX idx_cp_release_type (release_type),
+    INDEX idx_cp_customer_id (customer_id),
+    INDEX idx_cp_from_version (from_version),
+    INDEX idx_cp_to_version (to_version),
+    INDEX idx_cp_generated_at (generated_at),
 
-    CONSTRAINT fk_patch_history_customer FOREIGN KEY (customer_id)
+    CONSTRAINT fk_cumulative_patch_customer FOREIGN KEY (customer_id)
         REFERENCES customer(customer_id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='패치 생성 이력 테이블';
-
--- =========================================================
--- Section 7: Release Version History 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS release_version_history
-(
-    release_version_id   VARCHAR(20) PRIMARY KEY COMMENT '릴리즈 버전 ID (예: 1.1.0)',
-    standard_version     VARCHAR(20) NOT NULL COMMENT '표준 버전',
-    custom_version       VARCHAR(20) COMMENT '커스텀 버전',
-    version_created_at   DATETIME    NOT NULL COMMENT '버전 생성일시',
-    version_created_by   VARCHAR(100) NOT NULL COMMENT '버전 생성자',
-    system_applied_by    VARCHAR(100) COMMENT '시스템 적용자',
-    system_applied_at    DATETIME COMMENT '시스템 적용일시',
-    comment              TEXT COMMENT '버전 설명',
-    INDEX idx_rvh_standard_version (standard_version),
-    INDEX idx_rvh_system_applied_at (system_applied_at)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='릴리즈 버전 이력 테이블';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='누적 패치 생성 이력 테이블';
 
 -- =========================================================
 -- Section 8: Release Version Hierarchy 클로저 테이블 생성
