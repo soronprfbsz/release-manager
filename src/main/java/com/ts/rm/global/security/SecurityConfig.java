@@ -40,6 +40,9 @@ public class SecurityConfig {
                 // CSRF 비활성화 (JWT 사용으로 불필요)
                 .csrf(AbstractHttpConfigurer::disable)
 
+                // CORS 활성화
+                .cors(cors -> cors.configure(http))
+
                 // Session 사용 안 함
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

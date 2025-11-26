@@ -262,33 +262,35 @@ deploy-job:
 
     - |
       echo "=== MariaDB 헬스체크 ==="
-      max_attempts=30
+      max_attempts=60
       attempt=0
       until docker exec release-manager-mariadb healthcheck.sh --connect --innodb_initialized || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
-        sleep 2
+        echo "  MariaDB 대기 중... ($attempt/$max_attempts)"
+        sleep 3
       done
       if [ $attempt -eq $max_attempts ]; then
         echo "✗ MariaDB 헬스체크 실패"
         docker logs --tail 20 release-manager-mariadb
         exit 1
       fi
-      echo "✓ MariaDB 준비 완료"
+      echo "✓ MariaDB 준비 완료 (${attempt}회 시도)"
 
     - |
       echo "=== Redis 헬스체크 ==="
-      max_attempts=30
+      max_attempts=60
       attempt=0
       until docker exec release-manager-redis redis-cli ping || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
-        sleep 2
+        echo "  Redis 대기 중... ($attempt/$max_attempts)"
+        sleep 3
       done
       if [ $attempt -eq $max_attempts ]; then
         echo "✗ Redis 헬스체크 실패"
         docker logs --tail 20 release-manager-redis
         exit 1
       fi
-      echo "✓ Redis 준비 완료"
+      echo "✓ Redis 준비 완료 (${attempt}회 시도)"
 
     - |
       echo "=== 애플리케이션 배포 ==="
@@ -300,19 +302,22 @@ deploy-job:
 
     - |
       echo "=== 애플리케이션 헬스체크 ==="
-      max_attempts=30
+      max_attempts=60
       attempt=0
       until curl -sf http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}/actuator/health > /dev/null || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt+1))
-        echo "  대기 중... ($attempt/$max_attempts)"
-        sleep 2
+        echo "  애플리케이션 대기 중... ($attempt/$max_attempts)"
+        sleep 3
       done
       if [ $attempt -eq $max_attempts ]; then
-        echo "✗ 애플리케이션 헬스체크 실패"
-        docker logs ${SERVER_NAME}
+        echo "✗ 애플리케이션 헬스체크 실패 (3분 타임아웃)"
+        echo "=== 컨테이너 로그 ==="
+        docker logs --tail 50 ${SERVER_NAME}
+        echo "=== 컨테이너 상태 ==="
+        docker ps -a --filter "name=${SERVER_NAME}"
         exit 1
       fi
-      echo "✅ 애플리케이션 준비 완료"
+      echo "✅ 애플리케이션 준비 완료 (${attempt}회 시도, $((attempt * 3))초 소요)"
       echo "=== 배포 성공 ==="
 
   after_script:
