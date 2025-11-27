@@ -1,30 +1,30 @@
-# Spring Boot Boilerplate
+# Release Manager
 
-RESTful API 개발을 위한 Spring Boot 3.5.6 기반 보일러플레이트 프로젝트
-Account CRUD 예제 포함
+소프트웨어 릴리즈 버전 및 패치 파일 관리를 위한 Spring Boot 기반 REST API 시스템
 
 ## 주요 기능
 
-- ✅ RESTful API (Account CRUD 예제)
-- ✅ Spring Data JPA + QueryDSL
-- ✅ Flyway 데이터베이스 마이그레이션
+- ✅ 릴리즈 버전 관리 (표준/고객사별 커스텀 버전)
+- ✅ 패치 파일 관리 (MariaDB/CrateDB SQL 스크립트)
+- ✅ 누적 패치 생성 (버전 범위별)
+- ✅ JWT 기반 인증 시스템
+- ✅ RESTful API 설계
 - ✅ Swagger API 문서화
-- ✅ Docker 컨테이너 지원
-- ✅ GitLab CI/CD 파이프라인
+- ✅ GitLab CI/CD + Harbor Registry
 
 ## 기술 스택
 
 | 분류 | 기술 |
 |------|------|
-| Framework | Spring Boot 3.5.6, Spring Web, Spring Data JPA |
+| Framework | Spring Boot 3.5.6, Spring Security |
 | Language | Java 17 |
-| Database | MariaDB, Redis |
-| Query | QueryDSL, p6spy (SQL 로깅) |
+| Database | MariaDB 10.11.5, Redis |
+| Query | QueryDSL, JPA, p6spy |
 | Migration | Flyway |
-| API Docs | SpringDoc OpenAPI (Swagger) |
+| API Docs | SpringDoc OpenAPI 3 |
 | Build | Gradle 8.5 |
 | Container | Docker, Docker Compose |
-| CI/CD | GitLab CI/CD |
+| CI/CD | GitLab CI/CD, Harbor Registry |
 
 ## 빠른 시작
 
@@ -37,42 +37,33 @@ cd release-manager
 
 # 환경 변수 설정
 cp .env.example .env
-# .env 파일 수정 (DB 비밀번호 등)
+# .env 파일 수정 (DB 접속 정보, JWT Secret 등)
 ```
 
 ### 2. Docker로 실행 (권장)
 
 ```bash
-# .env 파일을 docker/ 디렉토리로 복사
-cp .env docker/.env
-
-# MariaDB, Redis, Application 모두 실행
-cd docker
-docker compose up -d
+# 전체 서비스 실행
+docker compose -f docker/docker-compose.yml --env-file .env up -d
 
 # 로그 확인
-docker compose logs -f app
+docker compose -f docker/docker-compose.yml logs -f app
 
 # 중지
-docker compose down
+docker compose -f docker/docker-compose.yml down
 ```
 
-### 3. 로컬에서 실행
+### 3. 로컬 개발 모드
 
 ```bash
-# .env 파일을 docker/ 디렉토리로 복사
-cp .env docker/.env
+# DB만 실행
+docker compose -f docker/docker-compose.yml --env-file .env up -d mariadb redis
 
-# MariaDB, Redis만 Docker로 실행
-cd docker
-docker compose up -d mariadb redis
-
-# Application은 로컬에서 실행
-cd ..
+# Application 로컬 실행
 ./gradlew bootRun
 ```
 
-### 4. API 확인
+### 4. API 문서
 
 - **Swagger UI**: http://localhost:8081/swagger
 - **Health Check**: http://localhost:8081/actuator/health
@@ -80,24 +71,58 @@ cd ..
 ## 프로젝트 구조
 
 ```
-src/main/java/com/rm/
-├── domain/                 # 도메인별 비즈니스 로직
-│   └── account/
-│       ├── controller/     # REST API 엔드포인트
-│       ├── service/        # 비즈니스 로직
-│       ├── repository/     # 데이터 액세스 (JPA + QueryDSL)
-│       ├── entity/         # JPA 엔티티
-│       ├── dto/            # Request/Response DTO
-│       └── enums/          # Enum 정의
-└── global/                 # 공통 기능
-    ├── config/             # 설정 (Swagger, QueryDSL 등)
-    ├── exception/          # 예외 처리
-    └── entity/             # 공통 엔티티 (BaseEntity)
+src/main/java/com/ts/rm/
+├── domain/                        # 도메인 계층
+│   ├── auth/                      # 인증 (로그인, 회원가입, 토큰)
+│   ├── releaseversion/            # 릴리즈 버전 관리
+│   ├── releasefile/               # 릴리즈 파일 관리
+│   ├── patch/                     # 패치 생성/조회
+│   ├── customer/                  # 고객사 관리
+│   └── script/                    # DB 백업/복원 스크립트
+└── global/                        # 공통 기능
+    ├── config/                    # 설정 (Security, Swagger, QueryDSL)
+    ├── security/                  # JWT 인증 필터
+    └── exception/                 # 전역 예외 처리
 
 src/main/resources/
-├── application.yml         # 애플리케이션 설정
-└── db/migration/           # Flyway 마이그레이션 SQL
+├── application.yml                # 애플리케이션 설정
+├── db/migration/                  # Flyway 마이그레이션
+└── release/                       # 릴리즈 파일 저장소
+    ├── patches/                   # 생성된 패치 파일 (git 제외)
+    ├── versions/                  # 버전별 SQL 스크립트
+    └── templates/                 # 패치 스크립트 템플릿
 ```
+
+## 주요 API
+
+### 인증
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/api/auth/signup` | 회원가입 |
+| POST | `/api/auth/login` | 로그인 |
+| POST | `/api/auth/refresh` | 토큰 갱신 |
+
+### 릴리즈 버전
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/releases/versions/{id}` | 버전 상세 조회 |
+| GET | `/api/releases/standard/tree` | 표준 버전 트리 조회 |
+| GET | `/api/releases/custom/{customer-code}/tree` | 커스텀 버전 트리 조회 |
+
+### 릴리즈 파일
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/releases/files/{id}/download` | 파일 다운로드 |
+
+### 패치
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/api/patches` | 누적 패치 생성 |
+| GET | `/api/patches` | 패치 목록 조회 |
+| GET | `/api/patches/{id}` | 패치 상세 조회 |
+| GET | `/api/patches/{id}/download` | 패치 다운로드 |
+
+자세한 API 명세는 Swagger UI를 참고하세요.
 
 ## 개발 가이드
 
@@ -109,153 +134,111 @@ Controller → Service → Repository → Database
    DTO        Entity
 ```
 
-### Repository 패턴
+### Repository 패턴 (JPA + QueryDSL)
 
 ```java
-// Spring Data JPA (간단한 CRUD)
-public interface AccountRepository extends JpaRepository<Account, Long>,
-                                           AccountRepositoryCustom {
-    Optional<Account> findByEmail(String email);
+// Spring Data JPA (기본 CRUD)
+public interface ReleaseVersionRepository extends JpaRepository<ReleaseVersion, Long>,
+                                                   ReleaseVersionRepositoryCustom {
+    Optional<ReleaseVersion> findByVersion(String version);
 }
 
 // QueryDSL (복잡한 쿼리)
-public interface AccountRepositoryCustom {
-    long updateAccountNameByAccountId(Long accountId, String name);
+public interface ReleaseVersionRepositoryCustom {
+    List<ReleaseVersion> findStandardVersions();
 }
 
-public class AccountRepositoryImpl implements AccountRepositoryCustom {
+public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCustom {
+    private final JPAQueryFactory queryFactory;
     // QueryDSL 구현
 }
 ```
 
-### 데이터베이스 변경
+### 데이터베이스 마이그레이션
 
-**Flyway 마이그레이션 파일 작성**:
+Flyway를 사용하여 스키마 변경을 관리합니다.
+
 ```sql
--- src/main/resources/db/migration/V1__create_account_table.sql
-CREATE TABLE account (
-    account_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    ...
+-- src/main/resources/db/migration/V8__create_new_table.sql
+CREATE TABLE new_table (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)
 );
 ```
 
-**Entity 작성**:
-```java
-@Entity
-public class Account extends BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long accountId;
+애플리케이션 재시작 시 자동으로 마이그레이션이 적용됩니다.
 
-    private String email;
-}
-```
-
-애플리케이션 재시작 시 자동 적용됩니다.
-
-## API 예제
-
-### Account CRUD
-
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| POST | `/api/accounts` | 계정 생성 |
-| GET | `/api/accounts/{id}` | 계정 조회 |
-| GET | `/api/accounts` | 계정 목록 조회 |
-| PUT | `/api/accounts/{id}` | 계정 수정 |
-| DELETE | `/api/accounts/{id}` | 계정 삭제 |
-
-**요청 예시**:
-```bash
-# 계정 생성
-curl -X POST http://localhost:8081/api/accounts \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "accountName": "홍길동",
-    "password": "password123"
-  }'
-
-# 계정 조회
-curl http://localhost:8081/api/accounts/1
-```
-
-자세한 API 명세는 Swagger UI에서 확인하세요.
-
-
-## 테스트
+## 빌드 및 테스트
 
 ```bash
-# 전체 테스트 실행
+# 빌드 (테스트 제외)
+./gradlew clean build -x test
+
+# 전체 테스트
 ./gradlew test
 
 # 특정 도메인 테스트
-./gradlew test --tests "com.ts.rm.domain.account.*"
+./gradlew test --tests "com.ts.rm.domain.patch.*"
 
-# 테스트 커버리지
-./gradlew test jacocoTestReport
+# QueryDSL Q클래스 재생성
+./gradlew clean build
 ```
 
-## Docker 가이드
+## CI/CD 파이프라인
 
-### Docker Compose 구조
-
-```yaml
-services:
-  mariadb:       # MariaDB 10.11.5
-  redis:         # Redis latest
-  app:           # Spring Boot Application
-```
-
-### 주요 명령어
-
-```bash
-# 전체 시작
-docker compose up -d
-
-# 특정 서비스만 시작
-docker compose up -d mariadb redis
-
-# 로그 확인
-docker compose logs -f app
-
-# 컨테이너 상태 확인
-docker compose ps
-
-# 전체 중지 및 제거
-docker compose down
-```
-
-## CI/CD 배포
-
-### GitLab CI/CD 파이프라인
+### 파이프라인 구조
 
 ```
 main 브랜치 push
   ↓
-1. build       - Gradle 빌드
+1. build-job          → Gradle 빌드
   ↓
-2. test        - 테스트 실행 (수동)
+2. test-job (수동)    → 테스트 실행
   ↓
-3. docker-build - Docker 이미지 빌드
+3. docker-build-job   → Docker 이미지 빌드 (ts/release-manager-api:latest)
   ↓
-4. deploy      - GitLab Runner 호스트 배포
+4. harbor-push-job (수동) → Harbor Registry에 푸시 (latest + 커밋SHA)
+  ↓
+5. deploy-job         → GitLab Runner 호스트 배포
 ```
+
+### Harbor 이미지 관리
+
+- **Harbor**: `${HARBOR_REGISTRY}/ts/release-manager-api:latest`, `${HARBOR_REGISTRY}/ts/release-manager-api:{commit-sha}`
+- **호스트**: `ts/release-manager-api:latest` (실행용)
 
 ### GitLab Variables 설정
 
 Settings → CI/CD → Variables에 다음 변수 추가:
 
-| 변수명 | 값 예시 | 설명 |
-|--------|---------|------|
-| `SERVER_NAME` | `rm` | 애플리케이션 이름 |
-| `SERVER_HOST` | `10.230.1.17` | 서버 IP |
-| `SERVER_PORT` | `8081` | 애플리케이션 포트 |
-| `MARIADB_*` | - | MariaDB 접속 정보 |
-| `REDIS_*` | - | Redis 접속 정보 |
+| 변수명 | 설명 |
+|--------|------|
+| `SERVER_NAME` | 애플리케이션 이름 |
+| `SERVER_HOST` | 배포 서버 IP |
+| `SERVER_EXTERNAL_PORT` | 외부 접근 포트 |
+| `MARIADB_*` | MariaDB 접속 정보 |
+| `REDIS_*` | Redis 접속 정보 |
+| `JWT_SECRET` | JWT 시크릿 키 (최소 256비트) |
+| `HARBOR_*` | Harbor Registry 접속 정보 |
 
-**주의**: 특수문자 포함 비밀번호는 "Expand variable reference" 비활성화
+**주의**: 특수문자 포함 변수는 "Expand variable reference" 비활성화
+
+## Docker 명령어
+
+```bash
+# 시작
+docker compose -f docker/docker-compose.yml --env-file .env up -d
+
+# 로그
+docker compose -f docker/docker-compose.yml logs -f app
+
+# 재시작
+docker compose -f docker/docker-compose.yml restart app
+
+# 중지
+docker compose -f docker/docker-compose.yml down
+```
 
 ## 문제 해결
 
@@ -266,32 +249,31 @@ Settings → CI/CD → Variables에 다음 변수 추가:
 
 ### Flyway 마이그레이션 오류
 ```bash
-# 마이그레이션 초기화
+# 마이그레이션 히스토리 확인
+SELECT * FROM flyway_schema_history ORDER BY installed_rank;
+
+# 개발 환경에서만: 마이그레이션 초기화
 ./gradlew flywayClean flywayMigrate
 ```
 
-### Docker 컨테이너 재시작
+### Docker 컨테이너 문제
 ```bash
+# 컨테이너 재시작
 docker compose restart app
-docker compose logs -f app
+
+# 로그 확인
+docker compose logs --tail 100 app
+
+# 컨테이너 상태 확인
+docker compose ps
 ```
 
 ## 코드 스타일
 
 **Google Java Style Guide** 사용
 
-IntelliJ IDEA:
-1. `File` → `Settings` → `Editor` → `Code Style` → `Java`
-2. Scheme: **GoogleStyle** 확인
-3. 포맷팅: `Ctrl+Alt+L` (Windows/Linux) 또는 `Cmd+Option+L` (macOS)
-
-## 참고 자료
-
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [Spring Data JPA](https://spring.io/projects/spring-data-jpa)
-- [QueryDSL Reference](http://querydsl.com/static/querydsl/latest/reference/html/)
-- [Flyway Documentation](https://flywaydb.org/documentation/)
+- IntelliJ IDEA: `Ctrl+Alt+L` (Windows) / `Cmd+Option+L` (Mac)
 
 ## 라이선스
 
-MIT License - 자유롭게 사용 가능
+MIT License

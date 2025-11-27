@@ -2,6 +2,8 @@ services:
   mariadb:
     image: mariadb:10.11.5
     container_name: release-manager-mariadb
+    env_file:
+      - ../.env
     ports:
       - "0.0.0.0:${MARIADB_PORT}:3306"
     command:
@@ -14,7 +16,7 @@ services:
     volumes:
       - /data/release_manager/mariadb/lib:/var/lib/mysql
       - /data/release_manager/mariadb/log:/var/log/mysql
-      - ./docker/init-mariadb.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init-mariadb.sql:/docker-entrypoint-initdb.d/init.sql
     restart: always
     networks:
       - network-ts
@@ -33,9 +35,20 @@ services:
   redis:
     image: redis:8.2.3
     container_name: release-manager-redis
+    env_file:
+      - ../.env
     ports:
       - "0.0.0.0:${REDIS_PORT}:6379"
-    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --appendfilename "appendonly.aof" --dir /data
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --appendonly
+      - yes
+      - --appendfilename
+      - appendonly.aof
+      - --dir
+      - /data
     volumes:
       - /data/release_manager/redis/data:/data
     networks:
