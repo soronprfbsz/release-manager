@@ -2,7 +2,7 @@ package com.ts.rm.domain.customer.controller;
 
 import com.ts.rm.domain.customer.dto.CustomerDto;
 import com.ts.rm.domain.customer.service.CustomerService;
-import com.ts.rm.global.common.response.ApiResponse;
+import com.ts.rm.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

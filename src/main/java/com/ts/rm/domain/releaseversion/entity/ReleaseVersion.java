@@ -2,7 +2,7 @@ package com.ts.rm.domain.releaseversion.entity;
 
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
-import com.ts.rm.global.entity.BaseEntity;
+import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

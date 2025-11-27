@@ -1,4 +1,4 @@
-package com.ts.rm.global.common.exception;
+package com.ts.rm.global.exception;
 
 import lombok.Getter;
 

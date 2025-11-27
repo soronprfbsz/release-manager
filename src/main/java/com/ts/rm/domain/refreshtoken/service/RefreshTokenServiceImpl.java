@@ -4,7 +4,7 @@ import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.auth.dto.TokenResponse;
 import com.ts.rm.domain.refreshtoken.entity.RefreshToken;
 import com.ts.rm.domain.refreshtoken.repository.RefreshTokenRepository;
-import com.ts.rm.global.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

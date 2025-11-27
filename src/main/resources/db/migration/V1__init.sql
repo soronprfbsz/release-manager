@@ -52,30 +52,10 @@ CREATE TABLE IF NOT EXISTS account (
     CONSTRAINT fk_account_role FOREIGN KEY (role) REFERENCES code(code_id),
     CONSTRAINT fk_account_status FOREIGN KEY (status) REFERENCES code(code_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='계정 테이블';
-
 -- =========================================================
--- Section 3: Refresh Token 테이블 생성
+-- Section 3: Customer 테이블 생성
 -- =========================================================
-
-CREATE TABLE IF NOT EXISTS refresh_token (
-    token_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '토큰 ID',
-    account_id BIGINT NOT NULL COMMENT '계정 ID',
-    token VARCHAR(500) NOT NULL UNIQUE COMMENT 'Refresh Token',
-    expires_at DATETIME NOT NULL COMMENT '만료일시',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    INDEX idx_token (token),
-    INDEX idx_account_id (account_id),
-    INDEX idx_expires_at (expires_at),
-
-    CONSTRAINT fk_refresh_token_account FOREIGN KEY (account_id)
-        REFERENCES account(account_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Refresh Token 테이블';
-
--- =========================================================
--- Section 4: Customer 테이블 생성
--- =========================================================
+-- (Section 3: Refresh Token 테이블 제거됨 - Redis로 완전 이관)
 
 CREATE TABLE IF NOT EXISTS customer (
     customer_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '고객사 ID',
@@ -92,7 +72,7 @@ CREATE TABLE IF NOT EXISTS customer (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사 테이블';
 
 -- =========================================================
--- Section 5: Release Version 테이블 생성
+-- Section 4: Release Version 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS release_version (
@@ -121,7 +101,7 @@ CREATE TABLE IF NOT EXISTS release_version (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 버전 테이블';
 
 -- =========================================================
--- Section 6: Release File 테이블 생성
+-- Section 5: Release File 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS release_file (
@@ -147,7 +127,7 @@ CREATE TABLE IF NOT EXISTS release_file (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 파일 테이블';
 
 -- =========================================================
--- Section 7: Cumulative Patch 테이블 생성 (구 patch_history)
+-- Section 6: Cumulative Patch 테이블 생성 (구 patch_history)
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS cumulative_patch (
@@ -176,7 +156,7 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='누적 패치 생성 이력 테이블';
 
 -- =========================================================
--- Section 8: Release Version Hierarchy 클로저 테이블 생성
+-- Section 7: Release Version Hierarchy 클로저 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS release_version_hierarchy (
@@ -198,7 +178,7 @@ CREATE TABLE IF NOT EXISTS release_version_hierarchy (
 COMMENT='릴리즈 버전 계층 구조 테이블 (Closure Table)';
 
 -- =========================================================
--- Section 9: 코드 타입 기본 데이터
+-- Section 8: 코드 타입 기본 데이터
 -- =========================================================
 
 INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
@@ -208,7 +188,7 @@ INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
 ('DATABASE_TYPE', '데이터베이스 타입', '지원하는 데이터베이스 종류');
 
 -- =========================================================
--- Section 10: 계정 권한 코드
+-- Section 9: 계정 권한 코드
 -- =========================================================
 
 INSERT INTO code (code_id, code_type_id, code_name, description, sort_order) VALUES
@@ -217,7 +197,7 @@ INSERT INTO code (code_id, code_type_id, code_name, description, sort_order) VAL
 ('ACCOUNT_ROLE_GUEST', 'ACCOUNT_ROLE', '게스트', '게스트 사용자 권한', 3);
 
 -- =========================================================
--- Section 11: 계정 상태 코드
+-- Section 10: 계정 상태 코드
 -- =========================================================
 
 INSERT INTO code (code_id, code_type_id, code_name, description, sort_order) VALUES
@@ -226,7 +206,7 @@ INSERT INTO code (code_id, code_type_id, code_name, description, sort_order) VAL
 ('ACCOUNT_STATUS_SUSPENDED', 'ACCOUNT_STATUS', '정지', '정지 상태', 3);
 
 -- =========================================================
--- Section 12: 릴리즈 타입 코드
+-- Section 11: 릴리즈 타입 코드
 -- =========================================================
 
 INSERT INTO code (code_id, code_type_id, code_name, description, sort_order, is_enabled) VALUES
@@ -234,7 +214,7 @@ INSERT INTO code (code_id, code_type_id, code_name, description, sort_order, is_
 ('RELEASE_TYPE_CUSTOM', 'RELEASE_TYPE', '커스텀 릴리즈', '특정 고객사 전용 릴리즈', 2, TRUE);
 
 -- =========================================================
--- Section 13: 데이터베이스 타입 코드
+-- Section 12: 데이터베이스 타입 코드
 -- =========================================================
 
 INSERT INTO code (code_id, code_type_id, code_name, description, sort_order, is_enabled) VALUES
@@ -242,7 +222,7 @@ INSERT INTO code (code_id, code_type_id, code_name, description, sort_order, is_
 ('DATABASE_TYPE_CRATEDB', 'DATABASE_TYPE', 'CrateDB', 'CrateDB 데이터베이스', 2, TRUE);
 
 -- =========================================================
--- Section 14: 기본 관리자 계정
+-- Section 13: 기본 관리자 계정
 -- 패스워드: nms12345! (BCrypt 암호화)
 -- =========================================================
 
@@ -251,7 +231,7 @@ INSERT INTO account (account_name, email, password, role, status) VALUES
 ('사용자','m_user@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'ACCOUNT_ROLE_USER', 'ACCOUNT_STATUS_ACTIVE');
 
 -- =========================================================
--- Section 15: 실제 릴리즈 데이터 추가
+-- Section 14: 실제 릴리즈 데이터 추가
 -- =========================================================
 
 INSERT INTO release_version (
@@ -265,7 +245,7 @@ INSERT INTO release_version (
 ('STANDARD', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS 로그 모니터링 정책 상세 테이블 추가', FALSE, '2025-11-25 00:00:00');
 
 -- =========================================================
--- Section 16: 릴리즈 파일 데이터
+-- Section 15: 릴리즈 파일 데이터
 -- =========================================================
 
 INSERT INTO release_file (
@@ -289,7 +269,7 @@ INSERT INTO release_file (
 (4, 'MARIADB', '1.patch_mariadb_ddl.sql', 'versions/standard/1.1.x/1.1.2/patch/mariadb/1.patch_mariadb_ddl.sql', 1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, 'SMS 로그 모니터링 정책 상세 테이블 추가');
 
 -- =========================================================
--- Section 17: 계층 구조 데이터 추가
+-- Section 16: 계층 구조 데이터 추가
 -- =========================================================
 
 -- 1.0.0 (release_version_id = 1)

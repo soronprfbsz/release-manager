@@ -2,7 +2,7 @@ package com.ts.rm.domain.releaseversion.controller;
 
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.service.ReleaseVersionService;
-import com.ts.rm.global.common.response.ApiResponse;
+import com.ts.rm.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

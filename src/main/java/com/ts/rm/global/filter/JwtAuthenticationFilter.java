@@ -1,6 +1,6 @@
-package com.ts.rm.global.security;
+package com.ts.rm.global.filter;
 
-import com.ts.rm.global.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

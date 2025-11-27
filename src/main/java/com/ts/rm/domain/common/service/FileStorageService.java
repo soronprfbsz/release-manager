@@ -1,7 +1,7 @@
-package com.ts.rm.global.file;
+package com.ts.rm.domain.common.service;
 
-import com.ts.rm.global.common.exception.BusinessException;
-import com.ts.rm.global.common.exception.ErrorCode;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

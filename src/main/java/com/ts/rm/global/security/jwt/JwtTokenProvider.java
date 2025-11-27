@@ -1,4 +1,4 @@
-package com.ts.rm.global.jwt;
+package com.ts.rm.global.security.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;

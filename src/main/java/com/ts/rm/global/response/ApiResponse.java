@@ -1,4 +1,4 @@
-package com.ts.rm.global.common.response;
+package com.ts.rm.global.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.fasterxml.jackson.annotation.JsonInclude;

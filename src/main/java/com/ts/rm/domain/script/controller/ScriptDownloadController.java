@@ -2,7 +2,7 @@ package com.ts.rm.domain.script.controller;
 
 import com.ts.rm.domain.script.enums.ScriptType;
 import com.ts.rm.domain.script.service.ScriptDownloadService;
-import com.ts.rm.global.common.response.ApiResponse;
+import com.ts.rm.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

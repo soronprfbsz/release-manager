@@ -27,13 +27,4 @@ public interface ReleaseVersionHierarchyRepositoryCustom {
      */
     List<ReleaseVersion> findAllByReleaseTypeAndCustomerWithHierarchy(String releaseType,
             String customerCode);
-
-    /**
-     * 특정 Major.Minor 그룹의 모든 버전을 계층 구조로 조회
-     *
-     * @param releaseType 릴리즈 타입
-     * @param majorMinor  Major.Minor (예: 1.1.x)
-     * @return 릴리즈 버전 목록 (패치 버전 순서대로 정렬)
-     */
-    List<ReleaseVersion> findAllByMajorMinorWithHierarchy(String releaseType, String majorMinor);
 }

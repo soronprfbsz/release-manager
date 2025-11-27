@@ -1,7 +1,7 @@
 package com.ts.rm.domain.patch.entity;
 
 import com.ts.rm.domain.customer.entity.Customer;
-import com.ts.rm.global.entity.BaseEntity;
+import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

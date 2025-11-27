@@ -16,7 +16,7 @@ import com.ts.rm.domain.auth.dto.SignUpRequest;
 import com.ts.rm.domain.auth.dto.SignUpResponse;
 import com.ts.rm.domain.refreshtoken.entity.RefreshToken;
 import com.ts.rm.domain.refreshtoken.service.RefreshTokenService;
-import com.ts.rm.global.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

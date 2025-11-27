@@ -1,6 +1,6 @@
-package com.ts.rm.global.common.exception;
+package com.ts.rm.global.exception;
 
-import com.ts.rm.global.common.response.ApiResponse;
+import com.ts.rm.global.response.ApiResponse;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;

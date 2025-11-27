@@ -8,7 +8,7 @@ import com.ts.rm.domain.auth.dto.SignUpResponse;
 import com.ts.rm.domain.auth.dto.TokenResponse;
 import com.ts.rm.domain.refreshtoken.entity.RefreshToken;
 import com.ts.rm.domain.refreshtoken.service.RefreshTokenService;
-import com.ts.rm.global.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;

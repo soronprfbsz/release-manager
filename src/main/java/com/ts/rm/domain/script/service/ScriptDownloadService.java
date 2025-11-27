@@ -1,8 +1,8 @@
 package com.ts.rm.domain.script.service;
 
 import com.ts.rm.domain.script.enums.ScriptType;
-import com.ts.rm.global.common.exception.BusinessException;
-import com.ts.rm.global.common.exception.ErrorCode;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;

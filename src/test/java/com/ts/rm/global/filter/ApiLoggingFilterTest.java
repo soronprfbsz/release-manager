@@ -1,4 +1,4 @@
-package com.ts.rm.global.common.filter;
+package com.ts.rm.global.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

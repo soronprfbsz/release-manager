@@ -1,7 +1,7 @@
 package com.ts.rm.domain.releasefile.entity;
 
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
-import com.ts.rm.global.entity.BaseEntity;
+import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

@@ -1,7 +1,7 @@
 package com.ts.rm.domain.releaseversion.util;
 
-import com.ts.rm.global.common.exception.BusinessException;
-import com.ts.rm.global.common.exception.ErrorCode;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;

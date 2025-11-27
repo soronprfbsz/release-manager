@@ -7,7 +7,7 @@ import com.ts.rm.domain.auth.dto.SignUpResponse;
 import com.ts.rm.domain.auth.dto.TokenResponse;
 import com.ts.rm.domain.auth.service.AuthService;
 import com.ts.rm.domain.refreshtoken.service.RefreshTokenService;
-import com.ts.rm.global.common.response.ApiResponse;
+import com.ts.rm.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

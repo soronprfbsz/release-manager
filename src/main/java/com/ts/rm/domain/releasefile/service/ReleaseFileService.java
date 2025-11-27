@@ -6,10 +6,13 @@ import com.ts.rm.domain.releasefile.mapper.ReleaseFileDtoMapper;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
-import com.ts.rm.global.common.exception.BusinessException;
-import com.ts.rm.global.common.exception.ErrorCode;
-import com.ts.rm.global.file.FileStorageService;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.file.ZipUtil;
+import com.ts.rm.domain.common.service.FileStorageService;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -257,6 +260,65 @@ public class ReleaseFileService {
 
         log.info("Release file downloaded successfully: {}", releaseFile.getFileName());
         return resource;
+    }
+
+    /**
+     * 버전별 모든 릴리즈 파일 다운로드 (ZIP)
+     *
+     * <p>특정 버전의 모든 파일을 DB 타입별 폴더 구조로 압축하여 반환
+     * <p>폴더 구조: mariadb/{file1.sql}, cratedb/{file2.sql}
+     *
+     * @param versionId 릴리즈 버전 ID
+     * @return ZIP 파일 바이트 배열
+     */
+    public byte[] downloadVersionFilesAsZip(Long versionId) {
+        log.info("버전별 파일 일괄 다운로드 요청 - versionId: {}", versionId);
+
+        // 1. 버전 조회
+        ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
+
+        // 2. 해당 버전의 모든 파일 조회 (실행 순서대로)
+        List<ReleaseFile> releaseFiles = releaseFileRepository
+                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
+
+        if (releaseFiles.isEmpty()) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                    "버전 " + releaseVersion.getVersion() + "에 파일이 없습니다");
+        }
+
+        // 3. ZIP 엔트리 목록 생성 (폴더 구조 유지)
+        List<ZipUtil.ZipFileEntry> zipEntries = new ArrayList<>();
+
+        for (ReleaseFile file : releaseFiles) {
+            Path sourcePath = fileStorageService.getAbsolutePath(file.getFilePath());
+
+            // ZIP 내부 경로: {databaseType}/{fileName}
+            // 예: mariadb/1.patch.sql, cratedb/1.patch.sql
+            String zipEntryPath = String.format("%s/%s",
+                    file.getDatabaseType().toLowerCase(),
+                    file.getFileName());
+
+            zipEntries.add(new ZipUtil.ZipFileEntry(sourcePath, zipEntryPath));
+        }
+
+        // 4. ZIP 압축
+        byte[] zipBytes = ZipUtil.compressFiles(zipEntries);
+
+        log.info("버전 {} 파일 압축 완료 - {} 개 파일, {} bytes",
+                releaseVersion.getVersion(), releaseFiles.size(), zipBytes.length);
+
+        return zipBytes;
+    }
+
+    /**
+     * 버전별 ZIP 파일명 생성
+     *
+     * @param versionId 릴리즈 버전 ID
+     * @return ZIP 파일명 (예: release_1.1.0.zip)
+     */
+    public String getVersionZipFileName(Long versionId) {
+        ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
+        return String.format("release_%s.zip", releaseVersion.getVersion());
     }
 
     /**

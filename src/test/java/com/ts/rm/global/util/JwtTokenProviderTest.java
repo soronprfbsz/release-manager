@@ -1,7 +1,8 @@
-package com.ts.rm.global.jwt;
+package com.ts.rm.global.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -20,16 +20,4 @@ public interface ReleaseVersionRepositoryCustom {
      * @return 버전 목록
      */
     List<ReleaseVersion> findVersionsBetween(String releaseType, String fromVersion, String toVersion);
-
-    /**
-     * 고객사별 버전 범위 조회
-     *
-     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
-     * @param customerId  고객사 ID
-     * @param fromVersion 시작 버전
-     * @param toVersion   종료 버전
-     * @return 버전 목록
-     */
-    List<ReleaseVersion> findVersionsBetweenForCustomer(String releaseType, Long customerId,
-            String fromVersion, String toVersion);
 }

@@ -1,4 +1,4 @@
-package com.ts.rm.global.common.filter;
+package com.ts.rm.global.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

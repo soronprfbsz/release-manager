@@ -19,12 +19,15 @@ import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.customer.dto.CustomerDto;
 import com.ts.rm.domain.customer.service.CustomerService;
 import com.ts.rm.global.config.MessageConfig;
-import com.ts.rm.global.common.exception.GlobalExceptionHandler;
-import com.ts.rm.global.jwt.JwtTokenProvider;
-import com.ts.rm.global.security.CustomUserDetailsService;
-import com.ts.rm.global.security.JwtAuthenticationFilter;
+import com.ts.rm.global.exception.GlobalExceptionHandler;
+import com.ts.rm.global.security.jwt.JwtTokenProvider;
+import com.ts.rm.domain.common.service.CustomUserDetailsService;
+import com.ts.rm.global.filter.JwtAuthenticationFilter;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -113,7 +116,7 @@ class CustomerControllerTest {
         given(customerService.createCustomer(any())).willReturn(detailResponse);
 
         // when & then
-        mockMvc.perform(post("/api/v1/customers")
+        mockMvc.perform(post("/api/customers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -130,7 +133,7 @@ class CustomerControllerTest {
         given(customerService.getCustomerById(1L)).willReturn(detailResponse);
 
         // when & then
-        mockMvc.perform(get("/api/v1/customers/{id}", 1L))
+        mockMvc.perform(get("/api/customers/{id}", 1L))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
@@ -142,32 +145,34 @@ class CustomerControllerTest {
     @DisplayName("활성 고객사 목록 조회 - 성공")
     void getActiveCustomers_Success() throws Exception {
         // given
-        List<CustomerDto.DetailResponse> responses = List.of(detailResponse);
-        given(customerService.getCustomers(eq(true), isNull())).willReturn(responses);
+        Page<CustomerDto.DetailResponse> page = new PageImpl<>(List.of(detailResponse));
+        given(customerService.getCustomersWithPaging(eq(true), isNull(), any(Pageable.class)))
+                .willReturn(page);
 
         // when & then
-        mockMvc.perform(get("/api/v1/customers").param("isActive", "true"))
+        mockMvc.perform(get("/api/customers").param("isActive", "true"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].customerCode").value("company_a"));
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].customerCode").value("company_a"));
     }
 
     @Test
     @DisplayName("전체 고객사 목록 조회 - 성공")
     void getAllCustomers_Success() throws Exception {
         // given
-        List<CustomerDto.DetailResponse> responses = List.of(detailResponse);
-        given(customerService.getCustomers(isNull(), isNull())).willReturn(responses);
+        Page<CustomerDto.DetailResponse> page = new PageImpl<>(List.of(detailResponse));
+        given(customerService.getCustomersWithPaging(isNull(), isNull(), any(Pageable.class)))
+                .willReturn(page);
 
         // when & then
-        mockMvc.perform(get("/api/v1/customers"))
+        mockMvc.perform(get("/api/customers"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].customerId").value(1));
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].customerId").value(1));
     }
 
     @Test
@@ -192,7 +197,7 @@ class CustomerControllerTest {
         given(customerService.updateCustomer(eq(1L), any())).willReturn(updatedResponse);
 
         // when & then
-        mockMvc.perform(put("/api/v1/customers/{id}", 1L)
+        mockMvc.perform(put("/api/customers/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -208,7 +213,7 @@ class CustomerControllerTest {
         willDoNothing().given(customerService).deleteCustomer(1L);
 
         // when & then
-        mockMvc.perform(delete("/api/v1/customers/{id}", 1L))
+        mockMvc.perform(delete("/api/customers/{id}", 1L))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"));
@@ -221,7 +226,7 @@ class CustomerControllerTest {
         willDoNothing().given(customerService).updateCustomerStatus(eq(1L), eq(true));
 
         // when & then
-        mockMvc.perform(patch("/api/v1/customers/{id}/status", 1L)
+        mockMvc.perform(patch("/api/customers/{id}/status", 1L)
                         .param("isActive", "true"))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -235,7 +240,7 @@ class CustomerControllerTest {
         willDoNothing().given(customerService).updateCustomerStatus(eq(1L), eq(false));
 
         // when & then
-        mockMvc.perform(patch("/api/v1/customers/{id}/status", 1L)
+        mockMvc.perform(patch("/api/customers/{id}/status", 1L)
                         .param("isActive", "false"))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -253,7 +258,7 @@ class CustomerControllerTest {
                 .build();
 
         // when & then
-        mockMvc.perform(post("/api/v1/customers")
+        mockMvc.perform(post("/api/customers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -270,7 +275,7 @@ class CustomerControllerTest {
                 .build();
 
         // when & then
-        mockMvc.perform(post("/api/v1/customers")
+        mockMvc.perform(post("/api/customers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());

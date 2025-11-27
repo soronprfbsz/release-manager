@@ -66,29 +66,4 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
                 )
                 .fetch();
     }
-
-    @Override
-    public List<ReleaseVersion> findAllByMajorMinorWithHierarchy(String releaseType,
-            String majorMinor) {
-        QReleaseVersion rv = QReleaseVersion.releaseVersion;
-        QReleaseVersionHierarchy h = QReleaseVersionHierarchy.releaseVersionHierarchy;
-
-        // majorMinor 파싱 (예: "1.1.x" -> major=1, minor=1)
-        String[] parts = majorMinor.replace(".x", "").split("\\.");
-        Integer majorVersion = Integer.parseInt(parts[0]);
-        Integer minorVersion = Integer.parseInt(parts[1]);
-
-        return queryFactory
-                .selectDistinct(rv)
-                .from(h)
-                .innerJoin(h.descendant, rv)
-                .where(
-                        h.depth.eq(0),
-                        rv.releaseType.eq(releaseType),
-                        rv.majorVersion.eq(majorVersion),
-                        rv.minorVersion.eq(minorVersion)
-                )
-                .orderBy(rv.patchVersion.desc())
-                .fetch();
-    }
 }

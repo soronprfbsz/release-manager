@@ -7,8 +7,9 @@ import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
-import com.ts.rm.global.common.exception.BusinessException;
-import com.ts.rm.global.common.exception.ErrorCode;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.file.ZipUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -466,38 +467,7 @@ public class PatchService {
                     "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
         }
 
-        try {
-            return createZipFromDirectory(patchDir, patch.getPatchName());
-        } catch (IOException e) {
-            log.error("패치 ZIP 생성 실패: {}", patch.getOutputPath(), e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "패치 ZIP 생성 실패: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 디렉토리를 ZIP으로 압축
-     */
-    private byte[] createZipFromDirectory(Path sourceDir, String zipName) throws IOException {
-        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-
-        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(baos)) {
-            Files.walk(sourceDir)
-                    .filter(path -> !Files.isDirectory(path))
-                    .forEach(path -> {
-                        try {
-                            String entryName = sourceDir.relativize(path).toString()
-                                    .replace("\\", "/");
-                            zos.putNextEntry(new java.util.zip.ZipEntry(entryName));
-                            Files.copy(path, zos);
-                            zos.closeEntry();
-                        } catch (IOException e) {
-                            throw new RuntimeException("ZIP 압축 중 오류: " + path, e);
-                        }
-                    });
-        }
-
-        return baos.toByteArray();
+        return ZipUtil.compressDirectory(patchDir);
     }
 
     /**

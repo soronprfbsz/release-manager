@@ -1,4 +1,4 @@
-package com.ts.rm.global.security;
+package com.ts.rm.domain.common.service;
 
 import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.account.repository.AccountRepository;

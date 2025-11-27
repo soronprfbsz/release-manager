@@ -1,4 +1,4 @@
-package com.ts.rm.global.common.response;
+package com.ts.rm.global.response;
 
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
                         content =
                         @Content(
                                 mediaType = "application/json",
-                                schema = @Schema(implementation = com.ts.rm.global.common.response.ApiResponse.class),
+                                schema = @Schema(implementation = com.ts.rm.global.response.ApiResponse.class),
                                 examples =
                                 @ExampleObject(
                                         name = "Success",
