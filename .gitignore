@@ -58,6 +58,9 @@ local.properties
 application-local.yml
 application-prod.yml
 
+### Docker Compose Overrides (Local Development) ###
+docker-compose.override.yml
+
 ### AI ###
 .claude
 /claudedocs/

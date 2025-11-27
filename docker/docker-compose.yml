@@ -75,6 +75,8 @@ services:
     environment:
       # JVM 설정
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
+      # Docker 환경에서는 볼륨 마운트 경로 사용 (.env의 설정을 오버라이드)
+      RELEASE_BASE_PATH: "/app/release_files"
     volumes:
       - /data/release_manager/release_files:/app/release_files
     ports:
