@@ -7,7 +7,9 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.oas.models.tags.Tag;
 import java.util.List;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -41,6 +43,25 @@ public class SwaggerConfig {
                         .addSecuritySchemes("bearer-jwt", securityScheme))
                 // 전역 보안 요구사항 적용
                 .addSecurityItem(securityRequirement);
+    }
+
+    /**
+     * 태그 순서를 정의하는 커스터마이저
+     */
+    @Bean
+    public OpenApiCustomizer openApiCustomizer() {
+        return openApi -> {
+            // 원하는 순서대로 태그 재정렬
+            List<Tag> orderedTags = List.of(
+                    new Tag().name("인증").description("회원가입, 로그인, 토큰 갱신 API"),
+                    new Tag().name("릴리즈 버전").description("릴리즈 버전 관리 API"),
+                    new Tag().name("릴리즈 파일").description("릴리즈 파일 관리 API"),
+                    new Tag().name("패치").description("패치 생성 및 조회 API"),
+                    new Tag().name("고객사").description("고객사 관리 API"),
+                    new Tag().name("스크립트").description("DB 백업/복원 스크립트 다운로드 API")
+            );
+            openApi.setTags(orderedTags);
+        };
     }
 
     private Info apiInfo() {

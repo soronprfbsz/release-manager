@@ -45,7 +45,7 @@ public class FileStorageService {
      * 파일 저장
      *
      * @param file         업로드 파일
-     * @param relativePath 상대 경로 (예: releases/standard/1.1.x/1.1.3/patch/mariadb/001.sql)
+     * @param relativePath 상대 경로 (예: versions/standard/1.1.x/1.1.3/patch/mariadb/001.sql)
      * @return 저장된 파일의 상대 경로
      */
     public String saveFile(MultipartFile file, String relativePath) {

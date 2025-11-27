@@ -43,9 +43,9 @@ import org.springframework.transaction.annotation.Transactional;
  * - 버전 1.0.0, 1.1.0, 1.1.1이 이미 생성되어 있음
  * - 각 버전마다 MariaDB, CrateDB SQL 파일이 업로드되어 있음
  *
- * 1. POST /api/patch-histories - 패치 이력 생성 (1.0.0 → 1.1.1)
+ * 1. POST /api/patches/generate - 패치 이력 생성 (1.0.0 → 1.1.1)
  *    → 버전 범위 조회: 1.0.0 < version <= 1.1.1 → [1.1.0, 1.1.1]
- *    → 출력 디렉토리 생성: releases/standard/1.1.x/1.1.1/from-1.0.0/
+ *    → 출력 디렉토리 생성: versions/standard/1.1.x/1.1.1/from-1.0.0/
  *    → SQL 파일 복사:
  *      - mariadb/source_files/1.1.0/*.sql 복사
  *      - mariadb/source_files/1.1.1/*.sql 복사
@@ -97,7 +97,7 @@ public class CumulativePatchGenerationScenarioTest {
     @BeforeEach
     void setUp() throws IOException {
         // patch_note.md 백업
-        Path patchNotePath = Paths.get(baseReleasePath, "releases/standard/patch_note.md");
+        Path patchNotePath = Paths.get(baseReleasePath, "versions/standard/patch_note.md");
         if (Files.exists(patchNotePath)) {
             patchNoteBackup = Files.readString(patchNotePath, java.nio.charset.StandardCharsets.UTF_8);
             System.out.println("\n[테스트 준비] patch_note.md 백업 완료");
@@ -121,17 +121,17 @@ public class CumulativePatchGenerationScenarioTest {
 
         // 2. 누적 패치 디렉토리 삭제 (from-1.0.0)
         Path cumulativePatchDir = Paths.get(baseReleasePath,
-                "releases/standard/1.1.x/1.1.1/from-1.0.0");
+                "versions/standard/1.1.x/1.1.1/from-1.0.0");
         if (Files.exists(cumulativePatchDir)) {
             deleteDirectory(cumulativePatchDir);
-            System.out.println("  ✓ 누적 패치 디렉토리 삭제: releases/standard/1.1.x/1.1.1/from-1.0.0");
+            System.out.println("  ✓ 누적 패치 디렉토리 삭제: versions/standard/1.1.x/1.1.1/from-1.0.0");
         }
 
         // 3. 빈 디렉토리 정리
         cleanupEmptyDirectories();
 
         // 4. patch_note.md 복원
-        Path patchNotePath = Paths.get(baseReleasePath, "releases/standard/patch_note.md");
+        Path patchNotePath = Paths.get(baseReleasePath, "versions/standard/patch_note.md");
         if (patchNoteBackup != null) {
             Files.writeString(patchNotePath, patchNoteBackup, java.nio.charset.StandardCharsets.UTF_8);
             System.out.println("  ✓ patch_note.md 복원 완료");
@@ -151,10 +151,10 @@ public class CumulativePatchGenerationScenarioTest {
     private void deleteVersionDirectoryIfExists(String version) throws IOException {
         String majorMinor = version.substring(0, version.lastIndexOf('.'));
         Path versionDir = Paths.get(baseReleasePath,
-                "releases/standard/" + majorMinor + ".x/" + version);
+                "versions/standard/" + majorMinor + ".x/" + version);
         if (Files.exists(versionDir)) {
             deleteDirectory(versionDir);
-            System.out.println("  ✓ 버전 디렉토리 삭제: releases/standard/" + majorMinor + ".x/" + version);
+            System.out.println("  ✓ 버전 디렉토리 삭제: versions/standard/" + majorMinor + ".x/" + version);
         }
     }
 
@@ -171,10 +171,10 @@ public class CumulativePatchGenerationScenarioTest {
      * 빈 디렉토리 삭제
      */
     private void cleanupEmptyDirectory(String dirName) throws IOException {
-        Path dir = Paths.get(baseReleasePath, "releases/standard/" + dirName);
+        Path dir = Paths.get(baseReleasePath, "versions/standard/" + dirName);
         if (Files.exists(dir) && isDirectoryEmpty(dir)) {
             Files.delete(dir);
-            System.out.println("  ✓ 빈 디렉토리 삭제: releases/standard/" + dirName);
+            System.out.println("  ✓ 빈 디렉토리 삭제: versions/standard/" + dirName);
         }
     }
 
@@ -237,7 +237,7 @@ public class CumulativePatchGenerationScenarioTest {
         // Step 1: 누적 패치 생성 요청 (1.0.0 → 1.1.1)
         // ============================================================
         System.out.println("\n========================================");
-        System.out.println("Step 1: POST /api/cumulative-patches");
+        System.out.println("Step 1: POST /api/patches/generate");
         System.out.println("========================================");
         System.out.println("요청: 1.0.0 → 1.1.1 누적 패치 생성");
 
@@ -250,7 +250,7 @@ public class CumulativePatchGenerationScenarioTest {
                 }
                 """;
 
-        String patchResponse = mockMvc.perform(post("/api/patch/generate")
+        String patchResponse = mockMvc.perform(post("/api/patches/generate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andDo(print())
@@ -425,7 +425,7 @@ public class CumulativePatchGenerationScenarioTest {
 
         System.out.println("\n[실행 방법]");
         System.out.println("1. 생성된 누적 패치 디렉토리로 이동:");
-        System.out.println("   $ cd releases/standard/1.1.x/1.1.1/from-1.0.0/");
+        System.out.println("   $ cd versions/standard/1.1.x/1.1.1/from-1.0.0/");
 
         System.out.println("\n2. MariaDB 패치 스크립트 실행:");
         System.out.println("   $ ./mariadb_patch.sh");
@@ -483,7 +483,7 @@ public class CumulativePatchGenerationScenarioTest {
                 version, "jhlee", comment, null, null, true
         );
 
-        String response = mockMvc.perform(post("/api/v1/releases/standard/versions")
+        String response = mockMvc.perform(post("/api/releases/standard/versions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isCreated())  // 201 Created
@@ -501,7 +501,7 @@ public class CumulativePatchGenerationScenarioTest {
                     ("-- " + fileName + " content for " + version).getBytes()
             );
 
-            mockMvc.perform(multipart("/api/v1/releases/versions/{versionId}/files/upload", versionId)
+            mockMvc.perform(multipart("/api/releases/versions/{id}/files/upload", versionId)
                             .file(file)
                             .param("databaseType", "MARIADB")
                             .param("uploadedBy", "jhlee"))
@@ -517,7 +517,7 @@ public class CumulativePatchGenerationScenarioTest {
                     ("-- " + fileName + " content for " + version + " (CrateDB)").getBytes()
             );
 
-            mockMvc.perform(multipart("/api/v1/releases/versions/{versionId}/files/upload", versionId)
+            mockMvc.perform(multipart("/api/releases/versions/{id}/files/upload", versionId)
                             .file(file)
                             .param("databaseType", "CRATEDB")
                             .param("uploadedBy", "jhlee"))

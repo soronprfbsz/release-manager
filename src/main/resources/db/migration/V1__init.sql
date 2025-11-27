@@ -273,20 +273,20 @@ INSERT INTO release_file (
     file_size, checksum, execution_order, description
 ) VALUES
 -- 1.1.0 - MariaDB
-(2, 'MARIADB', '1.patch_mariadb_ddl.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/1.patch_mariadb_ddl.sql', 34879, 'f8b9f64345555c9a4a9c9101aaa8b701', 1, 'DDL 변경'),
-(2, 'MARIADB', '2.patch_mariadb_view.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/2.patch_mariadb_view.sql', 10742, '6735c7267bedc684f155ce05eaa5b7df', 2, 'View 변경'),
-(2, 'MARIADB', '3.patch_mariadb_데이터코드.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/3.patch_mariadb_데이터코드.sql', 134540, 'faec479bf1582dfb20199fdd468676f7', 3, '데이터 코드 추가'),
-(2, 'MARIADB', '4.patch_mariadb_이벤트코드.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/4.patch_mariadb_이벤트코드.sql', 36847, 'e2e818dfa626c93894b5774badee0219', 4, '이벤트 코드 추가'),
-(2, 'MARIADB', '5.patch_mariadb_메뉴코드.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/5.patch_mariadb_메뉴코드.sql', 25144, '3eb290c91cf66dacbc02a746bec2bef0', 5, '메뉴 코드 추가'),
-(2, 'MARIADB', '6.patch_mariadb_procedure.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/6.patch_mariadb_procedure.sql', 22183, '25942f2c2201629efcc333278f8eac38', 6, 'Procedure 변경'),
-(2, 'MARIADB', '7.patch_mariadb_dml.sql', 'releases/standard/1.1.x/1.1.0/patch/mariadb/7.patch_mariadb_dml.sql', 37330, '3fa1ec88b5a638fb6d67a41119d61854', 7, 'DML 변경'),
+(2, 'MARIADB', '1.patch_mariadb_ddl.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/1.patch_mariadb_ddl.sql', 34879, 'f8b9f64345555c9a4a9c9101aaa8b701', 1, 'DDL 변경'),
+(2, 'MARIADB', '2.patch_mariadb_view.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/2.patch_mariadb_view.sql', 10742, '6735c7267bedc684f155ce05eaa5b7df', 2, 'View 변경'),
+(2, 'MARIADB', '3.patch_mariadb_데이터코드.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/3.patch_mariadb_데이터코드.sql', 134540, 'faec479bf1582dfb20199fdd468676f7', 3, '데이터 코드 추가'),
+(2, 'MARIADB', '4.patch_mariadb_이벤트코드.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/4.patch_mariadb_이벤트코드.sql', 36847, 'e2e818dfa626c93894b5774badee0219', 4, '이벤트 코드 추가'),
+(2, 'MARIADB', '5.patch_mariadb_메뉴코드.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/5.patch_mariadb_메뉴코드.sql', 25144, '3eb290c91cf66dacbc02a746bec2bef0', 5, '메뉴 코드 추가'),
+(2, 'MARIADB', '6.patch_mariadb_procedure.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/6.patch_mariadb_procedure.sql', 22183, '25942f2c2201629efcc333278f8eac38', 6, 'Procedure 변경'),
+(2, 'MARIADB', '7.patch_mariadb_dml.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/7.patch_mariadb_dml.sql', 37330, '3fa1ec88b5a638fb6d67a41119d61854', 7, 'DML 변경'),
 -- 1.1.0 - CrateDB
-(2, 'CRATEDB', '1.patch_cratedb_ddl.sql', 'releases/standard/1.1.x/1.1.0/patch/cratedb/1.patch_cratedb_ddl.sql', 19363, '1b68614d70c52cade269e5accca724d5', 1, 'CrateDB DDL 변경'),
+(2, 'CRATEDB', '1.patch_cratedb_ddl.sql', 'versions/standard/1.1.x/1.1.0/patch/cratedb/1.patch_cratedb_ddl.sql', 19363, '1b68614d70c52cade269e5accca724d5', 1, 'CrateDB DDL 변경'),
 -- 1.1.1 - MariaDB
-(3, 'MARIADB', '1.patch_mariadb_ddl.sql', 'releases/standard/1.1.x/1.1.1/patch/mariadb/1.patch_mariadb_ddl.sql', 4867, '848ecec66ce257e0fcec4088294c816d', 1, '파일 기능 관련 DDL 추가'),
-(3, 'MARIADB', '2.patch_mariadb_dml.sql', 'releases/standard/1.1.x/1.1.1/patch/mariadb/2.patch_mariadb_dml.sql', 660, '63fe833edd62599db2ce8c758eae0240', 2, '파일 기능 관련 DML 추가'),
+(3, 'MARIADB', '1.patch_mariadb_ddl.sql', 'versions/standard/1.1.x/1.1.1/patch/mariadb/1.patch_mariadb_ddl.sql', 4867, '848ecec66ce257e0fcec4088294c816d', 1, '파일 기능 관련 DDL 추가'),
+(3, 'MARIADB', '2.patch_mariadb_dml.sql', 'versions/standard/1.1.x/1.1.1/patch/mariadb/2.patch_mariadb_dml.sql', 660, '63fe833edd62599db2ce8c758eae0240', 2, '파일 기능 관련 DML 추가'),
 -- 1.1.2 - MariaDB
-(4, 'MARIADB', '1.patch_mariadb_ddl.sql', 'releases/standard/1.1.x/1.1.2/patch/mariadb/1.patch_mariadb_ddl.sql', 1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, 'SMS 로그 모니터링 정책 상세 테이블 추가');
+(4, 'MARIADB', '1.patch_mariadb_ddl.sql', 'versions/standard/1.1.x/1.1.2/patch/mariadb/1.patch_mariadb_ddl.sql', 1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, 'SMS 로그 모니터링 정책 상세 테이블 추가');
 
 -- =========================================================
 -- Section 17: 계층 구조 데이터 추가

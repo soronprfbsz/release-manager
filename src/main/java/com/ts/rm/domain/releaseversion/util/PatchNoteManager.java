@@ -80,13 +80,13 @@ public class PatchNoteManager {
         String relativePath;
 
         if ("STANDARD".equals(version.getReleaseType())) {
-            relativePath = "releases/standard/patch_note.md";
+            relativePath = "versions/standard/patch_note.md";
         } else {
             // CUSTOM인 경우 고객사 폴더
             String customerCode = version.getCustomer() != null
                     ? version.getCustomer().getCustomerCode()
                     : "unknown";
-            relativePath = String.format("releases/custom/%s/patch_note.md", customerCode);
+            relativePath = String.format("versions/custom/%s/patch_note.md", customerCode);
         }
 
         return Paths.get(baseReleasePath, relativePath);
@@ -139,7 +139,7 @@ public class PatchNoteManager {
             // patch_note.md 경로 결정
             Path patchNotePath;
             if ("STANDARD".equals(releaseType)) {
-                patchNotePath = Paths.get(baseReleasePath, "releases/standard/patch_note.md");
+                patchNotePath = Paths.get(baseReleasePath, "versions/standard/patch_note.md");
             } else {
                 // CUSTOM의 경우 customerCode가 필요하지만, 롤백 시점에는 알 수 없으므로 스킵
                 log.warn("Cannot remove custom version entry without customerCode");
@@ -200,13 +200,13 @@ public class PatchNoteManager {
             // patch_note.md 경로 결정
             Path patchNotePath;
             if ("STANDARD".equals(releaseType)) {
-                patchNotePath = Paths.get(baseReleasePath, "releases/standard/patch_note.md");
+                patchNotePath = Paths.get(baseReleasePath, "versions/standard/patch_note.md");
             } else {
                 if (customerCode == null) {
                     log.warn("customerCode is required for CUSTOM release type");
                     return null;
                 }
-                patchNotePath = Paths.get(baseReleasePath, "releases/custom", customerCode, "patch_note.md");
+                patchNotePath = Paths.get(baseReleasePath, "versions/custom", customerCode, "patch_note.md");
             }
 
             if (!Files.exists(patchNotePath)) {

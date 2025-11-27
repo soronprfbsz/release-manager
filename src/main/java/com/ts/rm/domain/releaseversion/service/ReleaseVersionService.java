@@ -106,7 +106,7 @@ public class ReleaseVersionService {
             // 버전 디렉토리 경로 저장 (롤백 시 사용)
             String[] parts = request.version().split("\\.");
             String majorMinor = parts[0] + "." + parts[1] + ".x";
-            versionDir = String.format("%s/releases/standard/%s/%s",
+            versionDir = String.format("%s/version/standard/%s/%s",
                     baseReleasePath, majorMinor, request.version());
 
             // 2. MariaDB 파일 업로드
@@ -333,8 +333,8 @@ public class ReleaseVersionService {
      * 릴리즈 디렉토리 구조 생성
      *
      * <pre>
-     * releases/{type}/{majorMinor}.x/{version}/patch/mariadb/
-     * releases/{type}/{majorMinor}.x/{version}/patch/cratedb/
+     * versions/{type}/{majorMinor}.x/{version}/patch/mariadb/
+     * versions/{type}/{majorMinor}.x/{version}/patch/cratedb/
      * </pre>
      */
     private void createDirectoryStructure(ReleaseVersion version, Customer customer) {
@@ -342,13 +342,13 @@ public class ReleaseVersionService {
             String basePath;
 
             if ("STANDARD".equals(version.getReleaseType())) {
-                basePath = String.format("releases/standard/%s/%s/patch",
+                basePath = String.format("versions/standard/%s/%s/patch",
                         version.getMajorMinor(),
                         version.getVersion());
             } else {
                 // CUSTOM인 경우 고객사 코드 사용
                 String customerCode = customer != null ? customer.getCustomerCode() : "unknown";
-                basePath = String.format("releases/custom/%s/%s/%s/patch",
+                basePath = String.format("versions/custom/%s/%s/%s/patch",
                         customerCode,
                         version.getMajorMinor(),
                         version.getVersion());
@@ -406,8 +406,8 @@ public class ReleaseVersionService {
                 byte[] content = file.getBytes();
                 String checksum = calculateChecksum(content);
 
-                // 파일 경로 생성: releases/{type}/{majorMinor}/{version}/patch/{dbType}/{fileName}
-                String relativePath = String.format("releases/%s/%s/%s/patch/%s/%s",
+                // 파일 경로 생성: versions/{type}/{majorMinor}/{version}/patch/{dbType}/{fileName}
+                String relativePath = String.format("versions/%s/%s/%s/patch/%s/%s",
                         releaseVersion.getReleaseType().toLowerCase(),
                         releaseVersion.getMajorMinor(),
                         releaseVersion.getVersion(),
@@ -608,12 +608,12 @@ public class ReleaseVersionService {
      */
     private Path determineReleasePath(String releaseType, String customerCode) {
         if ("STANDARD".equals(releaseType)) {
-            return Paths.get(baseReleasePath, "releases/standard");
+            return Paths.get(baseReleasePath, "versions/standard");
         } else {
             if (customerCode == null) {
                 throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "커스텀 릴리즈는 고객사 코드가 필요합니다");
             }
-            return Paths.get(baseReleasePath, "releases/custom", customerCode);
+            return Paths.get(baseReleasePath, "versions/custom", customerCode);
         }
     }
 

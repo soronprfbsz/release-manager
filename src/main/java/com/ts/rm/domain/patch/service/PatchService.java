@@ -121,20 +121,20 @@ public class PatchService {
                     fromVersion.getVersion(), toVersion.getVersion(),
                     betweenVersions.stream().map(ReleaseVersion::getVersion).toList());
 
-            // 3. 출력 디렉토리 생성
-            String outputPath = createOutputDirectory(fromVersion, toVersion);
+            // 3. 패치 이름 결정 (입력값이 없으면 자동 생성: YYYYMMDDHHMMSS_fromversion_toversion)
+            String resolvedPatchName = resolvePatchName(patchName, fromVersion.getVersion(), toVersion.getVersion());
 
-            // 4. SQL 파일 복사
+            // 4. 출력 디렉토리 생성 (패치 이름으로)
+            String outputPath = createOutputDirectory(resolvedPatchName);
+
+            // 5. SQL 파일 복사
             copySqlFiles(betweenVersions, outputPath);
 
-            // 5. 패치 스크립트 생성
+            // 6. 패치 스크립트 생성
             generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath);
 
-            // 6. README 생성
+            // 7. README 생성
             generateReadme(fromVersion, toVersion, betweenVersions, outputPath);
-
-            // 7. 패치 이름 결정 (입력값이 없으면 자동 생성: 날짜_fromversion_toversion)
-            String resolvedPatchName = resolvePatchName(patchName, fromVersion.getVersion(), toVersion.getVersion());
 
             // 8. 패치 저장
             Patch patch = Patch.builder()
@@ -172,15 +172,15 @@ public class PatchService {
      * @param patchName   입력된 패치 이름 (nullable)
      * @param fromVersion From 버전
      * @param toVersion   To 버전
-     * @return 최종 패치 이름
+     * @return 최종 패치 이름 (형식: YYYYMMDDHHmm_fromVersion_toVersion)
      */
     private String resolvePatchName(String patchName, String fromVersion, String toVersion) {
         if (StringUtils.hasText(patchName)) {
             return patchName;
         }
-        // 기본값: 날짜_fromversion_toversion (예: 20251125_1.0.0_1.1.1)
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        return String.format("%s_%s_%s", today, fromVersion, toVersion);
+        // 기본값: 날짜시분_fromversion_toversion (예: 202511271430_1.0.0_1.1.1)
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
+        return String.format("%s_%s_%s", timestamp, fromVersion, toVersion);
     }
 
     /**
@@ -216,15 +216,14 @@ public class PatchService {
 
     /**
      * 출력 디렉토리 생성
+     *
+     * @param patchName 패치 이름 (디렉토리명으로 사용)
+     * @return 상대 경로 (예: patches/20251127143025_1.0.0_1.1.1)
      */
-    private String createOutputDirectory(ReleaseVersion fromVersion, ReleaseVersion toVersion) {
+    private String createOutputDirectory(String patchName) {
         try {
-            // 출력 경로: releases/{type}/{majorMinor}.x/{toVersion}/from-{fromVersion}
-            String relativePath = String.format("releases/%s/%s.x/%s/from-%s",
-                    fromVersion.getReleaseType().toLowerCase(),
-                    toVersion.getMajorMinor(),
-                    toVersion.getVersion(),
-                    fromVersion.getVersion());
+            // 출력 경로: patches/{patchName}
+            String relativePath = String.format("patches/%s", patchName);
 
             Path outputDir = Paths.get(releaseBasePath, relativePath);
 
@@ -238,8 +237,10 @@ public class PatchService {
             return relativePath;
 
         } catch (IOException e) {
+            log.error("출력 디렉토리 생성 실패: releaseBasePath={}, patchName={}",
+                    releaseBasePath, patchName, e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "출력 디렉토리 생성 실패: " + e.getMessage());
+                    "출력 디렉토리 생성 실패: " + releaseBasePath + "/patches/" + patchName);
         }
     }
 
@@ -382,7 +383,7 @@ public class PatchService {
 
             content.append("## 디렉토리 구조\n");
             content.append("```\n");
-            content.append(String.format("from-%s/\n", fromVersion.getVersion()));
+            content.append(".\n");
             content.append("├── mariadb/\n");
             content.append("│   ├── mariadb_patch.sh        # MariaDB 패치 실행 스크립트\n");
             content.append("│   └── source_files/           # 누적된 SQL 파일들\n");
@@ -503,11 +504,10 @@ public class PatchService {
      * 패치 ZIP 파일명 생성
      *
      * @param patchId 패치 ID
-     * @return ZIP 파일명
+     * @return ZIP 파일명 (예: 202511271430_1.0.0_1.1.1.zip)
      */
     public String getZipFileName(Long patchId) {
         Patch patch = getPatch(patchId);
-        return String.format("patch_%s_to_%s.zip",
-                patch.getFromVersion(), patch.getToVersion());
+        return patch.getPatchName() + ".zip";
     }
 }

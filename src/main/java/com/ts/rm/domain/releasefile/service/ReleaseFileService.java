@@ -183,8 +183,8 @@ public class ReleaseFileService {
                 byte[] content = file.getBytes();
                 String checksum = calculateChecksum(content);
 
-                // 파일 경로 생성: releases/{type}/{majorMinor}/{version}/patch/{dbType}/{fileName}
-                String relativePath = String.format("releases/%s/%s/%s/patch/%s/%s",
+                // 파일 경로 생성: versions/{type}/{majorMinor}/{version}/patch/{dbType}/{fileName}
+                String relativePath = String.format("versions/%s/%s/%s/patch/%s/%s",
                         releaseVersion.getReleaseType().toLowerCase(),
                         releaseVersion.getMajorMinor(),
                         releaseVersion.getVersion(),

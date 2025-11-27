@@ -87,10 +87,10 @@ public final class PatchDto {
             @Schema(description = "종료 버전", example = "1.1.1")
             String toVersion,
 
-            @Schema(description = "패치 이름", example = "20251125_1.0.0_1.1.1")
+            @Schema(description = "패치 이름", example = "202511271430_1.0.0_1.1.1")
             String patchName,
 
-            @Schema(description = "출력 경로", example = "releases/standard/1.1.x/1.1.1/from-1.0.0")
+            @Schema(description = "출력 경로", example = "patches/202511271430_1.0.0_1.1.1")
             String outputPath,
 
             @Schema(description = "생성일시")
