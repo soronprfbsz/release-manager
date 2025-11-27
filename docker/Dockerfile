@@ -24,7 +24,7 @@ RUN gradle clean build -x test --no-daemon
 FROM eclipse-temurin:17-jre-alpine
 
 # 이미지 메타데이터 (dangling 이미지 식별용)
-LABEL project="release-manager"
+LABEL project="release-manager-api"
 LABEL maintainer="ts-team"
 LABEL version="1.0"
 
