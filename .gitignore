@@ -72,3 +72,6 @@ AUX
 com[1-9]
 lpt[1-9]
 
+### Release Files ###
+src/main/resources/release/patches/
+
