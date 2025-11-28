@@ -189,6 +189,9 @@ public class FileStorageService {
      * @return 절대 경로
      */
     public Path getAbsolutePath(String relativePath) {
-        return this.baseStorageLocation.resolve(relativePath).normalize();
+        Path absolutePath = this.baseStorageLocation.resolve(relativePath).normalize();
+        log.debug("절대 경로 변환 - 베이스: {}, 상대: {}, 절대: {}, 존재여부: {}",
+                this.baseStorageLocation, relativePath, absolutePath, Files.exists(absolutePath));
+        return absolutePath;
     }
 }

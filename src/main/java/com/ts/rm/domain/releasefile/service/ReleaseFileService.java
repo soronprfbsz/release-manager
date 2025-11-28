@@ -302,8 +302,13 @@ public class ReleaseFileService {
                     file.getDatabaseType().toLowerCase(),
                     file.getFileName());
 
+            log.debug("ZIP 엔트리 추가 준비 - DB경로: {}, 실제경로: {}, ZIP경로: {}",
+                    file.getFilePath(), sourcePath, zipEntryPath);
+
             zipEntries.add(new ZipUtil.ZipFileEntry(sourcePath, zipEntryPath));
         }
+
+        log.info("ZIP 압축 시작 - 버전: {}, 파일 개수: {}", releaseVersion.getVersion(), zipEntries.size());
 
         // 4. ZIP 압축
         byte[] zipBytes = ZipUtil.compressFiles(zipEntries);
