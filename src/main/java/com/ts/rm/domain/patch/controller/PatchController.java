@@ -21,6 +21,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -182,5 +183,26 @@ public class PatchController {
         PatchDto.FileContentResponse response = patchService.getFileContent(id, path);
 
         return ApiResponse.success(response);
+    }
+
+    /**
+     * 패치 삭제
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "패치 삭제",
+            description = "패치를 삭제합니다.\n\n"
+                    + "**삭제 범위**:\n"
+                    + "- DB 레코드 (cumulative_patch 테이블)\n"
+                    + "- 실제 파일 디렉토리 (patches/{patchName}/ 전체)\n\n"
+                    + "**주의사항**:\n"
+                    + "- 삭제된 데이터는 복구할 수 없습니다.\n"
+                    + "- 디렉토리 삭제 실패 시에도 DB 레코드는 삭제됩니다.")
+    public ApiResponse<Void> deletePatch(@PathVariable Long id) {
+
+        log.info("패치 삭제 요청 - ID: {}", id);
+
+        patchService.deletePatch(id);
+
+        return ApiResponse.success(null);
     }
 }
