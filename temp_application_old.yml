@@ -1,0 +1,108 @@
+spring:
+  # Profile Configuration
+  profiles:
+    active: ${SERVER_ENVIRONMENT:dev}
+
+  # MariaDB Database Configuration
+  datasource:
+    url: jdbc:mariadb://${MARIADB_HOST}:${MARIADB_PORT}/${MARIADB_DATABASE}
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: ${MARIADB_USERNAME}
+    password: ${MARIADB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${MARIADB_POOL_SIZE:10}
+      minimum-idle: ${MARIADB_POOL_MIN_IDLE:5}
+      connection-timeout: ${MARIADB_CONNECTION_TIMEOUT:30000}
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.MariaDBDialect
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Redis Configuration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+
+  # Flyway Configuration
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+    baseline-on-migrate: true  # 기존 DB에 flyway_schema_history 없으면 baseline 생성
+    baseline-version: 0        # 기존 스키마는 V0으로 간주
+    validate-on-migrate: true  # 마이그레이션 전 검증
+    out-of-order: false        # 순서 어긋난 마이그레이션 불허
+    locations: classpath:db/migration
+
+# Server Configuration
+server:
+  name: ${SERVER_NAME}
+  host: ${SERVER_HOST:localhost}
+  port: ${SERVER_PORT:8080}
+
+# Swagger/OpenAPI Configuration
+springdoc:
+  swagger-ui:
+    path: /swagger
+  api-docs:
+    path: /api-docs
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+  override-with-generic-response: false
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+# gRPC Configuration
+grpc:
+  server:
+    host: ${GRPC_HOST:localhost}
+    port: ${GRPC_PORT:9090}
+    timeout: ${GRPC_TIMEOUT:30}
+    maxRetryAttempts: ${GRPC_MAX_RETRY:3}
+
+# Logging Configuration
+logging:
+  level:
+    com.ts.rm: INFO
+    # API 요청/응답 로깅 (INFO: 간결, DEBUG: 상세)
+    com.ts.rm.global.common.filter.ApiLoggingFilter: INFO
+    # Hibernate SQL 로그 비활성화 (p6spy 사용)
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO
+    # p6spy SQL 로거 (INFO: SQL만, DEBUG: 상세)
+    p6spy: INFO
+    org.springframework.web: INFO
+
+# Application Configuration
+app:
+  release:
+    # 로컬: src/main/resources/release, 도커: /app/release_files
+    base-path: ${RELEASE_BASE_PATH:/app/release_files}
+  jwt:
+    secret: ${JWT_SECRET:your-secret-key-at-least-256-bits-long-for-hs256-algorithm}
+    expiration: ${JWT_EXPIRATION:900000}  # 15분 (밀리초)
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7일 (밀리초)
+    issuer: ${JWT_ISSUER:release-manager}
