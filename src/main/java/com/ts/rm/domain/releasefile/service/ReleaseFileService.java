@@ -296,14 +296,21 @@ public class ReleaseFileService {
         for (ReleaseFile file : releaseFiles) {
             Path sourcePath = fileStorageService.getAbsolutePath(file.getFilePath());
 
-            // ZIP 내부 경로: {databaseType}/{fileName}
-            // 예: mariadb/1.patch.sql, cratedb/1.patch.sql
-            String zipEntryPath = String.format("%s/%s",
-                    file.getDatabaseType().toLowerCase(),
-                    file.getFileName());
+            // ZIP 내부 경로 생성
+            // - DB 타입이 있는 경우: {databaseType}/{fileName} (예: mariadb/1.patch.sql)
+            // - DB 타입이 없는 경우: {fileName} (예: 설치가이드.pdf)
+            String zipEntryPath;
+            if (file.getDatabaseType() != null && !file.getDatabaseType().isEmpty()) {
+                zipEntryPath = String.format("%s/%s",
+                        file.getDatabaseType().toLowerCase(),
+                        file.getFileName());
+            } else {
+                // DB 타입이 없는 파일 (install 디렉토리의 PDF, TXT 등)
+                zipEntryPath = file.getFileName();
+            }
 
-            log.debug("ZIP 엔트리 추가 준비 - DB경로: {}, 실제경로: {}, ZIP경로: {}",
-                    file.getFilePath(), sourcePath, zipEntryPath);
+            log.debug("ZIP 엔트리 추가 준비 - DB타입: {}, DB경로: {}, 실제경로: {}, ZIP경로: {}",
+                    file.getDatabaseType(), file.getFilePath(), sourcePath, zipEntryPath);
 
             zipEntries.add(new ZipUtil.ZipFileEntry(sourcePath, zipEntryPath));
         }
