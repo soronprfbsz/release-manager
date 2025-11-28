@@ -32,6 +32,9 @@ public enum ErrorCode {
   INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AU003", "error.auth.invalid_refresh_token"),
   EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AU004", "error.auth.expired_refresh_token"),
   REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "AU005", "error.auth.refresh_token_not_found"),
+  INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AU006", "error.auth.invalid_access_token"),
+  EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AU007", "error.auth.expired_access_token"),
+  ACCESS_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AU008", "error.auth.access_token_not_found"),
 
   // Customer - 고객사
   CUSTOMER_NOT_FOUND(HttpStatus.NOT_FOUND, "CU001", "error.customer.not_found"),

@@ -44,19 +44,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = extractTokenFromRequest(request);
 
             // 2. 토큰 검증 및 인증 정보 설정
-            if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-                String email = jwtTokenProvider.getEmail(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            if (StringUtils.hasText(token)) {
+                if (jwtTokenProvider.validateToken(token)) {
+                    // 유효한 토큰 → 인증 정보 설정
+                    String email = jwtTokenProvider.getEmail(token);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("Set Authentication to security context for '{}', uri: {}", email, request.getRequestURI());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("Set Authentication to security context for '{}', uri: {}", email, request.getRequestURI());
+                } else {
+                    // 토큰은 있지만 유효하지 않음 (만료 또는 변조)
+                    log.warn("Invalid or expired JWT token for uri: {}", request.getRequestURI());
+                }
             }
         } catch (Exception e) {
             log.error("Cannot set user authentication: {}", e.getMessage());

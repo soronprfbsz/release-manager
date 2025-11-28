@@ -237,4 +237,111 @@ public final class ReleaseVersionDto {
     ) {
 
     }
+
+    /**
+     * 표준 릴리즈 버전 생성 요청 (Multipart Form Data)
+     */
+    @Builder
+    @Schema(description = "표준 릴리즈 버전 생성 요청")
+    public record CreateStandardVersionRequest(
+            @Schema(description = "버전 (예: 1.1.3)", example = "1.1.3", required = true)
+            @NotBlank(message = "버전은 필수입니다")
+            @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+$", message = "버전 형식이 올바르지 않습니다 (예: 1.1.3)")
+            String version,
+
+            @Schema(description = "패치 노트 내용", example = "새로운 기능 추가", required = true)
+            @NotBlank(message = "패치 노트 내용은 필수입니다")
+            @Size(max = 500, message = "패치 노트 내용은 500자 이하여야 합니다")
+            String comment
+    ) {
+
+    }
+
+    /**
+     * 파일 트리 노드 (디렉토리 또는 파일)
+     */
+    @Schema(description = "파일 트리 노드")
+    public record FileTreeNode(
+            @Schema(description = "파일/디렉토리 이름", example = "mariadb")
+            String name,
+
+            @Schema(description = "전체 경로", example = "/mariadb")
+            String path,
+
+            @Schema(description = "타입 (file 또는 directory)", example = "directory")
+            String type,
+
+            @Schema(description = "파일 크기 (파일인 경우만)", example = "1024")
+            Long size,
+
+            @Schema(description = "릴리즈 파일 ID (파일인 경우만)", example = "123")
+            Long releaseFileId,
+
+            @Schema(description = "하위 노드 (디렉토리인 경우만)")
+            List<FileTreeNode> children
+    ) {
+        // 디렉토리 노드 생성
+        public static FileTreeNode directory(String name, String path, List<FileTreeNode> children) {
+            return new FileTreeNode(name, path, "directory", null, null, children);
+        }
+
+        // 파일 노드 생성
+        public static FileTreeNode file(String name, String path, Long size, Long releaseFileId) {
+            return new FileTreeNode(name, path, "file", size, releaseFileId, null);
+        }
+    }
+
+    /**
+     * 릴리즈 버전 파일 트리 응답
+     */
+    @Schema(description = "릴리즈 버전 파일 트리 응답")
+    public record FileTreeResponse(
+            @Schema(description = "릴리즈 버전 ID", example = "1")
+            Long releaseVersionId,
+
+            @Schema(description = "버전", example = "1.1.0")
+            String version,
+
+            @Schema(description = "파일 트리 루트")
+            FileTreeNode files
+    ) {
+    }
+
+    /**
+     * 릴리즈 버전 생성 응답
+     */
+    @Schema(description = "릴리즈 버전 생성 응답")
+    public record CreateVersionResponse(
+            @Schema(description = "릴리즈 버전 ID", example = "5")
+            Long releaseVersionId,
+
+            @Schema(description = "버전", example = "1.1.3")
+            String version,
+
+            @Schema(description = "메이저 버전", example = "1")
+            Integer majorVersion,
+
+            @Schema(description = "마이너 버전", example = "1")
+            Integer minorVersion,
+
+            @Schema(description = "패치 버전", example = "3")
+            Integer patchVersion,
+
+            @Schema(description = "메이저.마이너", example = "1.1.x")
+            String majorMinor,
+
+            @Schema(description = "생성자 (JWT에서 추출)", example = "admin@tscientific")
+            String createdBy,
+
+            @Schema(description = "패치 노트 내용", example = "새로운 기능 추가")
+            String comment,
+
+            @Schema(description = "생성일시")
+            LocalDateTime createdAt,
+
+            @Schema(description = "생성된 파일 목록 (상대 경로)")
+            List<String> filesCreated
+    ) {
+
+    }
 }

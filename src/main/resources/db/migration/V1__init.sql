@@ -107,9 +107,11 @@ CREATE TABLE IF NOT EXISTS release_version (
 CREATE TABLE IF NOT EXISTS release_file (
     release_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '릴리즈 파일 ID',
     release_version_id BIGINT NOT NULL COMMENT '릴리즈 버전 ID',
-    database_type VARCHAR(20) NOT NULL COMMENT '데이터베이스 타입 (MARIADB/CRATEDB)',
+    file_type VARCHAR(50) NOT NULL COMMENT '파일 타입 (FILE_TYPE 코드)',
+    database_type VARCHAR(20) COMMENT '데이터베이스 타입 (MARIADB/CRATEDB) - SQL 파일인 경우만',
     file_name VARCHAR(255) NOT NULL COMMENT '파일명',
-    file_path VARCHAR(500) NOT NULL COMMENT '파일 경로',
+    file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (물리 경로)',
+    relative_path VARCHAR(500) COMMENT 'ZIP 파일 내부 상대 경로 (예: /mariadb/01_create_table.sql)',
     file_size BIGINT COMMENT '파일 크기 (bytes)',
     checksum VARCHAR(64) COMMENT '파일 체크섬 (MD5)',
     execution_order INT NOT NULL DEFAULT 1 COMMENT '실행 순서',
@@ -118,6 +120,7 @@ CREATE TABLE IF NOT EXISTS release_file (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
     INDEX idx_release_version_id (release_version_id),
+    INDEX idx_file_type (file_type),
     INDEX idx_database_type (database_type),
     INDEX idx_file_path (file_path),
     INDEX idx_execution_order (execution_order),
@@ -185,7 +188,8 @@ INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
 ('ACCOUNT_ROLE', '계정 권한', '계정 권한 구분'),
 ('ACCOUNT_STATUS', '계정 상태', '계정 상태 구분'),
 ('RELEASE_TYPE', '릴리즈 타입', '릴리즈 타입 구분 (표준/커스텀)'),
-('DATABASE_TYPE', '데이터베이스 타입', '지원하는 데이터베이스 종류');
+('DATABASE_TYPE', '데이터베이스 타입', '지원하는 데이터베이스 종류'),
+('FILE_TYPE', '파일 타입', '릴리즈 파일 타입 구분');
 
 -- =========================================================
 -- Section 9: 계정 권한 코드
@@ -222,6 +226,19 @@ INSERT INTO code (code_id, code_type_id, code_name, description, sort_order, is_
 ('DATABASE_TYPE_CRATEDB', 'DATABASE_TYPE', 'CrateDB', 'CrateDB 데이터베이스', 2, TRUE);
 
 -- =========================================================
+-- Section 12-1: 파일 타입 코드
+-- =========================================================
+
+INSERT INTO code (code_id, code_type_id, code_name, description, sort_order, is_enabled) VALUES
+('FILE_TYPE_SQL', 'FILE_TYPE', 'SQL', 'SQL 스크립트 파일', 1, TRUE),
+('FILE_TYPE_MD', 'FILE_TYPE', 'MD', '마크다운 문서 파일', 2, TRUE),
+('FILE_TYPE_PDF', 'FILE_TYPE', 'PDF', 'PDF 문서 파일', 3, TRUE),
+('FILE_TYPE_EXE', 'FILE_TYPE', 'EXE', '실행 파일', 4, TRUE),
+('FILE_TYPE_SH', 'FILE_TYPE', 'SH', '쉘 스크립트 파일', 5, TRUE),
+('FILE_TYPE_TXT', 'FILE_TYPE', 'TXT', '텍스트 파일', 6, TRUE),
+('FILE_TYPE_UNDEFINED', 'FILE_TYPE', 'UNDEFINED', '정의되지 않은 파일 타입', 99, TRUE);
+
+-- =========================================================
 -- Section 13: 기본 관리자 계정
 -- 패스워드: nms12345! (BCrypt 암호화)
 -- =========================================================
@@ -241,32 +258,74 @@ INSERT INTO release_version (
 ) VALUES
 ('STANDARD', NULL, '1.0.0', 1, 0, 0, 'TS', '최초 설치본', TRUE, '2025-01-01 00:00:00'),
 ('STANDARD', NULL, '1.1.0', 1, 1, 0, 'jhlee@tscientific', '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경', FALSE, '2025-10-31 00:00:00'),
-('STANDARD', NULL, '1.1.1', 1, 1, 1, 'jhlee@tscientific', '운영관리 - 파일 기능 관련 테이블 추가', FALSE, '2025-11-05 00:00:00'),
-('STANDARD', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS 로그 모니터링 정책 상세 테이블 추가', FALSE, '2025-11-25 00:00:00');
+('STANDARD', NULL, '1.1.1', 1, 1, 1, 'jhlee@tscientific', 'SMS - 운영관리 - 파일 기능 관련 테이블 추가', FALSE, '2025-11-05 00:00:00'),
+('STANDARD', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', FALSE, '2025-11-25 00:00:00');
 
 -- =========================================================
 -- Section 15: 릴리즈 파일 데이터
 -- =========================================================
 
 INSERT INTO release_file (
-    release_version_id, database_type, file_name, file_path,
+    release_version_id, file_type, database_type, file_name, file_path, relative_path,
     file_size, checksum, execution_order, description
 ) VALUES
+-- 1.0.0 - Install Documents
+(1, 'FILE_TYPE_PDF', NULL, 'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
+    'versions/standard/1.0.x/1.0.0/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
+    '/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
+    2727778, '4e641f7d25bbaa0061f553b92ef3d9e9', 1, '설치 가이드 문서'),
+(1, 'FILE_TYPE_MD', NULL, '설치본정보.md',
+    'versions/standard/1.0.x/1.0.0/install/설치본정보.md',
+    '/install/설치본정보.md',
+    778, '8e5adf2b877090de4f3ec5739f71216c', 2, '설치본 정보'),
 -- 1.1.0 - MariaDB
-(2, 'MARIADB', '1.patch_mariadb_ddl.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/1.patch_mariadb_ddl.sql', 34879, 'f8b9f64345555c9a4a9c9101aaa8b701', 1, 'DDL 변경'),
-(2, 'MARIADB', '2.patch_mariadb_view.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/2.patch_mariadb_view.sql', 10742, '6735c7267bedc684f155ce05eaa5b7df', 2, 'View 변경'),
-(2, 'MARIADB', '3.patch_mariadb_데이터코드.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/3.patch_mariadb_데이터코드.sql', 134540, 'faec479bf1582dfb20199fdd468676f7', 3, '데이터 코드 추가'),
-(2, 'MARIADB', '4.patch_mariadb_이벤트코드.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/4.patch_mariadb_이벤트코드.sql', 36847, 'e2e818dfa626c93894b5774badee0219', 4, '이벤트 코드 추가'),
-(2, 'MARIADB', '5.patch_mariadb_메뉴코드.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/5.patch_mariadb_메뉴코드.sql', 25144, '3eb290c91cf66dacbc02a746bec2bef0', 5, '메뉴 코드 추가'),
-(2, 'MARIADB', '6.patch_mariadb_procedure.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/6.patch_mariadb_procedure.sql', 22183, '25942f2c2201629efcc333278f8eac38', 6, 'Procedure 변경'),
-(2, 'MARIADB', '7.patch_mariadb_dml.sql', 'versions/standard/1.1.x/1.1.0/patch/mariadb/7.patch_mariadb_dml.sql', 37330, '3fa1ec88b5a638fb6d67a41119d61854', 7, 'DML 변경'),
+(2, 'FILE_TYPE_SQL', 'MARIADB', '1.patch_mariadb_ddl.sql',
+    'versions/standard/1.1.x/1.1.0/mariadb/1.patch_mariadb_ddl.sql',
+    '/mariadb/1.patch_mariadb_ddl.sql',
+    34879, 'f8b9f64345555c9a4a9c9101aaa8b701', 1, 'DDL 변경'),
+(2, 'FILE_TYPE_SQL', 'MARIADB', '2.patch_mariadb_view.sql',
+    'versions/standard/1.1.x/1.1.0/mariadb/2.patch_mariadb_view.sql',
+    '/mariadb/2.patch_mariadb_view.sql',
+    10742, '6735c7267bedc684f155ce05eaa5b7df', 2, 'View 변경'),
+(2, 'FILE_TYPE_SQL', 'MARIADB', '3.patch_mariadb_데이터코드.sql',
+    'versions/standard/1.1.x/1.1.0/mariadb/3.patch_mariadb_데이터코드.sql',
+    '/mariadb/3.patch_mariadb_데이터코드.sql',
+    134540, 'faec479bf1582dfb20199fdd468676f7', 3, '데이터 코드 추가'),
+(2, 'FILE_TYPE_SQL', 'MARIADB', '4.patch_mariadb_이벤트코드.sql',
+    'versions/standard/1.1.x/1.1.0/mariadb/4.patch_mariadb_이벤트코드.sql',
+    '/mariadb/4.patch_mariadb_이벤트코드.sql',
+    36847, 'e2e818dfa626c93894b5774badee0219', 4, '이벤트 코드 추가'),
+(2, 'FILE_TYPE_SQL', 'MARIADB', '5.patch_mariadb_메뉴코드.sql',
+    'versions/standard/1.1.x/1.1.0/mariadb/5.patch_mariadb_메뉴코드.sql',
+    '/mariadb/5.patch_mariadb_메뉴코드.sql',
+    25144, '3eb290c91cf66dacbc02a746bec2bef0', 5, '메뉴 코드 추가'),
+(2, 'FILE_TYPE_SQL', 'MARIADB', '6.patch_mariadb_procedure.sql',
+    'versions/standard/1.1.x/1.1.0/mariadb/6.patch_mariadb_procedure.sql',
+    '/mariadb/6.patch_mariadb_procedure.sql',
+    22183, '25942f2c2201629efcc333278f8eac38', 6, 'Procedure 변경'),
+(2, 'FILE_TYPE_SQL', 'MARIADB', '7.patch_mariadb_dml.sql',
+    'versions/standard/1.1.x/1.1.0/mariadb/7.patch_mariadb_dml.sql',
+    '/mariadb/7.patch_mariadb_dml.sql',
+    37330, '3fa1ec88b5a638fb6d67a41119d61854', 7, 'DML 변경'),
 -- 1.1.0 - CrateDB
-(2, 'CRATEDB', '1.patch_cratedb_ddl.sql', 'versions/standard/1.1.x/1.1.0/patch/cratedb/1.patch_cratedb_ddl.sql', 19363, '1b68614d70c52cade269e5accca724d5', 1, 'CrateDB DDL 변경'),
+(2, 'FILE_TYPE_SQL', 'CRATEDB', '1.patch_cratedb_ddl.sql',
+    'versions/standard/1.1.x/1.1.0/cratedb/1.patch_cratedb_ddl.sql',
+    '/cratedb/1.patch_cratedb_ddl.sql',
+    19363, '1b68614d70c52cade269e5accca724d5', 1, 'CrateDB DDL 변경'),
 -- 1.1.1 - MariaDB
-(3, 'MARIADB', '1.patch_mariadb_ddl.sql', 'versions/standard/1.1.x/1.1.1/patch/mariadb/1.patch_mariadb_ddl.sql', 4867, '848ecec66ce257e0fcec4088294c816d', 1, '파일 기능 관련 DDL 추가'),
-(3, 'MARIADB', '2.patch_mariadb_dml.sql', 'versions/standard/1.1.x/1.1.1/patch/mariadb/2.patch_mariadb_dml.sql', 660, '63fe833edd62599db2ce8c758eae0240', 2, '파일 기능 관련 DML 추가'),
+(3, 'FILE_TYPE_SQL', 'MARIADB', '1.patch_mariadb_ddl.sql',
+    'versions/standard/1.1.x/1.1.1/mariadb/1.patch_mariadb_ddl.sql',
+    '/mariadb/1.patch_mariadb_ddl.sql',
+    4867, '848ecec66ce257e0fcec4088294c816d', 1, '파일 기능 관련 DDL 추가'),
+(3, 'FILE_TYPE_SQL', 'MARIADB', '2.patch_mariadb_dml.sql',
+    'versions/standard/1.1.x/1.1.1/mariadb/2.patch_mariadb_dml.sql',
+    '/mariadb/2.patch_mariadb_dml.sql',
+    660, '63fe833edd62599db2ce8c758eae0240', 2, '파일 기능 관련 DML 추가'),
 -- 1.1.2 - MariaDB
-(4, 'MARIADB', '1.patch_mariadb_ddl.sql', 'versions/standard/1.1.x/1.1.2/patch/mariadb/1.patch_mariadb_ddl.sql', 1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, 'SMS 로그 모니터링 정책 상세 테이블 추가');
+(4, 'FILE_TYPE_SQL', 'MARIADB', '1.patch_mariadb_ddl.sql',
+    'versions/standard/1.1.x/1.1.2/mariadb/1.patch_mariadb_ddl.sql',
+    '/mariadb/1.patch_mariadb_ddl.sql',
+    1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, 'SMS 로그 모니터링 정책 상세 테이블 추가');
 
 -- =========================================================
 -- Section 16: 계층 구조 데이터 추가

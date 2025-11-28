@@ -20,7 +20,7 @@ import lombok.Setter;
 /**
  * ReleaseFile Entity
  *
- * <p>릴리즈 버전별 파일 정보 (SQL 스크립트 등)
+ * <p>릴리즈 버전별 파일 정보 (SQL, MD, PDF, EXE 등)
  */
 @Entity
 @Table(name = "release_file")
@@ -40,7 +40,10 @@ public class ReleaseFile extends BaseEntity {
     @JoinColumn(name = "release_version_id", nullable = false)
     private ReleaseVersion releaseVersion;
 
-    @Column(name = "database_type", nullable = false, length = 20)
+    @Column(name = "file_type", nullable = false, length = 50)
+    private String fileType;
+
+    @Column(name = "database_type", length = 20)
     private String databaseType;
 
     @Column(name = "file_name", nullable = false, length = 255)
@@ -48,6 +51,9 @@ public class ReleaseFile extends BaseEntity {
 
     @Column(name = "file_path", nullable = false, length = 500)
     private String filePath;
+
+    @Column(name = "relative_path", length = 500)
+    private String relativePath;
 
     @Column(name = "file_size")
     private Long fileSize;

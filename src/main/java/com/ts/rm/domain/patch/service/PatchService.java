@@ -424,18 +424,6 @@ public class PatchService {
     }
 
     /**
-     * 패치 목록 조회 (비페이징)
-     */
-    @Transactional(readOnly = true)
-    public List<Patch> listPatches(String releaseType) {
-        if (releaseType != null) {
-            return patchRepository.findAllByReleaseTypeOrderByGeneratedAtDesc(
-                    releaseType);
-        }
-        return patchRepository.findAll();
-    }
-
-    /**
      * 패치 목록 페이징 조회
      *
      * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM, null이면 전체)

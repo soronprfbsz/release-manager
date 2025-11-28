@@ -186,8 +186,8 @@ public class ReleaseFileService {
                 byte[] content = file.getBytes();
                 String checksum = calculateChecksum(content);
 
-                // 파일 경로 생성: versions/{type}/{majorMinor}/{version}/patch/{dbType}/{fileName}
-                String relativePath = String.format("versions/%s/%s/%s/patch/%s/%s",
+                // 파일 경로 생성: versions/{type}/{majorMinor}/{version}/{dbType}/{fileName}
+                String relativePath = String.format("versions/%s/%s/%s/%s/%s",
                         releaseVersion.getReleaseType().toLowerCase(),
                         releaseVersion.getMajorMinor(),
                         releaseVersion.getVersion(),
@@ -197,9 +197,13 @@ public class ReleaseFileService {
                 // 실제 파일 저장
                 fileStorageService.saveFile(file, relativePath);
 
+                // 파일 타입 결정
+                String fileType = determineFileType(file.getOriginalFilename());
+
                 // DB에 메타데이터 저장
                 ReleaseFile releaseFile = ReleaseFile.builder()
                         .releaseVersion(releaseVersion)
+                        .fileType(fileType)
                         .databaseType(request.databaseType())
                         .fileName(file.getOriginalFilename())
                         .filePath(relativePath)
@@ -349,5 +353,32 @@ public class ReleaseFileService {
     private ReleaseFile findReleaseFileById(Long releaseFileId) {
         return releaseFileRepository.findById(releaseFileId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_FILE_NOT_FOUND));
+    }
+
+    /**
+     * 파일 확장자로 파일 타입 결정
+     *
+     * @param fileName 파일명
+     * @return 파일 타입 코드 (FILE_TYPE_*)
+     */
+    private String determineFileType(String fileName) {
+        String lowerCaseFileName = fileName.toLowerCase();
+
+        if (lowerCaseFileName.endsWith(".sql")) {
+            return "FILE_TYPE_SQL";
+        } else if (lowerCaseFileName.endsWith(".md")) {
+            return "FILE_TYPE_MD";
+        } else if (lowerCaseFileName.endsWith(".pdf")) {
+            return "FILE_TYPE_PDF";
+        } else if (lowerCaseFileName.endsWith(".exe")) {
+            return "FILE_TYPE_EXE";
+        } else if (lowerCaseFileName.endsWith(".sh")) {
+            return "FILE_TYPE_SH";
+        } else if (lowerCaseFileName.endsWith(".txt")) {
+            return "FILE_TYPE_TXT";
+        } else {
+            // 기본값: UNDEFINED
+            return "FILE_TYPE_UNDEFINED";
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.ts.rm.global.config;
 
 import com.ts.rm.global.filter.JwtAuthenticationFilter;
+import com.ts.rm.global.security.jwt.JwtAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -47,6 +49,10 @@ public class SecurityConfig {
                 // Session 사용 안 함
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // 인증 실패 시 401 Unauthorized 반환
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
 
                 // 인증/인가 설정
                 .authorizeHttpRequests(auth -> auth

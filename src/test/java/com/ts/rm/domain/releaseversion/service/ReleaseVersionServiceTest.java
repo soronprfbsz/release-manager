@@ -18,7 +18,7 @@ import com.ts.rm.domain.releaseversion.mapper.ReleaseVersionDtoMapper;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionHierarchyRepository;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
-import com.ts.rm.domain.releaseversion.util.PatchNoteManager;
+import com.ts.rm.domain.releaseversion.util.ReleaseMetadataManager;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.domain.common.service.FileStorageService;
@@ -58,7 +58,7 @@ class ReleaseVersionServiceTest {
     private ReleaseVersionDtoMapper mapper;
 
     @Mock
-    private PatchNoteManager patchNoteManager;
+    private ReleaseMetadataManager metadataManager;
 
     @Mock
     private FileStorageService fileStorageService;

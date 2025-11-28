@@ -1,0 +1,23 @@
+{
+  "versions" : [ {
+    "version" : "1.1.2",
+    "createdAt" : "2025-11-25",
+    "createdBy" : "jhlee@tscientific",
+    "comment" : "SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가"
+  }, {
+    "version" : "1.1.1",
+    "createdAt" : "2025-11-05",
+    "createdBy" : "jhlee@tscientific",
+    "comment" : "SMS - 운영관리 - 파일 기능 관련 테이블 추가"
+  }, {
+    "version" : "1.1.0",
+    "createdAt" : "2025-10-31",
+    "createdBy" : "jhlee@tscientific",
+    "comment" : "데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경"
+  }, {
+    "version" : "1.0.0",
+    "createdAt" : "2025-01-01",
+    "createdBy" : "TS",
+    "comment" : "최초 설치본"
+  } ]
+}
