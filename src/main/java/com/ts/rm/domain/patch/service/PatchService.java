@@ -556,6 +556,59 @@ public class PatchService {
     }
 
     /**
+     * 패치 삭제 (DB 레코드 + 실제 파일)
+     *
+     * @param patchId 패치 ID
+     */
+    @Transactional
+    public void deletePatch(Long patchId) {
+        // 1. 패치 조회
+        Patch patch = getPatch(patchId);
+
+        // 2. 실제 파일 디렉토리 삭제
+        Path patchDir = Paths.get(releaseBasePath, patch.getOutputPath());
+
+        if (Files.exists(patchDir)) {
+            try {
+                deleteDirectoryRecursively(patchDir);
+                log.info("패치 디렉토리 삭제 완료: {}", patchDir.toAbsolutePath());
+            } catch (IOException e) {
+                log.error("패치 디렉토리 삭제 실패: {}", patchDir, e);
+                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                        "패치 파일 삭제 중 오류가 발생했습니다: " + e.getMessage());
+            }
+        } else {
+            log.warn("패치 디렉토리가 존재하지 않습니다: {}", patchDir);
+        }
+
+        // 3. DB 레코드 삭제
+        patchRepository.delete(patch);
+
+        log.info("패치 삭제 완료 - ID: {}, Name: {}", patchId, patch.getPatchName());
+    }
+
+    /**
+     * 디렉토리 재귀적 삭제
+     */
+    private void deleteDirectoryRecursively(Path directory) throws IOException {
+        if (!Files.exists(directory)) {
+            return;
+        }
+
+        try (var stream = Files.walk(directory)) {
+            stream.sorted((p1, p2) -> -p1.compareTo(p2)) // 역순 정렬 (하위 항목부터 삭제)
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                            log.debug("파일/디렉토리 삭제: {}", path);
+                        } catch (IOException e) {
+                            log.warn("파일/디렉토리 삭제 실패: {}", path, e);
+                        }
+                    });
+        }
+    }
+
+    /**
      * 패치 파일 내용 조회
      *
      * @param patchId      패치 ID
