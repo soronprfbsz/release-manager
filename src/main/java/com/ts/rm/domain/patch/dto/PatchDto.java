@@ -154,4 +154,94 @@ public final class PatchDto {
     ) {
 
     }
+
+    /**
+     * 파일 노드 (파일 또는 디렉토리)
+     */
+    @Schema(description = "파일 노드 (파일 또는 디렉토리)")
+    public sealed interface FileNode permits FileInfo, DirectoryNode {
+        String name();
+        String path();
+        String type();
+    }
+
+    /**
+     * 파일 정보
+     */
+    @Schema(description = "파일 정보")
+    public record FileInfo(
+            @Schema(description = "파일명", example = "1.patch_mariadb.sql")
+            String name,
+
+            @Schema(description = "파일 크기 (bytes)", example = "1024")
+            long size,
+
+            @Schema(description = "타입", example = "file")
+            String type,
+
+            @Schema(description = "경로", example = "mariadb/source_files/1.1.0/1.patch_mariadb.sql")
+            String path
+    ) implements FileNode {
+
+    }
+
+    /**
+     * 디렉토리 노드 (재귀 구조)
+     */
+    @Schema(description = "디렉토리 노드")
+    public record DirectoryNode(
+            @Schema(description = "디렉토리명", example = "mariadb")
+            String name,
+
+            @Schema(description = "타입", example = "directory")
+            String type,
+
+            @Schema(description = "경로", example = "mariadb/source_files")
+            String path,
+
+            @Schema(description = "자식 노드 목록 (파일 또는 디렉토리)")
+            java.util.List<FileNode> children
+    ) implements FileNode {
+
+    }
+
+    /**
+     * 패치 파일 구조 응답
+     */
+    @Schema(description = "패치 파일 구조 응답")
+    public record FileStructureResponse(
+            @Schema(description = "패치 ID", example = "1")
+            Long patchId,
+
+            @Schema(description = "패치 이름", example = "patch_1.0.0_to_1.1.0")
+            String patchName,
+
+            @Schema(description = "루트 디렉토리")
+            DirectoryNode root
+    ) {
+
+    }
+
+    /**
+     * 파일 내용 응답
+     */
+    @Schema(description = "파일 내용 응답")
+    public record FileContentResponse(
+            @Schema(description = "패치 ID", example = "1")
+            Long patchId,
+
+            @Schema(description = "파일 경로", example = "mariadb/source_files/1.1.1/1.patch_mariadb_ddl.sql")
+            String path,
+
+            @Schema(description = "파일명", example = "1.patch_mariadb_ddl.sql")
+            String fileName,
+
+            @Schema(description = "파일 크기 (bytes)", example = "4867")
+            long size,
+
+            @Schema(description = "파일 내용 (텍스트)")
+            String content
+    ) {
+
+    }
 }

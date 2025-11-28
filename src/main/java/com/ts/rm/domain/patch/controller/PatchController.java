@@ -105,6 +105,36 @@ public class PatchController {
     }
 
     /**
+     * 패치 파일 구조 조회
+     */
+    @GetMapping("/{id}/files")
+    @Operation(summary = "패치 파일 구조 조회",
+            description = "패치 ZIP 파일 내부 구조를 재귀적으로 조회합니다.\n\n"
+                    + "응답에는 다음이 포함됩니다:\n"
+                    + "- root: 루트 디렉토리 (재귀 구조)\n"
+                    + "  - mariadb: MariaDB 패치 파일 및 디렉토리\n"
+                    + "  - cratedb: CrateDB 패치 파일 및 디렉토리\n"
+                    + "  - README.md: 패치 설명 파일\n"
+                    + "  - 실행 스크립트 파일들\n\n"
+                    + "각 노드는 FileNode 인터페이스를 구현하며 FileInfo(파일) 또는 DirectoryNode(디렉토리)입니다.\n"
+                    + "DirectoryNode는 children을 통해 재귀적으로 하위 파일/디렉토리를 포함합니다.")
+    public ApiResponse<PatchDto.FileStructureResponse> getPatchFileStructure(@PathVariable Long id) {
+
+        log.info("패치 파일 구조 조회 요청 - ID: {}", id);
+
+        Patch patch = patchService.getPatch(id);
+        PatchDto.DirectoryNode root = patchService.getZipFileStructure(id);
+
+        PatchDto.FileStructureResponse response = new PatchDto.FileStructureResponse(
+                patch.getPatchId(),
+                patch.getPatchName(),
+                root
+        );
+
+        return ApiResponse.success(response);
+    }
+
+    /**
      * 패치 다운로드 (ZIP)
      */
     @GetMapping("/{id}/download")
@@ -127,5 +157,30 @@ public class PatchController {
                         "attachment; filename=\"" + fileName + "\"")
                 .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(zipBytes.length))
                 .body(zipBytes);
+    }
+
+    /**
+     * 패치 파일 내용 조회
+     */
+    @GetMapping("/{id}/content")
+    @Operation(summary = "패치 파일 내용 조회",
+            description = "패치 디렉토리 내의 특정 파일 내용을 조회합니다.\n\n"
+                    + "**사용 예시**:\n"
+                    + "- `GET /api/patches/1/content?path=mariadb/source_files/1.1.1/1.patch_mariadb_ddl.sql`\n"
+                    + "- `GET /api/patches/1/content?path=README.md`\n\n"
+                    + "**제약사항**:\n"
+                    + "- 파일 크기: 최대 10MB\n"
+                    + "- 파일 형식: 텍스트 파일만 지원 (SQL, MD, SH 등)\n"
+                    + "- 보안: 경로 탐색 공격 방지 (../ 등 차단)")
+    public ApiResponse<PatchDto.FileContentResponse> getFileContent(
+            @PathVariable Long id,
+            @Parameter(description = "파일 상대 경로", example = "mariadb/source_files/1.1.1/1.patch_mariadb_ddl.sql", required = true)
+            @RequestParam String path) {
+
+        log.info("패치 파일 내용 조회 요청 - ID: {}, Path: {}", id, path);
+
+        PatchDto.FileContentResponse response = patchService.getFileContent(id, path);
+
+        return ApiResponse.success(response);
     }
 }
