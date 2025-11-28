@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -75,9 +76,15 @@ public class ZipUtil {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ZipOutputStream zos = new ZipOutputStream(baos)) {
 
+            int addedFileCount = 0;
+            List<String> missingFiles = new ArrayList<>();
+
             for (ZipFileEntry fileEntry : files) {
                 if (!Files.exists(fileEntry.sourcePath())) {
-                    log.warn("파일이 존재하지 않아 건너뜁니다: {}", fileEntry.sourcePath());
+                    String missingPath = fileEntry.sourcePath().toString();
+                    log.warn("파일이 존재하지 않습니다: {} (ZIP 경로: {})",
+                            missingPath, fileEntry.zipEntryPath());
+                    missingFiles.add(missingPath);
                     continue;
                 }
 
@@ -85,11 +92,26 @@ public class ZipUtil {
                 zos.putNextEntry(new ZipEntry(entryName));
                 Files.copy(fileEntry.sourcePath(), zos);
                 zos.closeEntry();
+                addedFileCount++;
                 log.debug("파일 추가: {} -> {}", fileEntry.sourcePath().getFileName(), entryName);
             }
 
+            // 모든 파일이 존재하지 않는 경우 예외 발생
+            if (addedFileCount == 0) {
+                log.error("압축할 파일이 모두 존재하지 않습니다. 누락된 파일 목록: {}", missingFiles);
+                throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                        "압축할 파일이 실제로 존재하지 않습니다. 누락된 파일 수: " + missingFiles.size());
+            }
+
+            // 일부 파일만 누락된 경우 경고 로그
+            if (!missingFiles.isEmpty()) {
+                log.warn("일부 파일이 누락되었습니다 ({}/{}개). 누락된 파일: {}",
+                        missingFiles.size(), files.size(), missingFiles);
+            }
+
             zos.finish();
-            log.info("파일 압축 완료: {} 개 파일, {} bytes", files.size(), baos.size());
+            log.info("파일 압축 완료: {}개 파일 추가 (요청: {}개), {} bytes",
+                    addedFileCount, files.size(), baos.size());
             return baos.toByteArray();
 
         } catch (IOException e) {

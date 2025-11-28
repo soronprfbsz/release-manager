@@ -46,6 +46,11 @@ server:
   name: ${SERVER_NAME}
   host: ${SERVER_HOST:localhost}
   port: ${SERVER_PORT:8080}
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 # Swagger/OpenAPI Configuration
 springdoc:
