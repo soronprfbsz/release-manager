@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -14,11 +15,16 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "code")
+@IdClass(CodeId.class)
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Code {
+
+    @Id
+    @Column(name = "code_type_id", length = 50, insertable = false, updatable = false)
+    private String codeTypeId;
 
     @Id
     @Column(name = "code_id", length = 100)

@@ -91,7 +91,7 @@ class AuthControllerTest {
                 .accountId(1L)
                 .email("test@example.com")
                 .accountName("홍길동")
-                .role("ACCOUNT_ROLE_USER")
+                .role("USER")
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -110,7 +110,7 @@ class AuthControllerTest {
                         .accountId(1L)
                         .email("test@example.com")
                         .accountName("홍길동")
-                        .role("ACCOUNT_ROLE_USER")
+                        .role("USER")
                         .build())
                 .build();
     }
@@ -131,7 +131,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.accountId").value(1))
                 .andExpect(jsonPath("$.data.email").value("test@example.com"))
                 .andExpect(jsonPath("$.data.accountName").value("홍길동"))
-                .andExpect(jsonPath("$.data.role").value("ACCOUNT_ROLE_USER"));
+                .andExpect(jsonPath("$.data.role").value("USER"));
     }
 
     @Test
@@ -205,7 +205,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.accountInfo.accountId").value(1))
                 .andExpect(jsonPath("$.data.accountInfo.email").value("test@example.com"))
                 .andExpect(jsonPath("$.data.accountInfo.accountName").value("홍길동"))
-                .andExpect(jsonPath("$.data.accountInfo.role").value("ACCOUNT_ROLE_USER"));
+                .andExpect(jsonPath("$.data.accountInfo.role").value("USER"));
     }
 
     @Test

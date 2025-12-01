@@ -36,8 +36,8 @@ class AccountRepositoryTest {
                 .email("test@example.com")
                 .password("password123")
                 .accountName("테스트계정")
-                .role("ACCOUNT_ROLE_USER")
-                .status("ACCOUNT_STATUS_ACTIVE")
+                .role("USER")
+                .status("ACTIVE")
                 .build();
     }
 
@@ -102,13 +102,13 @@ class AccountRepositoryTest {
                 .email("inactive@example.com")
                 .password("password123")
                 .accountName("비활성계정")
-                .role("ACCOUNT_ROLE_USER")
-                .status("ACCOUNT_STATUS_INACTIVE")
+                .role("USER")
+                .status("INACTIVE")
                 .build();
         accountRepository.save(inactiveAccount);
 
         // when
-        List<Account> activeAccounts = accountRepository.findAllByStatus("ACCOUNT_STATUS_ACTIVE");
+        List<Account> activeAccounts = accountRepository.findAllByStatus("ACTIVE");
 
         // then
         assertThat(activeAccounts).hasSize(1);
@@ -148,8 +148,8 @@ class AccountRepositoryTest {
                 .email("another@example.com")
                 .password("password123")
                 .accountName("홍길동")
-                .role("ACCOUNT_ROLE_USER")
-                .status("ACCOUNT_STATUS_ACTIVE")
+                .role("USER")
+                .status("ACTIVE")
                 .build();
         accountRepository.save(anotherAccount);
 

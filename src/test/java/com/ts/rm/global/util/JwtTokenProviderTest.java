@@ -30,7 +30,7 @@ class JwtTokenProviderTest {
     void generateToken_Success() {
         // given
         String email = "test@example.com";
-        String role = "ACCOUNT_ROLE_USER";
+        String role = "USER";
 
         // when
         String token = jwtTokenProvider.generateToken(email, role);
@@ -46,7 +46,7 @@ class JwtTokenProviderTest {
     void validateToken_ValidToken_ReturnsTrue() {
         // given
         String email = "test@example.com";
-        String role = "ACCOUNT_ROLE_USER";
+        String role = "USER";
         String token = jwtTokenProvider.generateToken(email, role);
 
         // when
@@ -87,7 +87,7 @@ class JwtTokenProviderTest {
     void getEmail_ValidToken_ReturnsEmail() {
         // given
         String expectedEmail = "test@example.com";
-        String role = "ACCOUNT_ROLE_USER";
+        String role = "USER";
         String token = jwtTokenProvider.generateToken(expectedEmail, role);
 
         // when
@@ -102,7 +102,7 @@ class JwtTokenProviderTest {
     void getRole_ValidToken_ReturnsRole() {
         // given
         String email = "test@example.com";
-        String expectedRole = "ACCOUNT_ROLE_ADMIN";
+        String expectedRole = "ADMIN";
         String token = jwtTokenProvider.generateToken(email, expectedRole);
 
         // when
@@ -117,7 +117,7 @@ class JwtTokenProviderTest {
     void getClaims_ValidToken_ReturnsClaims() {
         // given
         String email = "test@example.com";
-        String role = "ACCOUNT_ROLE_USER";
+        String role = "USER";
         String token = jwtTokenProvider.generateToken(email, role);
 
         // when
@@ -147,7 +147,7 @@ class JwtTokenProviderTest {
     void generateToken_ExpirationTimeIsCorrect() throws InterruptedException {
         // given
         String email = "test@example.com";
-        String role = "ACCOUNT_ROLE_USER";
+        String role = "USER";
         long beforeGeneration = System.currentTimeMillis();
 
         // when

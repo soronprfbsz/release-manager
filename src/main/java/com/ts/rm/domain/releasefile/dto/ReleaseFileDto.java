@@ -28,8 +28,11 @@ public final class ReleaseFileDto {
             @Schema(description = "릴리즈 버전 ID", example = "1") @NotNull(message = "릴리즈 버전 ID는 필수입니다")
             Long releaseVersionId,
 
-            @Schema(description = "데이터베이스 타입", example = "MARIADB") @NotBlank(message = "데이터베이스 타입은 필수입니다")
-            String databaseType,
+            @Schema(description = "파일 카테고리", example = "DATABASE")
+            String fileCategory,
+
+            @Schema(description = "하위 카테고리", example = "mariadb")
+            String subCategory,
 
             @Schema(description = "파일명", example = "001_create_users_table.sql") @NotBlank(message = "파일명은 필수입니다") @Size(max = 255, message = "파일명은 255자 이하여야 합니다")
             String fileName,
@@ -58,8 +61,11 @@ public final class ReleaseFileDto {
     @Builder
     @Schema(description = "릴리즈 파일 업로드 요청")
     public record UploadRequest(
-            @Schema(description = "데이터베이스 타입", example = "MARIADB") @NotBlank(message = "데이터베이스 타입은 필수입니다")
-            String databaseType,
+            @Schema(description = "파일 카테고리 (선택사항, 미입력 시 자동 감지)", example = "DATABASE")
+            String fileCategory,
+
+            @Schema(description = "하위 카테고리 (선택사항)", example = "mariadb")
+            String subCategory,
 
             @Schema(description = "업로드 사용자", example = "admin@tscientific") @NotBlank(message = "업로드 사용자는 필수입니다") @Size(max = 100, message = "업로드 사용자는 100자 이하여야 합니다")
             String uploadedBy
@@ -100,11 +106,11 @@ public final class ReleaseFileDto {
             @Schema(description = "릴리즈 버전", example = "1.1.0")
             String releaseVersion,
 
-            @Schema(description = "데이터베이스 타입 ID", example = "1")
-            Long databaseTypeId,
+            @Schema(description = "파일 카테고리", example = "DATABASE")
+            String fileCategory,
 
-            @Schema(description = "데이터베이스 타입", example = "MARIADB")
-            String databaseTypeName,
+            @Schema(description = "하위 카테고리", example = "mariadb")
+            String subCategory,
 
             @Schema(description = "파일명", example = "001_create_users_table.sql")
             String fileName,
@@ -120,6 +126,9 @@ public final class ReleaseFileDto {
 
             @Schema(description = "실행 순서", example = "1")
             Integer executionOrder,
+
+            @Schema(description = "빌드 산출물 여부", example = "false")
+            Boolean isBuildArtifact,
 
             @Schema(description = "설명", example = "Create users table")
             String description,
@@ -144,8 +153,11 @@ public final class ReleaseFileDto {
             @Schema(description = "릴리즈 버전", example = "1.1.0")
             String releaseVersion,
 
-            @Schema(description = "데이터베이스 타입", example = "MARIADB")
-            String databaseTypeName,
+            @Schema(description = "파일 카테고리", example = "DATABASE")
+            String fileCategory,
+
+            @Schema(description = "하위 카테고리", example = "mariadb")
+            String subCategory,
 
             @Schema(description = "파일명", example = "001_create_users_table.sql")
             String fileName,

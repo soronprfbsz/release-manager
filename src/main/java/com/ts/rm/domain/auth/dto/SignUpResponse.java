@@ -28,7 +28,7 @@ public class SignUpResponse {
     @Schema(description = "계정 이름", example = "홍길동")
     private String accountName;
 
-    @Schema(description = "권한", example = "ACCOUNT_ROLE_USER")
+    @Schema(description = "권한", example = "USER")
     private String role;
 
     @Schema(description = "계정 생성일시", example = "2025-11-24T10:00:00")

@@ -60,24 +60,24 @@ class AccountServiceTest {
                 .email("test@example.com")
                 .password("password123")
                 .accountName("테스트계정")
-                .role("ACCOUNT_ROLE_USER")
-                .status("ACCOUNT_STATUS_ACTIVE")
+                .role("USER")
+                .status("ACTIVE")
                 .build();
 
         createRequest = AccountDto.CreateRequest.builder()
                 .email("test@example.com")
                 .password("password123")
                 .accountName("테스트계정")
-                .role("ACCOUNT_ROLE_USER")
-                .status("ACCOUNT_STATUS_ACTIVE")
+                .role("USER")
+                .status("ACTIVE")
                 .build();
 
         detailResponse = new AccountDto.DetailResponse(
                 1L,
                 "test@example.com",
                 "테스트계정",
-                "ACCOUNT_ROLE_USER",
-                "ACCOUNT_STATUS_ACTIVE",
+                "USER",
+                "ACTIVE",
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
@@ -155,7 +155,7 @@ class AccountServiceTest {
         // given
         List<Account> accounts = List.of(testAccount);
         List<AccountDto.SimpleResponse> simpleResponses = List.of(
-                new AccountDto.SimpleResponse(1L, "test@example.com", "테스트계정", "ACCOUNT_STATUS_ACTIVE")
+                new AccountDto.SimpleResponse(1L, "test@example.com", "테스트계정", "ACTIVE")
         );
 
         given(accountRepository.findAll()).willReturn(accounts);
@@ -175,7 +175,7 @@ class AccountServiceTest {
         // given
         List<Account> accounts = List.of(testAccount);
         List<AccountDto.SimpleResponse> simpleResponses = List.of(
-                new AccountDto.SimpleResponse(1L, "test@example.com", "테스트계정", "ACCOUNT_STATUS_ACTIVE")
+                new AccountDto.SimpleResponse(1L, "test@example.com", "테스트계정", "ACTIVE")
         );
 
         given(accountRepository.findAllByStatus(anyString())).willReturn(accounts);
@@ -183,11 +183,11 @@ class AccountServiceTest {
 
         // when
         List<AccountDto.SimpleResponse> result = accountService.getAccounts(
-                AccountStatus.ACCOUNT_STATUS_ACTIVE, null);
+                AccountStatus.ACTIVE, null);
 
         // then
         assertThat(result).hasSize(1);
-        then(accountRepository).should(times(1)).findAllByStatus("ACCOUNT_STATUS_ACTIVE");
+        then(accountRepository).should(times(1)).findAllByStatus("ACTIVE");
     }
 
     @Test
@@ -204,8 +204,8 @@ class AccountServiceTest {
                 .email("test@example.com")
                 .password("newPassword")
                 .accountName("새이름")
-                .role("ACCOUNT_ROLE_USER")
-                .status("ACCOUNT_STATUS_ACTIVE")
+                .role("USER")
+                .status("ACTIVE")
                 .build();
 
         given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
@@ -240,7 +240,7 @@ class AccountServiceTest {
         given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
 
         // when
-        accountService.updateAccountStatus(1L, AccountStatus.ACCOUNT_STATUS_ACTIVE);
+        accountService.updateAccountStatus(1L, AccountStatus.ACTIVE);
 
         // then
         // JPA Dirty Checking 사용 - 엔티티 조회만 검증
@@ -254,7 +254,7 @@ class AccountServiceTest {
         given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
 
         // when
-        accountService.updateAccountStatus(1L, AccountStatus.ACCOUNT_STATUS_INACTIVE);
+        accountService.updateAccountStatus(1L, AccountStatus.INACTIVE);
 
         // then
         // JPA Dirty Checking 사용 - 엔티티 조회만 검증
@@ -267,7 +267,7 @@ class AccountServiceTest {
         // given
         List<Account> accounts = List.of(testAccount);
         List<AccountDto.SimpleResponse> simpleResponses = List.of(
-                new AccountDto.SimpleResponse(1L, "test@example.com", "테스트계정", "ACCOUNT_STATUS_ACTIVE")
+                new AccountDto.SimpleResponse(1L, "test@example.com", "테스트계정", "ACTIVE")
         );
 
         given(accountRepository.findByAccountNameContaining(anyString())).willReturn(accounts);

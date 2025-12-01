@@ -1,6 +1,7 @@
 package com.ts.rm.domain.releasefile.repository;
 
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
+import com.ts.rm.domain.releasefile.enums.FileCategory;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,40 +10,18 @@ import org.springframework.data.repository.query.Param;
 
 /**
  * ReleaseFile Repository
- *
- * <p>릴리즈 파일 조회 및 관리를 위한 Repository
- * <p>업데이트는 JPA Dirty Checking 사용 (Service에서 엔티티 조회 후 setter 호출)
  */
 public interface ReleaseFileRepository extends JpaRepository<ReleaseFile, Long> {
 
     /**
      * 릴리즈 버전 ID로 릴리즈 파일 목록 조회 (실행 순서 오름차순)
-     *
-     * @param releaseVersionId 릴리즈 버전 ID
-     * @return 릴리즈 파일 목록
      */
     @Query("SELECT rf FROM ReleaseFile rf WHERE rf.releaseVersion.releaseVersionId = :releaseVersionId ORDER BY rf.executionOrder ASC")
     List<ReleaseFile> findAllByReleaseVersionIdOrderByExecutionOrderAsc(
             @Param("releaseVersionId") Long releaseVersionId);
 
     /**
-     * 릴리즈 버전 ID와 데이터베이스 타입으로 릴리즈 파일 목록 조회
-     *
-     * @param releaseVersionId 릴리즈 버전 ID
-     * @param databaseType     데이터베이스 타입
-     * @return 릴리즈 파일 목록
-     */
-    @Query("SELECT rf FROM ReleaseFile rf WHERE rf.releaseVersion.releaseVersionId = :releaseVersionId AND rf.databaseType = :databaseType ORDER BY rf.executionOrder ASC")
-    List<ReleaseFile> findByVersionAndDatabaseType(
-            @Param("releaseVersionId") Long releaseVersionId,
-            @Param("databaseType") String databaseType);
-
-    /**
      * 파일명으로 릴리즈 파일 조회
-     *
-     * @param releaseVersionId 릴리즈 버전 ID
-     * @param fileName         파일명
-     * @return ReleaseFile
      */
     @Query("SELECT rf FROM ReleaseFile rf WHERE rf.releaseVersion.releaseVersionId = :releaseVersionId AND rf.fileName = :fileName")
     Optional<ReleaseFile> findByReleaseVersionIdAndFileName(
@@ -51,10 +30,6 @@ public interface ReleaseFileRepository extends JpaRepository<ReleaseFile, Long> 
 
     /**
      * 파일명 존재 여부 확인
-     *
-     * @param releaseVersionId 릴리즈 버전 ID
-     * @param fileName         파일명
-     * @return 존재 여부
      */
     @Query("SELECT CASE WHEN COUNT(rf) > 0 THEN true ELSE false END FROM ReleaseFile rf WHERE rf.releaseVersion.releaseVersionId = :releaseVersionId AND rf.fileName = :fileName")
     boolean existsByReleaseVersionIdAndFileName(@Param("releaseVersionId") Long releaseVersionId,
@@ -62,27 +37,67 @@ public interface ReleaseFileRepository extends JpaRepository<ReleaseFile, Long> 
 
     /**
      * 파일 경로로 릴리즈 파일 조회
-     *
-     * @param filePath 파일 경로
-     * @return ReleaseFile
      */
     Optional<ReleaseFile> findByFilePath(String filePath);
 
     /**
-     * 버전 범위 내 릴리즈 파일 목록 조회 (데이터베이스 타입별)
-     *
-     * @param fromVersion  시작 버전
-     * @param toVersion    종료 버전
-     * @param databaseType 데이터베이스 타입
-     * @return 릴리즈 파일 목록
+     * 릴리즈 버전 ID와 파일 카테고리로 파일 목록 조회
+     */
+    @Query("SELECT rf FROM ReleaseFile rf WHERE rf.releaseVersion.releaseVersionId = :releaseVersionId AND rf.fileCategory = :fileCategory ORDER BY rf.executionOrder ASC")
+    List<ReleaseFile> findByReleaseVersionIdAndFileCategory(
+            @Param("releaseVersionId") Long releaseVersionId,
+            @Param("fileCategory") FileCategory fileCategory);
+
+    /**
+     * 릴리즈 버전 ID와 하위 카테고리로 파일 목록 조회
+     */
+    @Query("SELECT rf FROM ReleaseFile rf WHERE rf.releaseVersion.releaseVersionId = :releaseVersionId AND rf.subCategory = :subCategory ORDER BY rf.executionOrder ASC")
+    List<ReleaseFile> findByReleaseVersionIdAndSubCategory(
+            @Param("releaseVersionId") Long releaseVersionId,
+            @Param("subCategory") String subCategory);
+
+    /**
+     * 릴리즈 버전 ID로 파일 조회 (특정 카테고리 제외)
+     */
+    @Query("SELECT rf FROM ReleaseFile rf WHERE rf.releaseVersion.releaseVersionId = :releaseVersionId AND rf.fileCategory != :excludedFileCategory ORDER BY rf.executionOrder ASC")
+    List<ReleaseFile> findByReleaseVersionIdAndFileCategoryNot(
+            @Param("releaseVersionId") Long releaseVersionId,
+            @Param("excludedFileCategory") FileCategory excludedFileCategory);
+
+    /**
+     * 버전 범위 내 릴리즈 파일 목록 조회 (install 제외)
      */
     @Query("SELECT rf FROM ReleaseFile rf " +
             "WHERE rf.releaseVersion.version >= :fromVersion " +
             "AND rf.releaseVersion.version <= :toVersion " +
-            "AND rf.databaseType = :databaseType " +
+            "AND (rf.fileCategory IS NULL OR rf.fileCategory != 'INSTALL') " +
             "ORDER BY rf.releaseVersion.version ASC, rf.executionOrder ASC")
-    List<ReleaseFile> findReleaseFilesBetweenVersions(
+    List<ReleaseFile> findReleaseFilesBetweenVersionsExcludingInstall(
+            @Param("fromVersion") String fromVersion,
+            @Param("toVersion") String toVersion);
+
+    /**
+     * 버전 범위 내 특정 하위 카테고리 파일 목록 조회
+     */
+    @Query("SELECT rf FROM ReleaseFile rf " +
+            "WHERE rf.releaseVersion.version >= :fromVersion " +
+            "AND rf.releaseVersion.version <= :toVersion " +
+            "AND UPPER(rf.subCategory) = UPPER(:subCategory) " +
+            "ORDER BY rf.releaseVersion.version ASC, rf.executionOrder ASC")
+    List<ReleaseFile> findReleaseFilesBetweenVersionsBySubCategory(
             @Param("fromVersion") String fromVersion,
             @Param("toVersion") String toVersion,
-            @Param("databaseType") String databaseType);
+            @Param("subCategory") String subCategory);
+
+    /**
+     * 버전 범위 내 빌드 산출물 파일 목록 조회
+     */
+    @Query("SELECT rf FROM ReleaseFile rf " +
+            "WHERE rf.releaseVersion.version >= :fromVersion " +
+            "AND rf.releaseVersion.version <= :toVersion " +
+            "AND rf.isBuildArtifact = true " +
+            "ORDER BY rf.releaseVersion.version DESC, rf.executionOrder ASC")
+    List<ReleaseFile> findBuildArtifactsBetweenVersions(
+            @Param("fromVersion") String fromVersion,
+            @Param("toVersion") String toVersion);
 }
