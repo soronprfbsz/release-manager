@@ -165,8 +165,7 @@ public class ReleaseMetadataManager {
                             entry.createdAt(),
                             entry.createdBy(),
                             entry.comment(),
-                            null, // customVersion은 향후 추가 가능
-                            false // isInstall 정보는 메타데이터에 없으므로 false
+                            null // customVersion은 향후 추가 가능
                     ))
                     .orElse(null);
 
@@ -232,8 +231,7 @@ public class ReleaseMetadataManager {
             String createdAt,
             String createdBy,
             String comment,
-            String customVersion,
-            Boolean isInstall
+            String customVersion
     ) {
 
     }

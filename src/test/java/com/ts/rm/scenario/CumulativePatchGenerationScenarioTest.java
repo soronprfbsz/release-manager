@@ -86,24 +86,42 @@ public class CumulativePatchGenerationScenarioTest {
     @Autowired
     private PatchRepository patchRepository;
 
-    @Value("${app.release.base-path:src/main/resources/release}")
+    @Value("${app.release.base-path}")
     private String baseReleasePath;
 
     private String releaseMetadataBackup;  // release_metadata.json 백업
 
     /**
-     * 테스트 실행 전: release_metadata.json 백업
+     * 테스트 실행 전: 테스트 전용 디렉토리 확인 및 백업
      */
     @BeforeEach
     void setUp() throws IOException {
-        // release_metadata.json 백업
+        // 안전성 검증: 테스트가 실제 release 디렉토리를 사용하지 않도록 확인
+        if (baseReleasePath.contains("src/main/resources/release")) {
+            throw new IllegalStateException(
+                "테스트가 실제 release 디렉토리를 사용하려고 합니다! " +
+                "application-test.yml에서 app.release.base-path가 제대로 설정되었는지 확인하세요. " +
+                "현재 경로: " + baseReleasePath
+            );
+        }
+
+        System.out.println("\n[테스트 준비] 테스트 전용 경로 사용: " + baseReleasePath);
+
+        // 테스트 디렉토리 생성
+        Path testDir = Paths.get(baseReleasePath);
+        if (!Files.exists(testDir)) {
+            Files.createDirectories(testDir);
+            System.out.println("[테스트 준비] 테스트 디렉토리 생성: " + baseReleasePath);
+        }
+
+        // release_metadata.json 백업 (있으면)
         Path metadataPath = Paths.get(baseReleasePath, "versions/standard/release_metadata.json");
         if (Files.exists(metadataPath)) {
             releaseMetadataBackup = Files.readString(metadataPath, java.nio.charset.StandardCharsets.UTF_8);
-            System.out.println("\n[테스트 준비] release_metadata.json 백업 완료");
+            System.out.println("[테스트 준비] release_metadata.json 백업 완료");
         } else {
             releaseMetadataBackup = null;
-            System.out.println("\n[테스트 준비] release_metadata.json 파일 없음");
+            System.out.println("[테스트 준비] release_metadata.json 파일 없음");
         }
     }
 
@@ -274,14 +292,14 @@ public class CumulativePatchGenerationScenarioTest {
         var savedPatch = patchRepository.findById(patchId).orElseThrow();
         assertThat(savedPatch.getFromVersion()).isEqualTo("1.2.0");
         assertThat(savedPatch.getToVersion()).isEqualTo("1.3.1");
-        assertThat(savedPatch.getGeneratedBy()).isEqualTo("jhlee@tscientific.co.kr");
+        assertThat(savedPatch.getCreatedBy()).isEqualTo("jhlee@tscientific.co.kr");
 
         String outputPath = savedPatch.getOutputPath();
         System.out.println("  - patch_history 레코드 INSERT 완료");
         System.out.println("    from_version: " + savedPatch.getFromVersion());
         System.out.println("    to_version: " + savedPatch.getToVersion());
         System.out.println("    output_path: " + outputPath);
-        System.out.println("    generated_at: " + savedPatch.getGeneratedAt());
+        System.out.println("    created_at: " + savedPatch.getCreatedAt());
 
         // ============================================================
         // Step 3: 파일시스템 검증 - 디렉토리 구조
@@ -481,7 +499,7 @@ public class CumulativePatchGenerationScenarioTest {
 
         // 버전 생성
         ReleaseVersionDto.CreateRequest createRequest = new ReleaseVersionDto.CreateRequest(
-                version, "jhlee", comment, null, null, true
+                version, "jhlee", comment, null, null
         );
 
         String response = mockMvc.perform(post("/api/releases/standard/versions")

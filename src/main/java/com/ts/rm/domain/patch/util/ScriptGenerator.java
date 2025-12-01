@@ -66,7 +66,7 @@ public class ScriptGenerator {
                     .replace("{{VERSION_METADATA}}", buildVersionMetadata(versions))
                     .replace("{{SQL_EXECUTION_COMMANDS}}", buildSqlExecutionCommands(mariadbFiles));
 
-            // 스크립트 파일 저장
+            // 스크립트 파일 저장 (루트 레벨에 저장)
             Path scriptPath = Paths.get(baseReleasePath, outputDirPath, "mariadb_patch.sh");
             Files.createDirectories(scriptPath.getParent());
             Files.writeString(scriptPath, script);
@@ -116,7 +116,7 @@ public class ScriptGenerator {
                     .replace("{{VERSION_METADATA}}", buildVersionMetadata(versions))
                     .replace("{{SQL_EXECUTION_COMMANDS}}", buildSqlExecutionCommands(cratedbFiles));
 
-            // 스크립트 파일 저장
+            // 스크립트 파일 저장 (루트 레벨에 저장)
             Path scriptPath = Paths.get(baseReleasePath, outputDirPath, "cratedb_patch.sh");
             Files.createDirectories(scriptPath.getParent());
             Files.writeString(scriptPath, script);

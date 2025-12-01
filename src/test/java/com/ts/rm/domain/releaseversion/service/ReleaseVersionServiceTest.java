@@ -82,6 +82,8 @@ class ReleaseVersionServiceTest {
                 .customerCode("company_a")
                 .customerName("A회사")
                 .isActive(true)
+                .createdBy("admin@tscientific")
+                .updatedBy("admin@tscientific")
                 .build();
 
         testVersion = ReleaseVersion.builder()
@@ -93,7 +95,6 @@ class ReleaseVersionServiceTest {
                 .patchVersion(0)
                 .createdBy("jhlee@tscientific")
                 .comment("새로운 기능")
-                .isInstall(false)
                 .releaseFiles(new ArrayList<>())
                 .build();
 
@@ -101,7 +102,6 @@ class ReleaseVersionServiceTest {
                 .version("1.1.0")
                 .createdBy("jhlee@tscientific")
                 .comment("새로운 기능")
-                .isInstall(false)
                 .build();
 
         detailResponse = new ReleaseVersionDto.DetailResponse(
@@ -116,8 +116,6 @@ class ReleaseVersionServiceTest {
                 "jhlee@tscientific",
                 "새로운 기능",
                 null,
-                false,
-                LocalDateTime.now(),
                 LocalDateTime.now(),
                 new ArrayList<>()
         );
@@ -199,7 +197,6 @@ class ReleaseVersionServiceTest {
                 .createdBy("admin@tscientific")
                 .comment("커스텀 버전")
                 .customVersion("1.0.0-company_a")
-                .isInstall(false)
                 .releaseFiles(new ArrayList<>())
                 .build();
 
@@ -273,7 +270,7 @@ class ReleaseVersionServiceTest {
         List<ReleaseVersionDto.SimpleResponse> simpleResponses = List.of(
                 new ReleaseVersionDto.SimpleResponse(
                         1L, "STANDARD", null, "1.1.0", "1.1.x",
-                        "jhlee@tscientific", "새로운 기능", false,
+                        "jhlee@tscientific", "새로운 기능", new ArrayList<>(),
                         LocalDateTime.now(), 0
                 )
         );
@@ -297,7 +294,6 @@ class ReleaseVersionServiceTest {
         // given
         ReleaseVersionDto.UpdateRequest updateRequest = ReleaseVersionDto.UpdateRequest.builder()
                 .comment("수정된 코멘트")
-                .isInstall(true)
                 .build();
 
         given(releaseVersionRepository.findById(anyLong())).willReturn(Optional.of(testVersion));
@@ -335,7 +331,7 @@ class ReleaseVersionServiceTest {
         List<ReleaseVersionDto.SimpleResponse> simpleResponses = List.of(
                 new ReleaseVersionDto.SimpleResponse(
                         1L, "STANDARD", null, "1.1.0", "1.1.x",
-                        "jhlee@tscientific", "새로운 기능", false,
+                        "jhlee@tscientific", "새로운 기능", new ArrayList<>(),
                         LocalDateTime.now(), 0
                 )
         );

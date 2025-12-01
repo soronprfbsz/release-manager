@@ -75,7 +75,6 @@ class ReleaseFileServiceTest {
                 .fileSize(1024L)
                 .checksum("abc123def456")
                 .executionOrder(1)
-                .isBuildArtifact(false)
                 .description("Create users table")
                 .build();
 
@@ -102,7 +101,6 @@ class ReleaseFileServiceTest {
                 1024L,
                 "abc123def456",
                 1,
-                false,
                 "Create users table",
                 LocalDateTime.now(),
                 LocalDateTime.now()

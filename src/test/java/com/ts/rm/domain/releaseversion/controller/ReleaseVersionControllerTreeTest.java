@@ -35,16 +35,16 @@ class ReleaseVersionControllerTreeTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private ReleaseVersionService releaseVersionService;
+    private com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository releaseVersionRepository;
 
     @BeforeEach
     void setUp() {
-        // 테스트용 버전 데이터 생성
-        createTestVersion("1.1.0", "jhlee@tscientific", "Initial version");
-        createTestVersion("1.1.1", "jhlee@tscientific", "Bug fix");
-        createTestVersion("1.2.0", "jhlee@tscientific", "New features");
-        createTestVersion("1.2.1", "jhlee@tscientific", "Hotfix");
-        createTestVersion("2.0.0", "jhlee@tscientific", "Major release");
+        // 테스트용 버전 데이터 생성 (DB만 직접 저장, 파일 시스템 사용 안함)
+        createTestVersionDirectly("1.1.0", "jhlee@tscientific", "Initial version");
+        createTestVersionDirectly("1.1.1", "jhlee@tscientific", "Bug fix");
+        createTestVersionDirectly("1.2.0", "jhlee@tscientific", "New features");
+        createTestVersionDirectly("1.2.1", "jhlee@tscientific", "Hotfix");
+        createTestVersionDirectly("2.0.0", "jhlee@tscientific", "Major release");
     }
 
     @Test
@@ -65,7 +65,7 @@ class ReleaseVersionControllerTreeTest {
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdAt").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdBy").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].comment").exists())
-                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].databases").isArray());
+                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].categories").isArray());
     }
 
     @Test
@@ -124,9 +124,9 @@ class ReleaseVersionControllerTreeTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].databases").isArray());
-                // 주의: 테스트 환경에서는 실제 파일이 없어서 databases가 빈 배열일 수 있음
-                // 실제 환경에서는 MARIADB, CRATEDB 데이터베이스 파일 목록이 포함됨
+                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].categories").isArray());
+                // 주의: 테스트 환경에서는 실제 파일이 없어서 categories가 빈 배열일 수 있음
+                // 실제 환경에서는 DATABASE, WEB, ENGINE, INSTALL 카테고리가 포함됨
     }
 
     @Test
@@ -175,25 +175,23 @@ class ReleaseVersionControllerTreeTest {
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].version").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdAt").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdBy").exists())
-                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].databases").isArray());
+                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].categories").isArray());
     }
 
     /**
-     * 테스트용 버전 생성 헬퍼 메서드
+     * 테스트용 버전 생성 헬퍼 메서드 (DB만 직접 저장)
+     * 파일 시스템을 건드리지 않고 DB에만 데이터 저장
      */
-    private void createTestVersion(String version, String createdBy, String comment) {
-        ReleaseVersionDto.CreateRequest request = ReleaseVersionDto.CreateRequest.builder()
+    private void createTestVersionDirectly(String version, String createdBy, String comment) {
+        com.ts.rm.domain.releaseversion.entity.ReleaseVersion releaseVersion =
+                com.ts.rm.domain.releaseversion.entity.ReleaseVersion.builder()
                 .version(version)
-                .createdBy(createdBy)
+                .releaseType("STANDARD")
                 .comment(comment)
-                .isInstall(false)
+                .createdBy(createdBy)
+                .updatedBy(createdBy)
                 .build();
 
-        try {
-            releaseVersionService.createStandardVersion(request);
-        } catch (Exception e) {
-            // 테스트 환경에서는 파일 시스템 오류가 발생할 수 있으므로 무시
-            // 실제로는 DB에만 저장되면 트리 조회는 가능
-        }
+        releaseVersionRepository.save(releaseVersion);
     }
 }

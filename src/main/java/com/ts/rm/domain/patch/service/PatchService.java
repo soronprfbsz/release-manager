@@ -147,8 +147,7 @@ public class PatchService {
                     .toVersion(toVersion.getVersion())
                     .patchName(resolvedPatchName)
                     .outputPath(outputPath)
-                    .generatedAt(LocalDateTime.now())
-                    .generatedBy(createdBy)
+                    .createdBy(createdBy)
                     .description(description)
                     .patchedBy(patchedBy)
                     .build();
@@ -230,10 +229,8 @@ public class PatchService {
 
             Path outputDir = Paths.get(releaseBasePath, relativePath);
 
-            // 디렉토리 구조 생성
+            // 루트 디렉토리만 생성 (하위 디렉토리는 파일 복사 시 동적 생성)
             Files.createDirectories(outputDir);
-            Files.createDirectories(outputDir.resolve("mariadb/source_files"));
-            Files.createDirectories(outputDir.resolve("cratedb/source_files"));
 
             log.info("출력 디렉토리 생성 완료: {}", outputDir.toAbsolutePath());
 
@@ -339,10 +336,12 @@ public class PatchService {
 
         switch (category) {
             case DATABASE:
-                String subCategory = file.getSubCategory() != null ? file.getSubCategory()
+                // sub_category를 소문자로 변환
+                String subCategory = file.getSubCategory() != null
+                        ? file.getSubCategory().toLowerCase()
                         : "database";
                 return outputDir.resolve(
-                        String.format("%s/source_files/%s/%s",
+                        String.format("database/%s/source_files/%s/%s",
                                 subCategory,
                                 version.getVersion(),
                                 file.getFileName())
@@ -350,9 +349,10 @@ public class PatchService {
 
             case WEB:
             case ENGINE:
+                // category를 소문자로 변환
                 return outputDir.resolve(
                         String.format("%s/source_files/%s/%s",
-                                category.getCode(),
+                                category.getCode().toLowerCase(),
                                 version.getVersion(),
                                 file.getFileName())
                 );
@@ -440,12 +440,13 @@ public class PatchService {
             content.append("## 디렉토리 구조\n");
             content.append("```\n");
             content.append(".\n");
-            content.append("├── mariadb/\n");
-            content.append("│   ├── mariadb_patch.sh        # MariaDB 패치 실행 스크립트\n");
-            content.append("│   └── source_files/           # 누적된 SQL 파일들\n");
-            content.append("├── cratedb/\n");
-            content.append("│   ├── cratedb_patch.sh        # CrateDB 패치 실행 스크립트\n");
-            content.append("│   └── source_files/           # 누적된 SQL 파일들\n");
+            content.append("├── mariadb_patch.sh            # MariaDB 패치 실행 스크립트\n");
+            content.append("├── cratedb_patch.sh            # CrateDB 패치 실행 스크립트\n");
+            content.append("├── database/\n");
+            content.append("│   ├── mariadb/\n");
+            content.append("│   │   └── source_files/       # 누적된 SQL 파일들\n");
+            content.append("│   └── cratedb/\n");
+            content.append("│       └── source_files/       # 누적된 SQL 파일들\n");
             content.append("└── README.md                   # 이 파일\n");
             content.append("```\n\n");
 
@@ -487,10 +488,10 @@ public class PatchService {
     @Transactional(readOnly = true)
     public Page<Patch> listPatchesWithPaging(String releaseType, Pageable pageable) {
         if (releaseType != null) {
-            return patchRepository.findAllByReleaseTypeOrderByGeneratedAtDesc(
+            return patchRepository.findAllByReleaseTypeOrderByCreatedAtDesc(
                     releaseType.toUpperCase(), pageable);
         }
-        return patchRepository.findAllByOrderByGeneratedAtDesc(pageable);
+        return patchRepository.findAllByOrderByCreatedAtDesc(pageable);
     }
 
     /**

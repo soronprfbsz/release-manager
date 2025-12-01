@@ -3,6 +3,13 @@ spring:
   profiles:
     active: ${SERVER_ENVIRONMENT:dev}
 
+  # Multipart File Upload Configuration
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 1GB
+      max-request-size: 1GB
+
   # MariaDB Database Configuration
   datasource:
     url: jdbc:mariadb://${MARIADB_HOST}:${MARIADB_PORT}/${MARIADB_DATABASE}

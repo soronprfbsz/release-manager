@@ -56,11 +56,8 @@ public class Patch extends BaseEntity {
     @Column(name = "output_path", nullable = false, length = 500)
     private String outputPath;
 
-    @Column(name = "generated_at")
-    private LocalDateTime generatedAt;
-
-    @Column(name = "generated_by", nullable = false, length = 100)
-    private String generatedBy;
+    @Column(name = "created_by", nullable = false, length = 100)
+    private String createdBy;
 
     @Column(columnDefinition = "TEXT")
     private String description;

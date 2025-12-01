@@ -41,17 +41,9 @@ public final class ReleaseVersionDto {
             Long customerId,
 
             @Schema(description = "커스텀 버전 (커스텀 릴리즈인 경우)", example = "1.0.0-custom")
-            String customVersion,
-
-            @Schema(description = "설치본 여부", example = "false", defaultValue = "false")
-            Boolean isInstall
+            String customVersion
     ) {
 
-        public CreateRequest {
-            if (isInstall == null) {
-                isInstall = false;
-            }
-        }
     }
 
     /**
@@ -61,10 +53,7 @@ public final class ReleaseVersionDto {
     @Schema(description = "릴리즈 버전 수정 요청")
     public record UpdateRequest(
             @Schema(description = "버전 코멘트", example = "수정된 코멘트")
-            String comment,
-
-            @Schema(description = "설치본 여부", example = "true")
-            Boolean isInstall
+            String comment
     ) {
 
     }
@@ -111,14 +100,8 @@ public final class ReleaseVersionDto {
             @Schema(description = "커스텀 버전", example = "1.0.0-custom")
             String customVersion,
 
-            @Schema(description = "설치본 여부", example = "false")
-            Boolean isInstall,
-
             @Schema(description = "생성일시")
             LocalDateTime createdAt,
-
-            @Schema(description = "수정일시")
-            LocalDateTime updatedAt,
 
             @Schema(description = "릴리즈 파일 목록")
             List<ReleaseFileDto.SimpleResponse> releaseFiles
@@ -152,8 +135,8 @@ public final class ReleaseVersionDto {
             @Schema(description = "코멘트", example = "새로운 기능 추가")
             String comment,
 
-            @Schema(description = "설치본 여부", example = "false")
-            Boolean isInstall,
+            @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\", \"ENGINE\", \"INSTALL\"]")
+            List<String> categories,
 
             @Schema(description = "생성일시")
             LocalDateTime createdAt,
@@ -215,11 +198,8 @@ public final class ReleaseVersionDto {
             @Schema(description = "코멘트", example = "새로운 기능 추가")
             String comment,
 
-            @Schema(description = "설치본 여부", example = "false")
-            Boolean isInstall,
-
-            @Schema(description = "데이터베이스별 패치 파일 목록")
-            List<DatabaseNode> databases
+            @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\", \"ENGINE\", \"INSTALL\"]")
+            List<String> categories
     ) {
 
     }

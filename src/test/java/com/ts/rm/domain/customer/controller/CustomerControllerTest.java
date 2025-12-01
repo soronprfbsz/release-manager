@@ -91,7 +91,9 @@ class CustomerControllerTest {
                 "A회사 설명",
                 true,
                 now,
-                now
+                "admin@tscientific",
+                now,
+                "admin@tscientific"
         );
 
         simpleResponse = new CustomerDto.SimpleResponse(
@@ -111,6 +113,7 @@ class CustomerControllerTest {
                 .customerName("A회사")
                 .description("A회사 설명")
                 .isActive(true)
+                .createdBy("admin@tscientific")
                 .build();
 
         given(customerService.createCustomer(any())).willReturn(detailResponse);
@@ -182,6 +185,7 @@ class CustomerControllerTest {
         CustomerDto.UpdateRequest request = CustomerDto.UpdateRequest.builder()
                 .customerName("수정된회사")
                 .description("수정된설명")
+                .updatedBy("admin@tscientific")
                 .build();
 
         CustomerDto.DetailResponse updatedResponse = new CustomerDto.DetailResponse(
@@ -191,7 +195,9 @@ class CustomerControllerTest {
                 "수정된설명",
                 true,
                 detailResponse.createdAt(),
-                LocalDateTime.now()
+                "admin@tscientific",
+                LocalDateTime.now(),
+                "admin@tscientific"
         );
 
         given(customerService.updateCustomer(eq(1L), any())).willReturn(updatedResponse);

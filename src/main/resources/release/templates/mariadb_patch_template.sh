@@ -184,7 +184,7 @@ echo "=========================================="
 echo ""
 
 # SQL 파일 실행
-cd "$SCRIPT_DIR/mariadb/source_files"
+cd "$SCRIPT_DIR/database/mariadb/source_files"
 
 {{SQL_EXECUTION_COMMANDS}}
 

@@ -38,4 +38,10 @@ public class Customer extends BaseEntity {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
+
+    @Column(name = "created_by", nullable = false, length = 100)
+    private String createdBy;
+
+    @Column(name = "updated_by", nullable = false, length = 100)
+    private String updatedBy;
 }

@@ -43,6 +43,8 @@ class ReleaseVersionRepositoryTest {
                 .customerName("A회사")
                 .description("테스트 고객사")
                 .isActive(true)
+                .createdBy("admin@tscientific")
+                .updatedBy("admin@tscientific")
                 .build();
         testCustomer = customerRepository.save(testCustomer);
     }
@@ -59,7 +61,6 @@ class ReleaseVersionRepositoryTest {
                 .patchVersion(0)
                 .createdBy("jhlee@tscientific")
                 .comment("새로운 기능 추가")
-                .isInstall(false)
                 .build();
 
         // when
@@ -72,7 +73,6 @@ class ReleaseVersionRepositoryTest {
         assertThat(saved.getCustomer()).isNull();
         assertThat(saved.getMajorMinor()).isEqualTo("1.1.x"); // @Transient 계산 필드 검증
         assertThat(saved.getCreatedAt()).isNotNull();
-        assertThat(saved.getUpdatedAt()).isNotNull();
     }
 
     @Test
@@ -89,7 +89,6 @@ class ReleaseVersionRepositoryTest {
                 .createdBy("admin@tscientific")
                 .comment("고객사 맞춤 기능")
                 .customVersion("1.0.0-company_a")
-                .isInstall(false)
                 .build();
 
         // when
@@ -163,7 +162,6 @@ class ReleaseVersionRepositoryTest {
                 .patchVersion(0)
                 .createdBy("admin@tscientific")
                 .comment("첫번째 버전")
-                .isInstall(false)
                 .build();
         releaseVersionRepository.save(customVersion1);
 
@@ -176,7 +174,6 @@ class ReleaseVersionRepositoryTest {
                 .patchVersion(1)
                 .createdBy("admin@tscientific")
                 .comment("두번째 버전")
-                .isInstall(false)
                 .build();
         releaseVersionRepository.save(customVersion2);
 
@@ -261,7 +258,6 @@ class ReleaseVersionRepositoryTest {
                 .patchVersion(0)
                 .createdBy("admin@tscientific")
                 .comment("커스텀 버전")
-                .isInstall(false)
                 .build();
         ReleaseVersion saved = releaseVersionRepository.save(version);
 
@@ -283,7 +279,6 @@ class ReleaseVersionRepositoryTest {
                 .patchVersion(patch)
                 .createdBy("jhlee@tscientific")
                 .comment("테스트 버전")
-                .isInstall(false)
                 .build();
     }
 

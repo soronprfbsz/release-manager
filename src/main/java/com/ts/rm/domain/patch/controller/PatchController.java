@@ -59,7 +59,7 @@ public class PatchController {
                 request.customerId(),
                 request.fromVersion(),
                 request.toVersion(),
-                request.generatedBy(),
+                request.createdBy(),
                 request.description(),
                 request.patchedBy(),
                 request.patchName()
@@ -94,7 +94,7 @@ public class PatchController {
     public ApiResponse<Page<PatchDto.SimpleResponse>> listPatches(
             @Parameter(description = "릴리즈 타입 (STANDARD/CUSTOM)")
             @RequestParam(required = false) String releaseType,
-            @ParameterObject @PageableDefault(size = 10, sort = "generatedAt") Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
 
         log.info("패치 목록 조회 요청 - releaseType: {}, page: {}, size: {}",
                 releaseType, pageable.getPageNumber(), pageable.getPageSize());

@@ -14,6 +14,8 @@ import com.ts.rm.global.config.MessageConfig;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.exception.GlobalExceptionHandler;
+import com.ts.rm.global.filter.JwtAuthenticationFilter;
+import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,13 @@ class PatchControllerTest {
     @MockitoBean
     private PatchDtoMapper patchDtoMapper;
 
+    // Security 관련 MockBean 추가
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Test
     @DisplayName("DELETE /api/patches/{id} - 성공")
     void deletePatch_Success() throws Exception {
@@ -53,7 +62,7 @@ class PatchControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data").doesNotExist());
 
         verify(patchService).deletePatch(patchId);
     }
@@ -91,7 +100,7 @@ class PatchControllerTest {
         mockMvc.perform(delete("/api/patches/{id}", patchId))
                 .andDo(print())
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.status").value("fail"));
+                .andExpect(jsonPath("$.status").value("error"));
 
         verify(patchService).deletePatch(patchId);
     }

@@ -151,6 +151,9 @@ public class CustomerService {
         if (request.isActive() != null) {
             customer.setIsActive(request.isActive());
         }
+        if (request.updatedBy() != null) {
+            customer.setUpdatedBy(request.updatedBy());
+        }
 
         // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Customer updated successfully with customerId: {}", customerId);

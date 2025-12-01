@@ -70,7 +70,7 @@ public interface ReleaseFileRepository extends JpaRepository<ReleaseFile, Long> 
     @Query("SELECT rf FROM ReleaseFile rf " +
             "WHERE rf.releaseVersion.version >= :fromVersion " +
             "AND rf.releaseVersion.version <= :toVersion " +
-            "AND (rf.fileCategory IS NULL OR rf.fileCategory != 'INSTALL') " +
+            "AND (rf.fileCategory IS NULL OR rf.fileCategory != com.ts.rm.domain.releasefile.enums.FileCategory.INSTALL) " +
             "ORDER BY rf.releaseVersion.version ASC, rf.executionOrder ASC")
     List<ReleaseFile> findReleaseFilesBetweenVersionsExcludingInstall(
             @Param("fromVersion") String fromVersion,
@@ -91,13 +91,20 @@ public interface ReleaseFileRepository extends JpaRepository<ReleaseFile, Long> 
 
     /**
      * 버전 범위 내 빌드 산출물 파일 목록 조회
+     * (fileCategory가 WEB 또는 ENGINE인 파일)
      */
     @Query("SELECT rf FROM ReleaseFile rf " +
             "WHERE rf.releaseVersion.version >= :fromVersion " +
             "AND rf.releaseVersion.version <= :toVersion " +
-            "AND rf.isBuildArtifact = true " +
+            "AND rf.fileCategory IN (com.ts.rm.domain.releasefile.enums.FileCategory.WEB, com.ts.rm.domain.releasefile.enums.FileCategory.ENGINE) " +
             "ORDER BY rf.releaseVersion.version DESC, rf.executionOrder ASC")
     List<ReleaseFile> findBuildArtifactsBetweenVersions(
             @Param("fromVersion") String fromVersion,
             @Param("toVersion") String toVersion);
+
+    /**
+     * 릴리즈 버전 ID로 포함된 파일 카테고리 목록 조회 (중복 제거)
+     */
+    @Query("SELECT DISTINCT rf.fileCategory FROM ReleaseFile rf WHERE rf.releaseVersion.releaseVersionId = :releaseVersionId AND rf.fileCategory IS NOT NULL ORDER BY rf.fileCategory")
+    List<FileCategory> findCategoriesByVersionId(@Param("releaseVersionId") Long releaseVersionId);
 }

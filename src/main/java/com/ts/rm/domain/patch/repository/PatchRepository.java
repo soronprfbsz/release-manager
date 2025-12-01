@@ -22,7 +22,7 @@ public interface PatchRepository extends JpaRepository<Patch, Long> {
      * @param pageable 페이징 정보
      * @return 패치 페이지
      */
-    Page<Patch> findAllByOrderByGeneratedAtDesc(Pageable pageable);
+    Page<Patch> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     /**
      * 릴리즈 타입별 패치 페이징 조회 (최신순)
@@ -31,7 +31,7 @@ public interface PatchRepository extends JpaRepository<Patch, Long> {
      * @param pageable    페이징 정보
      * @return 패치 페이지
      */
-    Page<Patch> findAllByReleaseTypeOrderByGeneratedAtDesc(String releaseType, Pageable pageable);
+    Page<Patch> findAllByReleaseTypeOrderByCreatedAtDesc(String releaseType, Pageable pageable);
 
     /**
      * 릴리즈 타입별 패치 조회 (최신순) - 비페이징
@@ -39,8 +39,8 @@ public interface PatchRepository extends JpaRepository<Patch, Long> {
      * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
      * @return 패치 목록
      */
-    @Query("SELECT p FROM Patch p WHERE p.releaseType = :releaseType ORDER BY p.generatedAt DESC")
-    List<Patch> findAllByReleaseTypeOrderByGeneratedAtDesc(
+    @Query("SELECT p FROM Patch p WHERE p.releaseType = :releaseType ORDER BY p.createdAt DESC")
+    List<Patch> findAllByReleaseTypeOrderByCreatedAtDesc(
             @Param("releaseType") String releaseType);
 
     /**
@@ -49,8 +49,8 @@ public interface PatchRepository extends JpaRepository<Patch, Long> {
      * @param customerId 고객사 ID
      * @return 패치 목록
      */
-    @Query("SELECT p FROM Patch p WHERE p.customer.customerId = :customerId ORDER BY p.generatedAt DESC")
-    List<Patch> findAllByCustomerIdOrderByGeneratedAtDesc(@Param("customerId") Long customerId);
+    @Query("SELECT p FROM Patch p WHERE p.customer.customerId = :customerId ORDER BY p.createdAt DESC")
+    List<Patch> findAllByCustomerIdOrderByCreatedAtDesc(@Param("customerId") Long customerId);
 
     /**
      * 버전 범위로 패치 조회

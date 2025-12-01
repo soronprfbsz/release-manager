@@ -127,9 +127,6 @@ public final class ReleaseFileDto {
             @Schema(description = "실행 순서", example = "1")
             Integer executionOrder,
 
-            @Schema(description = "빌드 산출물 여부", example = "false")
-            Boolean isBuildArtifact,
-
             @Schema(description = "설명", example = "Create users table")
             String description,
 

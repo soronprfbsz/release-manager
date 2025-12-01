@@ -100,7 +100,6 @@ class ReleaseVersionRepositoryCustomTest {
                 .patchVersion(Integer.parseInt(parts[2]))
                 .createdBy("system")
                 .comment("테스트 버전")
-                .isInstall(false)
                 .build();
         return releaseVersionRepository.save(releaseVersion);
     }
