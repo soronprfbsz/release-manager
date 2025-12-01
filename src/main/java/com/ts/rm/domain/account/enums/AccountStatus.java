@@ -8,11 +8,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "계정 상태")
 public enum AccountStatus {
     @Schema(description = "활성")
-    ACCOUNT_STATUS_ACTIVE,
+    ACTIVE,
 
     @Schema(description = "비활성")
-    ACCOUNT_STATUS_INACTIVE,
+    INACTIVE,
 
     @Schema(description = "정지")
-    ACCOUNT_STATUS_SUSPENDED
+    SUSPENDED
 }

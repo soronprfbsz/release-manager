@@ -36,10 +36,10 @@ public final class AccountDto {
             @Schema(description = "이름 (2~50자)", example = "홍길동") @NotBlank(message = "이름은 필수입니다") @Size(min = 2, max = 50, message = "이름은 2자 이상 50자 이하여야 합니다")
             String accountName,
 
-            @Schema(description = "계정 권한", example = "ACCOUNT_ROLE_USER", defaultValue = "ACCOUNT_ROLE_USER")
+            @Schema(description = "계정 권한", example = "USER", defaultValue = "USER")
             String role,
 
-            @Schema(description = "계정 상태", example = "ACCOUNT_STATUS_ACTIVE", defaultValue = "ACCOUNT_STATUS_ACTIVE")
+            @Schema(description = "계정 상태", example = "ACTIVE", defaultValue = "ACTIVE")
             String status
     ) {
 
@@ -48,10 +48,10 @@ public final class AccountDto {
          */
         public CreateRequest {
             if (role == null || role.isBlank()) {
-                role = "ACCOUNT_ROLE_USER";
+                role = "USER";
             }
             if (status == null || status.isBlank()) {
-                status = "ACCOUNT_STATUS_ACTIVE";
+                status = "ACTIVE";
             }
         }
     }
@@ -89,10 +89,10 @@ public final class AccountDto {
             @Schema(description = "이름", example = "홍길동")
             String accountName,
 
-            @Schema(description = "권한", example = "ACCOUNT_ROLE_USER")
+            @Schema(description = "권한", example = "USER")
             String role,
 
-            @Schema(description = "상태", example = "ACCOUNT_STATUS_ACTIVE")
+            @Schema(description = "상태", example = "ACTIVE")
             String status,
 
             @Schema(description = "생성일시")
@@ -118,7 +118,7 @@ public final class AccountDto {
             @Schema(description = "이름", example = "홍길동")
             String accountName,
 
-            @Schema(description = "상태", example = "ACCOUNT_STATUS_ACTIVE")
+            @Schema(description = "상태", example = "ACTIVE")
             String status
     ) {
 

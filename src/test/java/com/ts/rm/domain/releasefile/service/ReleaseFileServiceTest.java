@@ -12,6 +12,7 @@ import static org.mockito.Mockito.times;
 
 import com.ts.rm.domain.releasefile.dto.ReleaseFileDto;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
+import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.mapper.ReleaseFileDtoMapper;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
@@ -67,18 +68,21 @@ class ReleaseFileServiceTest {
         testReleaseFile = ReleaseFile.builder()
                 .releaseFileId(1L)
                 .releaseVersion(testVersion)
-                .databaseType("MARIADB")
+                .fileCategory(FileCategory.DATABASE)
+                .subCategory("mariadb")
                 .fileName("001_create_users_table.sql")
                 .filePath("/release/1.1.0/patch/mariadb/001_create_users_table.sql")
                 .fileSize(1024L)
                 .checksum("abc123def456")
                 .executionOrder(1)
+                .isBuildArtifact(false)
                 .description("Create users table")
                 .build();
 
         createRequest = ReleaseFileDto.CreateRequest.builder()
                 .releaseVersionId(1L)
-                .databaseType("MARIADB")
+                .fileCategory("DATABASE")
+                .subCategory("mariadb")
                 .fileName("001_create_users_table.sql")
                 .filePath("/release/1.1.0/patch/mariadb/001_create_users_table.sql")
                 .fileSize(1024L)
@@ -91,13 +95,14 @@ class ReleaseFileServiceTest {
                 1L,
                 1L,
                 "1.1.0",
-                null,
-                "MARIADB",
+                "database",
+                "mariadb",
                 "001_create_users_table.sql",
                 "/release/1.1.0/patch/mariadb/001_create_users_table.sql",
                 1024L,
                 "abc123def456",
                 1,
+                false,
                 "Create users table",
                 LocalDateTime.now(),
                 LocalDateTime.now()
@@ -173,7 +178,7 @@ class ReleaseFileServiceTest {
         List<ReleaseFile> releaseFiles = List.of(testReleaseFile);
         List<ReleaseFileDto.SimpleResponse> simpleResponses = List.of(
                 new ReleaseFileDto.SimpleResponse(
-                        1L, "1.1.0", "MARIADB", "001_create_users_table.sql",
+                        1L, "1.1.0", "database", "mariadb", "001_create_users_table.sql",
                         1024L, "abc123def456", 1, "Create users table"
                 )
         );
@@ -192,29 +197,29 @@ class ReleaseFileServiceTest {
     }
 
     @Test
-    @DisplayName("버전+DB타입별 릴리즈 파일 목록 조회 - 성공")
-    void getReleaseFilesByVersionAndDbType_Success() {
+    @DisplayName("버전+카테고리별 릴리즈 파일 목록 조회 - 성공")
+    void getReleaseFilesByVersionAndCategory_Success() {
         // given
         List<ReleaseFile> releaseFiles = List.of(testReleaseFile);
         List<ReleaseFileDto.SimpleResponse> simpleResponses = List.of(
                 new ReleaseFileDto.SimpleResponse(
-                        1L, "1.1.0", "MARIADB", "001_create_users_table.sql",
+                        1L, "1.1.0", "database", "mariadb", "001_create_users_table.sql",
                         1024L, "abc123def456", 1, "Create users table"
                 )
         );
 
         given(releaseVersionRepository.findById(anyLong())).willReturn(Optional.of(testVersion));
-        given(releaseFileRepository.findByVersionAndDatabaseType(anyLong(), anyString()))
+        given(releaseFileRepository.findByReleaseVersionIdAndFileCategory(anyLong(), any(FileCategory.class)))
                 .willReturn(releaseFiles);
         given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
 
         // when
         List<ReleaseFileDto.SimpleResponse> result =
-                releaseFileService.getReleaseFilesByVersionAndDbType(1L, "MARIADB");
+                releaseFileService.getReleaseFilesByVersionAndCategory(1L, FileCategory.DATABASE);
 
         // then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).databaseTypeName()).isEqualTo("MARIADB");
+        assertThat(result.get(0).fileCategory()).isEqualTo("database");
     }
 
     @Test
@@ -297,27 +302,27 @@ class ReleaseFileServiceTest {
     }
 
     @Test
-    @DisplayName("버전 범위 내 릴리즈 파일 조회 - 성공")
+    @DisplayName("버전 범위 내 릴리즈 파일 조회 (install 제외) - 성공")
     void getReleaseFilesBetweenVersions_Success() {
         // given
         List<ReleaseFile> releaseFiles = List.of(testReleaseFile);
         List<ReleaseFileDto.SimpleResponse> simpleResponses = List.of(
                 new ReleaseFileDto.SimpleResponse(
-                        1L, "1.1.0", "MARIADB", "001_create_users_table.sql",
+                        1L, "1.1.0", "database", "mariadb", "001_create_users_table.sql",
                         1024L, "abc123def456", 1, "Create users table"
                 )
         );
 
-        given(releaseFileRepository.findReleaseFilesBetweenVersions(anyString(), anyString(),
-                anyString()))
+        given(releaseFileRepository.findReleaseFilesBetweenVersionsExcludingInstall(anyString(), anyString()))
                 .willReturn(releaseFiles);
         given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
 
         // when
         List<ReleaseFileDto.SimpleResponse> result =
-                releaseFileService.getReleaseFilesBetweenVersions("1.0.0", "1.1.0", "MARIADB");
+                releaseFileService.getReleaseFilesBetweenVersions("1.0.0", "1.1.0");
 
         // then
         assertThat(result).hasSize(1);
+        assertThat(result.get(0).fileCategory()).isEqualTo("database");
     }
 }

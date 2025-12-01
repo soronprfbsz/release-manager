@@ -13,7 +13,7 @@ import org.mapstruct.Mapping;
 public interface ReleaseFileDtoMapper {
 
     @Mapping(target = "releaseVersion", source = "releaseVersion.version")
-    @Mapping(target = "databaseTypeName", source = "databaseType")
+    @Mapping(target = "fileCategory", expression = "java(releaseFile.getFileCategory() != null ? releaseFile.getFileCategory().getCode() : null)")
     ReleaseFileDto.SimpleResponse toSimpleResponse(ReleaseFile releaseFile);
 
     List<ReleaseFileDto.SimpleResponse> toSimpleResponseList(List<ReleaseFile> releaseFiles);
@@ -21,8 +21,7 @@ public interface ReleaseFileDtoMapper {
     @Mapping(target = "releaseFileId", source = "releaseFileId")
     @Mapping(target = "releaseVersionId", source = "releaseVersion.releaseVersionId")
     @Mapping(target = "releaseVersion", source = "releaseVersion.version")
-    @Mapping(target = "databaseTypeId", expression = "java(null)")
-    @Mapping(target = "databaseTypeName", source = "databaseType")
+    @Mapping(target = "fileCategory", expression = "java(releaseFile.getFileCategory() != null ? releaseFile.getFileCategory().getCode() : null)")
     ReleaseFileDto.DetailResponse toDetailResponse(ReleaseFile releaseFile);
 
     List<ReleaseFileDto.DetailResponse> toDetailResponseList(List<ReleaseFile> releaseFiles);

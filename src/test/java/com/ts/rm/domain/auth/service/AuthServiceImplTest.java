@@ -69,8 +69,8 @@ class AuthServiceImplTest {
                 .email("test@example.com")
                 .password("encodedPassword")
                 .accountName("홍길동")
-                .role("ACCOUNT_ROLE_USER")
-                .status("ACCOUNT_STATUS_ACTIVE")
+                .role("USER")
+                .status("ACTIVE")
                 .build();
     }
 
@@ -90,7 +90,7 @@ class AuthServiceImplTest {
         assertThat(response.getAccountId()).isEqualTo(1L);
         assertThat(response.getEmail()).isEqualTo("test@example.com");
         assertThat(response.getAccountName()).isEqualTo("홍길동");
-        assertThat(response.getRole()).isEqualTo("ACCOUNT_ROLE_USER");
+        assertThat(response.getRole()).isEqualTo("USER");
 
         verify(accountRepository).findByEmail("test@example.com");
         verify(passwordEncoder).encode("password123!");
@@ -153,11 +153,11 @@ class AuthServiceImplTest {
         assertThat(response.getAccountInfo().getAccountId()).isEqualTo(1L);
         assertThat(response.getAccountInfo().getEmail()).isEqualTo("test@example.com");
         assertThat(response.getAccountInfo().getAccountName()).isEqualTo("홍길동");
-        assertThat(response.getAccountInfo().getRole()).isEqualTo("ACCOUNT_ROLE_USER");
+        assertThat(response.getAccountInfo().getRole()).isEqualTo("USER");
 
         verify(accountRepository).findByEmail("test@example.com");
         verify(passwordEncoder).matches("password123!", "encodedPassword");
-        verify(jwtTokenProvider).generateToken("test@example.com", "ACCOUNT_ROLE_USER");
+        verify(jwtTokenProvider).generateToken("test@example.com", "USER");
         verify(refreshTokenService).createRefreshToken(testAccount);
     }
 
@@ -210,7 +210,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    @DisplayName("회원가입 시 기본 역할은 ACCOUNT_ROLE_USER")
+    @DisplayName("회원가입 시 기본 역할은 USER")
     void signUp_DefaultRoleIsUser() {
         // given
         when(accountRepository.findByEmail(anyString())).thenReturn(Optional.empty());
@@ -221,6 +221,6 @@ class AuthServiceImplTest {
         SignUpResponse response = authService.signUp(signUpRequest);
 
         // then
-        assertThat(response.getRole()).isEqualTo("ACCOUNT_ROLE_USER");
+        assertThat(response.getRole()).isEqualTo("USER");
     }
 }

@@ -115,14 +115,14 @@ public class ReleaseVersionService {
             if (mariadbFiles != null && !mariadbFiles.isEmpty()) {
                 log.info("Uploading {} MariaDB files for version {}", mariadbFiles.size(),
                         request.version());
-                uploadFiles(versionId, mariadbFiles, "MARIADB");
+                uploadFiles(versionId, mariadbFiles, "mariadb");
             }
 
             // 3. CrateDB 파일 업로드
             if (cratedbFiles != null && !cratedbFiles.isEmpty()) {
                 log.info("Uploading {} CrateDB files for version {}", cratedbFiles.size(),
                         request.version());
-                uploadFiles(versionId, cratedbFiles, "CRATEDB");
+                uploadFiles(versionId, cratedbFiles, "cratedb");
             }
 
             log.info("Successfully created version {} with {} MariaDB files and {} CrateDB files",
@@ -380,14 +380,14 @@ public class ReleaseVersionService {
      *
      * @param versionId    버전 ID
      * @param files        업로드할 파일 목록
-     * @param databaseType 데이터베이스 타입 (MARIADB/CRATEDB)
+     * @param subCategory 하위 카테고리 (mariadb/cratedb)
      */
-    private void uploadFiles(Long versionId, List<MultipartFile> files, String databaseType) {
+    private void uploadFiles(Long versionId, List<MultipartFile> files, String subCategory) {
         ReleaseVersion releaseVersion = findVersionById(versionId);
 
-        // 기존 파일 중 최대 실행 순서 조회 (동일 DB 타입 기준)
+        // 기존 파일 중 최대 실행 순서 조회 (전체 기준)
         int maxOrder = releaseFileRepository
-                .findByVersionAndDatabaseType(versionId, databaseType)
+                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId)
                 .stream()
                 .mapToInt(ReleaseFile::getExecutionOrder)
                 .max()
@@ -403,12 +403,12 @@ public class ReleaseVersionService {
                 byte[] content = file.getBytes();
                 String checksum = calculateChecksum(content);
 
-                // 파일 경로 생성: versions/{type}/{majorMinor}/{version}/{dbType}/{fileName}
+                // 파일 경로 생성: versions/{type}/{majorMinor}/{version}/{subCategory}/{fileName}
                 String relativePath = String.format("versions/%s/%s/%s/%s/%s",
                         releaseVersion.getReleaseType().toLowerCase(),
                         releaseVersion.getMajorMinor(),
                         releaseVersion.getVersion(),
-                        databaseType.toLowerCase(),
+                        subCategory.toLowerCase(),
                         file.getOriginalFilename());
 
                 // 실제 파일 저장
@@ -417,12 +417,14 @@ public class ReleaseVersionService {
                 // DB에 메타데이터 저장
                 ReleaseFile releaseFile = ReleaseFile.builder()
                         .releaseVersion(releaseVersion)
-                        .databaseType(databaseType)
+                        .fileCategory(com.ts.rm.domain.releasefile.enums.FileCategory.DATABASE)
+                        .subCategory(subCategory)
                         .fileName(file.getOriginalFilename())
                         .filePath(relativePath)
                         .fileSize(file.getSize())
                         .checksum(checksum)
                         .executionOrder(executionOrder++)
+                        .isBuildArtifact(false)
                         .description("일괄 생성으로 업로드된 파일")
                         .build();
 
@@ -864,11 +866,12 @@ public class ReleaseVersionService {
         List<ReleaseFile> files = releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(
                 version.getReleaseVersionId());
 
-        // 데이터베이스 타입별로 그룹핑
+        // 하위 카테고리별로 그룹핑
         java.util.Map<String, List<String>> filesByDatabase = new java.util.LinkedHashMap<>();
 
         for (ReleaseFile file : files) {
-            filesByDatabase.computeIfAbsent(file.getDatabaseType(), k -> new ArrayList<>())
+            String category = file.getSubCategory() != null ? file.getSubCategory().toUpperCase() : "UNKNOWN";
+            filesByDatabase.computeIfAbsent(category, k -> new ArrayList<>())
                     .add(file.getFileName());
         }
 
@@ -1122,7 +1125,7 @@ public class ReleaseVersionService {
         if (Files.exists(mariadbSource)) {
             Path mariadbTarget = versionPath.resolve("mariadb");
             Files.createDirectories(mariadbTarget);
-            copyDatabaseFiles(mariadbSource, mariadbTarget, releaseVersion, "MARIADB");
+            copyDatabaseFiles(mariadbSource, mariadbTarget, releaseVersion, "mariadb");
         }
 
         // cratedb 파일 복사
@@ -1130,7 +1133,7 @@ public class ReleaseVersionService {
         if (Files.exists(cratedbSource)) {
             Path cratedbTarget = versionPath.resolve("cratedb");
             Files.createDirectories(cratedbTarget);
-            copyDatabaseFiles(cratedbSource, cratedbTarget, releaseVersion, "CRATEDB");
+            copyDatabaseFiles(cratedbSource, cratedbTarget, releaseVersion, "cratedb");
         }
 
         return releaseVersion;
@@ -1140,7 +1143,7 @@ public class ReleaseVersionService {
      * 데이터베이스별 파일 복사 및 ReleaseFile 저장
      */
     private void copyDatabaseFiles(Path sourceDir, Path targetDir,
-                                    ReleaseVersion releaseVersion, String databaseType) throws IOException {
+                                    ReleaseVersion releaseVersion, String subCategory) throws IOException {
         // 허용된 확장자
         List<String> allowedExtensions = List.of(".sql", ".md", ".sh", ".txt", ".exe");
 
@@ -1170,7 +1173,7 @@ public class ReleaseVersionService {
             String physicalPath = basePath.relativize(targetFile).toString().replace("\\", "/");
 
             // ZIP 내부 상대 경로 계산 (sourceDir 기준)
-            String zipInternalPath = "/" + databaseType.toLowerCase() + "/" +
+            String zipInternalPath = "/" + subCategory.toLowerCase() + "/" +
                     sourceDir.relativize(file).toString().replace("\\", "/");
 
             // 파일 타입 결정
@@ -1180,13 +1183,15 @@ public class ReleaseVersionService {
             ReleaseFile releaseFile = ReleaseFile.builder()
                     .releaseVersion(releaseVersion)
                     .fileType(fileType)
-                    .databaseType(databaseType)
+                    .fileCategory(com.ts.rm.domain.releasefile.enums.FileCategory.DATABASE)
+                    .subCategory(subCategory)
                     .fileName(file.getFileName().toString())
                     .filePath(physicalPath)
                     .relativePath(zipInternalPath)
                     .fileSize(fileSize)
                     .checksum(checksum)
                     .executionOrder(executionOrder++)
+                    .isBuildArtifact(false)
                     .description("ZIP 파일 업로드로 생성된 패치 파일")
                     .build();
 
@@ -1221,7 +1226,10 @@ public class ReleaseVersionService {
         return releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(
                         releaseVersion.getReleaseVersionId())
                 .stream()
-                .map(file -> file.getDatabaseType().toLowerCase() + "/" + file.getFileName())
+                .map(file -> {
+                    String category = file.getSubCategory() != null ? file.getSubCategory().toLowerCase() : "unknown";
+                    return category + "/" + file.getFileName();
+                })
                 .toList();
     }
 
@@ -1365,20 +1373,20 @@ public class ReleaseVersionService {
         String lowerCaseFileName = fileName.toLowerCase();
 
         if (lowerCaseFileName.endsWith(".sql")) {
-            return "FILE_TYPE_SQL";
+            return "SQL";
         } else if (lowerCaseFileName.endsWith(".md")) {
-            return "FILE_TYPE_MD";
+            return "MD";
         } else if (lowerCaseFileName.endsWith(".pdf")) {
-            return "FILE_TYPE_PDF";
+            return "PDF";
         } else if (lowerCaseFileName.endsWith(".exe")) {
-            return "FILE_TYPE_EXE";
+            return "EXE";
         } else if (lowerCaseFileName.endsWith(".sh")) {
-            return "FILE_TYPE_SH";
+            return "SH";
         } else if (lowerCaseFileName.endsWith(".txt")) {
-            return "FILE_TYPE_TXT";
+            return "TXT";
         } else {
             // 기본값: UNDEFINED
-            return "FILE_TYPE_UNDEFINED";
+            return "UNDEFINED";
         }
     }
 

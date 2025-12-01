@@ -50,7 +50,7 @@ public class SignInResponse {
         @Schema(description = "계정 이름", example = "홍길동")
         private String accountName;
 
-        @Schema(description = "권한", example = "ACCOUNT_ROLE_USER")
+        @Schema(description = "권한", example = "USER")
         private String role;
     }
 }

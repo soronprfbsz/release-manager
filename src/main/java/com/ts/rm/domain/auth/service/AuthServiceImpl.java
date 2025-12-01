@@ -29,8 +29,8 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
 
-    private static final String ACCOUNT_ROLE_USER = "ACCOUNT_ROLE_USER";
-    private static final String ACCOUNT_STATUS_ACTIVE = "ACCOUNT_STATUS_ACTIVE";
+    private static final String USER = "USER";
+    private static final String ACTIVE = "ACTIVE";
 
     @Override
     @Transactional
@@ -45,8 +45,8 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .accountName(request.getAccountName())
-                .role(ACCOUNT_ROLE_USER)
-                .status(ACCOUNT_STATUS_ACTIVE)
+                .role(USER)
+                .status(ACTIVE)
                 .build();
 
         Account savedAccount = accountRepository.save(account);

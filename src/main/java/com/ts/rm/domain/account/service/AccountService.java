@@ -51,7 +51,7 @@ public class AccountService {
     /**
      * 계정 목록 조회 (필터링 및 검색)
      *
-     * @param status  계정 상태 필터 (ACCOUNT_STATUS_ACTIVE, ACCOUNT_STATUS_INACTIVE 등, null이면 전체)
+     * @param status  계정 상태 필터 (ACTIVE, INACTIVE 등, null이면 전체)
      * @param keyword 계정명 검색 키워드
      * @return 계정 목록
      */

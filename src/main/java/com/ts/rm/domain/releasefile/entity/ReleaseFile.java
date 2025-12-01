@@ -1,9 +1,12 @@
 package com.ts.rm.domain.releasefile.entity;
 
+import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,8 +22,6 @@ import lombok.Setter;
 
 /**
  * ReleaseFile Entity
- *
- * <p>릴리즈 버전별 파일 정보 (SQL, MD, PDF, EXE 등)
  */
 @Entity
 @Table(name = "release_file")
@@ -43,8 +44,18 @@ public class ReleaseFile extends BaseEntity {
     @Column(name = "file_type", nullable = false, length = 50)
     private String fileType;
 
-    @Column(name = "database_type", length = 20)
-    private String databaseType;
+    /**
+     * 파일 카테고리 (DATABASE, WEB, INSTALL, ENGINE)
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "file_category", length = 50)
+    private FileCategory fileCategory;
+
+    /**
+     * 하위 카테고리 (MARIADB, CRATEDB, BUILD, SH, IMAGE, METADATA, ETC 등)
+     */
+    @Column(name = "sub_category", length = 50)
+    private String subCategory;
 
     @Column(name = "file_name", nullable = false, length = 255)
     private String fileName;
@@ -64,6 +75,22 @@ public class ReleaseFile extends BaseEntity {
     @Column(name = "execution_order", nullable = false)
     private Integer executionOrder;
 
+    /**
+     * 빌드 산출물 여부
+     */
+    @Column(name = "is_build_artifact")
+    @Builder.Default
+    private Boolean isBuildArtifact = false;
+
     @Column(length = 500)
     private String description;
+
+    /**
+     * 이 파일이 패치 생성 시 제외되어야 하는지 확인
+     *
+     * @return INSTALL 카테고리이면 true
+     */
+    public boolean isExcludedFromPatch() {
+        return fileCategory != null && fileCategory.isExcludedFromPatch();
+    }
 }

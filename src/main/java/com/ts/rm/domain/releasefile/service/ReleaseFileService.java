@@ -2,6 +2,7 @@ package com.ts.rm.domain.releasefile.service;
 
 import com.ts.rm.domain.releasefile.dto.ReleaseFileDto;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
+import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.mapper.ReleaseFileDtoMapper;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
@@ -26,8 +27,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 /**
  * ReleaseFile Service
- *
- * <p>릴리즈 파일 관리 비즈니스 로직
  */
 @Slf4j
 @Service
@@ -40,9 +39,6 @@ public class ReleaseFileService {
     private final ReleaseFileDtoMapper mapper;
     private final FileStorageService fileStorageService;
 
-    /**
-     * 릴리즈 파일 생성
-     */
     @Transactional
     public ReleaseFileDto.DetailResponse createReleaseFile(ReleaseFileDto.CreateRequest request) {
         log.info("Creating release file: {} for versionId: {}", request.fileName(),
@@ -50,14 +46,24 @@ public class ReleaseFileService {
 
         ReleaseVersion releaseVersion = findReleaseVersionById(request.releaseVersionId());
 
+        FileCategory fileCategory = request.fileCategory() != null
+                ? FileCategory.fromCode(request.fileCategory())
+                : determineFileCategory(request.fileName(), request.subCategory());
+
+        String subCategory = request.subCategory() != null
+                ? request.subCategory()
+                : determineSubCategory(fileCategory, request.subCategory());
+
         ReleaseFile releaseFile = ReleaseFile.builder()
                 .releaseVersion(releaseVersion)
-                .databaseType(request.databaseType())
+                .fileCategory(fileCategory)
+                .subCategory(subCategory)
                 .fileName(request.fileName())
                 .filePath(request.filePath())
                 .fileSize(request.fileSize())
                 .checksum(request.checksum())
                 .executionOrder(request.executionOrder())
+                .isBuildArtifact(isBuildArtifact(fileCategory))
                 .description(request.description())
                 .build();
 
@@ -68,17 +74,11 @@ public class ReleaseFileService {
         return mapper.toDetailResponse(savedReleaseFile);
     }
 
-    /**
-     * 릴리즈 파일 조회 (ID)
-     */
     public ReleaseFileDto.DetailResponse getReleaseFileById(Long releaseFileId) {
         ReleaseFile releaseFile = findReleaseFileById(releaseFileId);
         return mapper.toDetailResponse(releaseFile);
     }
 
-    /**
-     * 버전별 릴리즈 파일 목록 조회
-     */
     public List<ReleaseFileDto.SimpleResponse> getReleaseFilesByVersion(Long versionId) {
         findReleaseVersionById(versionId);
 
@@ -87,50 +87,45 @@ public class ReleaseFileService {
         return mapper.toSimpleResponseList(releaseFiles);
     }
 
-    /**
-     * 버전+DB타입별 릴리즈 파일 목록 조회
-     */
-    public List<ReleaseFileDto.SimpleResponse> getReleaseFilesByVersionAndDbType(Long versionId,
-            String databaseType) {
+    public List<ReleaseFileDto.SimpleResponse> getReleaseFilesByVersionAndCategory(Long versionId,
+            FileCategory fileCategory) {
         findReleaseVersionById(versionId);
 
-        List<ReleaseFile> releaseFiles = releaseFileRepository.findByVersionAndDatabaseType(versionId,
-                databaseType);
+        List<ReleaseFile> releaseFiles = releaseFileRepository
+                .findByReleaseVersionIdAndFileCategory(versionId, fileCategory);
         return mapper.toSimpleResponseList(releaseFiles);
     }
 
-    /**
-     * 파일 경로로 릴리즈 파일 조회
-     */
+    public List<ReleaseFileDto.SimpleResponse> getReleaseFilesByVersionAndSubCategory(Long versionId,
+            String subCategory) {
+        findReleaseVersionById(versionId);
+
+        List<ReleaseFile> releaseFiles = releaseFileRepository
+                .findByReleaseVersionIdAndSubCategory(versionId, subCategory);
+        return mapper.toSimpleResponseList(releaseFiles);
+    }
+
     public ReleaseFileDto.DetailResponse getReleaseFileByPath(String filePath) {
         ReleaseFile releaseFile = releaseFileRepository.findByFilePath(filePath)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_FILE_NOT_FOUND));
         return mapper.toDetailResponse(releaseFile);
     }
 
-    /**
-     * 버전 범위 내 릴리즈 파일 조회
-     */
     public List<ReleaseFileDto.SimpleResponse> getReleaseFilesBetweenVersions(String fromVersion,
-            String toVersion, String databaseType) {
+            String toVersion) {
 
-        List<ReleaseFile> releaseFiles = releaseFileRepository.findReleaseFilesBetweenVersions(fromVersion,
-                toVersion, databaseType);
+        List<ReleaseFile> releaseFiles = releaseFileRepository
+                .findReleaseFilesBetweenVersionsExcludingInstall(fromVersion, toVersion);
         return mapper.toSimpleResponseList(releaseFiles);
     }
 
-    /**
-     * 릴리즈 파일 정보 수정
-     */
     @Transactional
     public ReleaseFileDto.DetailResponse updateReleaseFile(Long releaseFileId,
             ReleaseFileDto.UpdateRequest request) {
         log.info("Updating release file with releaseFileId: {}", releaseFileId);
 
-        // 엔티티 조회
         ReleaseFile releaseFile = findReleaseFileById(releaseFileId);
 
-        // Setter를 통한 수정 (JPA Dirty Checking)
         if (request.description() != null) {
             releaseFile.setDescription(request.description());
         }
@@ -138,14 +133,10 @@ public class ReleaseFileService {
             releaseFile.setExecutionOrder(request.executionOrder());
         }
 
-        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Release file updated successfully with releaseFileId: {}", releaseFileId);
         return mapper.toDetailResponse(releaseFile);
     }
 
-    /**
-     * 릴리즈 파일 삭제
-     */
     @Transactional
     public void deleteReleaseFile(Long releaseFileId) {
         log.info("Deleting release file with releaseFileId: {}", releaseFileId);
@@ -156,9 +147,6 @@ public class ReleaseFileService {
         log.info("Release file deleted successfully with releaseFileId: {}", releaseFileId);
     }
 
-    /**
-     * 릴리즈 파일 업로드 (다중 파일)
-     */
     @Transactional
     public List<ReleaseFileDto.DetailResponse> uploadReleaseFiles(Long versionId,
             List<MultipartFile> files, ReleaseFileDto.UploadRequest request) {
@@ -168,9 +156,8 @@ public class ReleaseFileService {
 
         List<ReleaseFileDto.DetailResponse> responses = new ArrayList<>();
 
-        // 기존 파일 중 최대 실행 순서 조회 (동일 DB 타입 기준)
         int maxOrder = releaseFileRepository
-                .findByVersionAndDatabaseType(versionId, request.databaseType())
+                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId)
                 .stream()
                 .mapToInt(ReleaseFile::getExecutionOrder)
                 .max()
@@ -180,36 +167,44 @@ public class ReleaseFileService {
 
         for (MultipartFile file : files) {
             try {
-                // 파일 검증
                 validateFile(file);
 
                 byte[] content = file.getBytes();
                 String checksum = calculateChecksum(content);
 
-                // 파일 경로 생성: versions/{type}/{majorMinor}/{version}/{dbType}/{fileName}
+                FileCategory fileCategory = request.fileCategory() != null
+                        ? FileCategory.fromCode(request.fileCategory())
+                        : determineFileCategory(file.getOriginalFilename(), request.subCategory());
+
+                String subCategory = request.subCategory() != null
+                        ? request.subCategory()
+                        : determineSubCategory(fileCategory, null);
+
+                String categoryPath = subCategory != null ? subCategory : fileCategory.getCode();
                 String relativePath = String.format("versions/%s/%s/%s/%s/%s",
                         releaseVersion.getReleaseType().toLowerCase(),
                         releaseVersion.getMajorMinor(),
                         releaseVersion.getVersion(),
-                        request.databaseType().toLowerCase(),
+                        categoryPath.toLowerCase(),
                         file.getOriginalFilename());
 
-                // 실제 파일 저장
                 fileStorageService.saveFile(file, relativePath);
 
-                // 파일 타입 결정
                 String fileType = determineFileType(file.getOriginalFilename());
 
-                // DB에 메타데이터 저장
+                boolean buildArtifact = isBuildArtifact(fileCategory);
+
                 ReleaseFile releaseFile = ReleaseFile.builder()
                         .releaseVersion(releaseVersion)
                         .fileType(fileType)
-                        .databaseType(request.databaseType())
+                        .fileCategory(fileCategory)
+                        .subCategory(subCategory)
                         .fileName(file.getOriginalFilename())
                         .filePath(relativePath)
                         .fileSize(file.getSize())
                         .checksum(checksum)
                         .executionOrder(executionOrder++)
+                        .isBuildArtifact(buildArtifact)
                         .description(request.uploadedBy() + "가 업로드한 파일")
                         .build();
 
@@ -229,9 +224,6 @@ public class ReleaseFileService {
         return responses;
     }
 
-    /**
-     * 파일 검증
-     */
     private void validateFile(MultipartFile file) {
         if (file.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "빈 파일입니다");
@@ -243,7 +235,6 @@ public class ReleaseFileService {
                     "SQL 파일만 업로드 가능합니다: " + fileName);
         }
 
-        // 10MB 제한
         long maxSize = 10 * 1024 * 1024;
         if (file.getSize() > maxSize) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
@@ -251,37 +242,22 @@ public class ReleaseFileService {
         }
     }
 
-    /**
-     * 릴리즈 파일 다운로드
-     */
     public Resource downloadReleaseFile(Long releaseFileId) {
         log.info("Downloading release file with releaseFileId: {}", releaseFileId);
 
         ReleaseFile releaseFile = findReleaseFileById(releaseFileId);
 
-        // 실제 파일 로드
         Resource resource = fileStorageService.loadFile(releaseFile.getFilePath());
 
         log.info("Release file downloaded successfully: {}", releaseFile.getFileName());
         return resource;
     }
 
-    /**
-     * 버전별 모든 릴리즈 파일 다운로드 (ZIP)
-     *
-     * <p>특정 버전의 모든 파일을 DB 타입별 폴더 구조로 압축하여 반환
-     * <p>폴더 구조: mariadb/{file1.sql}, cratedb/{file2.sql}
-     *
-     * @param versionId 릴리즈 버전 ID
-     * @return ZIP 파일 바이트 배열
-     */
     public byte[] downloadVersionFilesAsZip(Long versionId) {
         log.info("버전별 파일 일괄 다운로드 요청 - versionId: {}", versionId);
 
-        // 1. 버전 조회
         ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
 
-        // 2. 해당 버전의 모든 파일 조회 (실행 순서대로)
         List<ReleaseFile> releaseFiles = releaseFileRepository
                 .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
 
@@ -290,34 +266,32 @@ public class ReleaseFileService {
                     "버전 " + releaseVersion.getVersion() + "에 파일이 없습니다");
         }
 
-        // 3. ZIP 엔트리 목록 생성 (폴더 구조 유지)
         List<ZipUtil.ZipFileEntry> zipEntries = new ArrayList<>();
 
         for (ReleaseFile file : releaseFiles) {
             Path sourcePath = fileStorageService.getAbsolutePath(file.getFilePath());
 
-            // ZIP 내부 경로 생성
-            // - DB 타입이 있는 경우: {databaseType}/{fileName} (예: mariadb/1.patch.sql)
-            // - DB 타입이 없는 경우: {fileName} (예: 설치가이드.pdf)
             String zipEntryPath;
-            if (file.getDatabaseType() != null && !file.getDatabaseType().isEmpty()) {
-                zipEntryPath = String.format("%s/%s",
-                        file.getDatabaseType().toLowerCase(),
-                        file.getFileName());
+            if (file.getFileCategory() != null) {
+                String categoryPath = file.getFileCategory().getCode();
+                if (file.getSubCategory() != null && !file.getSubCategory().isEmpty()) {
+                    zipEntryPath = String.format("%s/%s/%s",
+                            categoryPath, file.getSubCategory(), file.getFileName());
+                } else {
+                    zipEntryPath = String.format("%s/%s", categoryPath, file.getFileName());
+                }
             } else {
-                // DB 타입이 없는 파일 (install 디렉토리의 PDF, TXT 등)
                 zipEntryPath = file.getFileName();
             }
 
-            log.debug("ZIP 엔트리 추가 준비 - DB타입: {}, DB경로: {}, 실제경로: {}, ZIP경로: {}",
-                    file.getDatabaseType(), file.getFilePath(), sourcePath, zipEntryPath);
+            log.debug("ZIP 엔트리 추가 - 카테고리: {}, 하위카테고리: {}, 파일: {}, ZIP경로: {}",
+                    file.getFileCategory(), file.getSubCategory(), file.getFileName(), zipEntryPath);
 
             zipEntries.add(new ZipUtil.ZipFileEntry(sourcePath, zipEntryPath));
         }
 
         log.info("ZIP 압축 시작 - 버전: {}, 파일 개수: {}", releaseVersion.getVersion(), zipEntries.size());
 
-        // 4. ZIP 압축
         byte[] zipBytes = ZipUtil.compressFiles(zipEntries);
 
         log.info("버전 {} 파일 압축 완료 - {} 개 파일, {} bytes",
@@ -326,20 +300,11 @@ public class ReleaseFileService {
         return zipBytes;
     }
 
-    /**
-     * 버전별 ZIP 파일명 생성
-     *
-     * @param versionId 릴리즈 버전 ID
-     * @return ZIP 파일명 (예: release_1.1.0.zip)
-     */
     public String getVersionZipFileName(Long versionId) {
         ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
         return String.format("release_%s.zip", releaseVersion.getVersion());
     }
 
-    /**
-     * 체크섬 계산 (MD5)
-     */
     public String calculateChecksum(byte[] content) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -367,30 +332,86 @@ public class ReleaseFileService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_FILE_NOT_FOUND));
     }
 
-    /**
-     * 파일 확장자로 파일 타입 결정
-     *
-     * @param fileName 파일명
-     * @return 파일 타입 코드 (FILE_TYPE_*)
-     */
     private String determineFileType(String fileName) {
         String lowerCaseFileName = fileName.toLowerCase();
 
         if (lowerCaseFileName.endsWith(".sql")) {
-            return "FILE_TYPE_SQL";
+            return "SQL";
         } else if (lowerCaseFileName.endsWith(".md")) {
-            return "FILE_TYPE_MD";
+            return "MD";
         } else if (lowerCaseFileName.endsWith(".pdf")) {
-            return "FILE_TYPE_PDF";
+            return "PDF";
         } else if (lowerCaseFileName.endsWith(".exe")) {
-            return "FILE_TYPE_EXE";
+            return "EXE";
         } else if (lowerCaseFileName.endsWith(".sh")) {
-            return "FILE_TYPE_SH";
+            return "SH";
         } else if (lowerCaseFileName.endsWith(".txt")) {
-            return "FILE_TYPE_TXT";
+            return "TXT";
+        } else if (lowerCaseFileName.endsWith(".war")) {
+            return "WAR";
+        } else if (lowerCaseFileName.endsWith(".jar")) {
+            return "JAR";
+        } else if (lowerCaseFileName.endsWith(".tar") || lowerCaseFileName.endsWith(".tar.gz")) {
+            return "TAR";
+        } else if (lowerCaseFileName.endsWith(".zip")) {
+            return "ZIP";
         } else {
-            // 기본값: UNDEFINED
-            return "FILE_TYPE_UNDEFINED";
+            return "UNDEFINED";
         }
+    }
+
+    /**
+     * 파일명으로 파일 카테고리 결정
+     */
+    private FileCategory determineFileCategory(String fileName, String subCategory) {
+        String lowerCaseFileName = fileName.toLowerCase();
+
+        // SQL 파일 → DATABASE
+        if (lowerCaseFileName.endsWith(".sql")) {
+            return FileCategory.DATABASE;
+        }
+
+        // 빌드 산출물 파일 → WEB, ENGINE
+        if (lowerCaseFileName.endsWith(".war")) {
+            return FileCategory.WEB;
+        }
+        if (lowerCaseFileName.endsWith(".jar")) {
+            return lowerCaseFileName.contains("engine") ? FileCategory.ENGINE : FileCategory.WEB;
+        }
+        if (lowerCaseFileName.endsWith(".tar") || lowerCaseFileName.endsWith(".tar.gz")) {
+            if (lowerCaseFileName.contains("web")) {
+                return FileCategory.WEB;
+            } else {
+                return FileCategory.ENGINE;
+            }
+        }
+
+        // 문서 파일 → INSTALL
+        if (lowerCaseFileName.endsWith(".pdf") || lowerCaseFileName.endsWith(".md")
+                || lowerCaseFileName.endsWith(".txt")) {
+            return FileCategory.INSTALL;
+        }
+
+        // 실행 파일 → INSTALL
+        if (lowerCaseFileName.endsWith(".exe") || lowerCaseFileName.endsWith(".sh")) {
+            return FileCategory.INSTALL;
+        }
+
+        // 기본값: 하위 카테고리가 DB 타입이면 DATABASE, 아니면 INSTALL
+        return (subCategory != null && (subCategory.equalsIgnoreCase("mariadb")
+                || subCategory.equalsIgnoreCase("cratedb")))
+                ? FileCategory.DATABASE
+                : FileCategory.INSTALL;
+    }
+
+    private String determineSubCategory(FileCategory fileCategory, String subCategory) {
+        if (subCategory != null && !subCategory.isEmpty()) {
+            return subCategory.toLowerCase();
+        }
+        return null;
+    }
+
+    private boolean isBuildArtifact(FileCategory fileCategory) {
+        return fileCategory != null && fileCategory.isBuildArtifact();
     }
 }

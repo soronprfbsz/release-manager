@@ -5,6 +5,7 @@ import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.repository.PatchRepository;
 import com.ts.rm.domain.patch.util.ScriptGenerator;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
+import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
@@ -247,24 +248,34 @@ public class PatchService {
     }
 
     /**
-     * SQL 파일 복사 (버전별 디렉토리 구조 유지)
+     * 모든 파일 복사 (버전별 디렉토리 구조 유지)
+     * <p>⚠️ Phase 5: install 카테고리 제외 처리
      */
     private void copySqlFiles(List<ReleaseVersion> versions, String outputPath) {
         try {
             Path outputDir = Paths.get(releaseBasePath, outputPath);
 
             for (ReleaseVersion version : versions) {
-                List<ReleaseFile> files = releaseFileRepository
+                // 모든 파일 조회
+                List<ReleaseFile> allFiles = releaseFileRepository
                         .findAllByReleaseVersionIdOrderByExecutionOrderAsc(
                                 version.getReleaseVersionId());
 
+                // Phase 5: install 카테고리 제외
+                List<ReleaseFile> files = allFiles.stream()
+                        .filter(file -> !file.isExcludedFromPatch())
+                        .toList();
+
                 if (files.isEmpty()) {
-                    log.warn("버전 {}의 파일이 없습니다.", version.getVersion());
+                    log.warn("버전 {}의 패치 대상 파일이 없습니다.", version.getVersion());
                     continue;
                 }
 
+                log.info("버전 {} 패치 대상 파일: {} / {} (install 제외)",
+                        version.getVersion(), files.size(), allFiles.size());
+
                 for (ReleaseFile file : files) {
-                    copyFile(file, version, outputDir);
+                    copyFileByCategory(file, version, outputDir);
                 }
 
                 log.info("버전 {} 파일 복사 완료 - {}개", version.getVersion(), files.size());
@@ -272,14 +283,15 @@ public class PatchService {
 
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "SQL 파일 복사 실패: " + e.getMessage());
+                    "파일 복사 실패: " + e.getMessage());
         }
     }
 
     /**
-     * 개별 파일 복사
+     * 개별 파일 복사 (카테고리 기반)
+     * <p>Phase 5: 파일 카테고리별 디렉토리 구조 생성
      */
-    private void copyFile(ReleaseFile file, ReleaseVersion version, Path outputDir) {
+    private void copyFileByCategory(ReleaseFile file, ReleaseVersion version, Path outputDir) {
         try {
             // 원본 파일 경로
             Path sourcePath = Paths.get(releaseBasePath, file.getFilePath());
@@ -289,13 +301,8 @@ public class PatchService {
                 return;
             }
 
-            // 대상 파일 경로: {db_type}/source_files/{version}/{file_name}
-            Path targetPath = outputDir.resolve(
-                    String.format("%s/source_files/%s/%s",
-                            file.getDatabaseType(),
-                            version.getVersion(),
-                            file.getFileName())
-            );
+            // 대상 파일 경로 결정 (카테고리별)
+            Path targetPath = determineTargetPath(file, version, outputDir);
 
             // 대상 디렉토리 생성
             Files.createDirectories(targetPath.getParent());
@@ -311,26 +318,73 @@ public class PatchService {
     }
 
     /**
-     * 패치 스크립트 생성 (mariadb_patch.sh, cratedb_patch.sh)
+     * 대상 파일 경로 결정 (카테고리 기반)
+     * <p>디렉토리 구조:
+     * <ul>
+     *   <li>DATABASE: {db_type}/source_files/{version}/{file_name}</li>
+     *   <li>WEB/API/BATCH: {category}/source_files/{version}/{file_name}</li>
+     *   <li>CONFIG: config/{file_name}</li>
+     * </ul>
      */
+    private Path determineTargetPath(ReleaseFile file, ReleaseVersion version, Path outputDir) {
+        FileCategory category = file.getFileCategory();
+
+        if (category == null) {
+            return outputDir.resolve(
+                    String.format("etc/source_files/%s/%s",
+                            version.getVersion(),
+                            file.getFileName())
+            );
+        }
+
+        switch (category) {
+            case DATABASE:
+                String subCategory = file.getSubCategory() != null ? file.getSubCategory()
+                        : "database";
+                return outputDir.resolve(
+                        String.format("%s/source_files/%s/%s",
+                                subCategory,
+                                version.getVersion(),
+                                file.getFileName())
+                );
+
+            case WEB:
+            case ENGINE:
+                return outputDir.resolve(
+                        String.format("%s/source_files/%s/%s",
+                                category.getCode(),
+                                version.getVersion(),
+                                file.getFileName())
+                );
+
+            case INSTALL:
+                log.warn("INSTALL 카테고리 파일이 복사 대상에 포함되었습니다: {}", file.getFileName());
+                return outputDir.resolve(
+                        String.format("install/%s", file.getFileName())
+                );
+
+            default:
+                return outputDir.resolve(
+                        String.format("etc/%s", file.getFileName())
+                );
+        }
+    }
+
     private void generatePatchScripts(ReleaseVersion fromVersion, ReleaseVersion toVersion,
             List<ReleaseVersion> versions, String outputPath) {
         try {
-            // MariaDB용 파일 조회
-            List<ReleaseFile> mariadbFiles = releaseFileRepository.findReleaseFilesBetweenVersions(
+            List<ReleaseFile> mariadbFiles = releaseFileRepository.findReleaseFilesBetweenVersionsBySubCategory(
                     versions.get(0).getVersion(),
                     versions.get(versions.size() - 1).getVersion(),
                     "MARIADB"
             );
 
-            // CrateDB용 파일 조회
-            List<ReleaseFile> cratedbFiles = releaseFileRepository.findReleaseFilesBetweenVersions(
+            List<ReleaseFile> cratedbFiles = releaseFileRepository.findReleaseFilesBetweenVersionsBySubCategory(
                     versions.get(0).getVersion(),
                     versions.get(versions.size() - 1).getVersion(),
                     "CRATEDB"
             );
 
-            // MariaDB 스크립트 생성
             if (!mariadbFiles.isEmpty()) {
                 scriptGenerator.generateMariaDBPatchScript(fromVersion.getVersion(),
                         toVersion.getVersion(), versions, mariadbFiles, outputPath);
@@ -339,7 +393,6 @@ public class PatchService {
                 log.warn("MariaDB 파일이 없어 스크립트를 생성하지 않습니다.");
             }
 
-            // CrateDB 스크립트 생성
             if (!cratedbFiles.isEmpty()) {
                 scriptGenerator.generateCrateDBPatchScript(fromVersion.getVersion(),
                         toVersion.getVersion(), versions, cratedbFiles, outputPath);
@@ -354,6 +407,7 @@ public class PatchService {
                     "패치 스크립트 생성 실패: " + e.getMessage());
         }
     }
+
 
     /**
      * README.md 생성

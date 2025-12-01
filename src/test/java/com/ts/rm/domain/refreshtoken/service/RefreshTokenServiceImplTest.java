@@ -45,8 +45,8 @@ class RefreshTokenServiceImplTest {
                 .email("test@example.com")
                 .password("encodedPassword")
                 .accountName("Test User")
-                .role("ACCOUNT_ROLE_USER")
-                .status("ACCOUNT_STATUS_ACTIVE")
+                .role("USER")
+                .status("ACTIVE")
                 .build();
         testAccount.setAccountId(1L);
 
