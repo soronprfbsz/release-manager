@@ -16,6 +16,7 @@ public interface ReleaseVersionDtoMapper {
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "patchFileCount", expression = "java(releaseVersion.getReleaseFiles() != null ? releaseVersion.getReleaseFiles().size() : 0)")
+    @Mapping(target = "categories", ignore = true)
     ReleaseVersionDto.SimpleResponse toSimpleResponse(ReleaseVersion releaseVersion);
 
     List<ReleaseVersionDto.SimpleResponse> toSimpleResponseList(

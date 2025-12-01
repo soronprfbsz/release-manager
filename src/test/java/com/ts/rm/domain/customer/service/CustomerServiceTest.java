@@ -58,6 +58,8 @@ class CustomerServiceTest {
                 .customerName("A회사")
                 .description("A회사 설명")
                 .isActive(true)
+                .createdBy("admin@tscientific")
+                .updatedBy("admin@tscientific")
                 .build();
 
         createRequest = CustomerDto.CreateRequest.builder()
@@ -65,6 +67,7 @@ class CustomerServiceTest {
                 .customerName("A회사")
                 .description("A회사 설명")
                 .isActive(true)
+                .createdBy("admin@tscientific")
                 .build();
 
         detailResponse = new CustomerDto.DetailResponse(
@@ -74,7 +77,9 @@ class CustomerServiceTest {
                 "A회사 설명",
                 true,
                 LocalDateTime.now(),
-                LocalDateTime.now()
+                "admin@tscientific",
+                LocalDateTime.now(),
+                "admin@tscientific"
         );
 
         simpleResponse = new CustomerDto.SimpleResponse(

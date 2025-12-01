@@ -1,6 +1,7 @@
 package com.ts.rm.domain.releasefile.entity;
 
 import com.ts.rm.domain.releasefile.enums.FileCategory;
+import com.ts.rm.domain.releasefile.util.SubCategoryValidator;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.Column;
@@ -13,6 +14,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -75,13 +78,6 @@ public class ReleaseFile extends BaseEntity {
     @Column(name = "execution_order", nullable = false)
     private Integer executionOrder;
 
-    /**
-     * 빌드 산출물 여부
-     */
-    @Column(name = "is_build_artifact")
-    @Builder.Default
-    private Boolean isBuildArtifact = false;
-
     @Column(length = 500)
     private String description;
 
@@ -92,5 +88,14 @@ public class ReleaseFile extends BaseEntity {
      */
     public boolean isExcludedFromPatch() {
         return fileCategory != null && fileCategory.isExcludedFromPatch();
+    }
+
+    /**
+     * Entity 저장 전 검증
+     */
+    @PrePersist
+    @PreUpdate
+    private void validateSubCategory() {
+        SubCategoryValidator.validate(fileCategory, subCategory);
     }
 }

@@ -120,7 +120,7 @@ echo "=========================================="
 echo ""
 
 # SQL 파일 실행
-cd "$SCRIPT_DIR/cratedb/source_files"
+cd "$SCRIPT_DIR/database/cratedb/source_files"
 
 {{SQL_EXECUTION_COMMANDS}}
 

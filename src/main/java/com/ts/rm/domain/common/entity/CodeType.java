@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CodeType {
+public class CodeType extends BaseEntity {
 
     @Id
     @Column(name = "code_type_id", length = 50)

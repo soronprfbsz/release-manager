@@ -3,6 +3,7 @@ package com.ts.rm.domain.releaseversion.service;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
+import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto.FileTreeNode;
@@ -188,7 +189,8 @@ public class ReleaseVersionService {
         String releaseType = typeName.toUpperCase();
         List<ReleaseVersion> versions = releaseVersionRepository
                 .findAllByReleaseTypeOrderByCreatedAtDesc(releaseType);
-        return mapper.toSimpleResponseList(versions);
+        List<ReleaseVersionDto.SimpleResponse> responses = mapper.toSimpleResponseList(versions);
+        return enrichWithCategories(responses);
     }
 
     /**
@@ -204,7 +206,8 @@ public class ReleaseVersionService {
         String releaseType = typeName.toUpperCase();
         List<ReleaseVersion> versions = releaseVersionRepository.findVersionsBetween(
                 releaseType, fromVersion, toVersion);
-        return mapper.toSimpleResponseList(versions);
+        List<ReleaseVersionDto.SimpleResponse> responses = mapper.toSimpleResponseList(versions);
+        return enrichWithCategories(responses);
     }
 
     /**
@@ -225,9 +228,6 @@ public class ReleaseVersionService {
         // Setter를 통한 수정 (JPA Dirty Checking)
         if (request.comment() != null) {
             releaseVersion.setComment(request.comment());
-        }
-        if (request.isInstall() != null) {
-            releaseVersion.setIsInstall(request.isInstall());
         }
 
         // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
@@ -307,7 +307,6 @@ public class ReleaseVersionService {
                 .createdBy(request.createdBy())
                 .comment(request.comment())
                 .customVersion(request.customVersion())
-                .isInstall(request.isInstall() != null ? request.isInstall() : false)
                 .build();
 
         ReleaseVersion savedVersion = releaseVersionRepository.save(version);
@@ -424,7 +423,6 @@ public class ReleaseVersionService {
                         .fileSize(file.getSize())
                         .checksum(checksum)
                         .executionOrder(executionOrder++)
-                        .isBuildArtifact(false)
                         .description("일괄 생성으로 업로드된 파일")
                         .build();
 
@@ -680,9 +678,6 @@ public class ReleaseVersionService {
                         return;
                     }
 
-                    // 데이터베이스 파일 목록 수집
-                    List<ReleaseVersionDto.DatabaseNode> databases = collectDatabases(versionDir);
-
                     // 레거시 파일 시스템 기반 메서드에서는 versionId를 알 수 없으므로 null
                     ReleaseVersionDto.VersionNode versionNode = new ReleaseVersionDto.VersionNode(
                             null,  // versionId - 파일 시스템 기반에서는 알 수 없음
@@ -690,8 +685,7 @@ public class ReleaseVersionService {
                             versionMetadata.createdAt(),
                             versionMetadata.createdBy(),
                             versionMetadata.comment(),
-                            versionMetadata.isInstall(),
-                            databases
+                            List.of()  // categories - 파일 시스템 기반에서는 빈 리스트
                     );
 
                     versions.add(versionNode);
@@ -702,48 +696,6 @@ public class ReleaseVersionService {
         }
 
         return versions;
-    }
-
-    /**
-     * 데이터베이스 파일 목록 수집
-     */
-    private List<ReleaseVersionDto.DatabaseNode> collectDatabases(Path versionDir) throws IOException {
-        List<ReleaseVersionDto.DatabaseNode> databases = new ArrayList<>();
-
-        if (!Files.exists(versionDir)) {
-            return databases;
-        }
-
-        // mariadb, cratedb 디렉토리 탐색
-        try (var dbDirs = Files.list(versionDir)
-                .filter(Files::isDirectory)) {
-
-            dbDirs.forEach(dbDir -> {
-                try {
-                    String dbType = dbDir.getFileName().toString().toUpperCase();
-
-                    // SQL 파일 목록 수집
-                    List<String> files = new ArrayList<>();
-                    try (var sqlFiles = Files.list(dbDir)
-                            .filter(Files::isRegularFile)
-                            .filter(p -> p.getFileName().toString().endsWith(".sql"))
-                            .sorted()) {
-
-                        sqlFiles.forEach(sqlFile -> {
-                            files.add(sqlFile.getFileName().toString());
-                        });
-                    }
-
-                    if (!files.isEmpty()) {
-                        databases.add(new ReleaseVersionDto.DatabaseNode(dbType, files));
-                    }
-                } catch (IOException e) {
-                    log.error("Failed to collect database files from: {}", dbDir, e);
-                }
-            });
-        }
-
-        return databases;
     }
 
     /**
@@ -862,37 +814,25 @@ public class ReleaseVersionService {
      * @return VersionNode
      */
     private ReleaseVersionDto.VersionNode buildVersionNodeFromDb(ReleaseVersion version) {
-        // 파일 목록 조회
-        List<ReleaseFile> files = releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(
-                version.getReleaseVersionId());
-
-        // 하위 카테고리별로 그룹핑
-        java.util.Map<String, List<String>> filesByDatabase = new java.util.LinkedHashMap<>();
-
-        for (ReleaseFile file : files) {
-            String category = file.getSubCategory() != null ? file.getSubCategory().toUpperCase() : "UNKNOWN";
-            filesByDatabase.computeIfAbsent(category, k -> new ArrayList<>())
-                    .add(file.getFileName());
-        }
-
-        // DatabaseNode 생성
-        List<ReleaseVersionDto.DatabaseNode> databases = filesByDatabase.entrySet().stream()
-                .map(entry -> new ReleaseVersionDto.DatabaseNode(entry.getKey(), entry.getValue()))
-                .toList();
-
         // createdAt을 "YYYY-MM-DD" 형식으로 포맷
         String createdAt = version.getCreatedAt() != null
                 ? version.getCreatedAt().toLocalDate().toString()
                 : null;
 
+        // categories 조회
+        List<FileCategory> fileCategories = releaseFileRepository
+                .findCategoriesByVersionId(version.getReleaseVersionId());
+        List<String> categories = fileCategories.stream()
+                .map(FileCategory::getCode)
+                .toList();
+
         return new ReleaseVersionDto.VersionNode(
-                version.getReleaseVersionId(),  // versionId 추가!
+                version.getReleaseVersionId(),
                 version.getVersion(),
                 createdAt,
                 version.getCreatedBy(),
                 version.getComment(),
-                version.getIsInstall(),
-                databases
+                categories
         );
     }
 
@@ -990,11 +930,11 @@ public class ReleaseVersionService {
                     "ZIP 파일만 업로드 가능합니다");
         }
 
-        // 파일 크기 제한 (50MB)
-        long maxSize = 50 * 1024 * 1024;
+        // 파일 크기 제한 (1GB)
+        long maxSize = 1L * 1024 * 1024 * 1024;
         if (zipFile.getSize() > maxSize) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    String.format("파일 크기가 너무 큽니다 (최대 50MB): %d bytes", zipFile.getSize()));
+                    String.format("파일 크기가 너무 큽니다 (최대 1GB): %d bytes", zipFile.getSize()));
         }
     }
 
@@ -1044,34 +984,29 @@ public class ReleaseVersionService {
     }
 
     /**
-     * ZIP 구조 검증 (mariadb/, cratedb/ 폴더 확인)
+     * ZIP 구조 검증 (카테고리 폴더 확인)
      */
     private void validateZipStructure(Path tempDir) throws IOException {
-        Path mariadbDir = tempDir.resolve("mariadb");
-        Path cratedbDir = tempDir.resolve("cratedb");
-
-        // mariadb 또는 cratedb 폴더 중 최소 하나는 존재해야 함
-        if (!Files.exists(mariadbDir) && !Files.exists(cratedbDir)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "ZIP 파일에 mariadb/ 또는 cratedb/ 폴더가 없습니다");
-        }
-
-        // 파일 확장자 검증
-        List<String> allowedExtensions = List.of(".sql", ".md", ".sh", ".txt", ".exe");
-
-        Files.walk(tempDir)
-                .filter(Files::isRegularFile)
-                .forEach(file -> {
-                    String fileName = file.getFileName().toString().toLowerCase();
-                    boolean isAllowed = allowedExtensions.stream()
-                            .anyMatch(fileName::endsWith);
-
-                    if (!isAllowed) {
-                        throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                                "허용되지 않은 파일 형식입니다: " + file.getFileName() +
-                                " (허용: .sql, .md, .sh, .txt, .exe)");
+        // 최상위 디렉토리에서 유효한 카테고리 폴더가 최소 1개 이상 있는지 확인
+        boolean hasValidCategory = Files.list(tempDir)
+                .filter(Files::isDirectory)
+                .map(path -> path.getFileName().toString().toUpperCase())
+                .anyMatch(dirName -> {
+                    try {
+                        FileCategory.fromCode(dirName);
+                        return true;
+                    } catch (IllegalArgumentException e) {
+                        return false;
                     }
                 });
+
+        if (!hasValidCategory) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "ZIP 파일에 유효한 카테고리 폴더가 없습니다. " +
+                    "최소 1개 이상의 폴더 필요: database/, web/, engine/, install/");
+        }
+
+        // 파일 확장자 검증 제거: 모든 확장자 허용
     }
 
     /**
@@ -1103,103 +1038,224 @@ public class ReleaseVersionService {
         String version = versionInfo.getMajorVersion() + "." + versionInfo.getMinorVersion() + "." + versionInfo.getPatchVersion();
 
         // ReleaseVersion 생성 및 저장
-        ReleaseVersion releaseVersion = ReleaseVersion.builder()
-                .releaseType("STANDARD")
-                .version(version)
-                .majorVersion(versionInfo.getMajorVersion())
-                .minorVersion(versionInfo.getMinorVersion())
-                .patchVersion(versionInfo.getPatchVersion())
-                .createdBy(createdBy)
-                .comment(comment)
-                .isInstall(false)
-                .build();
+        final ReleaseVersion savedVersion = releaseVersionRepository.save(
+                ReleaseVersion.builder()
+                        .releaseType("STANDARD")
+                        .version(version)
+                        .majorVersion(versionInfo.getMajorVersion())
+                        .minorVersion(versionInfo.getMinorVersion())
+                        .patchVersion(versionInfo.getPatchVersion())
+                        .createdBy(createdBy)
+                        .comment(comment)
+                        .build()
+        );
 
-        releaseVersion = releaseVersionRepository.save(releaseVersion);
-        log.info("ReleaseVersion 저장 완료 - ID: {}, version: {}", releaseVersion.getReleaseVersionId(), version);
+        log.info("ReleaseVersion 저장 완료 - ID: {}, version: {}", savedVersion.getReleaseVersionId(), version);
 
         // 클로저 테이블에 계층 구조 데이터 추가
-        createHierarchyForNewVersion(releaseVersion, "STANDARD");
+        createHierarchyForNewVersion(savedVersion, "STANDARD");
 
-        // mariadb 파일 복사
-        Path mariadbSource = tempDir.resolve("mariadb");
-        if (Files.exists(mariadbSource)) {
-            Path mariadbTarget = versionPath.resolve("mariadb");
-            Files.createDirectories(mariadbTarget);
-            copyDatabaseFiles(mariadbSource, mariadbTarget, releaseVersion, "mariadb");
-        }
+        // 모든 카테고리 폴더 순회 및 파일 복사
+        Files.list(tempDir)
+                .filter(Files::isDirectory)
+                .forEach(categoryDir -> {
+                    String categoryName = categoryDir.getFileName().toString().toUpperCase();
 
-        // cratedb 파일 복사
-        Path cratedbSource = tempDir.resolve("cratedb");
-        if (Files.exists(cratedbSource)) {
-            Path cratedbTarget = versionPath.resolve("cratedb");
-            Files.createDirectories(cratedbTarget);
-            copyDatabaseFiles(cratedbSource, cratedbTarget, releaseVersion, "cratedb");
-        }
+                    try {
+                        // FileCategory 검증 및 변환
+                        FileCategory fileCategory = FileCategory.fromCode(categoryName);
 
-        return releaseVersion;
+                        // 타겟 카테고리 디렉토리 생성
+                        Path targetCategoryDir = versionPath.resolve(categoryName.toLowerCase());
+                        Files.createDirectories(targetCategoryDir);
+
+                        log.info("카테고리 폴더 처리 시작: {} -> {}", categoryName, fileCategory.getDescription());
+
+                        // 카테고리별 파일 복사 (재귀적)
+                        processCategoryFiles(categoryDir, targetCategoryDir, savedVersion, fileCategory);
+
+                    } catch (IllegalArgumentException e) {
+                        log.warn("알 수 없는 카테고리 폴더 무시: {}", categoryName);
+                    } catch (IOException e) {
+                        log.error("카테고리 파일 복사 실패: {}", categoryName, e);
+                        throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                                "파일 복사 중 오류 발생: " + e.getMessage());
+                    }
+                });
+
+        return savedVersion;
     }
 
     /**
-     * 데이터베이스별 파일 복사 및 ReleaseFile 저장
+     * 카테고리별 파일 처리 (하위 폴더 재귀 처리)
+     *
+     * @param categorySourceDir 카테고리 소스 디렉토리 (예: tempDir/database)
+     * @param categoryTargetDir 카테고리 타겟 디렉토리 (예: versionPath/database)
+     * @param releaseVersion    릴리즈 버전 엔티티
+     * @param fileCategory      파일 카테고리 (DATABASE, WEB, ENGINE, INSTALL)
      */
-    private void copyDatabaseFiles(Path sourceDir, Path targetDir,
-                                    ReleaseVersion releaseVersion, String subCategory) throws IOException {
-        // 허용된 확장자
-        List<String> allowedExtensions = List.of(".sql", ".md", ".sh", ".txt", ".exe");
+    private void processCategoryFiles(Path categorySourceDir, Path categoryTargetDir,
+                                       ReleaseVersion releaseVersion, FileCategory fileCategory) throws IOException {
 
+        // 하위 폴더 순회 (예: database/mariadb, database/cratedb, web/build 등)
+        Files.list(categorySourceDir)
+                .filter(Files::isDirectory)
+                .forEach(subDir -> {
+                    String subCategory = subDir.getFileName().toString().toLowerCase();
+                    Path targetSubDir = categoryTargetDir.resolve(subCategory);
+
+                    try {
+                        Files.createDirectories(targetSubDir);
+                        log.debug("하위 폴더 처리: {}/{}", fileCategory.getCode(), subCategory);
+
+                        // 하위 폴더의 파일 복사
+                        copyFilesRecursively(subDir, targetSubDir, releaseVersion, fileCategory, subCategory);
+
+                    } catch (IOException e) {
+                        log.error("하위 폴더 파일 복사 실패: {}/{}", fileCategory.getCode(), subCategory, e);
+                        throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                                "파일 복사 실패: " + e.getMessage());
+                    }
+                });
+
+        // 카테고리 최상위에 직접 있는 파일도 처리 (sub_category = null)
+        Files.list(categorySourceDir)
+                .filter(Files::isRegularFile)
+                .forEach(file -> {
+                    try {
+                        Path targetFile = categoryTargetDir.resolve(file.getFileName());
+                        Files.copy(file, targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                        // ReleaseFile DB 저장 (sub_category = null)
+                        saveReleaseFile(file, targetFile, releaseVersion, fileCategory, null,
+                                categorySourceDir, 1);
+
+                    } catch (IOException e) {
+                        log.error("파일 복사 실패: {}", file.getFileName(), e);
+                        throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                                "파일 복사 실패: " + e.getMessage());
+                    }
+                });
+    }
+
+    /**
+     * 재귀적 파일 복사 및 ReleaseFile 저장
+     *
+     * @param sourceDir      소스 디렉토리
+     * @param targetDir      타겟 디렉토리
+     * @param releaseVersion 릴리즈 버전
+     * @param fileCategory   파일 카테고리
+     * @param subCategory    하위 카테고리 (예: mariadb, cratedb, build)
+     */
+    private void copyFilesRecursively(Path sourceDir, Path targetDir,
+                                       ReleaseVersion releaseVersion, FileCategory fileCategory,
+                                       String subCategory) throws IOException {
+
+        // 모든 파일을 재귀적으로 탐색하여 복사 (확장자 제한 없음)
         List<Path> files = Files.walk(sourceDir)
                 .filter(Files::isRegularFile)
-                .filter(file -> {
-                    String fileName = file.getFileName().toString().toLowerCase();
-                    return allowedExtensions.stream().anyMatch(fileName::endsWith);
-                })
                 .sorted()
                 .toList();
 
         int executionOrder = 1;
         for (Path file : files) {
-            // 파일 복사
-            Path targetFile = targetDir.resolve(sourceDir.relativize(file));
+            // 상대 경로 계산 (하위 폴더 구조 유지)
+            Path relativePath = sourceDir.relativize(file);
+            Path targetFile = targetDir.resolve(relativePath);
+
+            // 타겟 디렉토리 생성
             Files.createDirectories(targetFile.getParent());
+
+            // 파일 복사
             Files.copy(file, targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
-            // 파일 크기 및 체크섬 계산
-            byte[] fileContent = Files.readAllBytes(file);
-            long fileSize = fileContent.length;
-            String checksum = calculateChecksum(fileContent);
-
-            // 물리 경로 계산 (baseReleasePath 기준)
-            Path basePath = Paths.get(baseReleasePath);
-            String physicalPath = basePath.relativize(targetFile).toString().replace("\\", "/");
-
-            // ZIP 내부 상대 경로 계산 (sourceDir 기준)
-            String zipInternalPath = "/" + subCategory.toLowerCase() + "/" +
-                    sourceDir.relativize(file).toString().replace("\\", "/");
-
-            // 파일 타입 결정
-            String fileType = determineFileType(file.getFileName().toString());
-
-            // ReleaseFile 저장
-            ReleaseFile releaseFile = ReleaseFile.builder()
-                    .releaseVersion(releaseVersion)
-                    .fileType(fileType)
-                    .fileCategory(com.ts.rm.domain.releasefile.enums.FileCategory.DATABASE)
-                    .subCategory(subCategory)
-                    .fileName(file.getFileName().toString())
-                    .filePath(physicalPath)
-                    .relativePath(zipInternalPath)
-                    .fileSize(fileSize)
-                    .checksum(checksum)
-                    .executionOrder(executionOrder++)
-                    .isBuildArtifact(false)
-                    .description("ZIP 파일 업로드로 생성된 패치 파일")
-                    .build();
-
-            releaseFileRepository.save(releaseFile);
-
-            log.debug("파일 복사 및 저장 완료: {} -> {} (size: {}, checksum: {})",
-                    file.getFileName(), zipInternalPath, fileSize, checksum);
+            // ReleaseFile DB 저장
+            saveReleaseFile(file, targetFile, releaseVersion, fileCategory, subCategory,
+                    sourceDir, executionOrder++);
         }
+    }
+
+    /**
+     * SimpleResponse 리스트에 categories 필드 설정
+     */
+    private List<ReleaseVersionDto.SimpleResponse> enrichWithCategories(
+            List<ReleaseVersionDto.SimpleResponse> responses) {
+        return responses.stream()
+                .map(this::enrichWithCategories)
+                .toList();
+    }
+
+    /**
+     * 단일 SimpleResponse에 categories 필드 설정
+     */
+    private ReleaseVersionDto.SimpleResponse enrichWithCategories(
+            ReleaseVersionDto.SimpleResponse response) {
+        List<FileCategory> categories = releaseFileRepository
+                .findCategoriesByVersionId(response.releaseVersionId());
+
+        List<String> categoryNames = categories.stream()
+                .map(FileCategory::getCode)
+                .toList();
+
+        return new ReleaseVersionDto.SimpleResponse(
+                response.releaseVersionId(),
+                response.releaseType(),
+                response.customerCode(),
+                response.version(),
+                response.majorMinor(),
+                response.createdBy(),
+                response.comment(),
+                categoryNames,  // categories
+                response.createdAt(),
+                response.patchFileCount()
+        );
+    }
+
+    /**
+     * ReleaseFile 엔티티 생성 및 저장
+     */
+    private void saveReleaseFile(Path sourceFile, Path targetFile, ReleaseVersion releaseVersion,
+                                  FileCategory fileCategory, String subCategory,
+                                  Path sourceBaseDir, int executionOrder) throws IOException {
+
+        // 파일 크기 및 체크섬 계산
+        byte[] fileContent = Files.readAllBytes(sourceFile);
+        long fileSize = fileContent.length;
+        String checksum = calculateChecksum(fileContent);
+
+        // 물리 경로 계산 (baseReleasePath 기준)
+        Path basePath = Paths.get(baseReleasePath);
+        String physicalPath = basePath.relativize(targetFile).toString().replace("\\", "/");
+
+        // ZIP 내부 상대 경로 계산
+        String zipInternalPath = "/" + fileCategory.getCode().toLowerCase() + "/";
+        if (subCategory != null) {
+            zipInternalPath += subCategory + "/";
+        }
+        zipInternalPath += sourceBaseDir.relativize(sourceFile).toString().replace("\\", "/");
+
+        // 파일 타입 결정
+        String fileType = determineFileType(sourceFile.getFileName().toString());
+
+        // ReleaseFile 저장
+        ReleaseFile releaseFile = ReleaseFile.builder()
+                .releaseVersion(releaseVersion)
+                .fileType(fileType)
+                .fileCategory(fileCategory)
+                .subCategory(subCategory)
+                .fileName(sourceFile.getFileName().toString())
+                .filePath(physicalPath)
+                .relativePath(zipInternalPath)
+                .fileSize(fileSize)
+                .checksum(checksum)
+                .executionOrder(executionOrder)
+                .description("ZIP 파일 업로드로 생성된 " + fileCategory.getDescription() + " 파일")
+                .build();
+
+        releaseFileRepository.save(releaseFile);
+
+        log.debug("파일 복사 및 저장 완료: {} -> {} (category: {}, size: {}, checksum: {})",
+                sourceFile.getFileName(), zipInternalPath, fileCategory.getCode(), fileSize, checksum);
     }
 
     /**
@@ -1239,34 +1295,33 @@ public class ReleaseVersionService {
      * @param version 릴리즈 버전 엔티티
      */
     private void deleteVersionDirectory(ReleaseVersion version) {
-        try {
-            Path versionPath;
+        Path versionPath;
 
-            if ("STANDARD".equals(version.getReleaseType())) {
-                versionPath = Paths.get(baseReleasePath, "versions", "standard",
-                        version.getMajorMinor(), version.getVersion());
-            } else {
-                String customerCode = version.getCustomer() != null
-                        ? version.getCustomer().getCustomerCode()
-                        : "unknown";
-                versionPath = Paths.get(baseReleasePath, "versions", "custom",
-                        customerCode, version.getMajorMinor(), version.getVersion());
-            }
+        if ("STANDARD".equals(version.getReleaseType())) {
+            versionPath = Paths.get(baseReleasePath, "versions", "standard",
+                    version.getMajorMinor(), version.getVersion());
+        } else {
+            String customerCode = version.getCustomer() != null
+                    ? version.getCustomer().getCustomerCode()
+                    : "unknown";
+            versionPath = Paths.get(baseReleasePath, "versions", "custom",
+                    customerCode, version.getMajorMinor(), version.getVersion());
+        }
 
-            if (Files.exists(versionPath)) {
-                deleteDirectory(versionPath);
-                log.info("버전 디렉토리 삭제 완료: {}", versionPath);
+        if (Files.exists(versionPath)) {
+            deleteDirectory(versionPath);
+            log.info("버전 디렉토리 삭제 완료: {}", versionPath);
 
-                // 빈 major.minor 디렉토리도 삭제
+            // 빈 major.minor 디렉토리도 정리
+            try {
                 Path parentPath = versionPath.getParent();
                 if (parentPath != null && Files.exists(parentPath) && isDirectoryEmpty(parentPath)) {
                     Files.delete(parentPath);
                     log.info("빈 major.minor 디렉토리 삭제: {}", parentPath);
                 }
+            } catch (IOException e) {
+                log.warn("major.minor 디렉토리 삭제 실패: {}", versionPath.getParent(), e);
             }
-        } catch (IOException e) {
-            log.error("버전 디렉토리 삭제 실패: {}", version.getVersion(), e);
-            // 파일 시스템 삭제 실패는 로그만 남기고 진행
         }
     }
 
@@ -1369,11 +1424,18 @@ public class ReleaseVersionService {
      * @param fileName 파일명
      * @return 파일 타입 코드 (FILE_TYPE_*)
      */
+    /**
+     * 파일명으로부터 파일 타입 결정
+     */
     private String determineFileType(String fileName) {
         String lowerCaseFileName = fileName.toLowerCase();
 
         if (lowerCaseFileName.endsWith(".sql")) {
             return "SQL";
+        } else if (lowerCaseFileName.endsWith(".war")) {
+            return "WAR";
+        } else if (lowerCaseFileName.endsWith(".jar")) {
+            return "JAR";
         } else if (lowerCaseFileName.endsWith(".md")) {
             return "MD";
         } else if (lowerCaseFileName.endsWith(".pdf")) {
@@ -1382,10 +1444,17 @@ public class ReleaseVersionService {
             return "EXE";
         } else if (lowerCaseFileName.endsWith(".sh")) {
             return "SH";
+        } else if (lowerCaseFileName.endsWith(".bat")) {
+            return "BAT";
         } else if (lowerCaseFileName.endsWith(".txt")) {
             return "TXT";
+        } else if (lowerCaseFileName.endsWith(".yml") || lowerCaseFileName.endsWith(".yaml")) {
+            return "YAML";
+        } else if (lowerCaseFileName.endsWith(".properties")) {
+            return "PROPERTIES";
+        } else if (lowerCaseFileName.endsWith(".xml")) {
+            return "XML";
         } else {
-            // 기본값: UNDEFINED
             return "UNDEFINED";
         }
     }

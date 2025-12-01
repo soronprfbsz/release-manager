@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS code_type (
     code_type_name VARCHAR(100) NOT NULL COMMENT '코드 타입 명',
     description VARCHAR(200) COMMENT '설명',
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE COMMENT '사용 여부',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     INDEX idx_code_type_name (code_type_name),
     INDEX idx_is_enabled (is_enabled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='코드 타입 테이블';
@@ -27,6 +29,9 @@ CREATE TABLE IF NOT EXISTS code (
     description VARCHAR(200) COMMENT '설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE COMMENT '사용 여부',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
     PRIMARY KEY (code_type_id, code_id),
     INDEX idx_code_type_id (code_type_id),
     INDEX idx_is_enabled (is_enabled),
@@ -62,6 +67,8 @@ CREATE TABLE IF NOT EXISTS customer (
     customer_name VARCHAR(100) NOT NULL COMMENT '고객사 명',
     description VARCHAR(255) COMMENT '설명',
     is_active BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    updated_by VARCHAR(100) NOT NULL COMMENT '수정자',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -82,12 +89,10 @@ CREATE TABLE IF NOT EXISTS release_version (
     major_version INT NOT NULL COMMENT '메이저 버전',
     minor_version INT NOT NULL COMMENT '마이너 버전',
     patch_version INT NOT NULL COMMENT '패치 버전',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    custom_version VARCHAR(100) COMMENT '커스텀 버전',
     comment TEXT COMMENT '버전 설명',
-    custom_version VARCHAR(100) COMMENT '커스텀 버전명',
-    is_install BOOLEAN NOT NULL DEFAULT FALSE COMMENT '설치 여부',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
     INDEX idx_release_type (release_type),
     INDEX idx_customer_id (customer_id),
@@ -115,7 +120,6 @@ CREATE TABLE IF NOT EXISTS release_file (
     file_size BIGINT COMMENT '파일 크기 (bytes)',
     checksum VARCHAR(64) COMMENT '파일 체크섬 (MD5)',
     execution_order INT NOT NULL DEFAULT 1 COMMENT '실행 순서',
-    is_build_artifact BOOLEAN DEFAULT FALSE COMMENT '빌드 산출물 여부',
     description TEXT COMMENT '파일 설명',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
@@ -126,7 +130,6 @@ CREATE TABLE IF NOT EXISTS release_file (
     INDEX idx_sub_category (sub_category),
     INDEX idx_file_path (file_path),
     INDEX idx_execution_order (execution_order),
-    INDEX idx_is_build_artifact (is_build_artifact),
 
     CONSTRAINT fk_release_file_version FOREIGN KEY (release_version_id)
         REFERENCES release_version(release_version_id) ON DELETE CASCADE
@@ -144,10 +147,9 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
     to_version VARCHAR(50) NOT NULL COMMENT '종료 버전',
     patch_name VARCHAR(100) NOT NULL COMMENT '패치 파일명',
     output_path VARCHAR(500) NOT NULL COMMENT '생성된 패치 파일 경로',
-    generated_at DATETIME NOT NULL COMMENT '생성일시',
-    generated_by VARCHAR(100) NOT NULL COMMENT '생성자',
     description TEXT COMMENT '설명',
     patched_by VARCHAR(100) COMMENT '패치 담당자',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -155,11 +157,11 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
     INDEX idx_cp_customer_id (customer_id),
     INDEX idx_cp_from_version (from_version),
     INDEX idx_cp_to_version (to_version),
-    INDEX idx_cp_generated_at (generated_at),
+    INDEX idx_cp_created_at (created_at),
 
     CONSTRAINT fk_cumulative_patch_customer FOREIGN KEY (customer_id)
         REFERENCES customer(customer_id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='누적 패치 생성 이력 테이블';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='누적 패치 테이블';
 
 -- =========================================================
 -- Section 7: Release Version Hierarchy 클로저 테이블 생성
@@ -194,7 +196,10 @@ INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
 ('DATABASE_TYPE', '데이터베이스 타입', '지원하는 데이터베이스 종류'),
 ('FILE_TYPE', '파일 타입', '파일 확장자 타입'),
 ('FILE_CATEGORY', '파일 카테고리', '파일 기능적 대분류'),
-('FILE_SUBCATEGORY', '파일 서브 카테고리', '파일 카테고리별 소분류');
+('FILE_SUBCATEGORY_DATABASE', '데이터베이스 파일 서브 카테고리', 'DATABASE 카테고리 소분류'),
+('FILE_SUBCATEGORY_WEB', '웹 파일 서브 카테고리', 'WEB 카테고리 소분류'),
+('FILE_SUBCATEGORY_INSTALL', '설치 파일 서브 카테고리', 'INSTALL 카테고리 소분류'),
+('FILE_SUBCATEGORY_ENGINE', '엔진 파일 서브 카테고리', 'ENGINE 카테고리 소분류');
 
 -- =========================================================
 -- Section 9: 계정 권한 코드
@@ -264,22 +269,32 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 
 -- DATABASE 서브 카테고리
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('FILE_SUBCATEGORY', 'CRATEDB', 'CRATEDB', 'CrateDB 스크립트', 1, TRUE),
-('FILE_SUBCATEGORY', 'MARIADB', 'MARIADB', 'MariaDB 스크립트', 2, TRUE),
-('FILE_SUBCATEGORY', 'METADATA', 'METADATA', '메타데이터 파일', 3, TRUE);
+('FILE_SUBCATEGORY_DATABASE', 'CRATEDB', 'CRATEDB', 'CrateDB 스크립트', 1, TRUE),
+('FILE_SUBCATEGORY_DATABASE', 'MARIADB', 'MARIADB', 'MariaDB 스크립트', 2, TRUE),
+('FILE_SUBCATEGORY_DATABASE', 'METADATA', 'METADATA', '메타데이터 파일', 3, TRUE),
+('FILE_SUBCATEGORY_DATABASE', 'ETC', 'ETC', '기타 파일', 4, TRUE);
 
 -- WEB 서브 카테고리
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('FILE_SUBCATEGORY', 'BUILD', 'BUILD', '빌드 산출물', 11, TRUE),
-('FILE_SUBCATEGORY', 'WEBOBJECTS', 'WEBOBJECTS', 'WebObjects 파일', 12, TRUE),
-('FILE_SUBCATEGORY', 'ETC', 'ETC', '기타 파일', 13, TRUE);
+('FILE_SUBCATEGORY_WEB', 'BUILD', 'BUILD', '빌드 산출물', 1, TRUE),
+('FILE_SUBCATEGORY_WEB', 'WEBOBJECTS', 'WEBOBJECTS', 'WebObjects 파일', 2, TRUE),
+('FILE_SUBCATEGORY_WEB', 'METADATA', 'METADATA', '메타데이터 파일', 3, TRUE),
+('FILE_SUBCATEGORY_WEB', 'ETC', 'ETC', '기타 파일', 4, TRUE);
 
 -- INSTALL 서브 카테고리
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('FILE_SUBCATEGORY', 'SH', 'SH', '쉘 스크립트', 21, TRUE),
-('FILE_SUBCATEGORY', 'IMAGE', 'IMAGE', '이미지 파일', 22, TRUE);
+('FILE_SUBCATEGORY_INSTALL', 'SH', 'SH', '쉘 스크립트', 1, TRUE),
+('FILE_SUBCATEGORY_INSTALL', 'IMAGE', 'IMAGE', '이미지 파일', 2, TRUE),
+('FILE_SUBCATEGORY_INSTALL', 'METADATA', 'METADATA', '메타데이터 파일', 3, TRUE),
+('FILE_SUBCATEGORY_INSTALL', 'ETC', 'ETC', '기타 파일', 4, TRUE);
 
--- ENGINE 서브 카테고리 (BUILD, SH, IMAGE, METADATA, ETC 공유)
+-- ENGINE 서브 카테고리
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('FILE_SUBCATEGORY_ENGINE', 'BUILD', 'BUILD', '빌드 산출물', 1, TRUE),
+('FILE_SUBCATEGORY_ENGINE', 'SH', 'SH', '쉘 스크립트', 2, TRUE),
+('FILE_SUBCATEGORY_ENGINE', 'IMAGE', 'IMAGE', '이미지 파일', 3, TRUE),
+('FILE_SUBCATEGORY_ENGINE', 'METADATA', 'METADATA', '메타데이터 파일', 4, TRUE),
+('FILE_SUBCATEGORY_ENGINE', 'ETC', 'ETC', '기타 파일', 5, TRUE);
 
 -- =========================================================
 -- Section 16: 기본 관리자 계정
@@ -297,12 +312,12 @@ INSERT INTO account (account_name, email, password, role, status) VALUES
 INSERT INTO release_version (
     release_type, customer_id, version,
     major_version, minor_version, patch_version,
-    created_by, comment, is_install, created_at
+    created_by, comment, created_at
 ) VALUES
-('STANDARD', NULL, '1.0.0', 1, 0, 0, 'TS', '최초 설치본', TRUE, '2025-01-01 00:00:00'),
-('STANDARD', NULL, '1.1.0', 1, 1, 0, 'jhlee@tscientific', '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경', FALSE, '2025-10-31 00:00:00'),
-('STANDARD', NULL, '1.1.1', 1, 1, 1, 'jhlee@tscientific', 'SMS - 운영관리 - 파일 기능 관련 테이블 추가', FALSE, '2025-11-05 00:00:00'),
-('STANDARD', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', FALSE, '2025-11-25 00:00:00');
+('STANDARD', NULL, '1.0.0', 1, 0, 0, 'TS', '최초 설치본', '2025-01-01 00:00:00'),
+('STANDARD', NULL, '1.1.0', 1, 1, 0, 'jhlee@tscientific', '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경', '2025-10-31 00:00:00'),
+('STANDARD', NULL, '1.1.1', 1, 1, 1, 'jhlee@tscientific', 'SMS - 운영관리 - 파일 기능 관련 테이블 추가', '2025-11-05 00:00:00'),
+('STANDARD', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', '2025-11-25 00:00:00');
 
 -- =========================================================
 -- Section 18: 릴리즈 파일 데이터
@@ -310,65 +325,65 @@ INSERT INTO release_version (
 
 INSERT INTO release_file (
     release_version_id, file_type, file_category, sub_category, file_name, file_path, relative_path,
-    file_size, checksum, execution_order, is_build_artifact, description
+    file_size, checksum, execution_order, description
 ) VALUES
 -- 1.0.0 - Install Documents
-(1, 'PDF', 'INSTALL', NULL, 'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
+(1, 'PDF', 'INSTALL', 'ETC', 'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
     'versions/standard/1.0.x/1.0.0/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
     '/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
-    2727778, '4e641f7d25bbaa0061f553b92ef3d9e9', 1, FALSE, '설치 가이드 문서'),
-(1, 'MD', 'INSTALL', NULL, '설치본정보.md',
+    2727778, '4e641f7d25bbaa0061f553b92ef3d9e9', 1, '설치 가이드 문서'),
+(1, 'MD', 'INSTALL', 'METADATA', '설치본정보.md',
     'versions/standard/1.0.x/1.0.0/install/설치본정보.md',
     '/install/설치본정보.md',
-    778, '8e5adf2b877090de4f3ec5739f71216c', 2, FALSE, '설치본 정보'),
+    778, '8e5adf2b877090de4f3ec5739f71216c', 2, '설치본 정보'),
 -- 1.1.0 - MariaDB
 (2, 'SQL', 'DATABASE', 'MARIADB', '1.patch_mariadb_ddl.sql',
-    'versions/standard/1.1.x/1.1.0/mariadb/1.patch_mariadb_ddl.sql',
-    '/mariadb/1.patch_mariadb_ddl.sql',
-    34879, 'f8b9f64345555c9a4a9c9101aaa8b701', 1, FALSE, 'DDL 변경'),
+    'versions/standard/1.1.x/1.1.0/database/mariadb/1.patch_mariadb_ddl.sql',
+    '/database/mariadb/1.patch_mariadb_ddl.sql',
+    34879, 'f8b9f64345555c9a4a9c9101aaa8b701', 1, 'DDL 변경'),
 (2, 'SQL', 'DATABASE', 'MARIADB', '2.patch_mariadb_view.sql',
-    'versions/standard/1.1.x/1.1.0/mariadb/2.patch_mariadb_view.sql',
-    '/mariadb/2.patch_mariadb_view.sql',
-    10742, '6735c7267bedc684f155ce05eaa5b7df', 2, FALSE, 'View 변경'),
+    'versions/standard/1.1.x/1.1.0/database/mariadb/2.patch_mariadb_view.sql',
+    '/database/mariadb/2.patch_mariadb_view.sql',
+    10742, '6735c7267bedc684f155ce05eaa5b7df', 2, 'View 변경'),
 (2, 'SQL', 'DATABASE', 'MARIADB', '3.patch_mariadb_데이터코드.sql',
-    'versions/standard/1.1.x/1.1.0/mariadb/3.patch_mariadb_데이터코드.sql',
-    '/mariadb/3.patch_mariadb_데이터코드.sql',
-    134540, 'faec479bf1582dfb20199fdd468676f7', 3, FALSE, '데이터 코드 추가'),
+    'versions/standard/1.1.x/1.1.0/database/mariadb/3.patch_mariadb_데이터코드.sql',
+    '/database/mariadb/3.patch_mariadb_데이터코드.sql',
+    134540, 'faec479bf1582dfb20199fdd468676f7', 3, '데이터 코드 추가'),
 (2, 'SQL', 'DATABASE', 'MARIADB', '4.patch_mariadb_이벤트코드.sql',
-    'versions/standard/1.1.x/1.1.0/mariadb/4.patch_mariadb_이벤트코드.sql',
-    '/mariadb/4.patch_mariadb_이벤트코드.sql',
-    36847, 'e2e818dfa626c93894b5774badee0219', 4, FALSE, '이벤트 코드 추가'),
+    'versions/standard/1.1.x/1.1.0/database/mariadb/4.patch_mariadb_이벤트코드.sql',
+    '/database/mariadb/4.patch_mariadb_이벤트코드.sql',
+    36847, 'e2e818dfa626c93894b5774badee0219', 4, '이벤트 코드 추가'),
 (2, 'SQL', 'DATABASE', 'MARIADB', '5.patch_mariadb_메뉴코드.sql',
-    'versions/standard/1.1.x/1.1.0/mariadb/5.patch_mariadb_메뉴코드.sql',
-    '/mariadb/5.patch_mariadb_메뉴코드.sql',
-    25144, '3eb290c91cf66dacbc02a746bec2bef0', 5, FALSE, '메뉴 코드 추가'),
+    'versions/standard/1.1.x/1.1.0/database/mariadb/5.patch_mariadb_메뉴코드.sql',
+    '/database/mariadb/5.patch_mariadb_메뉴코드.sql',
+    25144, '3eb290c91cf66dacbc02a746bec2bef0', 5, '메뉴 코드 추가'),
 (2, 'SQL', 'DATABASE', 'MARIADB', '6.patch_mariadb_procedure.sql',
-    'versions/standard/1.1.x/1.1.0/mariadb/6.patch_mariadb_procedure.sql',
-    '/mariadb/6.patch_mariadb_procedure.sql',
-    22183, '25942f2c2201629efcc333278f8eac38', 6, FALSE, 'Procedure 변경'),
+    'versions/standard/1.1.x/1.1.0/database/mariadb/6.patch_mariadb_procedure.sql',
+    '/database/mariadb/6.patch_mariadb_procedure.sql',
+    22183, '25942f2c2201629efcc333278f8eac38', 6, 'Procedure 변경'),
 (2, 'SQL', 'DATABASE', 'MARIADB', '7.patch_mariadb_dml.sql',
-    'versions/standard/1.1.x/1.1.0/mariadb/7.patch_mariadb_dml.sql',
-    '/mariadb/7.patch_mariadb_dml.sql',
-    37330, '3fa1ec88b5a638fb6d67a41119d61854', 7, FALSE, 'DML 변경'),
+    'versions/standard/1.1.x/1.1.0/database/mariadb/7.patch_mariadb_dml.sql',
+    '/database/mariadb/7.patch_mariadb_dml.sql',
+    37330, '3fa1ec88b5a638fb6d67a41119d61854', 7, 'DML 변경'),
 -- 1.1.0 - CrateDB
 (2, 'SQL', 'DATABASE', 'CRATEDB', '1.patch_cratedb_ddl.sql',
-    'versions/standard/1.1.x/1.1.0/cratedb/1.patch_cratedb_ddl.sql',
-    '/cratedb/1.patch_cratedb_ddl.sql',
-    19363, '1b68614d70c52cade269e5accca724d5', 1, FALSE, 'CrateDB DDL 변경'),
+    'versions/standard/1.1.x/1.1.0/database/cratedb/1.patch_cratedb_ddl.sql',
+    '/database/cratedb/1.patch_cratedb_ddl.sql',
+    19363, '1b68614d70c52cade269e5accca724d5', 1, 'CrateDB DDL 변경'),
 -- 1.1.1 - MariaDB
 (3, 'SQL', 'DATABASE', 'MARIADB', '1.patch_mariadb_ddl.sql',
-    'versions/standard/1.1.x/1.1.1/mariadb/1.patch_mariadb_ddl.sql',
-    '/mariadb/1.patch_mariadb_ddl.sql',
-    4867, '848ecec66ce257e0fcec4088294c816d', 1, FALSE, '파일 기능 관련 DDL 추가'),
+    'versions/standard/1.1.x/1.1.1/database/mariadb/1.patch_mariadb_ddl.sql',
+    '/database/mariadb/1.patch_mariadb_ddl.sql',
+    4867, '848ecec66ce257e0fcec4088294c816d', 1, '파일 기능 관련 DDL 추가'),
 (3, 'SQL', 'DATABASE', 'MARIADB', '2.patch_mariadb_dml.sql',
-    'versions/standard/1.1.x/1.1.1/mariadb/2.patch_mariadb_dml.sql',
-    '/mariadb/2.patch_mariadb_dml.sql',
-    660, '63fe833edd62599db2ce8c758eae0240', 2, FALSE, '파일 기능 관련 DML 추가'),
+    'versions/standard/1.1.x/1.1.1/database/mariadb/2.patch_mariadb_dml.sql',
+    '/database/mariadb/2.patch_mariadb_dml.sql',
+    660, '63fe833edd62599db2ce8c758eae0240', 2, '파일 기능 관련 DML 추가'),
 -- 1.1.2 - MariaDB
 (4, 'SQL', 'DATABASE', 'MARIADB', '1.patch_mariadb_ddl.sql',
-    'versions/standard/1.1.x/1.1.2/mariadb/1.patch_mariadb_ddl.sql',
-    '/mariadb/1.patch_mariadb_ddl.sql',
-    1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, FALSE, 'SMS 로그 모니터링 정책 상세 테이블 추가');
+    'versions/standard/1.1.x/1.1.2/database/mariadb/1.patch_mariadb_ddl.sql',
+    '/database/mariadb/1.patch_mariadb_ddl.sql',
+    1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, 'SMS 로그 모니터링 정책 상세 테이블 추가');
 
 -- =========================================================
 -- Section 19: 계층 구조 데이터 추가

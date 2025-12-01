@@ -14,10 +14,10 @@ class FileCategoryTest {
     @Test
     @DisplayName("fromCode - 정상 케이스")
     void fromCode_Success() {
-        assertThat(FileCategory.fromCode("database")).isEqualTo(FileCategory.DATABASE);
-        assertThat(FileCategory.fromCode("web")).isEqualTo(FileCategory.WEB);
-        assertThat(FileCategory.fromCode("install")).isEqualTo(FileCategory.INSTALL);
-        assertThat(FileCategory.fromCode("engine")).isEqualTo(FileCategory.ENGINE);
+        assertThat(FileCategory.fromCode("DATABASE")).isEqualTo(FileCategory.DATABASE);
+        assertThat(FileCategory.fromCode("WEB")).isEqualTo(FileCategory.WEB);
+        assertThat(FileCategory.fromCode("INSTALL")).isEqualTo(FileCategory.INSTALL);
+        assertThat(FileCategory.fromCode("ENGINE")).isEqualTo(FileCategory.ENGINE);
     }
 
     @Test

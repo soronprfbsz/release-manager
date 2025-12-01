@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Code {
+public class Code extends BaseEntity {
 
     @Id
     @Column(name = "code_type_id", length = 50, insertable = false, updatable = false)

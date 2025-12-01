@@ -86,7 +86,7 @@ class PatchServiceTest {
                 .releaseType("STANDARD")
                 .fromVersion("1.0.0")
                 .toVersion("1.1.0")
-                .generatedBy("tester")
+                .createdBy("tester")
                 .build();
 
         // 실제 파일 디렉토리 생성
@@ -123,7 +123,7 @@ class PatchServiceTest {
                 .releaseType("STANDARD")
                 .fromVersion("1.0.0")
                 .toVersion("1.1.0")
-                .generatedBy("tester")
+                .createdBy("tester")
                 .build();
 
         when(patchRepository.findById(patchId)).thenReturn(Optional.of(patch));
@@ -166,7 +166,7 @@ class PatchServiceTest {
                 .releaseType("STANDARD")
                 .fromVersion("1.0.0")
                 .toVersion("1.2.0")
-                .generatedBy("tester")
+                .createdBy("tester")
                 .build();
 
         // 중첩된 디렉토리 구조 생성

@@ -37,6 +37,8 @@ class CustomerRepositoryTest {
                 .customerName("A회사")
                 .description("A회사 설명")
                 .isActive(true)
+                .createdBy("admin@tscientific")
+                .updatedBy("admin@tscientific")
                 .build();
     }
 
@@ -89,6 +91,8 @@ class CustomerRepositoryTest {
                 .customerName("B회사")
                 .description("B회사 설명")
                 .isActive(false)
+                .createdBy("admin@tscientific")
+                .updatedBy("admin@tscientific")
                 .build();
         customerRepository.save(inactiveCustomer);
 
@@ -134,6 +138,8 @@ class CustomerRepositoryTest {
                 .customerName("홍길동회사")
                 .description("설명")
                 .isActive(true)
+                .createdBy("admin@tscientific")
+                .updatedBy("admin@tscientific")
                 .build();
         customerRepository.save(anotherCustomer);
 

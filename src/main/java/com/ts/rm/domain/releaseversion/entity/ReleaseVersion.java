@@ -2,10 +2,10 @@ package com.ts.rm.domain.releaseversion.entity;
 
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
-import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -22,15 +23,18 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(name = "release_version")
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReleaseVersion extends BaseEntity {
+public class ReleaseVersion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,6 +60,10 @@ public class ReleaseVersion extends BaseEntity {
     @Column(name = "patch_version", nullable = false)
     private Integer patchVersion;
 
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     @Column(name = "created_by", nullable = false, length = 100)
     private String createdBy;
 
@@ -64,9 +72,6 @@ public class ReleaseVersion extends BaseEntity {
 
     @Column(name = "custom_version", length = 50)
     private String customVersion;
-
-    @Column(name = "is_install")
-    private Boolean isInstall;
 
     @OneToMany(mappedBy = "releaseVersion", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

@@ -63,7 +63,6 @@ public class ReleaseFileService {
                 .fileSize(request.fileSize())
                 .checksum(request.checksum())
                 .executionOrder(request.executionOrder())
-                .isBuildArtifact(isBuildArtifact(fileCategory))
                 .description(request.description())
                 .build();
 
@@ -192,8 +191,6 @@ public class ReleaseFileService {
 
                 String fileType = determineFileType(file.getOriginalFilename());
 
-                boolean buildArtifact = isBuildArtifact(fileCategory);
-
                 ReleaseFile releaseFile = ReleaseFile.builder()
                         .releaseVersion(releaseVersion)
                         .fileType(fileType)
@@ -204,7 +201,6 @@ public class ReleaseFileService {
                         .fileSize(file.getSize())
                         .checksum(checksum)
                         .executionOrder(executionOrder++)
-                        .isBuildArtifact(buildArtifact)
                         .description(request.uploadedBy() + "가 업로드한 파일")
                         .build();
 
@@ -273,10 +269,11 @@ public class ReleaseFileService {
 
             String zipEntryPath;
             if (file.getFileCategory() != null) {
-                String categoryPath = file.getFileCategory().getCode();
+                // ZIP 경로는 소문자로 변환
+                String categoryPath = file.getFileCategory().getCode().toLowerCase();
                 if (file.getSubCategory() != null && !file.getSubCategory().isEmpty()) {
                     zipEntryPath = String.format("%s/%s/%s",
-                            categoryPath, file.getSubCategory(), file.getFileName());
+                            categoryPath, file.getSubCategory().toLowerCase(), file.getFileName());
                 } else {
                     zipEntryPath = String.format("%s/%s", categoryPath, file.getFileName());
                 }
@@ -411,7 +408,4 @@ public class ReleaseFileService {
         return null;
     }
 
-    private boolean isBuildArtifact(FileCategory fileCategory) {
-        return fileCategory != null && fileCategory.isBuildArtifact();
-    }
 }

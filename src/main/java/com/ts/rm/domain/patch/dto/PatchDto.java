@@ -45,7 +45,7 @@ public final class PatchDto {
             @Schema(description = "생성자", example = "admin@tscientific")
             @NotBlank(message = "생성자는 필수입니다")
             @Size(max = 100, message = "생성자는 100자 이하여야 합니다")
-            String generatedBy,
+            String createdBy,
 
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
@@ -93,11 +93,8 @@ public final class PatchDto {
             @Schema(description = "출력 경로", example = "patches/202511271430_1.0.0_1.1.1")
             String outputPath,
 
-            @Schema(description = "생성일시")
-            LocalDateTime generatedAt,
-
             @Schema(description = "생성자", example = "admin@tscientific")
-            String generatedBy,
+            String createdBy,
 
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
@@ -140,17 +137,17 @@ public final class PatchDto {
             @Schema(description = "패치 이름", example = "20251125_1.0.0_1.1.1")
             String patchName,
 
-            @Schema(description = "생성일시")
-            LocalDateTime generatedAt,
-
             @Schema(description = "생성자", example = "admin@tscientific")
-            String generatedBy,
+            String createdBy,
 
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
 
             @Schema(description = "패치 담당자", example = "홍길동")
-            String patchedBy
+            String patchedBy,
+
+            @Schema(description = "등록일시")
+            LocalDateTime createdAt
     ) {
 
     }
