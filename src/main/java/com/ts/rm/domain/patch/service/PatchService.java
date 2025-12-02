@@ -318,8 +318,8 @@ public class PatchService {
      * 대상 파일 경로 결정 (카테고리 기반)
      * <p>디렉토리 구조:
      * <ul>
-     *   <li>DATABASE: {db_type}/source_files/{version}/{file_name}</li>
-     *   <li>WEB/API/BATCH: {category}/source_files/{version}/{file_name}</li>
+     *   <li>DATABASE: {db_type}/{version}/{file_name}</li>
+     *   <li>WEB/API/BATCH: {category}/{version}/{file_name}</li>
      *   <li>CONFIG: config/{file_name}</li>
      * </ul>
      */
@@ -328,7 +328,7 @@ public class PatchService {
 
         if (category == null) {
             return outputDir.resolve(
-                    String.format("etc/source_files/%s/%s",
+                    String.format("etc/%s/%s",
                             version.getVersion(),
                             file.getFileName())
             );
@@ -341,7 +341,7 @@ public class PatchService {
                         ? file.getSubCategory().toLowerCase()
                         : "database";
                 return outputDir.resolve(
-                        String.format("database/%s/source_files/%s/%s",
+                        String.format("database/%s/%s/%s",
                                 subCategory,
                                 version.getVersion(),
                                 file.getFileName())
@@ -351,7 +351,7 @@ public class PatchService {
             case ENGINE:
                 // category를 소문자로 변환
                 return outputDir.resolve(
-                        String.format("%s/source_files/%s/%s",
+                        String.format("%s/%s/%s",
                                 category.getCode().toLowerCase(),
                                 version.getVersion(),
                                 file.getFileName())
@@ -444,9 +444,11 @@ public class PatchService {
             content.append("├── cratedb_patch.sh            # CrateDB 패치 실행 스크립트\n");
             content.append("├── database/\n");
             content.append("│   ├── mariadb/\n");
-            content.append("│   │   └── source_files/       # 누적된 SQL 파일들\n");
+            content.append("│   │   ├── {version}/          # 누적된 SQL 파일들\n");
+            content.append("│   │   │   └── *.sql\n");
             content.append("│   └── cratedb/\n");
-            content.append("│       └── source_files/       # 누적된 SQL 파일들\n");
+            content.append("│       ├── {version}/          # 누적된 SQL 파일들\n");
+            content.append("│       │   └── *.sql\n");
             content.append("└── README.md                   # 이 파일\n");
             content.append("```\n\n");
 

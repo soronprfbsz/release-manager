@@ -183,13 +183,21 @@ class ReleaseVersionControllerTreeTest {
      * 파일 시스템을 건드리지 않고 DB에만 데이터 저장
      */
     private void createTestVersionDirectly(String version, String createdBy, String comment) {
+        // 버전 파싱 (예: "1.1.0" -> major=1, minor=1, patch=0)
+        String[] parts = version.split("\\.");
+        Integer major = Integer.parseInt(parts[0]);
+        Integer minor = Integer.parseInt(parts[1]);
+        Integer patch = Integer.parseInt(parts[2]);
+
         com.ts.rm.domain.releaseversion.entity.ReleaseVersion releaseVersion =
                 com.ts.rm.domain.releaseversion.entity.ReleaseVersion.builder()
                 .version(version)
                 .releaseType("STANDARD")
+                .majorVersion(major)
+                .minorVersion(minor)
+                .patchVersion(patch)
                 .comment(comment)
                 .createdBy(createdBy)
-                .updatedBy(createdBy)
                 .build();
 
         releaseVersionRepository.save(releaseVersion);

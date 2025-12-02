@@ -10,10 +10,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScriptType {
 
-    MARIADB_BACKUP("mariadb-backup", "mariadb_backup.sh", "MariaDB 백업 스크립트", "release/common/script/mariadb/mariadb_backup.sh"),
-    MARIADB_RESTORE("mariadb-restore", "mariadb_restore.sh", "MariaDB 복원 스크립트", "release/common/script/mariadb/mariadb_restore.sh"),
-    CRATEDB_BACKUP("cratedb-backup", "cratedb_backup.sh", "CrateDB 백업 스크립트", "release/common/script/cratedb/cratedb_backup.sh"),
-    CRATEDB_RESTORE("cratedb-restore", "cratedb_restore.sh", "CrateDB 복원 스크립트", "release/common/script/cratedb/cratedb_restore.sh");
+    MARIADB_BACKUP("mariadb-backup", "mariadb_backup.sh", "MariaDB 백업 스크립트", "release/common/script/MARIADB/mariadb_backup.sh"),
+    MARIADB_RESTORE("mariadb-restore", "mariadb_restore.sh", "MariaDB 복원 스크립트", "release/common/script/MARIADB/mariadb_restore.sh"),
+    CRATEDB_BACKUP("cratedb-backup", "cratedb_backup.sh", "CrateDB 백업 스크립트", "release/common/script/CRATEDB/cratedb_backup.sh"),
+    CRATEDB_RESTORE("cratedb-restore", "cratedb_restore.sh", "CrateDB 복원 스크립트", "release/common/script/CRATEDB/cratedb_restore.sh");
 
     private final String code;
     private final String fileName;
