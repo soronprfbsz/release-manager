@@ -6,9 +6,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.ts.rm.config.TestQueryDslConfig;
-import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
-import com.ts.rm.domain.releaseversion.service.ReleaseVersionService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,35 +14,22 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * ReleaseVersion 트리 조회 API 테스트
  */
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
-@Transactional
 @ActiveProfiles("test")
 @Import(TestQueryDslConfig.class)
 @DisplayName("ReleaseVersion 트리 조회 API 테스트")
+@Sql(scripts = "/test-data/release-version-tree-test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class ReleaseVersionControllerTreeTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository releaseVersionRepository;
-
-    @BeforeEach
-    void setUp() {
-        // 테스트용 버전 데이터 생성 (DB만 직접 저장, 파일 시스템 사용 안함)
-        createTestVersionDirectly("1.1.0", "jhlee@tscientific", "Initial version");
-        createTestVersionDirectly("1.1.1", "jhlee@tscientific", "Bug fix");
-        createTestVersionDirectly("1.2.0", "jhlee@tscientific", "New features");
-        createTestVersionDirectly("1.2.1", "jhlee@tscientific", "Hotfix");
-        createTestVersionDirectly("2.0.0", "jhlee@tscientific", "Major release");
-    }
 
     @Test
     @DisplayName("Standard 릴리즈 트리 조회 성공")
@@ -176,30 +160,5 @@ class ReleaseVersionControllerTreeTest {
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdAt").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdBy").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].categories").isArray());
-    }
-
-    /**
-     * 테스트용 버전 생성 헬퍼 메서드 (DB만 직접 저장)
-     * 파일 시스템을 건드리지 않고 DB에만 데이터 저장
-     */
-    private void createTestVersionDirectly(String version, String createdBy, String comment) {
-        // 버전 파싱 (예: "1.1.0" -> major=1, minor=1, patch=0)
-        String[] parts = version.split("\\.");
-        Integer major = Integer.parseInt(parts[0]);
-        Integer minor = Integer.parseInt(parts[1]);
-        Integer patch = Integer.parseInt(parts[2]);
-
-        com.ts.rm.domain.releaseversion.entity.ReleaseVersion releaseVersion =
-                com.ts.rm.domain.releaseversion.entity.ReleaseVersion.builder()
-                .version(version)
-                .releaseType("STANDARD")
-                .majorVersion(major)
-                .minorVersion(minor)
-                .patchVersion(patch)
-                .comment(comment)
-                .createdBy(createdBy)
-                .build();
-
-        releaseVersionRepository.save(releaseVersion);
     }
 }

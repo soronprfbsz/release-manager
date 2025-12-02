@@ -57,7 +57,7 @@ public class SubCategoryValidator {
             return false;
         }
 
-        return allowedValues.contains(subCategory.toLowerCase());
+        return allowedValues.contains(subCategory.toUpperCase());
     }
 
     /**
