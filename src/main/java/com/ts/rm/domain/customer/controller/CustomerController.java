@@ -106,7 +106,7 @@ public class CustomerController {
      * @return 고객사 페이지
      */
     @Operation(summary = "고객사 목록 조회",
-            description = "고객사 목록을 페이징하여 조회합니다. isActive로 활성화 여부 필터링, keyword로 고객사명 검색 가능. page, size, sort 파라미터 사용 가능")
+            description = "고객사 목록 조회합니다. isActive로 활성화 여부 필터링, keyword로 고객사명 검색 가능. page, size, sort 파라미터 사용 가능")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<CustomerDto.DetailResponse>>> getCustomers(
             @Parameter(description = "활성화 여부 (true: 활성화만, false: 비활성화만, null: 전체)")

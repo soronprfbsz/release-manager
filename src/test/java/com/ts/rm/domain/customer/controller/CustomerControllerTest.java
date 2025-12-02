@@ -113,13 +113,15 @@ class CustomerControllerTest {
                 .customerName("A회사")
                 .description("A회사 설명")
                 .isActive(true)
-                .createdBy("admin@tscientific")
                 .build();
 
+        // JWT 토큰에서 이메일 추출 모킹
+        given(jwtTokenProvider.getEmail(any())).willReturn("admin@tscientific");
         given(customerService.createCustomer(any())).willReturn(detailResponse);
 
         // when & then
         mockMvc.perform(post("/api/customers")
+                        .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -185,7 +187,6 @@ class CustomerControllerTest {
         CustomerDto.UpdateRequest request = CustomerDto.UpdateRequest.builder()
                 .customerName("수정된회사")
                 .description("수정된설명")
-                .updatedBy("admin@tscientific")
                 .build();
 
         CustomerDto.DetailResponse updatedResponse = new CustomerDto.DetailResponse(
@@ -200,10 +201,13 @@ class CustomerControllerTest {
                 "admin@tscientific"
         );
 
+        // JWT 토큰에서 이메일 추출 모킹
+        given(jwtTokenProvider.getEmail(any())).willReturn("admin@tscientific");
         given(customerService.updateCustomer(eq(1L), any())).willReturn(updatedResponse);
 
         // when & then
         mockMvc.perform(put("/api/customers/{id}", 1L)
+                        .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -263,8 +267,12 @@ class CustomerControllerTest {
                 .isActive(true)
                 .build();
 
+        // JWT 토큰에서 이메일 추출 모킹
+        given(jwtTokenProvider.getEmail(any())).willReturn("admin@tscientific");
+
         // when & then
         mockMvc.perform(post("/api/customers")
+                        .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -280,8 +288,46 @@ class CustomerControllerTest {
                 .isActive(true)
                 .build();
 
+        // JWT 토큰에서 이메일 추출 모킹
+        given(jwtTokenProvider.getEmail(any())).willReturn("admin@tscientific");
+
         // when & then
         mockMvc.perform(post("/api/customers")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("고객사 생성 - Authorization 헤더 누락")
+    void createCustomer_MissingAuthorizationHeader() throws Exception {
+        // given
+        CustomerDto.CreateRequest request = CustomerDto.CreateRequest.builder()
+                .customerCode("company_a")
+                .customerName("A회사")
+                .description("설명")
+                .isActive(true)
+                .build();
+
+        // when & then
+        mockMvc.perform(post("/api/customers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("고객사 수정 - Authorization 헤더 누락")
+    void updateCustomer_MissingAuthorizationHeader() throws Exception {
+        // given
+        CustomerDto.UpdateRequest request = CustomerDto.UpdateRequest.builder()
+                .customerName("수정된회사")
+                .description("수정된설명")
+                .build();
+
+        // when & then
+        mockMvc.perform(put("/api/customers/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
