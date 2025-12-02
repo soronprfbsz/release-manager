@@ -10,8 +10,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -137,27 +139,41 @@ public class PatchController {
 
     /**
      * 패치 다운로드 (ZIP)
+     *
+     * <p>응답 헤더:
+     * <ul>
+     *   <li><b>X-Uncompressed-Size</b>: 압축 전 총 파일 크기 (바이트) - 진행률 표시용</li>
+     * </ul>
      */
     @GetMapping("/{id}/download")
     @Operation(summary = "패치 다운로드",
             description = "패치 파일을 ZIP 형식으로 다운로드합니다.\n\n"
                     + "ZIP 파일에는 다음이 포함됩니다:\n"
-                    + "- mariadb/ : MariaDB 패치 스크립트 및 SQL 파일\n"
-                    + "- cratedb/ : CrateDB 패치 스크립트 및 SQL 파일\n"
-                    + "- README.md : 패치 설명 파일")
-    public ResponseEntity<byte[]> downloadPatch(@PathVariable Long id) {
+                    + "- database/mariadb/ : MariaDB 패치 스크립트 및 SQL 파일\n"
+                    + "- database/cratedb/ : CrateDB 패치 스크립트 및 SQL 파일\n"
+                    + "- README.md : 패치 설명 파일\n\n"
+                    + "**응답 헤더**:\n"
+                    + "- `X-Uncompressed-Size`: 압축 전 총 파일 크기 (바이트) - 진행률 표시용")
+    public void downloadPatch(
+            @PathVariable Long id,
+            HttpServletResponse response) throws IOException {
 
         log.info("패치 다운로드 요청 - ID: {}", id);
 
-        byte[] zipBytes = patchService.downloadPatchAsZip(id);
         String fileName = patchService.getZipFileName(id);
+        long uncompressedSize = patchService.calculateUncompressedSize(id);
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + fileName + "\"")
-                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(zipBytes.length))
-                .body(zipBytes);
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + fileName + "\"");
+
+        // 압축 전 크기를 커스텀 헤더로 전달 (프론트엔드 진행률 표시용)
+        response.setHeader("X-Uncompressed-Size", String.valueOf(uncompressedSize));
+
+        patchService.streamPatchAsZip(id, response.getOutputStream());
+
+        log.info("패치 다운로드 완료 - ID: {}, fileName: {}, uncompressedSize: {} bytes",
+                id, fileName, uncompressedSize);
     }
 
     /**

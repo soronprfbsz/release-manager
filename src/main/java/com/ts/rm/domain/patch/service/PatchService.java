@@ -11,8 +11,9 @@ import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
-import com.ts.rm.global.file.ZipUtil;
+import com.ts.rm.global.file.StreamingZipUtil;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -497,13 +498,13 @@ public class PatchService {
     }
 
     /**
-     * 패치 ZIP 다운로드
+     * 패치를 스트리밍 방식으로 ZIP 압축하여 출력 스트림에 작성
      *
-     * @param patchId 패치 ID
-     * @return ZIP 파일 바이트 배열
+     * @param patchId      패치 ID
+     * @param outputStream 출력 스트림
      */
     @Transactional(readOnly = true)
-    public byte[] downloadPatchAsZip(Long patchId) {
+    public void streamPatchAsZip(Long patchId, OutputStream outputStream) {
         Patch patch = getPatch(patchId);
 
         Path patchDir = Paths.get(releaseBasePath, patch.getOutputPath());
@@ -513,7 +514,7 @@ public class PatchService {
                     "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
         }
 
-        return ZipUtil.compressDirectory(patchDir);
+        StreamingZipUtil.compressDirectoryToStream(outputStream, patchDir);
     }
 
     /**
@@ -525,6 +526,60 @@ public class PatchService {
     public String getZipFileName(Long patchId) {
         Patch patch = getPatch(patchId);
         return patch.getPatchName() + ".zip";
+    }
+
+    /**
+     * 패치 디렉토리의 압축 전 총 크기 계산
+     *
+     * <p>프론트엔드에서 진행률 표시를 위해 사용합니다.
+     * 디렉토리 내 모든 파일의 크기를 재귀적으로 계산합니다.
+     *
+     * @param patchId 패치 ID
+     * @return 압축 전 총 크기 (바이트)
+     * @throws BusinessException 디렉토리를 찾을 수 없거나 크기 계산 실패 시
+     */
+    public long calculateUncompressedSize(Long patchId) {
+        log.debug("압축 전 크기 계산 시작 - patchId: {}", patchId);
+
+        Patch patch = getPatch(patchId);
+        Path patchDir = Paths.get(releaseBasePath, patch.getOutputPath());
+
+        if (!Files.exists(patchDir)) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                    "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
+        }
+
+        try {
+            long totalSize = calculateDirectorySize(patchDir);
+            log.info("압축 전 총 크기 계산 완료 - patchId: {}, totalSize: {} bytes ({} MB)",
+                    patchId, totalSize, totalSize / (1024.0 * 1024.0));
+            return totalSize;
+        } catch (IOException e) {
+            log.error("디렉토리 크기 계산 실패 - patchId: {}, path: {}", patchId, patchDir, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "디렉토리 크기 계산 실패: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 디렉토리의 총 크기를 재귀적으로 계산
+     *
+     * @param directory 계산할 디렉토리 경로
+     * @return 총 크기 (바이트)
+     * @throws IOException 파일 접근 실패 시
+     */
+    private long calculateDirectorySize(Path directory) throws IOException {
+        return Files.walk(directory)
+                .filter(Files::isRegularFile)
+                .mapToLong(path -> {
+                    try {
+                        return Files.size(path);
+                    } catch (IOException e) {
+                        log.warn("파일 크기 계산 실패 - {}: {}", path, e.getMessage());
+                        return 0L;
+                    }
+                })
+                .sum();
     }
 
     /**
