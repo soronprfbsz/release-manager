@@ -11,8 +11,10 @@ import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.file.ZipUtil;
+import com.ts.rm.global.file.StreamingZipUtil;
 import com.ts.rm.domain.common.service.FileStorageService;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -250,8 +252,18 @@ public class ReleaseFileService {
         return resource;
     }
 
-    public byte[] downloadVersionFilesAsZip(Long versionId) {
-        log.info("버전별 파일 일괄 다운로드 요청 - versionId: {}", versionId);
+    /**
+     * 버전별 파일을 스트리밍 방식으로 ZIP 압축
+     *
+     * <p>메모리에 전체 ZIP을 생성하지 않고 OutputStream에 직접 스트리밍합니다.
+     * 메모리 사용량이 O(1)로 대용량 파일도 안전하게 처리 가능합니다.
+     *
+     * @param versionId    릴리즈 버전 ID
+     * @param outputStream 출력 스트림 (HttpServletResponse.getOutputStream())
+     * @throws BusinessException 파일이 없거나 압축 실패 시
+     */
+    public void streamVersionFilesAsZip(Long versionId, OutputStream outputStream) {
+        log.info("버전별 파일 스트리밍 다운로드 요청 - versionId: {}", versionId);
 
         ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
 
@@ -263,6 +275,55 @@ public class ReleaseFileService {
                     "버전 " + releaseVersion.getVersion() + "에 파일이 없습니다");
         }
 
+        List<ZipUtil.ZipFileEntry> zipEntries = buildZipEntries(releaseFiles);
+
+        log.info("스트리밍 ZIP 압축 시작 - 버전: {}, 파일 개수: {}",
+                releaseVersion.getVersion(), zipEntries.size());
+
+        // 스트리밍 방식으로 압축 (메모리 효율적)
+        StreamingZipUtil.compressFilesToStream(outputStream, zipEntries);
+
+        log.info("버전 {} 스트리밍 압축 완료 - {} 개 파일",
+                releaseVersion.getVersion(), releaseFiles.size());
+    }
+
+    /**
+     * 버전별 파일을 메모리 기반으로 ZIP 압축 (레거시)
+     *
+     * @param versionId 릴리즈 버전 ID
+     * @return ZIP 파일 바이트 배열
+     * @deprecated 메모리 사용량이 많아 OOM 위험이 있습니다. {@link #streamVersionFilesAsZip(Long, OutputStream)} 사용을 권장합니다.
+     */
+    @Deprecated(since = "1.0", forRemoval = false)
+    public byte[] downloadVersionFilesAsZip(Long versionId) {
+        log.warn("레거시 메모리 기반 ZIP 압축 호출 - versionId: {} (스트리밍 방식 사용 권장)", versionId);
+
+        ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
+
+        List<ReleaseFile> releaseFiles = releaseFileRepository
+                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
+
+        if (releaseFiles.isEmpty()) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                    "버전 " + releaseVersion.getVersion() + "에 파일이 없습니다");
+        }
+
+        List<ZipUtil.ZipFileEntry> zipEntries = buildZipEntries(releaseFiles);
+
+        log.info("ZIP 압축 시작 - 버전: {}, 파일 개수: {}", releaseVersion.getVersion(), zipEntries.size());
+
+        byte[] zipBytes = ZipUtil.compressFiles(zipEntries);
+
+        log.info("버전 {} 파일 압축 완료 - {} 개 파일, {} bytes",
+                releaseVersion.getVersion(), releaseFiles.size(), zipBytes.length);
+
+        return zipBytes;
+    }
+
+    /**
+     * ReleaseFile 목록을 ZipFileEntry 목록으로 변환 (공통 로직)
+     */
+    private List<ZipUtil.ZipFileEntry> buildZipEntries(List<ReleaseFile> releaseFiles) {
         List<ZipUtil.ZipFileEntry> zipEntries = new ArrayList<>();
 
         for (ReleaseFile file : releaseFiles) {
@@ -288,14 +349,7 @@ public class ReleaseFileService {
             zipEntries.add(new ZipUtil.ZipFileEntry(sourcePath, zipEntryPath));
         }
 
-        log.info("ZIP 압축 시작 - 버전: {}, 파일 개수: {}", releaseVersion.getVersion(), zipEntries.size());
-
-        byte[] zipBytes = ZipUtil.compressFiles(zipEntries);
-
-        log.info("버전 {} 파일 압축 완료 - {} 개 파일, {} bytes",
-                releaseVersion.getVersion(), releaseFiles.size(), zipBytes.length);
-
-        return zipBytes;
+        return zipEntries;
     }
 
     public String getVersionZipFileName(Long versionId) {
