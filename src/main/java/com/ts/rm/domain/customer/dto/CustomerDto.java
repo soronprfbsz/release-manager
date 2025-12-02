@@ -34,10 +34,7 @@ public final class CustomerDto {
             String description,
 
             @Schema(description = "활성 여부", example = "true", defaultValue = "true")
-            Boolean isActive,
-
-            @Schema(description = "생성자 (JWT 토큰에서 자동 추출)", example = "admin@tscientific", hidden = true) @Size(max = 100, message = "생성자는 100자 이하여야 합니다")
-            String createdBy
+            Boolean isActive
     ) {
 
         public CreateRequest {
@@ -60,10 +57,7 @@ public final class CustomerDto {
             String description,
 
             @Schema(description = "활성 여부", example = "true")
-            Boolean isActive,
-
-            @Schema(description = "수정자", example = "admin@tscientific") @NotBlank(message = "수정자는 필수입니다") @Size(max = 100, message = "수정자는 100자 이하여야 합니다")
-            String updatedBy
+            Boolean isActive
     ) {
 
     }

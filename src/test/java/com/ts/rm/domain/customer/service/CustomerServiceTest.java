@@ -67,7 +67,6 @@ class CustomerServiceTest {
                 .customerName("A회사")
                 .description("A회사 설명")
                 .isActive(true)
-                .createdBy("admin@tscientific")
                 .build();
 
         detailResponse = new CustomerDto.DetailResponse(
@@ -100,7 +99,7 @@ class CustomerServiceTest {
         given(mapper.toDetailResponse(any(Customer.class))).willReturn(detailResponse);
 
         // when
-        CustomerDto.DetailResponse result = customerService.createCustomer(createRequest);
+        CustomerDto.DetailResponse result = customerService.createCustomer(createRequest, "admin@tscientific");
 
         // then
         assertThat(result).isNotNull();
@@ -118,7 +117,7 @@ class CustomerServiceTest {
         given(customerRepository.existsByCustomerCode(anyString())).willReturn(true);
 
         // when & then
-        assertThatThrownBy(() -> customerService.createCustomer(createRequest))
+        assertThatThrownBy(() -> customerService.createCustomer(createRequest, "admin@tscientific"))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CUSTOMER_CODE_CONFLICT);
 
@@ -228,7 +227,7 @@ class CustomerServiceTest {
         given(mapper.toDetailResponse(any(Customer.class))).willReturn(detailResponse);
 
         // when
-        CustomerDto.DetailResponse result = customerService.updateCustomer(1L, updateRequest);
+        CustomerDto.DetailResponse result = customerService.updateCustomer(1L, updateRequest, "admin@tscientific");
 
         // then
         assertThat(result).isNotNull();

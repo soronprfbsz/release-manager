@@ -23,6 +23,11 @@ import com.ts.rm.global.exception.GlobalExceptionHandler;
 import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import com.ts.rm.domain.common.service.CustomUserDetailsService;
 import com.ts.rm.global.filter.JwtAuthenticationFilter;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -31,6 +36,9 @@ import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.mockito.MockedStatic;
+import static org.mockito.Mockito.mockStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -80,8 +88,25 @@ class CustomerControllerTest {
     private CustomerDto.DetailResponse detailResponse;
     private CustomerDto.SimpleResponse simpleResponse;
 
+    private MockedStatic<SecurityContextHolder> securityContextHolderMock;
+
     @BeforeEach
     void setUp() {
+        // SecurityContextHolder 모킹 설정
+        SecurityContext securityContext = org.mockito.Mockito.mock(SecurityContext.class);
+        Authentication authentication = org.mockito.Mockito.mock(Authentication.class);
+        UserDetails userDetails = User.builder()
+                .username("admin@tscientific")
+                .password("password")
+                .roles("USER")
+                .build();
+
+        given(authentication.getPrincipal()).willReturn(userDetails);
+        given(authentication.isAuthenticated()).willReturn(true);
+        given(securityContext.getAuthentication()).willReturn(authentication);
+
+        securityContextHolderMock = mockStatic(SecurityContextHolder.class);
+        securityContextHolderMock.when(SecurityContextHolder::getContext).thenReturn(securityContext);
         LocalDateTime now = LocalDateTime.now();
 
         detailResponse = new CustomerDto.DetailResponse(
@@ -104,6 +129,13 @@ class CustomerControllerTest {
         );
     }
 
+    @AfterEach
+    void tearDown() {
+        if (securityContextHolderMock != null) {
+            securityContextHolderMock.close();
+        }
+    }
+
     @Test
     @DisplayName("고객사 생성 - 성공")
     void createCustomer_Success() throws Exception {
@@ -115,13 +147,10 @@ class CustomerControllerTest {
                 .isActive(true)
                 .build();
 
-        // JWT 토큰에서 이메일 추출 모킹
-        given(jwtTokenProvider.getEmail(any())).willReturn("admin@tscientific");
-        given(customerService.createCustomer(any())).willReturn(detailResponse);
+        given(customerService.createCustomer(any(), eq("admin@tscientific"))).willReturn(detailResponse);
 
         // when & then
         mockMvc.perform(post("/api/customers")
-                        .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -201,13 +230,10 @@ class CustomerControllerTest {
                 "admin@tscientific"
         );
 
-        // JWT 토큰에서 이메일 추출 모킹
-        given(jwtTokenProvider.getEmail(any())).willReturn("admin@tscientific");
-        given(customerService.updateCustomer(eq(1L), any())).willReturn(updatedResponse);
+        given(customerService.updateCustomer(eq(1L), any(), eq("admin@tscientific"))).willReturn(updatedResponse);
 
         // when & then
         mockMvc.perform(put("/api/customers/{id}", 1L)
-                        .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -267,12 +293,8 @@ class CustomerControllerTest {
                 .isActive(true)
                 .build();
 
-        // JWT 토큰에서 이메일 추출 모킹
-        given(jwtTokenProvider.getEmail(any())).willReturn("admin@tscientific");
-
         // when & then
         mockMvc.perform(post("/api/customers")
-                        .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -288,46 +310,8 @@ class CustomerControllerTest {
                 .isActive(true)
                 .build();
 
-        // JWT 토큰에서 이메일 추출 모킹
-        given(jwtTokenProvider.getEmail(any())).willReturn("admin@tscientific");
-
         // when & then
         mockMvc.perform(post("/api/customers")
-                        .header("Authorization", "Bearer test-token")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("고객사 생성 - Authorization 헤더 누락")
-    void createCustomer_MissingAuthorizationHeader() throws Exception {
-        // given
-        CustomerDto.CreateRequest request = CustomerDto.CreateRequest.builder()
-                .customerCode("company_a")
-                .customerName("A회사")
-                .description("설명")
-                .isActive(true)
-                .build();
-
-        // when & then
-        mockMvc.perform(post("/api/customers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("고객사 수정 - Authorization 헤더 누락")
-    void updateCustomer_MissingAuthorizationHeader() throws Exception {
-        // given
-        CustomerDto.UpdateRequest request = CustomerDto.UpdateRequest.builder()
-                .customerName("수정된회사")
-                .description("수정된설명")
-                .build();
-
-        // when & then
-        mockMvc.perform(put("/api/customers/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
