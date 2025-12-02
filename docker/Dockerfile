@@ -39,8 +39,9 @@ RUN apk add --no-cache tzdata && \
 # Build 스테이지에서 빌드된 JAR 복사
 COPY --from=builder /build/build/libs/*.jar app.jar
 
-# JVM 옵션 설정
-ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+# JVM 옵션 설정 (중소규모 엔터프라이즈 표준: 1GB 고정)
+# 스트리밍 방식으로 메모리 효율화되어 1GB로 충분
+ENV JAVA_OPTS="-Xms1024m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
 
 # 애플리케이션 실행
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
