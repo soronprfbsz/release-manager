@@ -73,9 +73,9 @@ class ReleaseVersionServiceTest {
 
     @BeforeEach
     void setUp() {
-        // @Value 주입을 위한 설정
+        // @Value 주입을 위한 설정 (테스트 전용 경로)
         ReflectionTestUtils.setField(releaseVersionService, "baseReleasePath",
-                "src/main/resources/release");
+                "build/test-release");
 
         testCustomer = Customer.builder()
                 .customerId(1L)
