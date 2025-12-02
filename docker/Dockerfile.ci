@@ -16,13 +16,8 @@ RUN apk add --no-cache tzdata && \
     echo "Asia/Seoul" > /etc/timezone && \
     apk del tzdata
 
-# 애플리케이션 사용자 생성 (보안)
-RUN addgroup -S spring && adduser -S spring -G spring
-
 # CI/CD에서 빌드된 JAR 복사
-COPY --chown=spring:spring build/libs/*.jar app.jar
-
-USER spring:spring
+COPY build/libs/*.jar app.jar
 
 # JVM 옵션 설정
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
