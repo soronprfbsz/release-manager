@@ -31,11 +31,12 @@ public class CustomerService {
     /**
      * 고객사 생성
      *
-     * @param request 고객사 생성 요청
+     * @param request   고객사 생성 요청
+     * @param createdBy 생성자 (JWT에서 추출)
      * @return 생성된 고객사 상세 정보
      */
     @Transactional
-    public CustomerDto.DetailResponse createCustomer(CustomerDto.CreateRequest request) {
+    public CustomerDto.DetailResponse createCustomer(CustomerDto.CreateRequest request, String createdBy) {
         log.info("Creating customer with code: {}", request.customerCode());
 
         // 중복 검증
@@ -44,6 +45,8 @@ public class CustomerService {
         }
 
         Customer customer = mapper.toEntity(request);
+        customer.setCreatedBy(createdBy);
+
         Customer savedCustomer = customerRepository.save(customer);
 
         log.info("Customer created successfully with id: {}", savedCustomer.getCustomerId());
@@ -131,11 +134,12 @@ public class CustomerService {
      *
      * @param customerId    고객사 ID
      * @param request       수정 요청
+     * @param updatedBy     수정자 (JWT에서 추출)
      * @return 수정된 고객사 상세 정보
      */
     @Transactional
     public CustomerDto.DetailResponse updateCustomer(Long customerId,
-            CustomerDto.UpdateRequest request) {
+            CustomerDto.UpdateRequest request, String updatedBy) {
         log.info("Updating customer with customerId: {}", customerId);
 
         // 엔티티 조회
@@ -151,9 +155,8 @@ public class CustomerService {
         if (request.isActive() != null) {
             customer.setIsActive(request.isActive());
         }
-        if (request.updatedBy() != null) {
-            customer.setUpdatedBy(request.updatedBy());
-        }
+        // updatedBy는 항상 설정 (JWT에서 추출)
+        customer.setUpdatedBy(updatedBy);
 
         // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Customer updated successfully with customerId: {}", customerId);

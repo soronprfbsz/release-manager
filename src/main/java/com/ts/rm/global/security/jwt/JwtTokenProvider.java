@@ -171,16 +171,6 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Refresh Token에서 이메일 추출
-     *
-     * @param refreshToken Refresh Token
-     * @return 사용자 이메일
-     */
-    public String getEmailFromRefreshToken(String refreshToken) {
-        return getClaims(refreshToken).getSubject();
-    }
-
-    /**
      * 토큰 만료 시간(초) 반환
      *
      * @return 토큰 만료 시간 (초 단위)

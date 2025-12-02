@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @Slf4j
@@ -158,6 +159,22 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(ApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE.getCode(),
             message + " (필수 파라미터 누락: " + paramName + ")"));
+  }
+
+  // 필수 Request Header 누락 (클라이언트 에러)
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ResponseEntity<ApiResponse<?>> handleMissingHeader(
+      MissingRequestHeaderException e, Locale locale) {
+    String headerName = e.getHeaderName();
+
+    log.warn("Missing required header: '{}'", headerName);
+
+    String message =
+        messageSource.getMessage(ErrorCode.INVALID_INPUT_VALUE.getMessageKey(), null, locale);
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(ApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE.getCode(),
+            message + " (필수 헤더 누락: " + headerName + ")"));
   }
 
   // 예상치 못한 서버 에러 (국제화 지원)

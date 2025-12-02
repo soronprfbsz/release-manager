@@ -13,7 +13,8 @@ import org.mapstruct.Mapping;
 public interface CustomerDtoMapper {
 
     @Mapping(target = "customerId", ignore = true)
-    @Mapping(target = "updatedBy", source = "createdBy")
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     Customer toEntity(CustomerDto.CreateRequest request);
 
     CustomerDto.DetailResponse toDetailResponse(Customer customer);
