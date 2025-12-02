@@ -89,13 +89,4 @@ public class ReleaseFile extends BaseEntity {
     public boolean isExcludedFromPatch() {
         return fileCategory != null && fileCategory.isExcludedFromPatch();
     }
-
-    /**
-     * Entity 저장 전 검증
-     */
-    @PrePersist
-    @PreUpdate
-    private void validateSubCategory() {
-        SubCategoryValidator.validate(fileCategory, subCategory);
-    }
 }

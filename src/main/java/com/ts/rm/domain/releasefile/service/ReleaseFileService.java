@@ -5,6 +5,7 @@ import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.mapper.ReleaseFileDtoMapper;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
+import com.ts.rm.domain.releasefile.util.SubCategoryValidator;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
@@ -403,7 +404,21 @@ public class ReleaseFileService {
 
     private String determineSubCategory(FileCategory fileCategory, String subCategory) {
         if (subCategory != null && !subCategory.isEmpty()) {
-            return subCategory.toLowerCase();
+            String upperSubCategory = subCategory.toUpperCase();
+
+            // DATABASE와 ENGINE 카테고리는 폴더명 기반 판단 후 CODE 테이블에 존재하는지 확인
+            if (fileCategory == FileCategory.DATABASE || fileCategory == FileCategory.ENGINE) {
+                // SubCategoryValidator를 통해 유효한 값인지 확인
+                if (SubCategoryValidator.isValid(fileCategory, upperSubCategory)) {
+                    return upperSubCategory;
+                } else {
+                    // 유효하지 않은 값이면 ETC로 반환
+                    return "ETC";
+                }
+            }
+
+            // 다른 카테고리(WEB, INSTALL)는 명시적으로 전달된 값만 사용
+            return upperSubCategory;
         }
         return null;
     }

@@ -5,6 +5,7 @@ import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
+import com.ts.rm.domain.releasefile.util.SubCategoryValidator;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto.FileTreeNode;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
@@ -1097,11 +1098,35 @@ public class ReleaseVersionService {
     private void processCategoryFiles(Path categorySourceDir, Path categoryTargetDir,
                                        ReleaseVersion releaseVersion, FileCategory fileCategory) throws IOException {
 
-        // 하위 폴더 순회 (예: database/mariadb, database/cratedb, web/build 등)
+        // 하위 폴더 순회 (예: database/MARIADB, database/CRATEDB, web/build 등)
         Files.list(categorySourceDir)
                 .filter(Files::isDirectory)
                 .forEach(subDir -> {
-                    String subCategory = subDir.getFileName().toString().toLowerCase();
+                    String subCategory = subDir.getFileName().toString();
+
+                    // DATABASE와 ENGINE 카테고리: CODE 테이블에 존재하는 값만 대문자 검증
+                    if (fileCategory == FileCategory.DATABASE || fileCategory == FileCategory.ENGINE) {
+                        String upperSubCategory = subCategory.toUpperCase();
+
+                        // CODE 테이블에 대문자 버전이 존재하는지 확인
+                        if (SubCategoryValidator.isValid(fileCategory, upperSubCategory)) {
+                            // CODE 테이블에 있는 값인 경우 → 반드시 대문자로 작성되어야 함
+                            if (!subCategory.equals(upperSubCategory)) {
+                                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                                        String.format("CODE 테이블에 등록된 %s 하위 카테고리는 반드시 대문자로 작성해야 합니다. " +
+                                                "현재: '%s', 올바른 형식: '%s'",
+                                                fileCategory.getCode(), subCategory, upperSubCategory));
+                            }
+                            // 대문자로 유지
+                        } else {
+                            // CODE 테이블에 없는 값 → 사용자가 작성한 대로 사용 (대소문자 자유)
+                            log.debug("CODE 테이블에 없는 사용자 정의 하위 카테고리: {}/{}", fileCategory.getCode(), subCategory);
+                        }
+                    } else {
+                        // WEB, INSTALL은 소문자로 변환
+                        subCategory = subCategory.toLowerCase();
+                    }
+
                     Path targetSubDir = categoryTargetDir.resolve(subCategory);
 
                     try {
@@ -1283,7 +1308,8 @@ public class ReleaseVersionService {
                         releaseVersion.getReleaseVersionId())
                 .stream()
                 .map(file -> {
-                    String category = file.getSubCategory() != null ? file.getSubCategory().toLowerCase() : "unknown";
+                    // DATABASE와 ENGINE은 대문자 유지, 나머지는 소문자 (DB에 이미 대문자로 저장되어 있음)
+                    String category = file.getSubCategory() != null ? file.getSubCategory() : "unknown";
                     return category + "/" + file.getFileName();
                 })
                 .toList();
