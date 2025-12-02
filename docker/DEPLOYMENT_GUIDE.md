@@ -107,6 +107,37 @@ docker inspect release-manager-api
 docker inspect release-manager-api | grep -A 10 "Mounts"
 ```
 
+### OutOfMemoryError: Java heap space
+
+**증상**:
+```
+java.lang.OutOfMemoryError: Java heap space
+at java.util.zip.ZipOutputStream.write
+```
+
+**원인**: 큰 파일(WAR, TAR 등)을 ZIP 압축할 때 JVM heap 메모리 부족
+
+**해결**:
+```bash
+# 1. docker-compose.yml의 JAVA_OPTS 확인 (현재 1GB 표준 설정)
+cat docker/docker-compose.yml | grep JAVA_OPTS
+
+# 2. 스트리밍 방식으로 개선되어 1GB로 충분하지만, 필요시 메모리 증가
+# docker-compose.yml 수정:
+# JAVA_OPTS: "-Xms1024m -Xmx2048m -XX:+UseG1GC"  # 1GB → 2GB
+
+# 3. 컨테이너 재시작
+cd docker
+docker compose down
+docker compose up -d
+
+# 4. 호스트 메모리 확인
+free -h
+
+# 5. 메모리 사용량 모니터링
+curl http://localhost:8081/actuator/metrics/jvm.memory.used
+```
+
 ### 디스크 용량 부족
 
 ```bash
