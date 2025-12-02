@@ -5,6 +5,8 @@ import com.ts.rm.domain.releasefile.service.ReleaseFileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -49,29 +51,35 @@ public class ReleaseFileController {
     }
 
     /**
-     * 버전별 모든 파일 일괄 다운로드 (ZIP)
+     * 버전별 모든 파일 일괄 다운로드 (ZIP) - 스트리밍 방식
+     *
+     * <p>메모리 효율적인 스트리밍 방식으로 ZIP 파일을 생성하여 다운로드합니다.
+     * 대용량 파일도 OOM 없이 안전하게 다운로드 가능합니다.
      */
-    @Operation(summary = "버전별 파일 일괄 다운로드",
-            description = "특정 버전의 모든 파일을 ZIP 형식으로 다운로드합니다.\n\n"
-                    + "ZIP 파일에는 다음 구조로 파일이 포함됩니다:\n"
-                    + "- mariadb/ : MariaDB SQL 파일들\n"
-                    + "- cratedb/ : CrateDB SQL 파일들\n\n"
-                    + "각 폴더 내에는 실행 순서대로 정렬된 SQL 파일들이 포함됩니다.")
+    @Operation(summary = "버전별 파일 일괄 다운로드 (스트리밍)",
+            description = "특정 버전의 모든 파일을 ZIP 형식으로 스트리밍 다운로드합니다.\n\n"
+                    + "각 폴더 내에는 실행 순서대로 정렬된 파일들이 포함됩니다.")
     @GetMapping("/versions/{versionId}/download")
-    public ResponseEntity<byte[]> downloadVersionFiles(
+    public void downloadVersionFiles(
             @Parameter(description = "릴리즈 버전 ID", required = true)
-            @PathVariable("versionId") Long versionId) {
+            @PathVariable("versionId") Long versionId,
+            HttpServletResponse response) throws IOException {
 
-        log.info("버전별 파일 일괄 다운로드 API 호출 - versionId: {}", versionId);
+        log.info("버전별 파일 스트리밍 다운로드 API 호출 - versionId: {}", versionId);
 
-        byte[] zipBytes = releaseFileService.downloadVersionFilesAsZip(versionId);
         String fileName = releaseFileService.getVersionZipFileName(versionId);
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + fileName + "\"")
-                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(zipBytes.length))
-                .body(zipBytes);
+        // HTTP 응답 헤더 설정
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + fileName + "\"");
+
+        // Content-Length는 스트리밍 방식에서 미리 알 수 없으므로 설정하지 않음
+        // 브라우저는 Transfer-Encoding: chunked로 처리
+
+        // 스트리밍 방식으로 ZIP 생성 및 전송
+        releaseFileService.streamVersionFilesAsZip(versionId, response.getOutputStream());
+
+        log.info("버전별 파일 스트리밍 다운로드 완료 - versionId: {}, fileName: {}", versionId, fileName);
     }
 }
