@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 스트리밍 ZIP 압축 테스트
  *
- * <p>메모리 기반 방식과 스트리밍 방식의 결과가 동일한지 검증합니다.
+ * <p>스트리밍 방식으로 ZIP 파일을 생성하고 유효성을 검증합니다.
  */
 @DisplayName("스트리밍 ZIP 압축 테스트")
 class StreamingZipTest {
@@ -79,28 +79,19 @@ class StreamingZipTest {
     }
 
     @Test
-    @DisplayName("메모리 기반 방식과 스트리밍 방식 결과 동일성 검증")
-    void compareMemoryBasedAndStreamingApproach() throws IOException {
-        // Given - 메모리 기반 방식
-        byte[] memoryBasedZip = ZipUtil.compressFiles(testFiles);
+    @DisplayName("ZIP 파일 내용 검증")
+    void verifyZipFileContent() throws IOException {
+        // Given
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        // When - 스트리밍 방식
-        ByteArrayOutputStream streamingOutput = new ByteArrayOutputStream();
-        StreamingZipUtil.compressFilesToStream(streamingOutput, testFiles);
-        byte[] streamingZip = streamingOutput.toByteArray();
+        // When
+        StreamingZipUtil.compressFilesToStream(outputStream, testFiles);
+        byte[] zipBytes = outputStream.toByteArray();
 
-        // Then - 두 방식의 ZIP 엔트리 목록이 동일해야 함
-        List<String> memoryEntries = extractZipEntries(memoryBasedZip);
-        List<String> streamingEntries = extractZipEntries(streamingZip);
-
-        assertThat(streamingEntries)
-                .containsExactlyInAnyOrderElementsOf(memoryEntries);
-
-        // 파일 크기는 다를 수 있음 (압축 알고리즘 내부 동작 차이)
-        // 하지만 엔트리 내용은 동일해야 함
-        assertThat(extractZipContent(streamingZip, "database/mariadb/test.sql"))
+        // Then - ZIP 엔트리 내용 검증
+        assertThat(extractZipContent(zipBytes, "database/mariadb/test.sql"))
                 .isEqualTo("SELECT * FROM test_table;");
-        assertThat(extractZipContent(streamingZip, "install/readme.txt"))
+        assertThat(extractZipContent(zipBytes, "install/readme.txt"))
                 .isEqualTo("This is a test file for streaming ZIP compression.");
     }
 

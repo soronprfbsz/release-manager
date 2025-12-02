@@ -15,6 +15,7 @@ import com.ts.rm.global.file.StreamingZipUtil;
 import com.ts.rm.domain.common.service.FileStorageService;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -288,40 +289,7 @@ public class ReleaseFileService {
     }
 
     /**
-     * 버전별 파일을 메모리 기반으로 ZIP 압축 (레거시)
-     *
-     * @param versionId 릴리즈 버전 ID
-     * @return ZIP 파일 바이트 배열
-     * @deprecated 메모리 사용량이 많아 OOM 위험이 있습니다. {@link #streamVersionFilesAsZip(Long, OutputStream)} 사용을 권장합니다.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
-    public byte[] downloadVersionFilesAsZip(Long versionId) {
-        log.warn("레거시 메모리 기반 ZIP 압축 호출 - versionId: {} (스트리밍 방식 사용 권장)", versionId);
-
-        ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
-
-        List<ReleaseFile> releaseFiles = releaseFileRepository
-                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
-
-        if (releaseFiles.isEmpty()) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "버전 " + releaseVersion.getVersion() + "에 파일이 없습니다");
-        }
-
-        List<ZipUtil.ZipFileEntry> zipEntries = buildZipEntries(releaseFiles);
-
-        log.info("ZIP 압축 시작 - 버전: {}, 파일 개수: {}", releaseVersion.getVersion(), zipEntries.size());
-
-        byte[] zipBytes = ZipUtil.compressFiles(zipEntries);
-
-        log.info("버전 {} 파일 압축 완료 - {} 개 파일, {} bytes",
-                releaseVersion.getVersion(), releaseFiles.size(), zipBytes.length);
-
-        return zipBytes;
-    }
-
-    /**
-     * ReleaseFile 목록을 ZipFileEntry 목록으로 변환 (공통 로직)
+     * ReleaseFile 목록을 ZipFileEntry 목록으로 변환
      */
     private List<ZipUtil.ZipFileEntry> buildZipEntries(List<ReleaseFile> releaseFiles) {
         List<ZipUtil.ZipFileEntry> zipEntries = new ArrayList<>();
@@ -350,6 +318,53 @@ public class ReleaseFileService {
         }
 
         return zipEntries;
+    }
+
+    /**
+     * 버전별 파일의 압축 전 총 크기 계산
+     *
+     * <p>프론트엔드에서 진행률 표시를 위해 사용합니다.
+     * 실제 압축된 크기는 압축률에 따라 다르지만, 대략적인 진행률 표시에 충분합니다.
+     *
+     * @param versionId 릴리즈 버전 ID
+     * @return 압축 전 총 크기 (바이트)
+     * @throws BusinessException 파일이 없거나 크기 계산 실패 시
+     */
+    public long calculateUncompressedSize(Long versionId) {
+        log.debug("압축 전 크기 계산 시작 - versionId: {}", versionId);
+
+        ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
+
+        List<ReleaseFile> releaseFiles = releaseFileRepository
+                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
+
+        if (releaseFiles.isEmpty()) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                    "버전 " + releaseVersion.getVersion() + "에 파일이 없습니다");
+        }
+
+        long totalSize = 0L;
+        for (ReleaseFile file : releaseFiles) {
+            Path sourcePath = fileStorageService.getAbsolutePath(file.getFilePath());
+            try {
+                if (Files.exists(sourcePath) && Files.isRegularFile(sourcePath)) {
+                    long fileSize = Files.size(sourcePath);
+                    totalSize += fileSize;
+                    log.debug("파일 크기 추가 - {}: {} bytes", file.getFileName(), fileSize);
+                } else {
+                    log.warn("파일을 찾을 수 없음 - {}: {}", file.getFileName(), sourcePath);
+                }
+            } catch (IOException e) {
+                log.error("파일 크기 계산 실패 - {}: {}", file.getFileName(), e.getMessage());
+                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                        "파일 크기 계산 실패: " + file.getFileName());
+            }
+        }
+
+        log.info("압축 전 총 크기 계산 완료 - versionId: {}, totalSize: {} bytes ({} MB)",
+                versionId, totalSize, totalSize / (1024.0 * 1024.0));
+
+        return totalSize;
     }
 
     public String getVersionZipFileName(Long versionId) {
