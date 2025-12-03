@@ -1,1 +1,0 @@
-SELECT 'TEST 2';
