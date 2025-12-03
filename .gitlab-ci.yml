@@ -196,8 +196,7 @@ deploy-job:
       env | \
         grep -vE '^(CI_|GITLAB_|FF_|RUNNER_|DOCKER_|DIND_|PATH=|HOME=|HOSTNAME=|PWD=|OLDPWD=|SHELL=|SHLVL=|USER=|_=|LANG=|LC_|TERM=|DEBIAN_|GRADLE_|GIT_)' | \
         grep -v '^CI=' | \
-        grep -E '^[A-Z_]+=.+$' | \
-        grep -v $'\n' > .env
+        grep -E '^[A-Z_]+=.+$' > .env
 
       # Docker 환경 설정 추가
       echo "DOCKER_IMAGE=${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" >> .env
