@@ -18,13 +18,6 @@ import lombok.extern.slf4j.Slf4j;
  * <p>메모리 사용량을 최소화하면서 HTTP 응답 스트림에 직접 ZIP 파일을 생성합니다.
  * ByteArrayOutputStream 대신 응답 OutputStream을 직접 사용하여 메모리 효율성을 극대화합니다.
  *
- * <p><b>장점:</b>
- * <ul>
- *   <li>메모리 사용량: O(1) - 버퍼 크기만 사용 (기본 8KB)</li>
- *   <li>실시간 스트리밍: 압축과 동시에 전송 시작</li>
- *   <li>대용량 파일 안전: 파일 크기에 관계없이 안정적 동작</li>
- *   <li>동시 요청 안전: 여러 다운로드 요청에도 메모리 안정성 유지</li>
- * </ul>
  */
 @Slf4j
 public class StreamingZipUtil {
