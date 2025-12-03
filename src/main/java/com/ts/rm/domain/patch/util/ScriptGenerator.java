@@ -54,7 +54,7 @@ public class ScriptGenerator {
         try {
             // 템플릿 로드
             ClassPathResource templateResource = new ClassPathResource(
-                    "release/templates/mariadb_patch_template.sh");
+                    "release/script/MARIADB/mariadb_patch_template.sh");
             String template = Files.readString(Path.of(templateResource.getURI()));
 
             // 변수 치환
@@ -104,7 +104,7 @@ public class ScriptGenerator {
         try {
             // 템플릿 로드
             ClassPathResource templateResource = new ClassPathResource(
-                    "release/templates/cratedb_patch_template.sh");
+                    "release/script/CRATEDB/cratedb_patch_template.sh");
             String template = Files.readString(Path.of(templateResource.getURI()));
 
             // 변수 치환
