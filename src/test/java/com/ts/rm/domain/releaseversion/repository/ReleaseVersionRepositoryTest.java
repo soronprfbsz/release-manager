@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
+import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,7 @@ class ReleaseVersionRepositoryTest {
         // given
         ReleaseVersion version = ReleaseVersion.builder()
                 .releaseType("STANDARD")
+                .releaseCategory(ReleaseCategory.PATCH)
                 .version("1.1.0")
                 .majorVersion(1)
                 .minorVersion(1)
@@ -81,6 +83,7 @@ class ReleaseVersionRepositoryTest {
         // given
         ReleaseVersion version = ReleaseVersion.builder()
                 .releaseType("CUSTOM")
+                .releaseCategory(ReleaseCategory.PATCH)
                 .customer(testCustomer)
                 .version("1.0.0-custom")
                 .majorVersion(1)
@@ -155,6 +158,7 @@ class ReleaseVersionRepositoryTest {
         // given
         ReleaseVersion customVersion1 = ReleaseVersion.builder()
                 .releaseType("CUSTOM")
+                .releaseCategory(ReleaseCategory.PATCH)
                 .customer(testCustomer)
                 .version("1.0.0")
                 .majorVersion(1)
@@ -167,6 +171,7 @@ class ReleaseVersionRepositoryTest {
 
         ReleaseVersion customVersion2 = ReleaseVersion.builder()
                 .releaseType("CUSTOM")
+                .releaseCategory(ReleaseCategory.PATCH)
                 .customer(testCustomer)
                 .version("1.0.1")
                 .majorVersion(1)
@@ -251,6 +256,7 @@ class ReleaseVersionRepositoryTest {
         // given
         ReleaseVersion version = ReleaseVersion.builder()
                 .releaseType("CUSTOM")
+                .releaseCategory(ReleaseCategory.PATCH)
                 .customer(testCustomer)
                 .version("1.0.0")
                 .majorVersion(1)
@@ -273,6 +279,7 @@ class ReleaseVersionRepositoryTest {
     private ReleaseVersion createStandardVersion(String version, int major, int minor, int patch) {
         return ReleaseVersion.builder()
                 .releaseType("STANDARD")
+                .releaseCategory(ReleaseCategory.PATCH)
                 .version(version)
                 .majorVersion(major)
                 .minorVersion(minor)

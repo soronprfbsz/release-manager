@@ -49,7 +49,7 @@ class ReleaseVersionControllerTreeTest {
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdAt").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdBy").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].comment").exists())
-                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].categories").isArray());
+                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].fileCategories").isArray());
     }
 
     @Test
@@ -108,9 +108,9 @@ class ReleaseVersionControllerTreeTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].categories").isArray());
-                // 주의: 테스트 환경에서는 실제 파일이 없어서 categories가 빈 배열일 수 있음
-                // 실제 환경에서는 DATABASE, WEB, ENGINE, INSTALL 카테고리가 포함됨
+                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].fileCategories").isArray());
+                // 주의: 테스트 환경에서는 실제 파일이 없어서 fileCategories가 빈 배열일 수 있음
+                // 실제 환경에서는 DATABASE, WEB, ENGINE, ETC 카테고리가 포함됨
     }
 
     @Test
@@ -159,6 +159,6 @@ class ReleaseVersionControllerTreeTest {
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].version").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdAt").exists())
                 .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].createdBy").exists())
-                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].categories").isArray());
+                .andExpect(jsonPath("$.data.majorMinorGroups[0].versions[0].fileCategories").isArray());
     }
 }

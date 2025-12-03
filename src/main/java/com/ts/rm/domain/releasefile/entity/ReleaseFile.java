@@ -48,7 +48,7 @@ public class ReleaseFile extends BaseEntity {
     private String fileType;
 
     /**
-     * 파일 카테고리 (DATABASE, WEB, INSTALL, ENGINE)
+     * 파일 카테고리 (DATABASE, WEB, ENGINE, ETC)
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "file_category", length = 50)
@@ -80,13 +80,4 @@ public class ReleaseFile extends BaseEntity {
 
     @Column(length = 500)
     private String description;
-
-    /**
-     * 이 파일이 패치 생성 시 제외되어야 하는지 확인
-     *
-     * @return INSTALL 카테고리이면 true
-     */
-    public boolean isExcludedFromPatch() {
-        return fileCategory != null && fileCategory.isExcludedFromPatch();
-    }
 }

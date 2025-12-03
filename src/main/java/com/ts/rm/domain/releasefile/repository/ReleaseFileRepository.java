@@ -65,12 +65,13 @@ public interface ReleaseFileRepository extends JpaRepository<ReleaseFile, Long> 
             @Param("excludedFileCategory") FileCategory excludedFileCategory);
 
     /**
-     * 버전 범위 내 릴리즈 파일 목록 조회 (install 제외)
+     * 버전 범위 내 릴리즈 파일 목록 조회 (INSTALL 카테고리 버전 제외)
      */
     @Query("SELECT rf FROM ReleaseFile rf " +
             "WHERE rf.releaseVersion.version >= :fromVersion " +
             "AND rf.releaseVersion.version <= :toVersion " +
-            "AND (rf.fileCategory IS NULL OR rf.fileCategory != com.ts.rm.domain.releasefile.enums.FileCategory.INSTALL) " +
+            "AND (rf.releaseVersion.releaseCategory IS NULL " +
+            "     OR rf.releaseVersion.releaseCategory != com.ts.rm.domain.releaseversion.enums.ReleaseCategory.INSTALL) " +
             "ORDER BY rf.releaseVersion.version ASC, rf.executionOrder ASC")
     List<ReleaseFile> findReleaseFilesBetweenVersionsExcludingInstall(
             @Param("fromVersion") String fromVersion,

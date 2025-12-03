@@ -247,30 +247,31 @@ public class PatchService {
 
     /**
      * 모든 파일 복사 (버전별 디렉토리 구조 유지)
-     * <p>⚠️ Phase 5: install 카테고리 제외 처리
+     * <p>⚠️ INSTALL 카테고리 버전은 패치 생성에서 제외됩니다.
      */
     private void copySqlFiles(List<ReleaseVersion> versions, String outputPath) {
         try {
             Path outputDir = Paths.get(releaseBasePath, outputPath);
 
             for (ReleaseVersion version : versions) {
+                // INSTALL 카테고리 버전은 패치에서 제외
+                if (version.getReleaseCategory() != null
+                        && version.getReleaseCategory().isExcludedFromPatch()) {
+                    log.info("버전 {}는 INSTALL 카테고리이므로 패치에서 제외됩니다.", version.getVersion());
+                    continue;
+                }
+
                 // 모든 파일 조회
-                List<ReleaseFile> allFiles = releaseFileRepository
+                List<ReleaseFile> files = releaseFileRepository
                         .findAllByReleaseVersionIdOrderByExecutionOrderAsc(
                                 version.getReleaseVersionId());
-
-                // Phase 5: install 카테고리 제외
-                List<ReleaseFile> files = allFiles.stream()
-                        .filter(file -> !file.isExcludedFromPatch())
-                        .toList();
 
                 if (files.isEmpty()) {
                     log.warn("버전 {}의 패치 대상 파일이 없습니다.", version.getVersion());
                     continue;
                 }
 
-                log.info("버전 {} 패치 대상 파일: {} / {} (install 제외)",
-                        version.getVersion(), files.size(), allFiles.size());
+                log.info("버전 {} 패치 대상 파일: {}개", version.getVersion(), files.size());
 
                 for (ReleaseFile file : files) {
                     copyFileByCategory(file, version, outputDir);
@@ -356,12 +357,6 @@ public class PatchService {
                                 category.getCode().toLowerCase(),
                                 version.getVersion(),
                                 file.getFileName())
-                );
-
-            case INSTALL:
-                log.warn("INSTALL 카테고리 파일이 복사 대상에 포함되었습니다: {}", file.getFileName());
-                return outputDir.resolve(
-                        String.format("install/%s", file.getFileName())
                 );
 
             default:

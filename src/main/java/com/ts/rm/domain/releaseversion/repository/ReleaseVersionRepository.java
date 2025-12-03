@@ -72,4 +72,30 @@ public interface ReleaseVersionRepository extends JpaRepository<ReleaseVersion, 
      * @return 존재 여부
      */
     boolean existsByVersion(String version);
+
+    /**
+     * 릴리즈 타입과 카테고리로 최신 버전 1개 조회
+     *
+     * @param releaseType     릴리즈 타입 (STANDARD/CUSTOM)
+     * @param releaseCategory 릴리즈 카테고리 (INSTALL/PATCH)
+     * @return 최신 버전
+     */
+    @Query("SELECT rv FROM ReleaseVersion rv WHERE rv.releaseType = :releaseType AND rv.releaseCategory = :releaseCategory ORDER BY rv.createdAt DESC LIMIT 1")
+    Optional<ReleaseVersion> findLatestByReleaseTypeAndCategory(
+            @Param("releaseType") String releaseType,
+            @Param("releaseCategory") com.ts.rm.domain.releaseversion.enums.ReleaseCategory releaseCategory);
+
+    /**
+     * 릴리즈 타입과 카테고리로 최근 N개 조회
+     *
+     * @param releaseType     릴리즈 타입 (STANDARD/CUSTOM)
+     * @param releaseCategory 릴리즈 카테고리 (INSTALL/PATCH)
+     * @param limit           조회 개수
+     * @return 최근 버전 목록
+     */
+    @Query(value = "SELECT rv FROM ReleaseVersion rv WHERE rv.releaseType = :releaseType AND rv.releaseCategory = :releaseCategory ORDER BY rv.createdAt DESC LIMIT :limit")
+    List<ReleaseVersion> findRecentByReleaseTypeAndCategory(
+            @Param("releaseType") String releaseType,
+            @Param("releaseCategory") com.ts.rm.domain.releaseversion.enums.ReleaseCategory releaseCategory,
+            @Param("limit") int limit);
 }

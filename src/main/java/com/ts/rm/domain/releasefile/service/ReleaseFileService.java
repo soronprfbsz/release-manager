@@ -486,22 +486,22 @@ public class ReleaseFileService {
             }
         }
 
-        // 문서 파일 → INSTALL
+        // 문서 파일 → ENGINE (기본 카테고리)
         if (lowerCaseFileName.endsWith(".pdf") || lowerCaseFileName.endsWith(".md")
                 || lowerCaseFileName.endsWith(".txt")) {
-            return FileCategory.INSTALL;
+            return FileCategory.ENGINE;
         }
 
-        // 실행 파일 → INSTALL
+        // 실행 파일 → ENGINE (기본 카테고리)
         if (lowerCaseFileName.endsWith(".exe") || lowerCaseFileName.endsWith(".sh")) {
-            return FileCategory.INSTALL;
+            return FileCategory.ENGINE;
         }
 
-        // 기본값: 하위 카테고리가 DB 타입이면 DATABASE, 아니면 INSTALL
+        // 기본값: 하위 카테고리가 DB 타입이면 DATABASE, 아니면 ENGINE
         return (subCategory != null && (subCategory.equalsIgnoreCase("mariadb")
                 || subCategory.equalsIgnoreCase("cratedb")))
                 ? FileCategory.DATABASE
-                : FileCategory.INSTALL;
+                : FileCategory.ENGINE;
     }
 
     private String determineSubCategory(FileCategory fileCategory, String subCategory) {

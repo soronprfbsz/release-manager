@@ -3,6 +3,7 @@ package com.ts.rm.domain.releaseversion.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
+import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,7 @@ class ReleaseVersionRepositoryCustomTest {
         ReleaseVersion releaseVersion = ReleaseVersion.builder()
                 .version(version)
                 .releaseType("STANDARD")
+                .releaseCategory(ReleaseCategory.PATCH)
                 .majorVersion(Integer.parseInt(parts[0]))
                 .minorVersion(Integer.parseInt(parts[1]))
                 .patchVersion(Integer.parseInt(parts[2]))

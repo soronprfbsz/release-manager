@@ -63,4 +63,15 @@ public interface PatchRepository extends JpaRepository<Patch, Long> {
     @Query("SELECT p FROM Patch p WHERE p.releaseType = :releaseType AND p.fromVersion = :fromVersion AND p.toVersion = :toVersion")
     List<Patch> findByVersionRange(@Param("releaseType") String releaseType,
             @Param("fromVersion") String fromVersion, @Param("toVersion") String toVersion);
+
+    /**
+     * 릴리즈 타입별 최근 N개 패치 조회
+     *
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @param limit       조회 개수
+     * @return 최근 패치 목록
+     */
+    @Query(value = "SELECT p FROM Patch p WHERE p.releaseType = :releaseType ORDER BY p.createdAt DESC LIMIT :limit")
+    List<Patch> findRecentByReleaseType(@Param("releaseType") String releaseType,
+            @Param("limit") int limit);
 }
