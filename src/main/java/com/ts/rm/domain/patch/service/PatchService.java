@@ -454,7 +454,7 @@ public class PatchService {
             content.append("- 패치 실행 중 오류 발생 시 로그를 확인하세요.\n\n");
 
             content.append("---\n");
-            content.append("CREATED BY. Infraeye2 누적 패치 생성기 (Java)\n");
+            content.append("CREATED BY - Release Manager\n");
 
             Files.writeString(readmePath, content.toString());
 
