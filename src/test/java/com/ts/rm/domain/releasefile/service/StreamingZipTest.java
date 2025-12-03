@@ -1,7 +1,7 @@
 package com.ts.rm.domain.releasefile.service;
 
 import com.ts.rm.global.file.StreamingZipUtil;
-import com.ts.rm.global.file.ZipUtil;
+import com.ts.rm.global.file.StreamingZipUtil.ZipFileEntry;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,7 +28,7 @@ class StreamingZipTest {
     @TempDir
     Path tempDir;
 
-    private List<ZipUtil.ZipFileEntry> testFiles;
+    private List<ZipFileEntry> testFiles;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -38,12 +38,12 @@ class StreamingZipTest {
         // 1. SQL 파일
         Path sqlFile = tempDir.resolve("test.sql");
         Files.writeString(sqlFile, "SELECT * FROM test_table;");
-        testFiles.add(new ZipUtil.ZipFileEntry(sqlFile, "database/mariadb/test.sql"));
+        testFiles.add(new ZipFileEntry(sqlFile, "database/mariadb/test.sql"));
 
         // 2. 텍스트 파일
         Path txtFile = tempDir.resolve("readme.txt");
         Files.writeString(txtFile, "This is a test file for streaming ZIP compression.");
-        testFiles.add(new ZipUtil.ZipFileEntry(txtFile, "install/readme.txt"));
+        testFiles.add(new ZipFileEntry(txtFile, "install/readme.txt"));
 
         // 3. 큰 파일 (10MB) - 메모리 효율성 테스트
         Path largeFile = tempDir.resolve("large.dat");
@@ -52,7 +52,7 @@ class StreamingZipTest {
             largeData[i] = (byte) (i % 256);
         }
         Files.write(largeFile, largeData);
-        testFiles.add(new ZipUtil.ZipFileEntry(largeFile, "web/large.dat"));
+        testFiles.add(new ZipFileEntry(largeFile, "web/large.dat"));
     }
 
     @Test
@@ -117,7 +117,7 @@ class StreamingZipTest {
     @DisplayName("빈 파일 목록 - 예외 발생")
     void emptyFileList() {
         // Given
-        List<ZipUtil.ZipFileEntry> emptyList = new ArrayList<>();
+        List<ZipFileEntry> emptyList = new ArrayList<>();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         // When & Then
