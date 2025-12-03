@@ -4,6 +4,7 @@ import com.ts.rm.domain.patch.dto.PatchDto;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.mapper.PatchDtoMapper;
 import com.ts.rm.domain.patch.service.PatchService;
+import com.ts.rm.global.file.HttpFileDownloadUtil;
 import com.ts.rm.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -165,7 +166,7 @@ public class PatchController {
 
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + fileName + "\"");
+                HttpFileDownloadUtil.buildContentDisposition(fileName));
 
         // 압축 전 크기를 커스텀 헤더로 전달 (프론트엔드 진행률 표시용)
         response.setHeader("X-Uncompressed-Size", String.valueOf(uncompressedSize));
