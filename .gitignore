@@ -81,8 +81,10 @@ src/main/resources/release/patches/
 ### Backup Files ###
 **/backup_files/
 backup_files/
+src/main/resources/release/remote/backup_files/
 
 ### Logs ###
 logs/
 *.log
+src/main/resources/release/remote/logs/
 
