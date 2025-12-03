@@ -46,6 +46,7 @@ public class CustomerService {
 
         Customer customer = mapper.toEntity(request);
         customer.setCreatedBy(createdBy);
+        customer.setUpdatedBy(createdBy);
 
         Customer savedCustomer = customerRepository.save(customer);
 
