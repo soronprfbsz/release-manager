@@ -514,6 +514,9 @@ public class PatchService {
                     "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
         }
 
+        // 스트리밍 시작 전 파일 존재 여부 검증 (응답 헤더 설정 후 예외 발생 방지)
+        validatePatchDirectoryFiles(patchDir);
+
         StreamingZipUtil.compressDirectoryToStream(outputStream, patchDir);
     }
 
@@ -580,6 +583,35 @@ public class PatchService {
                     }
                 })
                 .sum();
+    }
+
+    /**
+     * 패치 디렉토리 내 파일 존재 여부 검증
+     *
+     * <p>스트리밍 시작 전에 디렉토리에 최소 1개 이상의 파일이 존재하는지 확인합니다.
+     * Content-Type 설정 후 예외 발생을 방지하기 위한 사전 검증입니다.
+     *
+     * @param directory 패치 디렉토리 경로
+     * @throws BusinessException 파일이 하나도 없을 경우
+     */
+    private void validatePatchDirectoryFiles(Path directory) {
+        try {
+            long fileCount = Files.walk(directory)
+                    .filter(Files::isRegularFile)
+                    .count();
+
+            if (fileCount == 0) {
+                throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                        "패치 디렉토리에 압축할 파일이 없습니다: " + directory);
+            }
+
+            log.debug("패치 파일 검증 완료 - 파일 개수: {}", fileCount);
+
+        } catch (IOException e) {
+            log.error("패치 디렉토리 검증 실패: {}", directory, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "패치 디렉토리 검증 중 오류가 발생했습니다: " + e.getMessage());
+        }
     }
 
     /**

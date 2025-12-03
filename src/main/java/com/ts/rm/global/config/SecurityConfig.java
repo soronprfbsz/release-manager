@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger", "/api-docs/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/error").permitAll()  // Spring Boot 기본 에러 처리 엔드포인트
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )

@@ -25,8 +25,6 @@ import lombok.extern.slf4j.Slf4j;
  *   <li>대용량 파일 안전: 파일 크기에 관계없이 안정적 동작</li>
  *   <li>동시 요청 안전: 여러 다운로드 요청에도 메모리 안정성 유지</li>
  * </ul>
- *
- * @see ZipUtil 기존 메모리 기반 압축 (레거시)
  */
 @Slf4j
 public class StreamingZipUtil {
@@ -35,6 +33,15 @@ public class StreamingZipUtil {
 
     private StreamingZipUtil() {
         // Utility class - 인스턴스 생성 방지
+    }
+
+    /**
+     * ZIP 엔트리 정보 (파일 경로와 ZIP 내 경로 매핑)
+     *
+     * @param sourcePath   실제 파일 경로
+     * @param zipEntryPath ZIP 내부 경로 (예: database/mariadb/1.patch.sql)
+     */
+    public record ZipFileEntry(Path sourcePath, String zipEntryPath) {
     }
 
     /**
@@ -47,7 +54,7 @@ public class StreamingZipUtil {
      * @param files        압축할 파일 목록 (ZipFileEntry 리스트)
      * @throws BusinessException 압축 실패 시
      */
-    public static void compressFilesToStream(OutputStream outputStream, List<ZipUtil.ZipFileEntry> files) {
+    public static void compressFilesToStream(OutputStream outputStream, List<ZipFileEntry> files) {
         if (files == null || files.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
                     "압축할 파일이 없습니다");
@@ -60,7 +67,7 @@ public class StreamingZipUtil {
             // ZIP 압축 레벨 설정 (기본값 사용: 6)
             // zos.setLevel(Deflater.DEFAULT_COMPRESSION);
 
-            for (ZipUtil.ZipFileEntry fileEntry : files) {
+            for (ZipFileEntry fileEntry : files) {
                 Path sourcePath = fileEntry.sourcePath();
 
                 // 파일 존재 확인

@@ -10,8 +10,8 @@ import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
-import com.ts.rm.global.file.ZipUtil;
 import com.ts.rm.global.file.StreamingZipUtil;
+import com.ts.rm.global.file.StreamingZipUtil.ZipFileEntry;
 import com.ts.rm.domain.common.service.FileStorageService;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -276,7 +276,10 @@ public class ReleaseFileService {
                     "버전 " + releaseVersion.getVersion() + "에 파일이 없습니다");
         }
 
-        List<ZipUtil.ZipFileEntry> zipEntries = buildZipEntries(releaseFiles);
+        List<ZipFileEntry> zipEntries = buildZipEntries(releaseFiles);
+
+        // 스트리밍 시작 전 파일 존재 여부 검증 (응답 헤더 설정 후 예외 발생 방지)
+        validateFilesExist(zipEntries);
 
         log.info("스트리밍 ZIP 압축 시작 - 버전: {}, 파일 개수: {}",
                 releaseVersion.getVersion(), zipEntries.size());
@@ -291,8 +294,8 @@ public class ReleaseFileService {
     /**
      * ReleaseFile 목록을 ZipFileEntry 목록으로 변환
      */
-    private List<ZipUtil.ZipFileEntry> buildZipEntries(List<ReleaseFile> releaseFiles) {
-        List<ZipUtil.ZipFileEntry> zipEntries = new ArrayList<>();
+    private List<ZipFileEntry> buildZipEntries(List<ReleaseFile> releaseFiles) {
+        List<ZipFileEntry> zipEntries = new ArrayList<>();
 
         for (ReleaseFile file : releaseFiles) {
             Path sourcePath = fileStorageService.getAbsolutePath(file.getFilePath());
@@ -314,10 +317,40 @@ public class ReleaseFileService {
             log.debug("ZIP 엔트리 추가 - 카테고리: {}, 하위카테고리: {}, 파일: {}, ZIP경로: {}",
                     file.getFileCategory(), file.getSubCategory(), file.getFileName(), zipEntryPath);
 
-            zipEntries.add(new ZipUtil.ZipFileEntry(sourcePath, zipEntryPath));
+            zipEntries.add(new ZipFileEntry(sourcePath, zipEntryPath));
         }
 
         return zipEntries;
+    }
+
+    /**
+     * ZIP 엔트리 파일들의 존재 여부 검증
+     *
+     * <p>스트리밍 시작 전에 모든 파일이 존재하는지 확인합니다.
+     * Content-Type 설정 후 예외 발생을 방지하기 위한 사전 검증입니다.
+     *
+     * @param zipEntries ZIP 엔트리 목록
+     * @throws BusinessException 파일이 존재하지 않을 경우
+     */
+    private void validateFilesExist(List<ZipFileEntry> zipEntries) {
+        List<String> missingFiles = new ArrayList<>();
+
+        for (ZipFileEntry entry : zipEntries) {
+            if (!Files.exists(entry.sourcePath())) {
+                missingFiles.add(entry.zipEntryPath());
+                log.warn("파일이 존재하지 않습니다: {}", entry.sourcePath());
+            }
+        }
+
+        if (!missingFiles.isEmpty()) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                    String.format("압축할 파일이 존재하지 않습니다. 누락된 파일 수: %d - %s",
+                            missingFiles.size(),
+                            missingFiles.size() <= 5
+                                ? String.join(", ", missingFiles)
+                                : String.join(", ", missingFiles.subList(0, 5)) + "..."
+                    ));
+        }
     }
 
     /**
