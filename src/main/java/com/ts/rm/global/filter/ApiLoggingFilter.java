@@ -32,8 +32,7 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
 
     // Swagger, Actuator 등 정적 리소스는 로깅 제외
-    String path = request.getRequestURI();
-    if (isSkipPath(path)) {
+    if (isSkipPath(request)) {
       filterChain.doFilter(request, response);
       return;
     }
@@ -119,9 +118,20 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
 
   /**
    * 로깅을 제외할 경로 체크
+   *
+   * <p>제외 대상:
+   * <ul>
+   *   <li>정적 리소스: Swagger, API Docs, Actuator</li>
+   *   <li>파일 다운로드: 대용량 응답 스트리밍 (ContentCachingResponseWrapper OOM 방지)</li>
+   *   <li>파일 업로드: 대용량 요청 (ContentCachingRequestWrapper OOM 방지)</li>
+   * </ul>
    */
-  private boolean isSkipPath(String path) {
-    return path.startsWith("/swagger")
+  private boolean isSkipPath(HttpServletRequest request) {
+    String path = request.getRequestURI();
+    String method = request.getMethod();
+
+    // 정적 리소스 제외
+    if (path.startsWith("/swagger")
         || path.startsWith("/api-docs")
         || path.startsWith("/actuator")
         || path.startsWith("/v3/api-docs")
@@ -129,8 +139,21 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
         || path.endsWith(".html")
         || path.endsWith(".css")
         || path.endsWith(".js")
-        || path.endsWith(".ico")
-        || path.endsWith("/download")  // 파일 다운로드 엔드포인트 제외 (대용량 스트리밍)
-        || path.contains("/download/"); // 파일 다운로드 엔드포인트 제외
+        || path.endsWith(".ico")) {
+      return true;
+    }
+
+    // 파일 다운로드 엔드포인트 제외 (대용량 응답 스트리밍 - OOM 방지)
+    if (path.endsWith("/download") || path.contains("/download/")) {
+      return true;
+    }
+
+    // 파일 업로드 엔드포인트 제외 (대용량 요청 - OOM 방지)
+    // POST /api/releases/standard/versions, POST /api/releases/custom/versions
+    if ("POST".equalsIgnoreCase(method) && path.endsWith("/versions")) {
+      return true;
+    }
+
+    return false;
   }
 }
