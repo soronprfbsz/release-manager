@@ -78,6 +78,10 @@ lpt[1-9]
 ### Release Files ###
 src/main/resources/release/patches/
 
+### Backup Files ###
+**/backup_files/
+backup_files/
+
 ### Logs ###
 logs/
 *.log
