@@ -17,14 +17,12 @@ public class SubCategoryValidator {
      * 카테고리별 허용된 서브 카테고리 매핑
      *
      * <p>Database: FILE_SUBCATEGORY_DATABASE (MARIADB, CRATEDB, ETC)
-     * <p>Web: FILE_SUBCATEGORY_WEB (BUILD, IMAGE, METADATA, ETC)
-     * <p>Install: FILE_SUBCATEGORY_INSTALL (SH, IMAGE, METADATA, ETC)
      * <p>Engine: FILE_SUBCATEGORY_ENGINE (NC_AI_EVENT, NC_AI_LEARN, NC_AP, ..., ETC)
+     * <p>Web: 서브 카테고리 없음
+     * <p>Etc: 서브 카테고리 없음
      */
     private static final Map<FileCategory, Set<String>> ALLOWED_SUBCATEGORIES = Map.of(
             FileCategory.DATABASE, Set.of("MARIADB", "CRATEDB", "ETC"),
-            FileCategory.WEB, Set.of("BUILD", "IMAGE", "METADATA", "ETC"),
-            FileCategory.INSTALL, Set.of("SH", "IMAGE", "METADATA", "ETC"),
             FileCategory.ENGINE, Set.of(
                 "NC_AI_EVENT", "NC_AI_LEARN", "NC_AI_MGR", "NC_AP", "NC_API_AP", "NC_API_KAL",
                 "NC_ARP", "NC_CONF", "NC_CONFIBACK", "NC_CPPM_CHK", "NC_CUSTOM", "NC_DB_MIG",

@@ -14,6 +14,7 @@ import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
+import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import com.ts.rm.domain.releaseversion.mapper.ReleaseVersionDtoMapper;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionHierarchyRepository;
@@ -107,6 +108,7 @@ class ReleaseVersionServiceTest {
         detailResponse = new ReleaseVersionDto.DetailResponse(
                 1L,
                 "STANDARD",
+                ReleaseCategory.PATCH,
                 null,
                 "1.1.0",
                 1,

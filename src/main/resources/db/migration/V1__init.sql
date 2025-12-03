@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS customer (
 CREATE TABLE IF NOT EXISTS release_version (
     release_version_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '릴리즈 버전 ID',
     release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
+    release_category VARCHAR(20) NOT NULL DEFAULT 'PATCH' COMMENT '릴리즈 카테고리 (INSTALL/PATCH)',
     customer_id BIGINT COMMENT '고객사 ID (커스텀 릴리즈인 경우)',
     version VARCHAR(50) NOT NULL UNIQUE COMMENT '버전 번호 (예: 1.1.0)',
     major_version INT NOT NULL COMMENT '메이저 버전',
@@ -95,6 +96,7 @@ CREATE TABLE IF NOT EXISTS release_version (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
 
     INDEX idx_release_type (release_type),
+    INDEX idx_release_category (release_category),
     INDEX idx_customer_id (customer_id),
     INDEX idx_version (version),
     INDEX idx_major_minor (major_version, minor_version),
@@ -112,7 +114,7 @@ CREATE TABLE IF NOT EXISTS release_file (
     release_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '릴리즈 파일 ID',
     release_version_id BIGINT NOT NULL COMMENT '릴리즈 버전 ID',
     file_type VARCHAR(50) NOT NULL COMMENT '파일 타입 (SQL, PDF, MD, EXE, SH, TXT)',
-    file_category VARCHAR(50) COMMENT '파일 카테고리 (DATABASE, WEB, INSTALL, ENGINE)',
+    file_category VARCHAR(50) COMMENT '파일 카테고리 (DATABASE, WEB, ENGINE, ETC)',
     sub_category VARCHAR(50) COMMENT '하위 카테고리 (MARIADB, CRATEDB, METADATA 등)',
     file_name VARCHAR(255) NOT NULL COMMENT '파일명',
     file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (물리 경로)',
@@ -193,12 +195,11 @@ INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
 ('ACCOUNT_ROLE', '계정 권한', '계정 권한 구분'),
 ('ACCOUNT_STATUS', '계정 상태', '계정 상태 구분'),
 ('RELEASE_TYPE', '릴리즈 타입', '릴리즈 타입 구분 (표준/커스텀)'),
+('RELEASE_CATEGORY', '릴리즈 카테고리', '릴리즈 카테고리 구분 (설치본/패치본)'),
 ('DATABASE_TYPE', '데이터베이스 타입', '지원하는 데이터베이스 종류'),
 ('FILE_TYPE', '파일 타입', '파일 확장자 타입'),
 ('FILE_CATEGORY', '파일 카테고리', '파일 기능적 대분류'),
 ('FILE_SUBCATEGORY_DATABASE', '데이터베이스 파일 서브 카테고리', 'DATABASE 카테고리 소분류'),
-('FILE_SUBCATEGORY_WEB', '웹 파일 서브 카테고리', 'WEB 카테고리 소분류'),
-('FILE_SUBCATEGORY_INSTALL', '설치 파일 서브 카테고리', 'INSTALL 카테고리 소분류'),
 ('FILE_SUBCATEGORY_ENGINE', '엔진 파일 서브 카테고리', 'ENGINE 카테고리 소분류');
 
 -- =========================================================
@@ -226,6 +227,14 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VAL
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('RELEASE_TYPE', 'STANDARD', '표준 릴리즈', '모든 고객사 공통 적용 릴리즈', 1, TRUE),
 ('RELEASE_TYPE', 'CUSTOM', '커스텀 릴리즈', '특정 고객사 전용 릴리즈', 2, TRUE);
+
+-- =========================================================
+-- Section 11-1: 릴리즈 카테고리 코드
+-- =========================================================
+
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('RELEASE_CATEGORY', 'INSTALL', '설치본', '최초 설치용 릴리즈', 1, TRUE),
+('RELEASE_CATEGORY', 'PATCH', '패치본', '업데이트용 패치 릴리즈', 2, TRUE);
 
 -- =========================================================
 -- Section 12: 데이터베이스 타입 코드
@@ -260,8 +269,8 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('FILE_CATEGORY', 'DATABASE', 'DATABASE', '데이터베이스 관련 파일', 1, TRUE),
 ('FILE_CATEGORY', 'WEB', 'WEB', '웹 애플리케이션 파일', 2, TRUE),
-('FILE_CATEGORY', 'INSTALL', 'INSTALL', '설치 관련 파일', 3, TRUE),
-('FILE_CATEGORY', 'ENGINE', 'ENGINE', '엔진 관련 파일', 4, TRUE);
+('FILE_CATEGORY', 'ENGINE', 'ENGINE', '엔진 관련 파일', 3, TRUE),
+('FILE_CATEGORY', 'ETC', 'ETC', '기타 파일', 4, TRUE);
 
 -- =========================================================
 -- Section 15: 파일 서브 카테고리 코드 (카테고리별 소분류)
@@ -272,13 +281,6 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_SUBCATEGORY_DATABASE', 'CRATEDB', 'CRATEDB', 'CrateDB 스크립트', 1, TRUE),
 ('FILE_SUBCATEGORY_DATABASE', 'MARIADB', 'MARIADB', 'MariaDB 스크립트', 2, TRUE),
 ('FILE_SUBCATEGORY_DATABASE', 'ETC', 'ETC', '기타 파일', 3, TRUE);
-
--- INSTALL 서브 카테고리
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('FILE_SUBCATEGORY_INSTALL', 'SH', 'SH', '쉘 스크립트', 1, TRUE),
-('FILE_SUBCATEGORY_INSTALL', 'IMAGE', 'IMAGE', '이미지 파일', 2, TRUE),
-('FILE_SUBCATEGORY_INSTALL', 'METADATA', 'METADATA', '메타데이터 파일', 3, TRUE),
-('FILE_SUBCATEGORY_INSTALL', 'ETC', 'ETC', '기타 파일', 4, TRUE);
 
 -- ENGINE 서브 카테고리
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -363,14 +365,14 @@ INSERT INTO account (account_name, email, password, role, status) VALUES
 -- =========================================================
 
 INSERT INTO release_version (
-    release_type, customer_id, version,
+    release_type, release_category, customer_id, version,
     major_version, minor_version, patch_version,
     created_by, comment, created_at
 ) VALUES
-('STANDARD', NULL, '1.0.0', 1, 0, 0, 'TS', '최초 설치본', '2025-01-01 00:00:00'),
-('STANDARD', NULL, '1.1.0', 1, 1, 0, 'jhlee@tscientific', '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경', '2025-10-31 00:00:00'),
-('STANDARD', NULL, '1.1.1', 1, 1, 1, 'jhlee@tscientific', 'SMS - 운영관리 - 파일 기능 관련 테이블 추가', '2025-11-05 00:00:00'),
-('STANDARD', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', '2025-11-25 00:00:00');
+('STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, 'TS', '최초 설치본', '2025-01-01 00:00:00'),
+('STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, 'jhlee@tscientific', '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경', '2025-10-31 00:00:00'),
+('STANDARD', 'PATCH', NULL, '1.1.1', 1, 1, 1, 'jhlee@tscientific', 'SMS - 운영관리 - 파일 기능 관련 테이블 추가', '2025-11-05 00:00:00'),
+('STANDARD', 'PATCH', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', '2025-11-25 00:00:00');
 
 -- =========================================================
 -- Section 18: 릴리즈 파일 데이터
@@ -381,11 +383,11 @@ INSERT INTO release_file (
     file_size, checksum, execution_order, description
 ) VALUES
 -- 1.0.0 - Install Documents
-(1, 'PDF', 'INSTALL', 'ETC', 'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
+(1, 'PDF', 'ETC', NULL, 'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
     'versions/standard/1.0.x/1.0.0/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
     '/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
     2727778, '4e641f7d25bbaa0061f553b92ef3d9e9', 1, '설치 가이드 문서'),
-(1, 'MD', 'INSTALL', 'METADATA', '설치본정보.md',
+(1, 'MD', 'ETC', NULL, '설치본정보.md',
     'versions/standard/1.0.x/1.0.0/install/설치본정보.md',
     '/install/설치본정보.md',
     778, '8e5adf2b877090de4f3ec5739f71216c', 2, '설치본 정보'),

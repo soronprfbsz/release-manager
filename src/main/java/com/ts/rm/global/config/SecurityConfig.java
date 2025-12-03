@@ -61,6 +61,11 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/swagger", "/api-docs/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/error").permitAll()  // Spring Boot 기본 에러 처리 엔드포인트
+                        // 파일 다운로드 API - 브라우저 네이티브 다운로드 방식 사용으로 인증 제외
+                        .requestMatchers("/api/releases/files/*/download").permitAll()  // 릴리즈 파일 다운로드
+                        .requestMatchers("/api/releases/versions/*/download").permitAll()  // 릴리즈 버전 전체 다운로드
+                        .requestMatchers("/api/patches/*/download").permitAll()  // 패치 다운로드
+                        .requestMatchers("/api/scripts/download").permitAll()  // 스크립트 다운로드
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )

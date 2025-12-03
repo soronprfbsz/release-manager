@@ -16,8 +16,8 @@ class FileCategoryTest {
     void fromCode_Success() {
         assertThat(FileCategory.fromCode("DATABASE")).isEqualTo(FileCategory.DATABASE);
         assertThat(FileCategory.fromCode("WEB")).isEqualTo(FileCategory.WEB);
-        assertThat(FileCategory.fromCode("INSTALL")).isEqualTo(FileCategory.INSTALL);
         assertThat(FileCategory.fromCode("ENGINE")).isEqualTo(FileCategory.ENGINE);
+        assertThat(FileCategory.fromCode("ETC")).isEqualTo(FileCategory.ETC);
     }
 
     @Test
@@ -26,6 +26,7 @@ class FileCategoryTest {
         assertThat(FileCategory.fromCode("DATABASE")).isEqualTo(FileCategory.DATABASE);
         assertThat(FileCategory.fromCode("WEB")).isEqualTo(FileCategory.WEB);
         assertThat(FileCategory.fromCode("Engine")).isEqualTo(FileCategory.ENGINE);
+        assertThat(FileCategory.fromCode("etc")).isEqualTo(FileCategory.ETC);
     }
 
     @Test
@@ -51,26 +52,17 @@ class FileCategoryTest {
         assertThat(FileCategory.ENGINE.isBuildArtifact()).isTrue();
 
         assertThat(FileCategory.DATABASE.isBuildArtifact()).isFalse();
-        assertThat(FileCategory.INSTALL.isBuildArtifact()).isFalse();
+        assertThat(FileCategory.ETC.isBuildArtifact()).isFalse();
     }
 
-    @Test
-    @DisplayName("isExcludedFromPatch - 패치 제외 카테고리 확인")
-    void isExcludedFromPatch() {
-        assertThat(FileCategory.INSTALL.isExcludedFromPatch()).isTrue();
-
-        assertThat(FileCategory.DATABASE.isExcludedFromPatch()).isFalse();
-        assertThat(FileCategory.WEB.isExcludedFromPatch()).isFalse();
-        assertThat(FileCategory.ENGINE.isExcludedFromPatch()).isFalse();
-    }
 
     @Test
     @DisplayName("getCode - 코드 값 확인")
     void getCode() {
         assertThat(FileCategory.DATABASE.getCode()).isEqualTo("DATABASE");
         assertThat(FileCategory.WEB.getCode()).isEqualTo("WEB");
-        assertThat(FileCategory.INSTALL.getCode()).isEqualTo("INSTALL");
         assertThat(FileCategory.ENGINE.getCode()).isEqualTo("ENGINE");
+        assertThat(FileCategory.ETC.getCode()).isEqualTo("ETC");
     }
 
     @Test
@@ -78,7 +70,7 @@ class FileCategoryTest {
     void getDescription() {
         assertThat(FileCategory.DATABASE.getDescription()).isEqualTo("데이터베이스");
         assertThat(FileCategory.WEB.getDescription()).isEqualTo("웹 애플리케이션");
-        assertThat(FileCategory.INSTALL.getDescription()).isEqualTo("설치본");
         assertThat(FileCategory.ENGINE.getDescription()).isEqualTo("엔진");
+        assertThat(FileCategory.ETC.getDescription()).isEqualTo("기타");
     }
 }

@@ -10,6 +10,7 @@ import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto.FileTreeNode;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersionHierarchy;
+import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import com.ts.rm.domain.releaseversion.mapper.ReleaseVersionDtoMapper;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionHierarchyRepository;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
@@ -300,6 +301,7 @@ public class ReleaseVersionService {
         // Entity 생성
         ReleaseVersion version = ReleaseVersion.builder()
                 .releaseType(releaseType)
+                .releaseCategory(request.releaseCategory() != null ? request.releaseCategory() : ReleaseCategory.PATCH)
                 .customer(customer)
                 .version(request.version())
                 .majorVersion(versionInfo.getMajorVersion())
@@ -686,7 +688,7 @@ public class ReleaseVersionService {
                             versionMetadata.createdAt(),
                             versionMetadata.createdBy(),
                             versionMetadata.comment(),
-                            List.of()  // categories - 파일 시스템 기반에서는 빈 리스트
+                            List.of()  // fileCategories - 파일 시스템 기반에서는 빈 리스트
                     );
 
                     versions.add(versionNode);
@@ -820,10 +822,10 @@ public class ReleaseVersionService {
                 ? version.getCreatedAt().toLocalDate().toString()
                 : null;
 
-        // categories 조회
-        List<FileCategory> fileCategories = releaseFileRepository
+        // fileCategories 조회
+        List<FileCategory> fileCategoryEnums = releaseFileRepository
                 .findCategoriesByVersionId(version.getReleaseVersionId());
-        List<String> categories = fileCategories.stream()
+        List<String> fileCategories = fileCategoryEnums.stream()
                 .map(FileCategory::getCode)
                 .toList();
 
@@ -833,7 +835,7 @@ public class ReleaseVersionService {
                 createdAt,
                 version.getCreatedBy(),
                 version.getComment(),
-                categories
+                fileCategories
         );
     }
 
@@ -848,9 +850,10 @@ public class ReleaseVersionService {
      */
     @Transactional
     public ReleaseVersionDto.CreateVersionResponse createStandardVersionWithZip(
-            String version, String comment, MultipartFile zipFile, String createdBy) {
+            String version, ReleaseCategory releaseCategory, String comment, MultipartFile zipFile, String createdBy) {
 
-        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - version: {}, createdBy: {}", version, createdBy);
+        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - version: {}, releaseCategory: {}, createdBy: {}",
+                version, releaseCategory, createdBy);
 
         // 1. 버전 파싱 및 검증
         VersionInfo versionInfo = VersionParser.parse(version);
@@ -873,7 +876,7 @@ public class ReleaseVersionService {
             versionPath = createVersionDirectory(versionInfo);
 
             // 6. 파일 복사 및 DB 저장
-            ReleaseVersion savedVersion = copyFilesAndSaveToDb(tempDir, versionPath, versionInfo, createdBy, comment);
+            ReleaseVersion savedVersion = copyFilesAndSaveToDb(tempDir, versionPath, versionInfo, releaseCategory, createdBy, comment);
 
             // 7. release_metadata.json 업데이트
             metadataManager.addVersionEntry(savedVersion);
@@ -1035,13 +1038,14 @@ public class ReleaseVersionService {
      * @return 저장된 ReleaseVersion 엔티티
      */
     private ReleaseVersion copyFilesAndSaveToDb(Path tempDir, Path versionPath,
-                                                 VersionInfo versionInfo, String createdBy, String comment) throws IOException {
+                                                 VersionInfo versionInfo, ReleaseCategory releaseCategory, String createdBy, String comment) throws IOException {
         String version = versionInfo.getMajorVersion() + "." + versionInfo.getMinorVersion() + "." + versionInfo.getPatchVersion();
 
         // ReleaseVersion 생성 및 저장
         final ReleaseVersion savedVersion = releaseVersionRepository.save(
                 ReleaseVersion.builder()
                         .releaseType("STANDARD")
+                        .releaseCategory(releaseCategory)
                         .version(version)
                         .majorVersion(versionInfo.getMajorVersion())
                         .minorVersion(versionInfo.getMinorVersion())
@@ -1211,14 +1215,14 @@ public class ReleaseVersionService {
     }
 
     /**
-     * 단일 SimpleResponse에 categories 필드 설정
+     * 단일 SimpleResponse에 fileCategories 필드 설정
      */
     private ReleaseVersionDto.SimpleResponse enrichWithCategories(
             ReleaseVersionDto.SimpleResponse response) {
-        List<FileCategory> categories = releaseFileRepository
+        List<FileCategory> fileCategoryEnums = releaseFileRepository
                 .findCategoriesByVersionId(response.releaseVersionId());
 
-        List<String> categoryNames = categories.stream()
+        List<String> fileCategories = fileCategoryEnums.stream()
                 .map(FileCategory::getCode)
                 .toList();
 
@@ -1230,7 +1234,7 @@ public class ReleaseVersionService {
                 response.majorMinor(),
                 response.createdBy(),
                 response.comment(),
-                categoryNames,  // categories
+                fileCategories,  // fileCategories
                 response.createdAt(),
                 response.patchFileCount()
         );

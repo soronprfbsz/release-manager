@@ -16,15 +16,15 @@ class SubCategoryValidatorTest {
     void isValid() {
         // given
         FileCategory database = FileCategory.DATABASE;
-        FileCategory web = FileCategory.WEB;
+        FileCategory engine = FileCategory.ENGINE;
 
-        // when & then - 대문자
+        // when & then
         assertThat(SubCategoryValidator.isValid(database, "MARIADB")).isTrue();
         assertThat(SubCategoryValidator.isValid(database, "CRATEDB")).isTrue();
         assertThat(SubCategoryValidator.isValid(database, "BUILD")).isFalse();
 
-        assertThat(SubCategoryValidator.isValid(web, "BUILD")).isTrue();
-        assertThat(SubCategoryValidator.isValid(web, "MARIADB")).isFalse();
+        assertThat(SubCategoryValidator.isValid(engine, "NC_PERF")).isTrue();
+        assertThat(SubCategoryValidator.isValid(engine, "MARIADB")).isFalse();
     }
 
     @Test
@@ -33,15 +33,17 @@ class SubCategoryValidatorTest {
         // when
         var databaseSubs = SubCategoryValidator.getAllowedSubCategories(FileCategory.DATABASE);
         var webSubs = SubCategoryValidator.getAllowedSubCategories(FileCategory.WEB);
-        var installSubs = SubCategoryValidator.getAllowedSubCategories(FileCategory.INSTALL);
         var engineSubs = SubCategoryValidator.getAllowedSubCategories(FileCategory.ENGINE);
+        var etcSubs = SubCategoryValidator.getAllowedSubCategories(FileCategory.ETC);
 
-        // then - 대문자
+        // then
         assertThat(databaseSubs).containsExactlyInAnyOrder("MARIADB", "CRATEDB", "ETC");
-        assertThat(webSubs).containsExactlyInAnyOrder("BUILD", "IMAGE", "METADATA", "ETC");
-        assertThat(installSubs).containsExactlyInAnyOrder("SH", "IMAGE", "METADATA", "ETC");
+        // WEB은 서브 카테고리 없음
+        assertThat(webSubs).isEmpty();
         // ENGINE은 65개 항목(64개 엔진 + ETC)이므로 일부만 확인
         assertThat(engineSubs).contains("NC_AI_EVENT", "NC_AP", "NC_CONF", "NC_PERF", "NC_WATCHDOG", "ETC");
         assertThat(engineSubs).hasSize(65);
+        // ETC는 서브 카테고리 없음
+        assertThat(etcSubs).isEmpty();
     }
 }

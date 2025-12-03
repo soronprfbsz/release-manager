@@ -16,6 +16,7 @@ import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.mapper.ReleaseFileDtoMapper;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
+import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
@@ -59,6 +60,7 @@ class ReleaseFileServiceTest {
         testVersion = ReleaseVersion.builder()
                 .releaseVersionId(1L)
                 .releaseType("STANDARD")
+                .releaseCategory(ReleaseCategory.PATCH)
                 .version("1.1.0")
                 .majorVersion(1)
                 .minorVersion(1)

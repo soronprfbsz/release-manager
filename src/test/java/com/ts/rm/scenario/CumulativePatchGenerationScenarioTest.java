@@ -427,6 +427,7 @@ public class CumulativePatchGenerationScenarioTest {
         mockMvc.perform(MockMvcRequestBuilders.multipart("/api/releases/standard/versions")
                         .file(patchFiles)
                         .param("version", version)
+                        .param("releaseCategory", "PATCH")
                         .param("comment", comment)
                         .header("Authorization", JWT_TOKEN))
                 .andDo(print())

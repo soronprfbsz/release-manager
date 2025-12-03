@@ -92,8 +92,8 @@ public class ReleaseVersionController {
             @Parameter(description = "JWT 토큰 (Bearer {token})", required = true)
             @RequestHeader("Authorization") String authorization) {
 
-        log.info("표준 릴리즈 버전 생성 요청 - version: {}, comment: {}, fileSize: {}",
-                request.version(), request.comment(), patchFiles.getSize());
+        log.info("표준 릴리즈 버전 생성 요청 - version: {}, releaseCategory: {}, comment: {}, fileSize: {}",
+                request.version(), request.releaseCategory(), request.comment(), patchFiles.getSize());
 
         // JWT 토큰에서 이메일 추출
         String token = extractToken(authorization);
@@ -104,6 +104,7 @@ public class ReleaseVersionController {
         // 버전 생성
         ReleaseVersionDto.CreateVersionResponse response = releaseVersionService.createStandardVersionWithZip(
                 request.version(),
+                request.releaseCategory(),
                 request.comment(),
                 patchFiles,
                 createdBy
