@@ -193,12 +193,17 @@ deploy-job:
       command -v curl && echo "✓ curl 설치됨" || echo "✗ curl 설치 실패"
     - |
       echo "=== Gitlab Variables로 .env 파일 생성 중 ==="
-      env | grep -vE '^(CI_|GITLAB_|FF_|RUNNER_|DOCKER_|DIND_|PATH=|HOME=|HOSTNAME=|PWD=|OLDPWD=|SHELL=|SHLVL=|USER=|_=|LANG=|LC_|TERM=|DEBIAN_|GRADLE_|GIT_)' | grep -v '^CI=' > .env
+      env | \
+        grep -vE '^(CI_|GITLAB_|FF_|RUNNER_|DOCKER_|DIND_|PATH=|HOME=|HOSTNAME=|PWD=|OLDPWD=|SHELL=|SHLVL=|USER=|_=|LANG=|LC_|TERM=|DEBIAN_|GRADLE_|GIT_)' | \
+        grep -v '^CI=' | \
+        grep -E '^[A-Z_]+=.+$' | \
+        grep -v $'\n' > .env
 
       # Docker 환경 설정 추가
       echo "DOCKER_IMAGE=${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" >> .env
       echo "RELEASE_BASE_PATH=/app/release_files" >> .env
 
+      echo "✅ .env 파일 생성 완료:"
       cat .env
     - |
       echo "=== Docker 네트워크 확인 ==="
