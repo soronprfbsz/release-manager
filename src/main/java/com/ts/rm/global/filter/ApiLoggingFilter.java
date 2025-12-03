@@ -51,9 +51,8 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
     } finally {
       long duration = System.currentTimeMillis() - startTime;
 
-      // dev 환경에서는 항상 상세 로깅
-      logDetailedRequest(cachingRequest);
-      logDetailedResponse(cachingResponse, duration);
+      // 요청과 응답을 하나의 블록으로 로깅
+      logApiTransaction(cachingRequest, cachingResponse, duration);
 
       // 응답 본문을 실제 응답으로 복사 (중요!)
       cachingResponse.copyBodyToResponse();
@@ -61,55 +60,60 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
   }
 
   /**
-   * 상세 요청 정보 로깅
+   * API 트랜잭션 전체를 하나의 블록으로 로깅
+   * 요청부터 응답까지 모든 정보를 한 번에 출력하여 가독성 향상
    */
-  private void logDetailedRequest(ContentCachingRequestWrapper request) {
+  private void logApiTransaction(ContentCachingRequestWrapper request,
+                                   ContentCachingResponseWrapper response,
+                                   long duration) {
     StringBuilder sb = new StringBuilder("\n");
-    sb.append("========== API Request ==========\n");
-    sb.append(String.format("[%s] %s\n", request.getMethod(), request.getRequestURI()));
+
+    String method = request.getMethod();
+    String uri = request.getRequestURI();
+
+    // 헤더 시작
+    sb.append("╔════════════════════════════════════════════════════════════════\n");
+    sb.append(String.format("║ API Request: [%s] %s\n", method, uri));
+    sb.append("╠════════════════════════════════════════════════════════════════\n");
 
     // Query String
     String queryString = request.getQueryString();
     if (queryString != null) {
-      sb.append(String.format("Query: %s\n", queryString));
+      sb.append(String.format("║ Query: %s\n", queryString));
     }
 
     // Request Body
-    byte[] content = request.getContentAsByteArray();
-    if (content.length > 0) {
-      String body = new String(content, StandardCharsets.UTF_8);
-      sb.append("Body: ");
-      sb.append(body.length() > MAX_PAYLOAD_LENGTH
-          ? body.substring(0, MAX_PAYLOAD_LENGTH) + "... (truncated)"
-          : body);
+    byte[] requestContent = request.getContentAsByteArray();
+    if (requestContent.length > 0) {
+      String requestBody = new String(requestContent, StandardCharsets.UTF_8);
+      sb.append("║ Request Body: ");
+      sb.append(requestBody.length() > MAX_PAYLOAD_LENGTH
+          ? requestBody.substring(0, MAX_PAYLOAD_LENGTH) + "... (truncated)"
+          : requestBody);
       sb.append("\n");
     }
 
-    sb.append("=================================");
-    log.debug(sb.toString());
-  }
-
-  /**
-   * 상세 응답 정보 로깅
-   */
-  private void logDetailedResponse(ContentCachingResponseWrapper response, long duration) {
-    StringBuilder sb = new StringBuilder("\n");
-    sb.append("========== API Response =========\n");
-    sb.append(String.format("Status: %d\n", response.getStatus()));
-    sb.append(String.format("Duration: %dms\n", duration));
+    // 구분선
+    sb.append("╠════════════════════════════════════════════════════════════════\n");
+    sb.append(String.format("║ API Response: [%s] %s\n", method, uri));
+    sb.append("╠════════════════════════════════════════════════════════════════\n");
+    sb.append(String.format("║ Status: %d\n", response.getStatus()));
+    sb.append(String.format("║ Duration: %dms\n", duration));
 
     // Response Body
-    byte[] content = response.getContentAsByteArray();
-    if (content.length > 0) {
-      String body = new String(content, StandardCharsets.UTF_8);
-      sb.append("Body: ");
-      sb.append(body.length() > MAX_PAYLOAD_LENGTH
-          ? body.substring(0, MAX_PAYLOAD_LENGTH) + "... (truncated)"
-          : body);
+    byte[] responseContent = response.getContentAsByteArray();
+    if (responseContent.length > 0) {
+      String responseBody = new String(responseContent, StandardCharsets.UTF_8);
+      sb.append("║ Response Body: ");
+      sb.append(responseBody.length() > MAX_PAYLOAD_LENGTH
+          ? responseBody.substring(0, MAX_PAYLOAD_LENGTH) + "... (truncated)"
+          : responseBody);
       sb.append("\n");
     }
 
-    sb.append("=================================");
+    // 하단 마감
+    sb.append("╚════════════════════════════════════════════════════════════════");
+
     log.debug(sb.toString());
   }
 
@@ -125,6 +129,8 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
         || path.endsWith(".html")
         || path.endsWith(".css")
         || path.endsWith(".js")
-        || path.endsWith(".ico");
+        || path.endsWith(".ico")
+        || path.endsWith("/download")  // 파일 다운로드 엔드포인트 제외 (대용량 스트리밍)
+        || path.contains("/download/"); // 파일 다운로드 엔드포인트 제외
   }
 }
