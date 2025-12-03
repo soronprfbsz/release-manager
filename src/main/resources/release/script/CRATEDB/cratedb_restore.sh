@@ -1,11 +1,12 @@
 #!/bin/bash
 
 ################################################################################
-# CrateDB 복원 스크립트
+# CrateDB 스냅샷 복원 스크립트
 #
 # 사용법: ./cratedb_restore.sh
 #
-# JSON 형식으로 백업된 CrateDB 데이터를 복원합니다.
+# CrateDB의 SNAPSHOT 기능을 사용하여 백업된 데이터를 복원합니다.
+# 복원 전략: 백업 파일 복사 → CREATE REPOSITORY → RESTORE SNAPSHOT
 ################################################################################
 
 ################################################################################
@@ -15,10 +16,12 @@
 # CrateDB 연결 기본값
 DEFAULT_CRATE_HOST="localhost"
 DEFAULT_CRATE_PORT="4200"
-DEFAULT_CRATE_SCHEMA="doc"
 
 # 백업 파일 설정
 BACKUP_DIR="backup_files"
+
+# 스냅샷 리포지토리 기본 설정 (CrateDB 서버의 파일 시스템 경로)
+DEFAULT_SNAPSHOT_REPO_PATH="/tmp/crate_snapshots"
 
 ################################################################################
 # <<<< 설정 영역 끝 - 아래는 수정하지 마세요 >>>>
@@ -51,7 +54,7 @@ log_notice() {
 
 # 스크립트 시작
 echo "=========================================="
-echo "  CrateDB 복원 스크립트"
+echo "  CrateDB 스냅샷 복원 스크립트"
 echo "=========================================="
 echo ""
 
@@ -65,7 +68,7 @@ fi
 log_info "사용 가능한 백업 목록:"
 echo "=========================================="
 
-BACKUP_FOLDERS=$(ls -dt ${BACKUP_DIR}/cratedb_backup_* 2>/dev/null)
+BACKUP_FOLDERS=$(ls -dt ${BACKUP_DIR}/cratedb_snapshot_* 2>/dev/null)
 if [ -z "$BACKUP_FOLDERS" ]; then
     echo "  (백업 폴더 없음)"
     echo "=========================================="
@@ -76,7 +79,7 @@ fi
 BACKUP_COUNT=0
 echo "$BACKUP_FOLDERS" | while read -r folder; do
     BACKUP_COUNT=$((BACKUP_COUNT + 1))
-    SIZE=$(du -sh "$folder" | cut -f1)
+    SIZE=$(du -sh "$folder" 2>/dev/null | cut -f1)
     NAME=$(basename "$folder")
     echo "  $NAME ($SIZE)"
 done
@@ -100,13 +103,35 @@ if [ ! -d "$BACKUP_PATH" ]; then
     exit 1
 fi
 
+# 백업 메타데이터 확인
+METADATA_FILE="${BACKUP_PATH}/backup_metadata.txt"
+if [ ! -f "$METADATA_FILE" ]; then
+    log_error "백업 메타데이터를 찾을 수 없습니다: $METADATA_FILE"
+    exit 1
+fi
+
 # 백업 정보 표시
-BACKUP_SIZE=$(du -sh "$BACKUP_PATH" | cut -f1)
-FILE_COUNT=$(ls -1 "$BACKUP_PATH"/*.json 2>/dev/null | wc -l)
+BACKUP_SIZE=$(du -sh "$BACKUP_PATH" 2>/dev/null | cut -f1)
 echo ""
 log_info "선택한 백업: $BACKUP_PATH"
 log_info "폴더 크기: $BACKUP_SIZE"
-log_info "파일 수: $FILE_COUNT"
+echo ""
+log_info "백업 메타데이터:"
+cat "$METADATA_FILE"
+echo ""
+
+# 메타데이터에서 리포지토리와 스냅샷 이름 추출
+REPO_NAME=$(grep "리포지토리 이름:" "$METADATA_FILE" | cut -d':' -f2 | xargs)
+SNAPSHOT_NAME=$(grep "스냅샷 이름:" "$METADATA_FILE" | cut -d':' -f2 | xargs)
+
+if [ -z "$REPO_NAME" ] || [ -z "$SNAPSHOT_NAME" ]; then
+    log_error "메타데이터에서 리포지토리 또는 스냅샷 이름을 찾을 수 없습니다."
+    exit 1
+fi
+
+log_info "복원 정보:"
+echo "  - 리포지토리: $REPO_NAME"
+echo "  - 스냅샷: $SNAPSHOT_NAME"
 echo ""
 
 # 경고 메시지
@@ -128,19 +153,91 @@ fi
 
 echo ""
 
-# CrateDB 연결 정보 입력
-read -p "CrateDB 호스트 [$DEFAULT_CRATE_HOST]: " CRATE_HOST
-CRATE_HOST=${CRATE_HOST:-$DEFAULT_CRATE_HOST}
+# 실행 방식 선택
+echo "=========================================="
+echo "CrateDB 접속 방식을 선택하세요:"
+echo ""
+echo "  1) Docker 컨테이너 방식"
+echo "     → Docker 컨테이너 내부의 CrateDB에 접속"
+echo "     → 'docker exec' 명령으로 컨테이너 내부에서 실행"
+echo ""
+echo "  2) 네트워크 직접 연결 방식"
+echo "     → 호스트:포트로 CrateDB에 직접 연결"
+echo "     → 로컬/원격 서버 모두 지원 (IP 또는 localhost)"
+echo "=========================================="
+echo ""
+read -p "선택 (1 또는 2) [1]: " EXECUTION_MODE
 
-read -p "CrateDB HTTP 포트 [$DEFAULT_CRATE_PORT]: " CRATE_PORT
-CRATE_PORT=${CRATE_PORT:-$DEFAULT_CRATE_PORT}
+# 입력값 정리 (공백 제거)
+EXECUTION_MODE=$(echo "${EXECUTION_MODE:-1}" | tr -d '[:space:]')
 
-read -p "스키마 이름 [$DEFAULT_CRATE_SCHEMA]: " CRATE_SCHEMA
-CRATE_SCHEMA=${CRATE_SCHEMA:-$DEFAULT_CRATE_SCHEMA}
+# 유효성 검증
+if [ "$EXECUTION_MODE" != "1" ] && [ "$EXECUTION_MODE" != "2" ]; then
+    log_error "잘못된 선택입니다. 1 또는 2를 입력하세요. (입력값: '$EXECUTION_MODE')"
+    exit 1
+fi
+
+echo ""
+
+# 실행 방식에 따른 설정
+if [ "$EXECUTION_MODE" = "1" ]; then
+    # ===== Docker 컨테이너 방식 =====
+    log_info "선택된 방식: Docker 컨테이너 방식"
+    echo ""
+
+    # Docker 컨테이너 이름 입력
+    read -p "Docker 컨테이너 이름: " DOCKER_CONTAINER_NAME
+    if [ -z "$DOCKER_CONTAINER_NAME" ]; then
+        log_error "Docker 컨테이너 이름은 필수입니다."
+        exit 1
+    fi
+
+    echo ""
+    log_info "Docker 컨테이너: $DOCKER_CONTAINER_NAME"
+    log_info "컨테이너 확인 중..."
+
+    # Docker 컨테이너 확인
+    docker ps --format "{{.Names}}" | grep -q "^${DOCKER_CONTAINER_NAME}$"
+    if [ $? -ne 0 ]; then
+        log_error "Docker 컨테이너 '$DOCKER_CONTAINER_NAME'를 찾을 수 없거나 실행 중이 아닙니다."
+        log_warning "실행 중인 컨테이너 목록:"
+        docker ps --format "  - {{.Names}} ({{.Image}})"
+        exit 1
+    fi
+
+    log_info "컨테이너 확인 완료!"
+
+    # CrateDB HTTP 포트 입력
+    read -p "CrateDB HTTP 포트 [$DEFAULT_CRATE_PORT]: " CRATE_PORT
+    CRATE_PORT=${CRATE_PORT:-$DEFAULT_CRATE_PORT}
+
+    # 컨테이너 내부에서는 localhost 사용
+    CRATE_HOST="localhost"
+
+    # 스냅샷 리포지토리 경로 (컨테이너 내부 경로)
+    read -p "스냅샷 리포지토리 경로 (컨테이너 내부) [$DEFAULT_SNAPSHOT_REPO_PATH]: " SNAPSHOT_REPO_PATH
+    SNAPSHOT_REPO_PATH=${SNAPSHOT_REPO_PATH:-$DEFAULT_SNAPSHOT_REPO_PATH}
+
+else
+    # ===== 네트워크 직접 연결 방식 =====
+    log_info "선택된 방식: 네트워크 직접 연결 방식"
+    echo ""
+
+    # CrateDB 연결 정보 입력
+    read -p "CrateDB 호스트 [$DEFAULT_CRATE_HOST]: " CRATE_HOST
+    CRATE_HOST=${CRATE_HOST:-$DEFAULT_CRATE_HOST}
+
+    read -p "CrateDB HTTP 포트 [$DEFAULT_CRATE_PORT]: " CRATE_PORT
+    CRATE_PORT=${CRATE_PORT:-$DEFAULT_CRATE_PORT}
+
+    # 스냅샷 리포지토리 경로 (CrateDB 서버의 파일 시스템 경로)
+    read -p "스냅샷 리포지토리 경로 (CrateDB 서버) [$DEFAULT_SNAPSHOT_REPO_PATH]: " SNAPSHOT_REPO_PATH
+    SNAPSHOT_REPO_PATH=${SNAPSHOT_REPO_PATH:-$DEFAULT_SNAPSHOT_REPO_PATH}
+fi
 
 echo ""
 log_info "호스트: $CRATE_HOST:$CRATE_PORT"
-log_info "스키마: $CRATE_SCHEMA"
+log_info "스냅샷 리포지토리 경로: $SNAPSHOT_REPO_PATH"
 echo ""
 
 # 연결 테스트
@@ -164,98 +261,139 @@ if [ ! -d "$LOG_DIR" ]; then
 fi
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-LOG_FILE="${LOG_DIR}/restore_cratedb_${TIMESTAMP}.log"
+LOG_FILE="${LOG_DIR}/restore_cratedb_snapshot_${TIMESTAMP}.log"
 log_info "로그 파일: $LOG_FILE"
 echo ""
 
 # 로그 파일에 정보 기록
 echo "=========================================" > "$LOG_FILE"
-echo "CrateDB 복원" >> "$LOG_FILE"
+echo "CrateDB 스냅샷 복원" >> "$LOG_FILE"
 echo "=========================================" >> "$LOG_FILE"
 echo "호스트: $CRATE_HOST:$CRATE_PORT" >> "$LOG_FILE"
-echo "스키마: $CRATE_SCHEMA" >> "$LOG_FILE"
+echo "리포지토리 경로: $SNAPSHOT_REPO_PATH" >> "$LOG_FILE"
 echo "백업 폴더: $BACKUP_PATH" >> "$LOG_FILE"
+echo "리포지토리 이름: $REPO_NAME" >> "$LOG_FILE"
+echo "스냅샷 이름: $SNAPSHOT_NAME" >> "$LOG_FILE"
 echo "시작 시간: $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG_FILE"
 echo "=========================================" >> "$LOG_FILE"
 echo "" >> "$LOG_FILE"
 
 # 복원 시작
 echo "=========================================="
-log_notice "데이터베이스 복원을 시작합니다..."
+log_notice "스냅샷 복원을 시작합니다..."
 echo "=========================================="
 echo ""
 
 START_TIME=$(date +%s)
-SUCCESS_TABLES=0
-FAILED_TABLES=0
 
-# 각 JSON 파일 복원
-for JSON_FILE in "$BACKUP_PATH"/*.json; do
-    FILENAME=$(basename "$JSON_FILE")
+# 1. Docker 모드인 경우 스냅샷 파일을 컨테이너로 복사
+if [ "$EXECUTION_MODE" = "1" ]; then
+    log_info "1단계: 스냅샷 파일을 호스트에서 컨테이너로 복사 중..."
 
-    # 스키마 파일은 건너뜀
-    if [ "$FILENAME" = "_schema.json" ]; then
-        continue
+    SNAPSHOT_TAR="${BACKUP_PATH}/snapshot_data.tar.gz"
+
+    if [ ! -f "$SNAPSHOT_TAR" ]; then
+        log_error "스냅샷 데이터 파일을 찾을 수 없습니다: $SNAPSHOT_TAR"
+        exit 1
     fi
 
-    TABLE_NAME="${FILENAME%.json}"
-    log_info "테이블 복원 중: $TABLE_NAME"
+    # 컨테이너 내부의 스냅샷 디렉토리에 복사
+    docker exec "$DOCKER_CONTAINER_NAME" mkdir -p "${SNAPSHOT_REPO_PATH}" 2>> "$LOG_FILE"
+    cat "$SNAPSHOT_TAR" | docker exec -i "$DOCKER_CONTAINER_NAME" tar xzf - -C "${SNAPSHOT_REPO_PATH}" 2>> "$LOG_FILE"
 
-    # JSON 파일에서 rows 추출
-    if command -v jq &> /dev/null; then
-        COLS=$(jq -r '.cols | @json' "$JSON_FILE" 2>/dev/null)
-        ROWS=$(jq -c '.rows[]' "$JSON_FILE" 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        log_info "  스냅샷 파일 복사 완료"
+        echo "스냅샷 파일 복사: 성공" >> "$LOG_FILE"
     else
-        log_warning "  jq가 설치되지 않아 복원을 건너뜁니다."
-        echo "테이블 $TABLE_NAME: jq 필요" >> "$LOG_FILE"
-        FAILED_TABLES=$((FAILED_TABLES + 1))
-        continue
+        log_error "  스냅샷 파일 복사 실패"
+        echo "스냅샷 파일 복사: 실패" >> "$LOG_FILE"
+        exit 1
     fi
+else
+    log_info "1단계: 네트워크 직접 연결 모드 - 스냅샷 파일이 이미 서버에 있다고 가정합니다."
+    log_warning "  스냅샷 파일이 ${SNAPSHOT_REPO_PATH}/${REPO_NAME} 경로에 존재해야 합니다."
+    echo "스냅샷 파일 확인: 건너뜀 (수동 확인 필요)" >> "$LOG_FILE"
+fi
 
-    if [ -z "$ROWS" ]; then
-        log_warning "  데이터 없음: $TABLE_NAME"
-        echo "테이블 $TABLE_NAME: 데이터 없음" >> "$LOG_FILE"
-        continue
-    fi
+# 2. 스냅샷 리포지토리 생성
+log_info "2단계: 스냅샷 리포지토리 생성 중..."
 
-    # 테이블 존재 확인 및 데이터 삭제
-    log_info "  기존 데이터 삭제 중..."
-    DELETE_RESULT=$(curl -s -X POST "http://${CRATE_HOST}:${CRATE_PORT}/_sql" \
-        -H "Content-Type: application/json" \
-        -d "{\"stmt\": \"DELETE FROM \\\"${CRATE_SCHEMA}\\\".\\\"${TABLE_NAME}\\\"\"}" 2>&1)
+# 기존 리포지토리 확인 및 삭제
+EXISTING_REPO=$(curl -s -X GET "http://${CRATE_HOST}:${CRATE_PORT}/_snapshot/${REPO_NAME}")
+if ! echo "$EXISTING_REPO" | grep -q '"error"'; then
+    log_warning "  기존 리포지토리 발견, 삭제 중..."
+    curl -s -X DELETE "http://${CRATE_HOST}:${CRATE_PORT}/_snapshot/${REPO_NAME}" > /dev/null 2>&1
+fi
 
-    # 데이터 삽입
-    ROW_COUNT=0
-    ERROR_COUNT=0
+CREATE_REPO_RESULT=$(curl -s -X PUT "http://${CRATE_HOST}:${CRATE_PORT}/_snapshot/${REPO_NAME}" \
+    -H "Content-Type: application/json" \
+    -d "{
+        \"type\": \"fs\",
+        \"settings\": {
+            \"location\": \"${SNAPSHOT_REPO_PATH}/${REPO_NAME}\"
+        }
+    }")
 
-    echo "$ROWS" | while read -r ROW; do
-        if [ -z "$ROW" ]; then
-            continue
-        fi
+if echo "$CREATE_REPO_RESULT" | grep -q '"acknowledged":true'; then
+    log_info "  리포지토리 생성 완료: $REPO_NAME"
+    echo "리포지토리 생성: 성공" >> "$LOG_FILE"
+else
+    log_error "  리포지토리 생성 실패"
+    log_error "  응답: $CREATE_REPO_RESULT"
+    echo "리포지토리 생성: 실패 - $CREATE_REPO_RESULT" >> "$LOG_FILE"
+    exit 1
+fi
 
-        # INSERT 문 생성 및 실행
-        INSERT_STMT="INSERT INTO \"${CRATE_SCHEMA}\".\"${TABLE_NAME}\" VALUES ($ROW)"
-        INSERT_RESULT=$(curl -s -X POST "http://${CRATE_HOST}:${CRATE_PORT}/_sql" \
-            -H "Content-Type: application/json" \
-            -d "{\"stmt\": \"$INSERT_STMT\"}" 2>&1)
+# 3. 스냅샷 확인
+log_info "3단계: 스냅샷 확인 중..."
+SNAPSHOT_CHECK=$(curl -s -X GET "http://${CRATE_HOST}:${CRATE_PORT}/_snapshot/${REPO_NAME}/${SNAPSHOT_NAME}")
 
-        if echo "$INSERT_RESULT" | grep -q '"error"'; then
-            ERROR_COUNT=$((ERROR_COUNT + 1))
-        else
-            ROW_COUNT=$((ROW_COUNT + 1))
-        fi
-    done
+if echo "$SNAPSHOT_CHECK" | grep -q '"state":"SUCCESS"'; then
+    log_info "  스냅샷 확인 완료: $SNAPSHOT_NAME"
+    echo "스냅샷 확인: 성공" >> "$LOG_FILE"
+else
+    log_error "  스냅샷을 찾을 수 없거나 상태가 올바르지 않습니다."
+    log_error "  응답: $SNAPSHOT_CHECK"
+    echo "스냅샷 확인: 실패 - $SNAPSHOT_CHECK" >> "$LOG_FILE"
 
-    if [ $ERROR_COUNT -eq 0 ]; then
-        log_info "  완료: $TABLE_NAME"
-        echo "테이블 $TABLE_NAME 복원 완료" >> "$LOG_FILE"
-        SUCCESS_TABLES=$((SUCCESS_TABLES + 1))
-    else
-        log_warning "  일부 오류 발생: $TABLE_NAME ($ERROR_COUNT errors)"
-        echo "테이블 $TABLE_NAME 복원 (일부 오류: $ERROR_COUNT)" >> "$LOG_FILE"
-        FAILED_TABLES=$((FAILED_TABLES + 1))
-    fi
-done
+    # 실패한 리포지토리 삭제
+    curl -s -X DELETE "http://${CRATE_HOST}:${CRATE_PORT}/_snapshot/${REPO_NAME}" > /dev/null 2>&1
+    exit 1
+fi
+
+# 4. 스냅샷 복원
+log_info "4단계: 스냅샷 복원 중... (시간이 걸릴 수 있습니다)"
+RESTORE_RESULT=$(curl -s -X POST "http://${CRATE_HOST}:${CRATE_PORT}/_snapshot/${REPO_NAME}/${SNAPSHOT_NAME}/_restore?wait_for_completion=true" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "indices": "_all",
+        "include_global_state": true
+    }')
+
+if echo "$RESTORE_RESULT" | grep -q '"accepted":true\|"state":"SUCCESS"'; then
+    log_info "  스냅샷 복원 완료"
+    echo "스냅샷 복원: 성공" >> "$LOG_FILE"
+else
+    log_error "  스냅샷 복원 실패"
+    log_error "  응답: $RESTORE_RESULT"
+    echo "스냅샷 복원: 실패 - $RESTORE_RESULT" >> "$LOG_FILE"
+
+    # 실패한 리포지토리 삭제
+    curl -s -X DELETE "http://${CRATE_HOST}:${CRATE_PORT}/_snapshot/${REPO_NAME}" > /dev/null 2>&1
+    exit 1
+fi
+
+# 5. 리포지토리 삭제 (정리)
+log_info "5단계: 리포지토리 정리 중..."
+DELETE_REPO_RESULT=$(curl -s -X DELETE "http://${CRATE_HOST}:${CRATE_PORT}/_snapshot/${REPO_NAME}")
+
+if echo "$DELETE_REPO_RESULT" | grep -q '"acknowledged":true'; then
+    log_info "  리포지토리 삭제 완료"
+    echo "리포지토리 정리: 성공" >> "$LOG_FILE"
+else
+    log_warning "  리포지토리 삭제 실패 (수동으로 삭제해야 할 수 있습니다)"
+    echo "리포지토리 정리: 실패 - $DELETE_REPO_RESULT" >> "$LOG_FILE"
+fi
 
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
@@ -278,6 +416,6 @@ log_info "소요 시간: ${ELAPSED_MIN}분 ${ELAPSED_SEC}초"
 log_info "로그 파일: $LOG_FILE"
 echo "=========================================="
 echo ""
-log_notice "CrateDB 복원이 완료되었습니다."
+log_notice "CrateDB 스냅샷 복원이 완료되었습니다."
 
 exit 0
