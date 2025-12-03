@@ -2,6 +2,7 @@ package com.ts.rm.domain.script.controller;
 
 import com.ts.rm.domain.script.enums.ScriptType;
 import com.ts.rm.domain.script.service.ScriptDownloadService;
+import com.ts.rm.global.file.HttpFileDownloadUtil;
 import com.ts.rm.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -54,9 +55,10 @@ public class ScriptDownloadController {
                     + "- `mariadb-backup`: MariaDB 백업 스크립트\n"
                     + "- `mariadb-restore`: MariaDB 복원 스크립트\n"
                     + "- `cratedb-backup`: CrateDB 백업 스크립트\n"
-                    + "- `cratedb-restore`: CrateDB 복원 스크립트")
+                    + "- `cratedb-restore`: CrateDB 복원 스크립트\n"
+                    + "- `infraeye2-install-guide`: Infraeye2 설치가이드 PDF")
     public ResponseEntity<Resource> downloadScript(
-            @Parameter(description = "스크립트 타입 (mariadb-backup, mariadb-restore, cratedb-backup, cratedb-restore)",
+            @Parameter(description = "스크립트 타입 (mariadb-backup, mariadb-restore, cratedb-backup, cratedb-restore, infraeye2-install-guide)",
                     example = "mariadb-backup")
             @RequestParam String type) {
 
@@ -64,11 +66,17 @@ public class ScriptDownloadController {
 
         ScriptType scriptType = ScriptType.fromCode(type);
         Resource resource = scriptDownloadService.getScriptResource(scriptType);
+        String fileName = scriptType.getFileName();
+
+        // Content-Type 결정 (PDF 파일은 application/pdf, 나머지는 octet-stream)
+        MediaType contentType = fileName.toLowerCase().endsWith(".pdf")
+                ? MediaType.APPLICATION_PDF
+                : MediaType.APPLICATION_OCTET_STREAM;
 
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentType(contentType)
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + scriptType.getFileName() + "\"")
+                        HttpFileDownloadUtil.buildContentDisposition(fileName))
                 .body(resource);
     }
 }
