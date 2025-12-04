@@ -183,6 +183,7 @@ deploy-job:
   only:
     - main
   dependencies:
+    - build-job
     - docker-build-job
   before_script:
     - |
