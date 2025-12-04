@@ -237,6 +237,9 @@ public class MariaDBBackupService {
         command.add("--triggers");
         command.add("--events");
         command.add("--skip-add-locks");
+        // --databases 옵션: CREATE DATABASE IF NOT EXISTS, USE 구문 포함
+        // 복원 시 데이터베이스 자동 생성 및 선택
+        command.add("--databases");
         command.add(request.getDatabase());
 
         ProcessBuilder pb = new ProcessBuilder(command);
