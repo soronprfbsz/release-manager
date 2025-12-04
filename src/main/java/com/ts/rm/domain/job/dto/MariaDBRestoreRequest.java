@@ -16,6 +16,10 @@ import lombok.Setter;
 @Schema(description = "MariaDB 복원 요청")
 public class MariaDBRestoreRequest {
 
+    @NotNull(message = "백업 파일 ID는 필수입니다")
+    @Schema(description = "복원할 백업 파일 ID", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
+    private Long backupFileId;
+
     @NotBlank(message = "호스트는 필수입니다")
     @Schema(description = "MariaDB 호스트", example = "192.168.1.100", requiredMode = Schema.RequiredMode.REQUIRED)
     private String host;
@@ -31,8 +35,4 @@ public class MariaDBRestoreRequest {
     @NotBlank(message = "비밀번호는 필수입니다")
     @Schema(description = "MariaDB 비밀번호", example = "password", requiredMode = Schema.RequiredMode.REQUIRED)
     private String password;
-
-    @NotBlank(message = "백업 파일명은 필수입니다")
-    @Schema(description = "복원할 백업 파일명 (MARIADB 카테고리 내 파일명)", example = "backup_my_database_20251204_120000.sql", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String backupFileName;
 }

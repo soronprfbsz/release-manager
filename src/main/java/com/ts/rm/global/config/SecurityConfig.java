@@ -67,6 +67,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/patches/*/download").permitAll()  // 패치 다운로드
                         .requestMatchers("/api/resources/*/download").permitAll()  // 리소스 파일 다운로드
                         .requestMatchers("/api/jobs/backup-files/*/download").permitAll() // 백업 파일 다운로드
+                        .requestMatchers("/api/jobs/backup-files/*/logs/download").permitAll() // 백업 로그 다운로드
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
