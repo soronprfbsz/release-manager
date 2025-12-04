@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -36,11 +37,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RemoteMariaDBBackupService {
 
-    private static final String BACKUP_DIR = "src/main/resources/release/remote/backup_files";
-    private static final String LOG_DIR = "src/main/resources/release/remote/logs";
     private static final String BACKUP_FILE_PREFIX = "backup_remote";
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern(
             "yyyyMMdd_HHmmss");
+
+    @Value("${app.release.base-path:/app/release_files}")
+    private String releaseBasePath;
 
     private final BackupJobStatusManager jobStatusManager;
 
@@ -59,8 +61,8 @@ public class RemoteMariaDBBackupService {
         // 디렉토리 생성
         createDirectories();
 
-        Path backupFilePath = Paths.get(BACKUP_DIR, backupFileName);
-        Path logFilePath = Paths.get(LOG_DIR, logFileName);
+        Path backupFilePath = Paths.get(releaseBasePath + "/remote/backup_files", backupFileName);
+        Path logFilePath = Paths.get(releaseBasePath + "/remote/logs", logFileName);
 
         log.info("원격 MariaDB 백업 시작 - jobId: {}, host: {}, database: {}",
                 jobId, request.getHost(), request.getDatabase());
@@ -129,8 +131,8 @@ public class RemoteMariaDBBackupService {
     public void executeBackupAsync(MariaDBBackupRequest request, String jobId,
             String backupFileName, String logFileName) {
 
-        Path backupFilePath = Paths.get(BACKUP_DIR, backupFileName);
-        Path logFilePath = Paths.get(LOG_DIR, logFileName);
+        Path backupFilePath = Paths.get(releaseBasePath + "/remote/backup_files", backupFileName);
+        Path logFilePath = Paths.get(releaseBasePath + "/remote/logs", logFileName);
 
         log.info("비동기 백업 시작 - jobId: {}", jobId);
 
@@ -196,7 +198,7 @@ public class RemoteMariaDBBackupService {
      * @return 백업 파일 목록
      */
     public List<BackupFileInfo> getBackupFileList() {
-        Path backupDir = Paths.get(BACKUP_DIR);
+        Path backupDir = Paths.get(releaseBasePath + "/remote/backup_files");
 
         if (!Files.exists(backupDir)) {
             return new ArrayList<>();
@@ -221,7 +223,7 @@ public class RemoteMariaDBBackupService {
      * @return 백업 파일 Path
      */
     public Path getBackupFilePath(String fileName) {
-        Path filePath = Paths.get(BACKUP_DIR, fileName);
+        Path filePath = Paths.get(releaseBasePath + "/remote/backup_files", fileName);
 
         if (!Files.exists(filePath)) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "백업 파일을 찾을 수 없습니다: " + fileName);
@@ -236,7 +238,7 @@ public class RemoteMariaDBBackupService {
      * @param fileName 파일명
      */
     public void deleteBackupFile(String fileName) {
-        Path filePath = Paths.get(BACKUP_DIR, fileName);
+        Path filePath = Paths.get(releaseBasePath + "/remote/backup_files", fileName);
 
         if (!Files.exists(filePath)) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "백업 파일을 찾을 수 없습니다: " + fileName);
@@ -256,8 +258,8 @@ public class RemoteMariaDBBackupService {
      */
     private void createDirectories() {
         try {
-            Files.createDirectories(Paths.get(BACKUP_DIR));
-            Files.createDirectories(Paths.get(LOG_DIR));
+            Files.createDirectories(Paths.get(releaseBasePath + "/remote/backup_files"));
+            Files.createDirectories(Paths.get(releaseBasePath + "/remote/logs"));
         } catch (IOException e) {
             log.error("디렉토리 생성 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다.");
