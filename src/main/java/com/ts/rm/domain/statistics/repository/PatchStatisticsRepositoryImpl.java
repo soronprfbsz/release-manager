@@ -7,7 +7,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.customer.entity.QCustomer;
 import com.ts.rm.domain.patch.entity.QPatch;
 import com.ts.rm.domain.statistics.dto.StatisticsDto.CustomerPatchCount;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyPatchCount;
+import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyCustomerPatchRaw;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -61,16 +61,17 @@ public class PatchStatisticsRepositoryImpl implements PatchStatisticsRepository 
     }
 
     /**
-     * 기간 내 월별 패치 건수 조회
+     * 기간 내 월별+고객별 패치 건수 조회
      *
-     * <p>모든 타입의 패치 집계 (STANDARD + CUSTOM)
+     * <p>CUSTOM 타입 패치만 집계 (고객사별 통계이므로)
      *
      * @param startDate 시작일시
-     * @return 월별 패치 건수 목록 (오름차순)
+     * @return 월별+고객별 패치 건수 목록 (연월 오름차순, 고객명 오름차순)
      */
     @Override
-    public List<MonthlyPatchCount> findMonthlyPatchCounts(LocalDateTime startDate) {
+    public List<MonthlyCustomerPatchRaw> findMonthlyCustomerPatchCounts(LocalDateTime startDate) {
         QPatch patch = QPatch.patch;
+        QCustomer customer = QCustomer.customer;
 
         // DATE_FORMAT(created_at, '%Y-%m') 형식으로 월별 그룹화
         StringTemplate yearMonthTemplate = Expressions.stringTemplate(
@@ -79,13 +80,18 @@ public class PatchStatisticsRepositoryImpl implements PatchStatisticsRepository 
         );
 
         return queryFactory
-                .select(Projections.constructor(MonthlyPatchCount.class,
+                .select(Projections.constructor(MonthlyCustomerPatchRaw.class,
                         yearMonthTemplate,
+                        customer.customerName,
                         patch.count()))
                 .from(patch)
-                .where(patch.createdAt.goe(startDate))
-                .groupBy(yearMonthTemplate)
-                .orderBy(yearMonthTemplate.asc())
+                .join(patch.customer, customer)
+                .where(
+                        patch.createdAt.goe(startDate),
+                        patch.customer.isNotNull()
+                )
+                .groupBy(yearMonthTemplate, customer.customerName)
+                .orderBy(yearMonthTemplate.asc(), customer.customerName.asc())
                 .fetch();
     }
 }

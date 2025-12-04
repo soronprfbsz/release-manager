@@ -59,25 +59,37 @@ public class StatisticsController {
     }
 
     /**
-     * 월별 패치 통계 조회
+     * 월별+고객별 패치 통계 조회
      *
-     * <p>최근 n개월간 월별 패치 생성 건수를 조회합니다.
+     * <p>최근 n개월간 월별+고객별 패치 생성 건수를 조회합니다.
      */
     @GetMapping("/patches/monthly")
     @Operation(
-            summary = "월별 패치 통계 조회",
-            description = "최근 n개월간 월별 패치 생성 건수를 조회합니다.\n\n"
+            summary = "월별+고객별 패치 통계 조회",
+            description = "최근 n개월간 월별+고객별 패치 생성 건수를 조회합니다.\n\n"
                     + "**파라미터**:\n"
                     + "- `months`: 조회 기간 (개월, 기본값: 6)\n\n"
+                    + "**응답 형식**:\n"
+                    + "```json\n"
+                    + "{\n"
+                    + "  \"months\": 6,\n"
+                    + "  \"customers\": [\"A회사\", \"B회사\", \"C회사\"],\n"
+                    + "  \"monthly\": [\n"
+                    + "    { \"yearMonth\": \"2025-07\", \"customerCounts\": {\"A회사\": 3, \"B회사\": 2, \"C회사\": 0} },\n"
+                    + "    { \"yearMonth\": \"2025-08\", \"customerCounts\": {\"A회사\": 2, \"B회사\": 0, \"C회사\": 1} }\n"
+                    + "  ]\n"
+                    + "}\n"
+                    + "```\n\n"
                     + "**참고**:\n"
-                    + "- 모든 타입의 패치 집계 (STANDARD + CUSTOM)\n"
-                    + "- 연월(YYYY-MM) 기준 오름차순 정렬"
+                    + "- CUSTOM 타입 패치만 집계 (고객사별 통계)\n"
+                    + "- 연월(YYYY-MM) 기준 오름차순 정렬\n"
+                    + "- 패치가 없는 월/고객은 0으로 표시"
     )
     public ApiResponse<MonthlyPatchResponse> getMonthlyPatchCounts(
             @Parameter(description = "조회 기간 (개월)", example = "6")
             @RequestParam(defaultValue = "6") int months) {
 
-        log.info("월별 패치 통계 조회 요청 - 최근 {}개월", months);
+        log.info("월별+고객별 패치 통계 조회 요청 - 최근 {}개월", months);
 
         MonthlyPatchResponse response = statisticsService.getMonthlyPatchCounts(months);
 
