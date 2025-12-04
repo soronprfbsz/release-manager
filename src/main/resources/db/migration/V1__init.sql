@@ -418,7 +418,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 
 INSERT INTO account (account_name, email, password, role, status) VALUES
 ('시스템 관리자','admin@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'ADMIN', 'ACTIVE'),
-('사용자','m_user@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'USER', 'ACTIVE');
+('기본 사용자','m_user@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'USER', 'ACTIVE');
 
 -- =========================================================
 -- Section 20: 릴리즈 버전 데이터
