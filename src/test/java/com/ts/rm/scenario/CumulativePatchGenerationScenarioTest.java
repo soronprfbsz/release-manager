@@ -256,6 +256,11 @@ public class CumulativePatchGenerationScenarioTest {
         System.out.println("    - Shebang 포함: #!/bin/bash");
         System.out.println("    - 버전 범위 표시 확인");
 
+        // VERSION_HISTORY INSERT 쿼리 포함 확인
+        assertThat(scriptContent).contains("CM_DB.VERSION_HISTORY");
+        assertThat(scriptContent).contains("APPLIED_BY");
+        System.out.println("    - VERSION_HISTORY INSERT 쿼리 포함 확인");
+
         // cratedb_patch.sh 확인
         Path cratedbScript = patchDir.resolve("cratedb_patch.sh");
         if (Files.exists(cratedbScript)) {

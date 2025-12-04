@@ -61,6 +61,9 @@ public class ReleaseVersionService {
     @Value("${app.release.base-path:src/main/resources/release}")
     private String baseReleasePath;
 
+    @Value("${spring.servlet.multipart.max-file-size:1GB}")
+    private String maxFileSizeConfig;
+
     /**
      * 표준 릴리즈 버전 생성
      *
@@ -953,7 +956,7 @@ public class ReleaseVersionService {
 
             java.util.zip.ZipEntry entry;
             long totalSize = 0;
-            long maxTotalSize = 100 * 1024 * 1024; // ZIP 폭탄 방지: 압축 해제 후 최대 100MB
+            long maxTotalSize = parseFileSize(maxFileSizeConfig); // application.yml 설정값 사용
 
             while ((entry = zis.getNextEntry()) != null) {
                 // 경로 탐색 공격 방지
@@ -970,7 +973,7 @@ public class ReleaseVersionService {
                     totalSize += entry.getSize();
                     if (totalSize > maxTotalSize) {
                         throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                                "압축 해제 후 파일 크기가 너무 큽니다 (최대 100MB)");
+                                "압축 해제 후 파일 크기가 너무 큽니다 (최대 " + maxFileSizeConfig + ")");
                     }
 
                     Files.createDirectories(targetPath.getParent());
@@ -985,6 +988,41 @@ public class ReleaseVersionService {
         }
 
         return tempDir;
+    }
+
+    /**
+     * 파일 크기 문자열을 바이트 단위로 변환
+     *
+     * @param sizeStr 크기 문자열 (예: "1GB", "500MB", "1024KB")
+     * @return 바이트 단위 크기
+     */
+    private long parseFileSize(String sizeStr) {
+        if (sizeStr == null || sizeStr.isEmpty()) {
+            return 1024L * 1024 * 1024; // 기본값 1GB
+        }
+
+        sizeStr = sizeStr.trim().toUpperCase();
+
+        long multiplier = 1;
+        if (sizeStr.endsWith("GB")) {
+            multiplier = 1024L * 1024 * 1024;
+            sizeStr = sizeStr.substring(0, sizeStr.length() - 2);
+        } else if (sizeStr.endsWith("MB")) {
+            multiplier = 1024L * 1024;
+            sizeStr = sizeStr.substring(0, sizeStr.length() - 2);
+        } else if (sizeStr.endsWith("KB")) {
+            multiplier = 1024L;
+            sizeStr = sizeStr.substring(0, sizeStr.length() - 2);
+        } else if (sizeStr.endsWith("B")) {
+            sizeStr = sizeStr.substring(0, sizeStr.length() - 1);
+        }
+
+        try {
+            return Long.parseLong(sizeStr.trim()) * multiplier;
+        } catch (NumberFormatException e) {
+            log.warn("파일 크기 파싱 실패: {}, 기본값 1GB 사용", sizeStr);
+            return 1024L * 1024 * 1024;
+        }
     }
 
     /**
