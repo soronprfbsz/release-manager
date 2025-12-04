@@ -96,17 +96,26 @@ public class MariaDBBackupService {
 
             backupFileRepository.save(backupFile);
 
-            log.info("백업 완료 - jobId: {}", jobId);
+            log.info("백업 완료 - jobId: {}, backupFileId: {}", jobId, backupFile.getBackupFileId());
 
             // 성공 로그 기록
             appendToLogFile(logFilePath, "========================================");
+            appendToLogFile(logFilePath, "백업 파일 ID: " + backupFile.getBackupFileId());
             appendToLogFile(logFilePath, "백업 완료: " + backupFileName);
             appendToLogFile(logFilePath, "파일 크기: " + fileSize + " bytes");
             appendToLogFile(logFilePath, "========================================");
 
-            // 작업 상태 업데이트 (성공)
+            // 로그 파일명에 backupFileId 포함하여 rename
+            String newLogFileName = String.format("backup_%d_%s.log",
+                    backupFile.getBackupFileId(), timestamp);
+            Path newLogFilePath = logFilePath.getParent().resolve(newLogFileName);
+            Files.move(logFilePath, newLogFilePath);
+            log.info("로그 파일 rename: {} -> {}", logFileName, newLogFileName);
+
+            // 작업 상태 업데이트 (성공) - 새 로그 파일명 반영
             jobStatusManager.saveJobStatus(jobId,
-                    JobResponse.createSuccess(jobId, backupFileName, fileSize, "logs/" + logFileName));
+                    JobResponse.createSuccess(jobId, backupFileName, fileSize,
+                            "logs/" + newLogFileName));
 
         } catch (Exception e) {
             log.error("백업 실패 - jobId: {}, error: {}", jobId, e.getMessage(), e);

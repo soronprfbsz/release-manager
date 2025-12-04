@@ -2,6 +2,8 @@ package com.ts.rm.domain.job.service;
 
 import com.ts.rm.domain.job.dto.MariaDBRestoreRequest;
 import com.ts.rm.domain.job.dto.JobResponse;
+import com.ts.rm.domain.job.entity.BackupFile;
+import com.ts.rm.domain.job.repository.BackupFileRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import java.io.BufferedReader;
@@ -36,6 +38,7 @@ public class MariaDBRestoreService {
     private String releaseBasePath;
 
     private final JobStatusManager jobStatusManager;
+    private final BackupFileRepository backupFileRepository;
 
     /**
      * MariaDB 복원 비동기 실행
@@ -48,10 +51,15 @@ public class MariaDBRestoreService {
     public void executeRestoreAsync(MariaDBRestoreRequest request, String jobId,
             String logFileName) {
 
-        Path backupFilePath = Paths.get(releaseBasePath + "/job/backup_files/" + FILE_CATEGORY, request.getBackupFileName());
+        // 백업 파일 정보 조회
+        BackupFile backupFile = backupFileRepository.findById(request.getBackupFileId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                        "백업 파일을 찾을 수 없습니다: " + request.getBackupFileId()));
+
+        Path backupFilePath = Paths.get(releaseBasePath, backupFile.getFilePath());
         Path logFilePath = Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY, logFileName);
 
-        log.info("복원 시작 - jobId: {}", jobId);
+        log.info("복원 시작 - jobId: {}, backupFileId: {}", jobId, request.getBackupFileId());
 
         try {
             // 디렉토리 생성
@@ -60,11 +68,11 @@ public class MariaDBRestoreService {
             // 백업 파일 존재 확인
             if (!Files.exists(backupFilePath)) {
                 throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                        "백업 파일을 찾을 수 없습니다: " + request.getBackupFileName());
+                        "백업 파일을 찾을 수 없습니다: " + backupFile.getFileName());
             }
 
             // 로그 파일 초기화
-            initializeLogFile(logFilePath, request, backupFilePath);
+            initializeLogFile(logFilePath, request, backupFile, backupFilePath);
 
             // 연결 테스트
             testConnection(request, logFilePath);
@@ -72,20 +80,21 @@ public class MariaDBRestoreService {
             // 복원 실행
             executeMariaDBRestore(request, backupFilePath, logFilePath);
 
-            log.info("복원 완료 - jobId: {}", jobId);
+            log.info("복원 완료 - jobId: {}, backupFileId: {}", jobId, request.getBackupFileId());
 
             // 성공 로그 기록
             appendToLogFile(logFilePath, "========================================");
-            appendToLogFile(logFilePath, "복원 완료: " + request.getBackupFileName());
+            appendToLogFile(logFilePath, "복원 완료: " + backupFile.getFileName());
             appendToLogFile(logFilePath, "========================================");
 
             // 작업 상태 업데이트 (성공)
             jobStatusManager.saveJobStatus(jobId,
-                    JobResponse.createSuccess(jobId, request.getBackupFileName(),
+                    JobResponse.createSuccess(jobId, backupFile.getFileName(),
                             Files.size(backupFilePath), "logs/" + logFileName));
 
         } catch (Exception e) {
-            log.error("복원 실패 - jobId: {}, error: {}", jobId, e.getMessage(), e);
+            log.error("복원 실패 - jobId: {}, backupFileId: {}, error: {}",
+                    jobId, request.getBackupFileId(), e.getMessage(), e);
 
             // 실패 로그 기록
             try {
@@ -98,7 +107,7 @@ public class MariaDBRestoreService {
 
             // 작업 상태 업데이트 (실패)
             jobStatusManager.saveJobStatus(jobId,
-                    JobResponse.createFailed(jobId, request.getBackupFileName(),
+                    JobResponse.createFailed(jobId, backupFile.getFileName(),
                             "logs/" + logFileName, e.getMessage()));
         }
     }
@@ -119,13 +128,14 @@ public class MariaDBRestoreService {
      * 로그 파일 초기화
      */
     private void initializeLogFile(Path logFilePath, MariaDBRestoreRequest request,
-            Path backupFilePath) throws IOException {
+            BackupFile backupFile, Path backupFilePath) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFilePath.toFile()))) {
             writer.write("=========================================\n");
             writer.write("MariaDB 복원\n");
             writer.write("=========================================\n");
             writer.write("호스트: " + request.getHost() + ":" + request.getPort() + "\n");
-            writer.write("백업 파일: " + request.getBackupFileName() + "\n");
+            writer.write("백업 파일 ID: " + backupFile.getBackupFileId() + "\n");
+            writer.write("백업 파일: " + backupFile.getFileName() + "\n");
             writer.write("파일 크기: " + Files.size(backupFilePath) + " bytes\n");
             writer.write("시작 시간: " + LocalDateTime.now().format(
                     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "\n");

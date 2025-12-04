@@ -49,16 +49,18 @@ public class MariaDBRestoreController {
     public ResponseEntity<ApiResponse<JobResponse>> executeRestore(
             @Valid @RequestBody MariaDBRestoreRequest request) {
 
-        log.info("MariaDB 복원 요청 - host: {}, backupFile: {}",
-                request.getHost(), request.getBackupFileName());
+        log.info("MariaDB 복원 요청 - host: {}, backupFileId: {}",
+                request.getHost(), request.getBackupFileId());
 
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
         String jobId = "restore_" + timestamp;
-        String logFileName = String.format("restore_mariadb_%s.log", timestamp);
+        // 로그 파일명에 backupFileId 포함: restore_{backupFileId}_{timestamp}.log
+        String logFileName = String.format("restore_%d_%s.log",
+                request.getBackupFileId(), timestamp);
 
         // 작업 시작 상태 저장
         JobResponse runningResponse = JobResponse.createRunning(jobId,
-                request.getBackupFileName(), "logs/" + logFileName);
+                "backupFileId=" + request.getBackupFileId(), "logs/" + logFileName);
         jobStatusManager.saveJobStatus(jobId, runningResponse);
 
         // 비동기 복원 실행
