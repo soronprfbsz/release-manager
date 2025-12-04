@@ -221,32 +221,22 @@ deploy-job:
 
       echo "✓ 로컬 이미지 확인: ${LOCAL_IMAGE}"
 
-    # Git 최신 릴리즈 파일로 동기화
+    # 릴리즈 파일 디렉토리 초기화 (기존 데이터 전체 보존)
     - |
-      echo "=== 릴리즈 파일 동기화 ==="
-      mkdir -p /data/release_manager/release_files
+      echo "=== 릴리즈 파일 디렉토리 확인 ==="
+      RELEASE_DIR="/data/release_manager/release_files"
 
-      # 기존 파일 백업
-      if [ -d "/data/release_manager/release_files/version" ]; then
-        echo "⚠️  기존 파일 백업 중..."
-        tar czf "/data/release_manager/release_files_backup_$(date +%Y%m%d_%H%M%S).tar.gz" \
-                -C /data/release_manager release_files
-      fi
+      # 디렉토리 및 권한 설정 (기존 파일 삭제하지 않음)
+      mkdir -p ${RELEASE_DIR}/patches
+      mkdir -p ${RELEASE_DIR}/remote/backup_files
+      mkdir -p ${RELEASE_DIR}/remote/logs
+      mkdir -p ${RELEASE_DIR}/resource
+      mkdir -p ${RELEASE_DIR}/version
+      chmod -R 777 ${RELEASE_DIR}
 
-      # 기존 파일 삭제
-      echo "🗑️  기존 릴리즈 파일 삭제 중..."
-      rm -rf /data/release_manager/release_files/*
-
-      # Git의 최신 파일로 복사
-      echo "📦 Git 최신 릴리즈 파일 복사 중..."
-      cp -r src/main/resources/release/* /data/release_manager/release_files/
-
-      # 패치 디렉토리 생성 및 권한 설정 (Spring 사용자가 쓸 수 있도록)
-      echo "📁 패치 디렉토리 생성 및 권한 설정..."
-      mkdir -p /data/release_manager/release_files/patches
-      chmod -R 777 /data/release_manager/release_files/patches
-
-      echo "✅ 동기화 완료"
+      echo "✅ 릴리즈 파일 디렉토리 준비 완료 (기존 데이터 보존됨)"
+      echo "📁 현재 디렉토리 구조:"
+      ls -la ${RELEASE_DIR}/ || true
 
     - |
       echo "=== 기존 컨테이너 정리 ==="
