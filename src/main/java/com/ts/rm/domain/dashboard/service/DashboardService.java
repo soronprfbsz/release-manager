@@ -32,10 +32,12 @@ public class DashboardService {
     /**
      * 대시보드 최근 데이터 조회
      *
+     * @param versionLimit 최근 릴리즈 버전 조회 개수
+     * @param patchLimit   최근 생성 패치 조회 개수
      * @return 대시보드 응답
      */
-    public DashboardDto.Response getRecentData() {
-        log.info("대시보드 최근 데이터 조회 시작");
+    public DashboardDto.Response getRecentData(int versionLimit, int patchLimit) {
+        log.info("대시보드 최근 데이터 조회 시작 - 버전: {}개, 패치: {}개", versionLimit, patchLimit);
 
         // 1. 최신 설치본 조회 (STANDARD + INSTALL)
         LatestInstallVersion latestInstall = releaseVersionRepository
@@ -44,17 +46,17 @@ public class DashboardService {
                 .map(this::toLatestInstallVersion)
                 .orElse(null);
 
-        // 2. 최근 릴리즈 버전 4개 조회 (STANDARD + PATCH)
+        // 2. 최근 릴리즈 버전 조회 (STANDARD + PATCH)
         List<RecentVersion> recentVersions = releaseVersionRepository
                 .findRecentByReleaseTypeAndCategory(RELEASE_TYPE_STANDARD, ReleaseCategory.PATCH,
-                        4)
+                        versionLimit)
                 .stream()
                 .map(this::toRecentVersion)
                 .toList();
 
-        // 3. 최근 생성 패치 3개 조회 (STANDARD)
+        // 3. 최근 생성 패치 조회 (STANDARD)
         List<RecentPatch> recentPatches = patchRepository
-                .findRecentByReleaseType(RELEASE_TYPE_STANDARD, 3)
+                .findRecentByReleaseType(RELEASE_TYPE_STANDARD, patchLimit)
                 .stream()
                 .map(this::toRecentPatch)
                 .toList();

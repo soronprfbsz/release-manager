@@ -55,7 +55,7 @@ public class PatchStatisticsRepositoryImpl implements PatchStatisticsRepository 
                         customer.customerCode,
                         customer.customerName
                 )
-                .orderBy(patch.count().desc())
+                .orderBy(patch.count().desc(), customer.customerName.asc())
                 .limit(topN)
                 .fetch();
     }

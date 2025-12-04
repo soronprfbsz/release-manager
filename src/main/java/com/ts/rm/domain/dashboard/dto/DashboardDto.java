@@ -18,10 +18,10 @@ public class DashboardDto {
             @Schema(description = "최신 설치본 정보")
             LatestInstallVersion latestInstall,
 
-            @Schema(description = "최신 릴리즈 버전 목록 (최근 4개)")
+            @Schema(description = "최신 릴리즈 버전 목록")
             List<RecentVersion> recentVersions,
 
-            @Schema(description = "최근 생성 패치 목록 (최근 3개)")
+            @Schema(description = "최근 생성 패치 목록")
             List<RecentPatch> recentPatches
     ) {
     }
