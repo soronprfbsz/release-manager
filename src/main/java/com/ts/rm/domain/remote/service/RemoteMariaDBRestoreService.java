@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -31,10 +32,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RemoteMariaDBRestoreService {
 
-    private static final String BACKUP_DIR = "src/main/resources/release/remote/backup_files";
-    private static final String LOG_DIR = "src/main/resources/release/remote/logs";
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern(
             "yyyyMMdd_HHmmss");
+
+    @Value("${app.release.base-path:/app/release_files}")
+    private String releaseBasePath;
 
     private final BackupJobStatusManager jobStatusManager;
 
@@ -49,8 +51,8 @@ public class RemoteMariaDBRestoreService {
         String jobId = "restore_" + timestamp;
         String logFileName = String.format("restore_remote_mariadb_%s.log", timestamp);
 
-        Path backupFilePath = Paths.get(BACKUP_DIR, request.getBackupFileName());
-        Path logFilePath = Paths.get(LOG_DIR, logFileName);
+        Path backupFilePath = Paths.get(releaseBasePath + "/remote/backup_files", request.getBackupFileName());
+        Path logFilePath = Paths.get(releaseBasePath + "/remote/logs", logFileName);
 
         log.info("원격 MariaDB 복원 시작 - jobId: {}, host: {}, backupFile: {}",
                 jobId, request.getHost(), request.getBackupFileName());
@@ -112,8 +114,8 @@ public class RemoteMariaDBRestoreService {
     public void executeRestoreAsync(MariaDBRestoreRequest request, String jobId,
             String logFileName) {
 
-        Path backupFilePath = Paths.get(BACKUP_DIR, request.getBackupFileName());
-        Path logFilePath = Paths.get(LOG_DIR, logFileName);
+        Path backupFilePath = Paths.get(releaseBasePath + "/remote/backup_files", request.getBackupFileName());
+        Path logFilePath = Paths.get(releaseBasePath + "/remote/logs", logFileName);
 
         log.info("비동기 복원 시작 - jobId: {}", jobId);
 
@@ -163,7 +165,7 @@ public class RemoteMariaDBRestoreService {
      */
     private void createDirectories() {
         try {
-            Files.createDirectories(Paths.get(LOG_DIR));
+            Files.createDirectories(Paths.get(releaseBasePath + "/remote/logs"));
         } catch (IOException e) {
             log.error("디렉토리 생성 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다.");
