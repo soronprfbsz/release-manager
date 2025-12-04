@@ -2,6 +2,7 @@ package com.ts.rm.domain.statistics.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 통계 API DTO
@@ -56,34 +57,52 @@ public final class StatisticsDto {
     }
 
     /**
-     * 월별 패치 통계
+     * 월별+고객별 패치 원본 데이터 (내부 사용)
      *
-     * @param yearMonth  연월 (YYYY-MM)
-     * @param patchCount 패치 건수
+     * @param yearMonth    연월 (YYYY-MM)
+     * @param customerName 고객사명
+     * @param patchCount   패치 건수
      */
-    @Schema(description = "월별 패치 통계")
-    public record MonthlyPatchCount(
-            @Schema(description = "연월 (YYYY-MM)", example = "2025-06")
+    public record MonthlyCustomerPatchRaw(
             String yearMonth,
-
-            @Schema(description = "패치 건수", example = "12")
+            String customerName,
             Long patchCount
     ) {
     }
 
     /**
-     * 월별 패치 통계 응답
+     * 월별+고객별 패치 통계
      *
-     * @param months   조회 기간 (개월)
-     * @param monthly  월별 패치 통계 목록
+     * @param yearMonth      연월 (YYYY-MM)
+     * @param customerCounts 고객사별 패치 건수 (고객사명 -> 패치 건수)
      */
-    @Schema(description = "월별 패치 통계 응답")
+    @Schema(description = "월별+고객별 패치 통계")
+    public record MonthlyCustomerPatchCount(
+            @Schema(description = "연월 (YYYY-MM)", example = "2025-06")
+            String yearMonth,
+
+            @Schema(description = "고객사별 패치 건수", example = "{\"A회사\": 3, \"B회사\": 2}")
+            Map<String, Long> customerCounts
+    ) {
+    }
+
+    /**
+     * 월별+고객별 패치 통계 응답
+     *
+     * @param months    조회 기간 (개월)
+     * @param customers 고객사 목록
+     * @param monthly   월별+고객별 패치 통계 목록
+     */
+    @Schema(description = "월별+고객별 패치 통계 응답")
     public record MonthlyPatchResponse(
             @Schema(description = "조회 기간 (개월)", example = "6")
             int months,
 
-            @Schema(description = "월별 패치 통계 목록")
-            List<MonthlyPatchCount> monthly
+            @Schema(description = "고객사 목록", example = "[\"A회사\", \"B회사\", \"C회사\"]")
+            List<String> customers,
+
+            @Schema(description = "월별+고객별 패치 통계 목록")
+            List<MonthlyCustomerPatchCount> monthly
     ) {
     }
 }

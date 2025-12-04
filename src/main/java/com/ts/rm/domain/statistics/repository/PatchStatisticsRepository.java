@@ -1,7 +1,7 @@
 package com.ts.rm.domain.statistics.repository;
 
 import com.ts.rm.domain.statistics.dto.StatisticsDto.CustomerPatchCount;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyPatchCount;
+import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyCustomerPatchRaw;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,10 +22,10 @@ public interface PatchStatisticsRepository {
     List<CustomerPatchCount> findTopCustomersByPatchCount(LocalDateTime startDate, int topN);
 
     /**
-     * 기간 내 월별 패치 건수 조회
+     * 기간 내 월별+고객별 패치 건수 조회
      *
      * @param startDate 시작일시
-     * @return 월별 패치 건수 목록 (오름차순)
+     * @return 월별+고객별 패치 건수 목록 (연월 오름차순, 고객명 오름차순)
      */
-    List<MonthlyPatchCount> findMonthlyPatchCounts(LocalDateTime startDate);
+    List<MonthlyCustomerPatchRaw> findMonthlyCustomerPatchCounts(LocalDateTime startDate);
 }

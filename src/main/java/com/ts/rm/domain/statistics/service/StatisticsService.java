@@ -1,12 +1,20 @@
 package com.ts.rm.domain.statistics.service;
 
 import com.ts.rm.domain.statistics.dto.StatisticsDto.CustomerPatchCount;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyPatchCount;
+import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyCustomerPatchCount;
+import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyCustomerPatchRaw;
 import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyPatchResponse;
 import com.ts.rm.domain.statistics.dto.StatisticsDto.TopCustomersResponse;
 import com.ts.rm.domain.statistics.repository.PatchStatisticsRepository;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class StatisticsService {
 
     private final PatchStatisticsRepository patchStatisticsRepository;
+    private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     /**
      * 고객사별 패치 Top-N 조회
@@ -48,23 +57,79 @@ public class StatisticsService {
     }
 
     /**
-     * 월별 패치 통계 조회
+     * 월별+고객별 패치 통계 조회
      *
-     * <p>최근 n개월간 월별 패치 생성 건수를 조회합니다.
+     * <p>최근 n개월간 월별+고객별 패치 생성 건수를 조회합니다.
      *
      * @param months 조회 기간 (개월)
-     * @return 월별 패치 통계 응답
+     * @return 월별+고객별 패치 통계 응답
      */
     public MonthlyPatchResponse getMonthlyPatchCounts(int months) {
-        log.info("월별 패치 통계 조회 - 최근 {}개월", months);
+        log.info("월별+고객별 패치 통계 조회 - 최근 {}개월", months);
 
         LocalDateTime startDate = LocalDateTime.now().minusMonths(months);
 
-        List<MonthlyPatchCount> monthly =
-                patchStatisticsRepository.findMonthlyPatchCounts(startDate);
+        // 원본 데이터 조회
+        List<MonthlyCustomerPatchRaw> rawData =
+                patchStatisticsRepository.findMonthlyCustomerPatchCounts(startDate);
 
-        log.info("월별 패치 통계 조회 완료 - 결과 건수: {}", monthly.size());
+        // 데이터가 없으면 빈 응답 반환 (프론트엔드에서 nodata 처리 가능)
+        if (rawData.isEmpty()) {
+            log.info("월별+고객별 패치 통계 조회 완료 - 데이터 없음");
+            return new MonthlyPatchResponse(months, List.of(), List.of());
+        }
 
-        return new MonthlyPatchResponse(months, monthly);
+        // 고객사 목록 추출 (중복 제거, 순서 유지)
+        Set<String> customerSet = new LinkedHashSet<>();
+        for (MonthlyCustomerPatchRaw raw : rawData) {
+            customerSet.add(raw.customerName());
+        }
+        List<String> customers = new ArrayList<>(customerSet);
+
+        // 조회 기간의 모든 월 생성
+        List<String> allMonths = generateAllMonths(months);
+
+        // 월별+고객별 데이터를 Map으로 변환 (yearMonth -> customerName -> count)
+        Map<String, Map<String, Long>> monthlyDataMap = new LinkedHashMap<>();
+        for (String yearMonth : allMonths) {
+            monthlyDataMap.put(yearMonth, new LinkedHashMap<>());
+        }
+
+        for (MonthlyCustomerPatchRaw raw : rawData) {
+            monthlyDataMap
+                    .computeIfAbsent(raw.yearMonth(), k -> new LinkedHashMap<>())
+                    .put(raw.customerName(), raw.patchCount());
+        }
+
+        // 응답 형식으로 변환 (없는 고객은 0으로 채움)
+        List<MonthlyCustomerPatchCount> monthly = new ArrayList<>();
+        for (String yearMonth : allMonths) {
+            Map<String, Long> customerCounts = new LinkedHashMap<>();
+            for (String customer : customers) {
+                customerCounts.put(customer, monthlyDataMap.get(yearMonth).getOrDefault(customer, 0L));
+            }
+            monthly.add(new MonthlyCustomerPatchCount(yearMonth, customerCounts));
+        }
+
+        log.info("월별+고객별 패치 통계 조회 완료 - 월수: {}, 고객수: {}", monthly.size(), customers.size());
+
+        return new MonthlyPatchResponse(months, customers, monthly);
+    }
+
+    /**
+     * 조회 기간의 모든 월 목록 생성
+     *
+     * @param months 조회 기간 (개월)
+     * @return 연월 목록 (YYYY-MM 형식)
+     */
+    private List<String> generateAllMonths(int months) {
+        List<String> allMonths = new ArrayList<>();
+        YearMonth current = YearMonth.now();
+
+        for (int i = months - 1; i >= 0; i--) {
+            allMonths.add(current.minusMonths(i).format(YEAR_MONTH_FORMATTER));
+        }
+
+        return allMonths;
     }
 }
