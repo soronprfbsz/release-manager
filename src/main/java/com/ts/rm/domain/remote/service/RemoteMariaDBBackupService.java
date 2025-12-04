@@ -137,6 +137,9 @@ public class RemoteMariaDBBackupService {
         log.info("비동기 백업 시작 - jobId: {}", jobId);
 
         try {
+            // 디렉토리 생성
+            createDirectories();
+
             // 로그 파일 초기화
             initializeLogFile(logFilePath, request);
 
