@@ -381,20 +381,23 @@ public class PatchService {
                     "CRATEDB"
             );
 
-            if (!mariadbFiles.isEmpty()) {
-                scriptGenerator.generateMariaDBPatchScript(fromVersion.getVersion(),
-                        toVersion.getVersion(), versions, mariadbFiles, outputPath);
-                log.info("MariaDB 패치 스크립트 생성 완료: {}/mariadb_patch.sh", outputPath);
+            // MariaDB 스크립트는 항상 생성 (VERSION_HISTORY INSERT를 위해 필수)
+            // SQL 파일이 없더라도 VERSION_HISTORY에 버전 이력을 기록해야 함
+            scriptGenerator.generateMariaDBPatchScript(fromVersion.getVersion(),
+                    toVersion.getVersion(), versions, mariadbFiles, outputPath);
+            if (mariadbFiles.isEmpty()) {
+                log.info("MariaDB SQL 파일은 없지만 VERSION_HISTORY 기록을 위해 스크립트 생성: {}/mariadb_patch.sh", outputPath);
             } else {
-                log.warn("MariaDB 파일이 없어 스크립트를 생성하지 않습니다.");
+                log.info("MariaDB 패치 스크립트 생성 완료: {}/mariadb_patch.sh (SQL 파일 {}개)", outputPath, mariadbFiles.size());
             }
 
+            // CrateDB 스크립트는 파일이 있을 때만 생성
             if (!cratedbFiles.isEmpty()) {
                 scriptGenerator.generateCrateDBPatchScript(fromVersion.getVersion(),
                         toVersion.getVersion(), versions, cratedbFiles, outputPath);
                 log.info("CrateDB 패치 스크립트 생성 완료: {}/cratedb_patch.sh", outputPath);
             } else {
-                log.warn("CrateDB 파일이 없어 스크립트를 생성하지 않습니다.");
+                log.info("CrateDB 파일이 없어 스크립트를 생성하지 않습니다.");
             }
 
         } catch (Exception e) {

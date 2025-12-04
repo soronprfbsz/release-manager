@@ -77,8 +77,8 @@ public class ReleaseVersionController {
                     + "- `install/` - 설치본 파일 (※ 패치 생성 시 제외)\n"
                     + "- 최소 1개 이상의 카테고리 폴더 필수\n\n"
                     + "**제약사항**:\n"
-                    + "- ZIP 파일 크기: 최대 50MB\n"
-                    + "- 압축 해제 후 크기: 최대 100MB\n"
+                    + "- ZIP 파일 크기: application.yml의 max-file-size 설정값 (기본 1GB)\n"
+                    + "- 압축 해제 후 크기: application.yml의 max-file-size 설정값 (기본 1GB)\n"
                     + "- 허용 확장자: 모든 확장자 허용 (제한 없음)\n"
                     + "- Authorization 헤더에 JWT 토큰 필수 (Bearer {token})")
     @PostMapping(value = "/standard/versions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
