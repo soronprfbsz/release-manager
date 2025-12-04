@@ -303,13 +303,13 @@ public class RemoteMariaDBBackupService {
         appendToLogFile(logFilePath, "연결 테스트 중...");
 
         List<String> command = new ArrayList<>();
-        command.add("docker");
-        command.add("exec");
-        command.add(request.getContainerName());
         command.add("mariadb");
-        command.add("-h" + request.getHost());
-        command.add("-P" + request.getPort());
-        command.add("-u" + request.getUsername());
+        command.add("-h");
+        command.add(request.getHost());
+        command.add("-P");
+        command.add(String.valueOf(request.getPort()));
+        command.add("-u");
+        command.add(request.getUsername());
         command.add("-p" + request.getPassword());
         command.add("-e");
         command.add("SELECT 1");
@@ -344,13 +344,13 @@ public class RemoteMariaDBBackupService {
         appendToLogFile(logFilePath, "백업 실행 중...");
 
         List<String> command = new ArrayList<>();
-        command.add("docker");
-        command.add("exec");
-        command.add(request.getContainerName());
         command.add("mariadb-dump");
-        command.add("-h" + request.getHost());
-        command.add("-P" + request.getPort());
-        command.add("-u" + request.getUsername());
+        command.add("-h");
+        command.add(request.getHost());
+        command.add("-P");
+        command.add(String.valueOf(request.getPort()));
+        command.add("-u");
+        command.add(request.getUsername());
         command.add("-p" + request.getPassword());
         command.add("--single-transaction");
         command.add("--routines");

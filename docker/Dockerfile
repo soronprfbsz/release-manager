@@ -30,8 +30,8 @@ LABEL version="1.0"
 
 WORKDIR /app
 
-# 타임존 설정
-RUN apk add --no-cache tzdata && \
+# 타임존 설정 및 MariaDB 클라이언트 설치
+RUN apk add --no-cache tzdata mariadb-client && \
     cp /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
     echo "Asia/Seoul" > /etc/timezone && \
     apk del tzdata

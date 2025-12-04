@@ -211,13 +211,13 @@ public class RemoteMariaDBRestoreService {
         appendToLogFile(logFilePath, "연결 테스트 중...");
 
         List<String> command = new ArrayList<>();
-        command.add("docker");
-        command.add("exec");
-        command.add(request.getContainerName());
         command.add("mariadb");
-        command.add("-h" + request.getHost());
-        command.add("-P" + request.getPort());
-        command.add("-u" + request.getUsername());
+        command.add("-h");
+        command.add(request.getHost());
+        command.add("-P");
+        command.add(String.valueOf(request.getPort()));
+        command.add("-u");
+        command.add(request.getUsername());
         command.add("-p" + request.getPassword());
         command.add("-e");
         command.add("SELECT 1");
@@ -253,14 +253,13 @@ public class RemoteMariaDBRestoreService {
         appendToLogFile(logFilePath, "경고: 기존 데이터베이스의 데이터가 삭제되고 백업 데이터로 대체됩니다.");
 
         List<String> command = new ArrayList<>();
-        command.add("docker");
-        command.add("exec");
-        command.add("-i");
-        command.add(request.getContainerName());
         command.add("mariadb");
-        command.add("-h" + request.getHost());
-        command.add("-P" + request.getPort());
-        command.add("-u" + request.getUsername());
+        command.add("-h");
+        command.add(request.getHost());
+        command.add("-P");
+        command.add(String.valueOf(request.getPort()));
+        command.add("-u");
+        command.add(request.getUsername());
         command.add("-p" + request.getPassword());
 
         ProcessBuilder pb = new ProcessBuilder(command);
