@@ -55,7 +55,12 @@ public class RemoteMariaDBBackupService {
     public BackupJobResponse executeBackup(MariaDBBackupRequest request) {
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
         String jobId = "backup_" + timestamp;
-        String backupFileName = String.format("%s_%s.sql", BACKUP_FILE_PREFIX, timestamp);
+
+        // outputFileName이 지정된 경우 사용, 아니면 자동 생성
+        String backupFileName = (request.getOutputFileName() != null && !request.getOutputFileName().isBlank())
+                ? ensureSqlExtension(request.getOutputFileName())
+                : String.format("%s_%s.sql", BACKUP_FILE_PREFIX, timestamp);
+
         String logFileName = String.format("backup_remote_mariadb_%s.log", timestamp);
 
         // 디렉토리 생성
@@ -428,5 +433,15 @@ public class RemoteMariaDBBackupService {
             log.error("파일 정보 조회 실패: {}", path, e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "파일 정보 조회에 실패했습니다.");
         }
+    }
+
+    /**
+     * 파일명에 .sql 확장자가 없으면 추가
+     */
+    private String ensureSqlExtension(String fileName) {
+        if (fileName.toLowerCase().endsWith(".sql")) {
+            return fileName;
+        }
+        return fileName + ".sql";
     }
 }
