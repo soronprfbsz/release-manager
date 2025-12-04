@@ -214,6 +214,9 @@ public class MariaDBBackupService {
 
     /**
      * mariadb-dump 명령 실행 (백업)
+     * <p>
+     * 하위 버전 호환성을 위해 --compatible=mysql57 옵션 사용
+     * (NOTE_VERBOSITY 등 상위 버전 전용 변수 제외)
      */
     private void executeMariaDBBackup(MariaDBBackupRequest request, Path backupFilePath,
             Path logFilePath) throws IOException {
@@ -234,6 +237,10 @@ public class MariaDBBackupService {
         command.add("--routines");
         command.add("--triggers");
         command.add("--events");
+        command.add("--skip-add-locks");
+        // 하위 버전 MariaDB/MySQL 호환성을 위해 mysql57 모드로 덤프
+        // NOTE_VERBOSITY 등 상위 버전 전용 시스템 변수 제외
+        command.add("--compatible=mysql57");
         command.add(request.getDatabase());
 
         ProcessBuilder pb = new ProcessBuilder(command);
