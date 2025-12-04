@@ -37,7 +37,7 @@ public class MariaDBBackupRequest {
 
     @NotBlank(message = "사용자명은 필수입니다")
     @Schema(description = "MariaDB 사용자명", example = "root", required = true)
-    private String user;
+    private String username;
 
     @NotBlank(message = "비밀번호는 필수입니다")
     @Schema(description = "MariaDB 비밀번호", example = "password", required = true)
