@@ -95,12 +95,17 @@ public class RemoteMariaDBController {
     public ResponseEntity<ApiResponse<BackupJobResponse>> executeBackupAsync(
             @Valid @RequestBody MariaDBBackupRequest request) {
 
-        log.info("MariaDB 원격 백업 비동기 요청 - host: {}, database: {}",
-                request.getHost(), request.getDatabase());
+        log.info("MariaDB 원격 백업 비동기 요청 - host: {}, database: {}, outputFileName: {}",
+                request.getHost(), request.getDatabase(), request.getOutputFileName());
 
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
         String jobId = "backup_" + timestamp;
-        String backupFileName = String.format("backup_remote_%s.sql", timestamp);
+
+        // outputFileName이 지정된 경우 사용, 아니면 자동 생성
+        String backupFileName = (request.getOutputFileName() != null && !request.getOutputFileName().isBlank())
+                ? ensureSqlExtension(request.getOutputFileName())
+                : String.format("backup_remote_%s.sql", timestamp);
+
         String logFileName = String.format("backup_remote_mariadb_%s.log", timestamp);
 
         // 작업 시작 상태 저장
@@ -112,6 +117,16 @@ public class RemoteMariaDBController {
         backupService.executeBackupAsync(request, jobId, backupFileName, logFileName);
 
         return ResponseEntity.ok(ApiResponse.success(runningResponse));
+    }
+
+    /**
+     * 파일명에 .sql 확장자가 없으면 추가
+     */
+    private String ensureSqlExtension(String fileName) {
+        if (fileName.toLowerCase().endsWith(".sql")) {
+            return fileName;
+        }
+        return fileName + ".sql";
     }
 
     /**

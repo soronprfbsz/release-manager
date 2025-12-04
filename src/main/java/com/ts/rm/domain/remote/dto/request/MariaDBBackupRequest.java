@@ -49,4 +49,7 @@ public class MariaDBBackupRequest {
 
     @Schema(description = "백업 설명 (선택사항)", example = "월간 정기 백업")
     private String description;
+
+    @Schema(description = "출력 파일명 (선택사항, 미지정 시 자동 생성)", example = "nms_db_backup_20251204.sql")
+    private String outputFileName;
 }
