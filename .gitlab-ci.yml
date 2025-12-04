@@ -21,7 +21,6 @@ stages:
   - build
   - test
   - docker-build
-  - harbor-push
   - deploy
 
 # ========================================
@@ -128,10 +127,10 @@ docker-build-job:
     - docker images | grep ${DOCKER_IMAGE_NAME}
 
 # ========================================
-# Harbor Push 단계
+# Harbor Push 단계 (deploy와 동시 실행)
 # ========================================
 harbor-push-job:
-  stage: harbor-push
+  stage: deploy
   tags:
     - 17-runner
   only:
@@ -173,7 +172,6 @@ harbor-push-job:
       fi
   after_script:
     - docker logout $HARBOR_REGISTRY || true
-  when: manual
 
 # ========================================
 # 배포 단계
