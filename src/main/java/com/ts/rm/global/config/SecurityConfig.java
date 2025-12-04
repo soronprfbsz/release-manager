@@ -65,7 +65,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/releases/files/*/download").permitAll()  // 릴리즈 파일 다운로드
                         .requestMatchers("/api/releases/versions/*/download").permitAll()  // 릴리즈 버전 전체 다운로드
                         .requestMatchers("/api/patches/*/download").permitAll()  // 패치 다운로드
-                        .requestMatchers("/api/scripts/download").permitAll()  // 스크립트 다운로드
+                        .requestMatchers("/api/resources/*/download").permitAll()  // 리소스 파일 다운로드
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )

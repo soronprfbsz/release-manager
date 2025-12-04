@@ -1,5 +1,7 @@
 package com.ts.rm.domain.patch.service;
 
+import com.ts.rm.domain.customer.entity.Customer;
+import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.patch.dto.PatchDto;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.repository.PatchRepository;
@@ -44,6 +46,7 @@ public class PatchService {
     private final PatchRepository patchRepository;
     private final ReleaseVersionRepository releaseVersionRepository;
     private final ReleaseFileRepository releaseFileRepository;
+    private final CustomerRepository customerRepository;
     private final ScriptGenerator scriptGenerator;
 
     @Value("${app.release.base-path:src/main/resources/release}")
@@ -79,7 +82,7 @@ public class PatchService {
                         "To 버전을 찾을 수 없습니다: " + toVersion));
 
         return generatePatch(from.getReleaseVersionId(), to.getReleaseVersionId(),
-                createdBy, description, patchedBy, patchName);
+                customerId, createdBy, description, patchedBy, patchName);
     }
 
     /**
@@ -87,6 +90,7 @@ public class PatchService {
      *
      * @param fromVersionId From 버전 ID
      * @param toVersionId   To 버전 ID
+     * @param customerId    고객사 ID (선택)
      * @param createdBy     생성자
      * @param description   설명 (선택)
      * @param patchedBy     패치 담당자 (선택)
@@ -94,7 +98,7 @@ public class PatchService {
      * @return 생성된 패치
      */
     @Transactional
-    public Patch generatePatch(Long fromVersionId, Long toVersionId,
+    public Patch generatePatch(Long fromVersionId, Long toVersionId, Long customerId,
             String createdBy, String description, String patchedBy, String patchName) {
         try {
             // 1. 버전 조회 및 검증
@@ -125,25 +129,33 @@ public class PatchService {
                     fromVersion.getVersion(), toVersion.getVersion(),
                     betweenVersions.stream().map(ReleaseVersion::getVersion).toList());
 
-            // 3. 패치 이름 결정 (입력값이 없으면 자동 생성: YYYYMMDDHHMMSS_fromversion_toversion)
+            // 3. 고객사 조회 (customerId가 있는 경우)
+            Customer customer = null;
+            if (customerId != null) {
+                customer = customerRepository.findById(customerId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND,
+                                "고객사를 찾을 수 없습니다: " + customerId));
+            }
+
+            // 4. 패치 이름 결정 (입력값이 없으면 자동 생성: YYYYMMDDHHMMSS_fromversion_toversion)
             String resolvedPatchName = resolvePatchName(patchName, fromVersion.getVersion(), toVersion.getVersion());
 
-            // 4. 출력 디렉토리 생성 (패치 이름으로)
+            // 5. 출력 디렉토리 생성 (패치 이름으로)
             String outputPath = createOutputDirectory(resolvedPatchName);
 
-            // 5. SQL 파일 복사
+            // 6. SQL 파일 복사
             copySqlFiles(betweenVersions, outputPath);
 
-            // 6. 패치 스크립트 생성
+            // 7. 패치 스크립트 생성
             generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, patchedBy);
 
-            // 7. README 생성
+            // 8. README 생성
             generateReadme(fromVersion, toVersion, betweenVersions, outputPath);
 
-            // 8. 패치 저장
+            // 9. 패치 저장
             Patch patch = Patch.builder()
                     .releaseType(fromVersion.getReleaseType())
-                    .customer(fromVersion.getCustomer())
+                    .customer(customer)
                     .fromVersion(fromVersion.getVersion())
                     .toVersion(toVersion.getVersion())
                     .patchName(resolvedPatchName)

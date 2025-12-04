@@ -2,7 +2,9 @@ package com.ts.rm.domain.common.service;
 
 import com.ts.rm.domain.common.dto.CodeDto;
 import com.ts.rm.domain.common.entity.Code;
+import com.ts.rm.domain.common.entity.CodeType;
 import com.ts.rm.domain.common.repository.CodeRepository;
+import com.ts.rm.domain.common.repository.CodeTypeRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,26 @@ import org.springframework.transaction.annotation.Transactional;
 public class CodeService {
 
     private final CodeRepository codeRepository;
+    private final CodeTypeRepository codeTypeRepository;
+
+    /**
+     * 코드 타입(분류) 목록 조회
+     *
+     * @return 코드 타입 응답 목록
+     */
+    public List<CodeDto.CodeTypeResponse> getCodeTypes() {
+        log.info("코드 타입 목록 조회");
+
+        List<CodeType> codeTypes = codeTypeRepository.findByIsEnabledTrueOrderByCodeTypeIdAsc();
+
+        return codeTypes.stream()
+                .map(codeType -> new CodeDto.CodeTypeResponse(
+                        codeType.getCodeTypeId(),
+                        codeType.getCodeTypeName(),
+                        codeType.getDescription()
+                ))
+                .toList();
+    }
 
     /**
      * 특정 코드 타입의 코드 목록 조회
