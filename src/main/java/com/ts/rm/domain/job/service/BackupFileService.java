@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,6 +72,14 @@ public class BackupFileService {
     /**
      * 백업 파일 삭제
      *
+     * <p>삭제 대상:
+     * <ul>
+     *   <li>백업 파일 (.sql)</li>
+     *   <li>백업 로그 파일 (backup_{id}_*.log)</li>
+     *   <li>복원 로그 파일 (restore_{id}_*.log)</li>
+     *   <li>DB 레코드</li>
+     * </ul>
+     *
      * @param id 백업 파일 ID
      */
     @Transactional
@@ -80,22 +89,66 @@ public class BackupFileService {
 
         log.info("백업 파일 삭제 시작 - ID: {}, 경로: {}", id, filePath);
 
-        // 실제 파일 삭제
+        // 1. 백업 파일(.sql) 삭제
+        deleteFileIfExists(filePath, "백업 파일");
+
+        // 2. 관련 로그 파일 삭제 (backup_{id}_*.log, restore_{id}_*.log)
+        deleteRelatedLogFiles(id, backupFile.getFileCategory());
+
+        // 3. DB 레코드 삭제
+        backupFileRepository.delete(backupFile);
+        log.info("백업 파일 삭제 완료 - ID: {}", id);
+    }
+
+    /**
+     * 파일 삭제 (존재하는 경우)
+     */
+    private void deleteFileIfExists(Path filePath, String fileType) {
         try {
             if (Files.exists(filePath)) {
                 Files.delete(filePath);
-                log.info("실제 파일 삭제 완료: {}", filePath);
+                log.info("{} 삭제 완료: {}", fileType, filePath);
             } else {
-                log.warn("삭제할 파일이 존재하지 않음: {}", filePath);
+                log.warn("삭제할 {}이(가) 존재하지 않음: {}", fileType, filePath);
             }
         } catch (IOException e) {
-            log.error("파일 삭제 실패: {}", e.getMessage(), e);
-            // 파일 삭제 실패해도 DB 레코드는 삭제 진행
+            log.error("{} 삭제 실패: {} - {}", fileType, filePath, e.getMessage());
+        }
+    }
+
+    /**
+     * 백업 파일과 관련된 로그 파일 삭제
+     *
+     * <p>로그 파일 명명 규칙:
+     * <ul>
+     *   <li>백업 로그: backup_{backupFileId}_{timestamp}.log</li>
+     *   <li>복원 로그: restore_{backupFileId}_{timestamp}.log</li>
+     * </ul>
+     *
+     * @param backupFileId 백업 파일 ID
+     * @param fileCategory 파일 카테고리 (MARIADB 등)
+     */
+    private void deleteRelatedLogFiles(Long backupFileId, String fileCategory) {
+        Path logDir = Paths.get(releaseBasePath, "job/logs", fileCategory);
+
+        if (!Files.exists(logDir)) {
+            log.warn("로그 디렉토리 존재하지 않음: {}", logDir);
+            return;
         }
 
-        // DB 레코드 삭제
-        backupFileRepository.delete(backupFile);
-        log.info("백업 파일 삭제 완료 - ID: {}", id);
+        String backupLogPrefix = String.format("backup_%d_", backupFileId);
+        String restoreLogPrefix = String.format("restore_%d_", backupFileId);
+
+        try (Stream<Path> files = Files.list(logDir)) {
+            files.filter(path -> {
+                        String fileName = path.getFileName().toString();
+                        return (fileName.startsWith(backupLogPrefix) || fileName.startsWith(restoreLogPrefix))
+                                && fileName.endsWith(".log");
+                    })
+                    .forEach(path -> deleteFileIfExists(path, "로그 파일"));
+        } catch (IOException e) {
+            log.error("로그 파일 검색 실패 - backupFileId: {}, error: {}", backupFileId, e.getMessage());
+        }
     }
 
     /**
