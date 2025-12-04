@@ -212,7 +212,7 @@ public class RemoteMariaDBRestoreService {
         command.add("mariadb");
         command.add("-h" + request.getHost());
         command.add("-P" + request.getPort());
-        command.add("-u" + request.getUser());
+        command.add("-u" + request.getUsername());
         command.add("-p" + request.getPassword());
         command.add("-e");
         command.add("SELECT 1");
@@ -255,7 +255,7 @@ public class RemoteMariaDBRestoreService {
         command.add("mariadb");
         command.add("-h" + request.getHost());
         command.add("-P" + request.getPort());
-        command.add("-u" + request.getUser());
+        command.add("-u" + request.getUsername());
         command.add("-p" + request.getPassword());
 
         ProcessBuilder pb = new ProcessBuilder(command);
