@@ -24,6 +24,17 @@ public class CodeController implements CodeControllerDocs {
     private final CodeService codeService;
 
     @Override
+    @GetMapping("/types")
+    public ResponseEntity<ApiResponse<List<CodeDto.CodeTypeResponse>>> getCodeTypes() {
+        log.info("GET /api/codes/types - 코드 타입 목록 조회 요청");
+
+        List<CodeDto.CodeTypeResponse> response = codeService.getCodeTypes();
+
+        log.info("GET /api/codes/types - 코드 타입 목록 조회 완료: {}개", response.size());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Override
     @GetMapping("/{codeTypeId}")
     public ResponseEntity<ApiResponse<List<CodeDto.SimpleResponse>>> getCodesByType(@PathVariable String codeTypeId) {
         log.info("GET /api/codes/{} - 코드 타입별 코드 목록 조회 요청", codeTypeId);

@@ -49,6 +49,13 @@ public enum ErrorCode {
   DATABASE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "R005", "error.release.database_type_not_found"),
   PATCH_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "R006", "error.release.patch_file_not_found"),
 
+  // Resource - 리소스 파일
+  RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "RF001", "error.resource.not_found"),
+  DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "RF002", "error.resource.duplicate"),
+  FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "RF003", "error.resource.file_not_found"),
+  FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RF004", "error.resource.upload_failed"),
+  FILE_DOWNLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RF005", "error.resource.download_failed"),
+
   // ========================================
   // ERROR - 서버 에러 (5xx)
   // ========================================

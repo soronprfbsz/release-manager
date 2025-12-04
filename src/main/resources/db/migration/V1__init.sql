@@ -1,8 +1,8 @@
 -- =========================================================
 -- V1: Release Manager 통합 초기화 스크립트
--- 작성일: 2025-11-25
+-- 작성일: 2025-12-04
 -- 작성자: Claude Code
--- 설명: 모든 테이블 및 초기 데이터 생성
+-- 설명: 모든 테이블 및 초기 데이터 생성 (V1 + V2 통합)
 -- =========================================================
 
 -- =========================================================
@@ -188,7 +188,33 @@ CREATE TABLE IF NOT EXISTS release_version_hierarchy (
 COMMENT='릴리즈 버전 계층 구조 테이블 (Closure Table)';
 
 -- =========================================================
--- Section 8: 코드 타입 기본 데이터
+-- Section 8: Resource File 테이블 생성
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS resource_file (
+    resource_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '리소스 파일 ID',
+    file_type VARCHAR(20) NOT NULL COMMENT '파일 타입 (확장자 대문자, 예: SH, PDF, MD)',
+    file_category VARCHAR(50) NOT NULL COMMENT '파일 카테고리 (SCRIPT, DOCUMENT, ETC)',
+    sub_category VARCHAR(50) COMMENT '하위 카테고리',
+    file_name VARCHAR(255) NOT NULL COMMENT '파일명',
+    file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (resource/ 하위 상대경로)',
+    file_size BIGINT COMMENT '파일 크기 (bytes)',
+    checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
+    description TEXT COMMENT '파일 설명',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_rf_file_type (file_type),
+    INDEX idx_rf_file_category (file_category),
+    INDEX idx_rf_sub_category (sub_category),
+    INDEX idx_rf_file_name (file_name),
+    INDEX idx_rf_file_path (file_path),
+    INDEX idx_rf_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='리소스 파일 테이블';
+
+-- =========================================================
+-- Section 9: 코드 타입 기본 데이터
 -- =========================================================
 
 INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
@@ -200,10 +226,13 @@ INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
 ('FILE_TYPE', '파일 타입', '파일 확장자 타입'),
 ('FILE_CATEGORY', '파일 카테고리', '파일 기능적 대분류'),
 ('FILE_SUBCATEGORY_DATABASE', '데이터베이스 파일 서브 카테고리', 'DATABASE 카테고리 소분류'),
-('FILE_SUBCATEGORY_ENGINE', '엔진 파일 서브 카테고리', 'ENGINE 카테고리 소분류');
+('FILE_SUBCATEGORY_ENGINE', '엔진 파일 서브 카테고리', 'ENGINE 카테고리 소분류'),
+('RESOURCE_FILE_CATEGORY', '리소스 파일 카테고리', '리소스 파일 기능적 대분류'),
+('RESOURCE_SUBCATEGORY_SCRIPT', '스크립트 서브 카테고리', 'SCRIPT 카테고리 소분류'),
+('RESOURCE_SUBCATEGORY_DOCUMENT', '문서 서브 카테고리', 'DOCUMENT 카테고리 소분류');
 
 -- =========================================================
--- Section 9: 계정 권한 코드
+-- Section 10: 계정 권한 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VALUES
@@ -212,7 +241,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VAL
 ('ACCOUNT_ROLE', 'GUEST', '게스트', '게스트 사용자 권한', 3);
 
 -- =========================================================
--- Section 10: 계정 상태 코드
+-- Section 11: 계정 상태 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VALUES
@@ -221,7 +250,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VAL
 ('ACCOUNT_STATUS', 'SUSPENDED', '정지', '정지 상태', 3);
 
 -- =========================================================
--- Section 11: 릴리즈 타입 코드
+-- Section 12: 릴리즈 타입 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -229,7 +258,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('RELEASE_TYPE', 'CUSTOM', '커스텀 릴리즈', '특정 고객사 전용 릴리즈', 2, TRUE);
 
 -- =========================================================
--- Section 11-1: 릴리즈 카테고리 코드
+-- Section 13: 릴리즈 카테고리 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -237,7 +266,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('RELEASE_CATEGORY', 'PATCH', '패치본', '업데이트용 패치 릴리즈', 2, TRUE);
 
 -- =========================================================
--- Section 12: 데이터베이스 타입 코드
+-- Section 14: 데이터베이스 타입 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -245,7 +274,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('DATABASE_TYPE', 'CRATEDB', 'CrateDB', 'CrateDB 데이터베이스', 2, TRUE);
 
 -- =========================================================
--- Section 13: 파일 타입 코드 (확장자)
+-- Section 15: 파일 타입 코드 (확장자)
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -263,7 +292,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_TYPE', 'UNDEFINED', 'UNDEFINED', '정의되지 않은 파일 타입', 99, TRUE);
 
 -- =========================================================
--- Section 14: 파일 카테고리 코드 (기능적 대분류)
+-- Section 16: 파일 카테고리 코드 (기능적 대분류)
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -273,7 +302,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_CATEGORY', 'ETC', 'ETC', '기타 파일', 4, TRUE);
 
 -- =========================================================
--- Section 15: 파일 서브 카테고리 코드 (카테고리별 소분류)
+-- Section 17: 파일 서브 카테고리 코드 (카테고리별 소분류)
 -- =========================================================
 
 -- DATABASE 서브 카테고리
@@ -349,10 +378,41 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_SUBCATEGORY_ENGINE', 'NC_X25', 'NC_X25', '', 63, TRUE),
 ('FILE_SUBCATEGORY_ENGINE', 'OZ_CCTV', 'OZ_CCTV', '', 64, TRUE),
 ('FILE_SUBCATEGORY_ENGINE', 'ETC', 'ETC', '기타 파일', 65, TRUE);
-;
 
 -- =========================================================
--- Section 16: 기본 관리자 계정
+-- Section 18-1: 리소스 파일 카테고리 코드 추가
+-- =========================================================
+
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('RESOURCE_FILE_CATEGORY', 'SCRIPT', '스크립트', '스크립트 파일', 1, TRUE),
+('RESOURCE_FILE_CATEGORY', 'DOCUMENT', '문서', '문서 파일', 2, TRUE),
+('RESOURCE_FILE_CATEGORY', 'ETC', '기타', '기타 파일', 3, TRUE);
+
+-- =========================================================
+-- Section 18-2: 리소스 파일 서브카테고리 - SCRIPT
+-- =========================================================
+
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('RESOURCE_SUBCATEGORY_SCRIPT', 'MARIADB_BACKUP', 'MARIADB 백업', 'MariaDB 백업 스크립트', 1, TRUE),
+('RESOURCE_SUBCATEGORY_SCRIPT', 'MARIADB_RESTORE', 'MARIADB 복원', 'MariaDB 복원 스크립트', 2, TRUE),
+('RESOURCE_SUBCATEGORY_SCRIPT', 'CRATEDB_BACKUP', 'CRATEDB 백업', 'CrateDB 백업 스크립트', 3, TRUE),
+('RESOURCE_SUBCATEGORY_SCRIPT', 'CRATEDB_RESTORE', 'CRATEDB 복원', 'CrateDB 복원 스크립트', 4, TRUE),
+('RESOURCE_SUBCATEGORY_SCRIPT', 'ETC', '기타', '기타', 99, TRUE);
+
+-- =========================================================
+-- Section 18-3: 리소스 파일 서브카테고리 - DOCUMENT (문서 분류)
+-- =========================================================
+
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE1', 'Infraeye1', 'Infraeye1 문서', 1, TRUE),
+('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE2', 'Infraeye2', 'Infraeye2 문서', 2, TRUE),
+('RESOURCE_SUBCATEGORY_DOCUMENT', 'DATABASE', '데이터베이스', 'DATABASE 관련 문서', 3, TRUE),
+('RESOURCE_SUBCATEGORY_DOCUMENT', 'OS', 'O/S', 'O/S 관련 문서', 4, TRUE),
+('RESOURCE_SUBCATEGORY_DOCUMENT', 'LANGUAGE', '언어', '언어 관련 문서', 5, TRUE),
+('RESOURCE_SUBCATEGORY_DOCUMENT', 'ETC', '기타', '기타 문서', 99, TRUE);
+
+-- =========================================================
+-- Section 19: 기본 관리자 계정
 -- 패스워드: nms12345! (BCrypt 암호화)
 -- =========================================================
 
@@ -361,7 +421,8 @@ INSERT INTO account (account_name, email, password, role, status) VALUES
 ('사용자','m_user@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'USER', 'ACTIVE');
 
 -- =========================================================
--- Section 17: 실제 릴리즈 데이터 추가
+-- Section 20: 릴리즈 버전 데이터
+-- 폴더 구조: versions/standard/{major}.{minor}.x/{version}/...
 -- =========================================================
 
 INSERT INTO release_version (
@@ -375,14 +436,15 @@ INSERT INTO release_version (
 ('STANDARD', 'PATCH', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', '2025-11-25 00:00:00');
 
 -- =========================================================
--- Section 18: 릴리즈 파일 데이터
+-- Section 21: 릴리즈 파일 데이터
+-- file_path 형식: versions/standard/{major}.{minor}.x/{version}/...
 -- =========================================================
 
 INSERT INTO release_file (
     release_version_id, file_type, file_category, sub_category, file_name, file_path, relative_path,
     file_size, checksum, execution_order, description
 ) VALUES
--- 1.0.0 - Install Documents
+-- 1.0.0 (release_version_id = 1) - Install Documents
 (1, 'PDF', 'ETC', NULL, 'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
     'versions/standard/1.0.x/1.0.0/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
     '/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',
@@ -391,7 +453,8 @@ INSERT INTO release_file (
     'versions/standard/1.0.x/1.0.0/install/설치본정보.md',
     '/install/설치본정보.md',
     778, '8e5adf2b877090de4f3ec5739f71216c', 2, '설치본 정보'),
--- 1.1.0 - MariaDB
+
+-- 1.1.0 (release_version_id = 2) - MariaDB
 (2, 'SQL', 'DATABASE', 'MARIADB', '1.patch_mariadb_ddl.sql',
     'versions/standard/1.1.x/1.1.0/database/MARIADB/1.patch_mariadb_ddl.sql',
     '/database/MARIADB/1.patch_mariadb_ddl.sql',
@@ -420,12 +483,14 @@ INSERT INTO release_file (
     'versions/standard/1.1.x/1.1.0/database/MARIADB/7.patch_mariadb_dml.sql',
     '/database/MARIADB/7.patch_mariadb_dml.sql',
     37330, '3fa1ec88b5a638fb6d67a41119d61854', 7, 'DML 변경'),
--- 1.1.0 - CrateDB
+
+-- 1.1.0 (release_version_id = 2) - CrateDB
 (2, 'SQL', 'DATABASE', 'CRATEDB', '1.patch_cratedb_ddl.sql',
     'versions/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql',
     '/database/CRATEDB/1.patch_cratedb_ddl.sql',
     19363, '1b68614d70c52cade269e5accca724d5', 1, 'CrateDB DDL 변경'),
--- 1.1.1 - MariaDB
+
+-- 1.1.1 (release_version_id = 3) - MariaDB
 (3, 'SQL', 'DATABASE', 'MARIADB', '1.patch_mariadb_ddl.sql',
     'versions/standard/1.1.x/1.1.1/database/MARIADB/1.patch_mariadb_ddl.sql',
     '/database/MARIADB/1.patch_mariadb_ddl.sql',
@@ -434,14 +499,15 @@ INSERT INTO release_file (
     'versions/standard/1.1.x/1.1.1/database/MARIADB/2.patch_mariadb_dml.sql',
     '/database/MARIADB/2.patch_mariadb_dml.sql',
     660, '63fe833edd62599db2ce8c758eae0240', 2, '파일 기능 관련 DML 추가'),
--- 1.1.2 - MariaDB
+
+-- 1.1.2 (release_version_id = 4) - MariaDB
 (4, 'SQL', 'DATABASE', 'MARIADB', '1.patch_mariadb_ddl.sql',
     'versions/standard/1.1.x/1.1.2/database/MARIADB/1.patch_mariadb_ddl.sql',
     '/database/MARIADB/1.patch_mariadb_ddl.sql',
     1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, 'SMS 로그 모니터링 정책 상세 테이블 추가');
 
 -- =========================================================
--- Section 19: 계층 구조 데이터 추가
+-- Section 22: 계층 구조 데이터 추가
 -- =========================================================
 
 -- 1.0.0 (release_version_id = 1)
@@ -461,3 +527,25 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (3, 4, 1);
 INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (2, 4, 2);
 INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (1, 4, 3);
+
+-- =========================================================
+-- Section 23: 리소스 파일 데이터
+-- file_path 형식: resource/script/{DB_TYPE}/ 또는 resource/document/
+-- file_type: FILE_TYPE 코드 테이블의 code_id 값
+-- file_category: RESOURCE_FILE_CATEGORY 코드 테이블의 code_id 값
+-- sub_category: RESOURCE_SUBCATEGORY_SCRIPT 또는 RESOURCE_SUBCATEGORY_DOCUMENT 코드 테이블의 code_id 값
+-- =========================================================
+
+-- MariaDB 스크립트
+INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
+('SH', 'SCRIPT', 'MARIADB_BACKUP', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 백업 스크립트', 'system'),
+('SH', 'SCRIPT', 'MARIADB_RESTORE', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 복원 스크립트', 'system');
+
+-- CrateDB 스크립트
+INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
+('SH', 'SCRIPT', 'CRATEDB_BACKUP', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 백업 스크립트', 'system'),
+('SH', 'SCRIPT', 'CRATEDB_RESTORE', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 복원 스크립트', 'system');
+
+-- 문서
+INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
+('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 'system');
