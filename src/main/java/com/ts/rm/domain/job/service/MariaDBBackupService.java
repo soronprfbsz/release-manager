@@ -215,8 +215,7 @@ public class MariaDBBackupService {
     /**
      * mariadb-dump 명령 실행 (백업)
      * <p>
-     * 하위 버전 호환성을 위해 --compatible=mysql57 옵션 사용
-     * (NOTE_VERBOSITY 등 상위 버전 전용 변수 제외)
+     * 백업 완료 후 하위 버전 호환성을 위해 NOTE_VERBOSITY 등 상위 버전 전용 변수를 제거
      */
     private void executeMariaDBBackup(MariaDBBackupRequest request, Path backupFilePath,
             Path logFilePath) throws IOException {
@@ -238,9 +237,6 @@ public class MariaDBBackupService {
         command.add("--triggers");
         command.add("--events");
         command.add("--skip-add-locks");
-        // 하위 버전 MariaDB/MySQL 호환성을 위해 mysql57 모드로 덤프
-        // NOTE_VERBOSITY 등 상위 버전 전용 시스템 변수 제외
-        command.add("--compatible=mysql57");
         command.add(request.getDatabase());
 
         ProcessBuilder pb = new ProcessBuilder(command);
@@ -266,9 +262,48 @@ public class MariaDBBackupService {
 
             appendToLogFile(logFilePath, "백업 파일 생성 완료: " + backupFilePath.getFileName());
 
+            // 하위 버전 호환성을 위한 후처리
+            removeIncompatibleStatements(backupFilePath, logFilePath);
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "백업 작업이 중단되었습니다.");
+        }
+    }
+
+    /**
+     * 백업 파일에서 하위 버전과 호환되지 않는 구문 제거
+     * <p>
+     * MariaDB 10.6.16+ 에서 추가된 NOTE_VERBOSITY 등의 시스템 변수를
+     * 하위 버전에서 복원 시 오류가 발생하므로 제거
+     *
+     * @param backupFilePath 백업 파일 경로
+     * @param logFilePath    로그 파일 경로
+     */
+    private void removeIncompatibleStatements(Path backupFilePath, Path logFilePath)
+            throws IOException {
+        appendToLogFile(logFilePath, "하위 버전 호환성 처리 중...");
+
+        List<String> lines = Files.readAllLines(backupFilePath);
+        List<String> filteredLines = new ArrayList<>();
+        int removedCount = 0;
+
+        for (String line : lines) {
+            // NOTE_VERBOSITY 관련 구문 제거 (MariaDB 10.6.16+ 전용)
+            if (line.contains("NOTE_VERBOSITY")) {
+                removedCount++;
+                continue;
+            }
+            filteredLines.add(line);
+        }
+
+        if (removedCount > 0) {
+            Files.write(backupFilePath, filteredLines);
+            appendToLogFile(logFilePath,
+                    "호환성 처리 완료: " + removedCount + "개 라인 제거 (NOTE_VERBOSITY)");
+            log.info("백업 파일 호환성 처리 완료 - 제거된 라인: {}", removedCount);
+        } else {
+            appendToLogFile(logFilePath, "호환성 처리: 제거할 항목 없음");
         }
     }
 
