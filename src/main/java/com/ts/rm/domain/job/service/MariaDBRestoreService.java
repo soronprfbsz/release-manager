@@ -30,6 +30,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MariaDBRestoreService {
 
+    private static final String FILE_CATEGORY = "MARIADB";
+
     @Value("${app.release.base-path:/app/release_files}")
     private String releaseBasePath;
 
@@ -46,8 +48,8 @@ public class MariaDBRestoreService {
     public void executeRestoreAsync(MariaDBRestoreRequest request, String jobId,
             String logFileName) {
 
-        Path backupFilePath = Paths.get(releaseBasePath + "/job/backup_files", request.getBackupFileName());
-        Path logFilePath = Paths.get(releaseBasePath + "/job/logs", logFileName);
+        Path backupFilePath = Paths.get(releaseBasePath + "/job/backup_files/" + FILE_CATEGORY, request.getBackupFileName());
+        Path logFilePath = Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY, logFileName);
 
         log.info("복원 시작 - jobId: {}", jobId);
 
@@ -106,7 +108,7 @@ public class MariaDBRestoreService {
      */
     private void createDirectories() {
         try {
-            Files.createDirectories(Paths.get(releaseBasePath + "/job/logs"));
+            Files.createDirectories(Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY));
         } catch (IOException e) {
             log.error("디렉토리 생성 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다.");
