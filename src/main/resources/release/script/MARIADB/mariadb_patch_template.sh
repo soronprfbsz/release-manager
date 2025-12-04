@@ -41,6 +41,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 기본값
 DEFAULT_DOCKER_CONTAINER_NAME="mariadb"
 DEFAULT_DB_USER="root"
+DEFAULT_PATCHED_BY="{{DEFAULT_PATCHED_BY}}"
 
 # 버전 메타데이터 배열
 declare -a VERSION_METADATA=(
@@ -60,7 +61,13 @@ echo ""
 echo "=========================================="
 echo "버전 이력 관리를 위한 정보 입력"
 echo "=========================================="
-read -p "패치 적용 담당자 (예: jhlee@company.com): " APPLIED_BY
+# 기본값이 있으면 표시
+if [ -n "$DEFAULT_PATCHED_BY" ]; then
+    read -p "패치 적용 담당자 [$DEFAULT_PATCHED_BY]: " APPLIED_BY
+    APPLIED_BY=${APPLIED_BY:-$DEFAULT_PATCHED_BY}
+else
+    read -p "패치 적용 담당자 (예: jhlee@company.com): " APPLIED_BY
+fi
 if [ -z "$APPLIED_BY" ]; then
     log_error "패치 적용 담당자는 필수 입력값입니다."
     exit 1

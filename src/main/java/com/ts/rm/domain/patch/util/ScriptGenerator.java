@@ -43,15 +43,17 @@ public class ScriptGenerator {
      * @param fromVersion   From 버전
      * @param toVersion     To 버전
      * @param versions      버전 리스트
-     * @param mariadbFiles  MariaDB SQL 파일 리스트 (빈 리스트 가능)
-     * @param outputDirPath 출력 디렉토리 경로
+     * @param mariadbFiles     MariaDB SQL 파일 리스트 (빈 리스트 가능)
+     * @param outputDirPath    출력 디렉토리 경로
+     * @param defaultPatchedBy 패치 담당자 기본값 (nullable, 프론트엔드에서 입력받은 값)
      */
     public void generateMariaDBPatchScript(
             String fromVersion,
             String toVersion,
             List<ReleaseVersion> versions,
             List<ReleaseFile> mariadbFiles,
-            String outputDirPath) {
+            String outputDirPath,
+            String defaultPatchedBy) {
 
         try {
             // 템플릿 로드
@@ -64,6 +66,11 @@ public class ScriptGenerator {
                     ? buildVersionHistoryOnlyCommands(versions)
                     : buildSqlExecutionCommands(mariadbFiles, versions);
 
+            // 패치 담당자 기본값 처리 (null 또는 빈 문자열이면 빈 문자열)
+            String patchedByDefault = (defaultPatchedBy != null && !defaultPatchedBy.isBlank())
+                    ? defaultPatchedBy.trim()
+                    : "";
+
             // 변수 치환
             String script = template
                     .replace("{{GENERATED_DATE}}", LocalDateTime.now().format(DATE_FORMATTER))
@@ -71,7 +78,8 @@ public class ScriptGenerator {
                     .replace("{{TO_VERSION}}", toVersion)
                     .replace("{{VERSION_COUNT}}", String.valueOf(versions.size()))
                     .replace("{{VERSION_METADATA}}", buildVersionMetadata(versions))
-                    .replace("{{SQL_EXECUTION_COMMANDS}}", sqlCommands);
+                    .replace("{{SQL_EXECUTION_COMMANDS}}", sqlCommands)
+                    .replace("{{DEFAULT_PATCHED_BY}}", patchedByDefault);
 
             // CRLF를 LF로 변환 (Linux 환경에서 실행 가능하도록)
             script = script.replace("\r\n", "\n").replace("\r", "\n");

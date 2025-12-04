@@ -135,7 +135,7 @@ public class PatchService {
             copySqlFiles(betweenVersions, outputPath);
 
             // 6. 패치 스크립트 생성
-            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath);
+            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, patchedBy);
 
             // 7. README 생성
             generateReadme(fromVersion, toVersion, betweenVersions, outputPath);
@@ -367,7 +367,7 @@ public class PatchService {
     }
 
     private void generatePatchScripts(ReleaseVersion fromVersion, ReleaseVersion toVersion,
-            List<ReleaseVersion> versions, String outputPath) {
+            List<ReleaseVersion> versions, String outputPath, String patchedBy) {
         try {
             List<ReleaseFile> mariadbFiles = releaseFileRepository.findReleaseFilesBetweenVersionsBySubCategory(
                     versions.get(0).getVersion(),
@@ -384,7 +384,7 @@ public class PatchService {
             // MariaDB 스크립트는 항상 생성 (VERSION_HISTORY INSERT를 위해 필수)
             // SQL 파일이 없더라도 VERSION_HISTORY에 버전 이력을 기록해야 함
             scriptGenerator.generateMariaDBPatchScript(fromVersion.getVersion(),
-                    toVersion.getVersion(), versions, mariadbFiles, outputPath);
+                    toVersion.getVersion(), versions, mariadbFiles, outputPath, patchedBy);
             if (mariadbFiles.isEmpty()) {
                 log.info("MariaDB SQL 파일은 없지만 VERSION_HISTORY 기록을 위해 스크립트 생성: {}/mariadb_patch.sh", outputPath);
             } else {
