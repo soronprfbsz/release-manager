@@ -219,6 +219,7 @@ public class RemoteMariaDBRestoreService {
         command.add("-u");
         command.add(request.getUsername());
         command.add("-p" + request.getPassword());
+        command.add("--ssl=false");
         command.add("-e");
         command.add("SELECT 1");
 
@@ -261,6 +262,7 @@ public class RemoteMariaDBRestoreService {
         command.add("-u");
         command.add(request.getUsername());
         command.add("-p" + request.getPassword());
+        command.add("--ssl=false");
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectInput(backupFilePath.toFile());

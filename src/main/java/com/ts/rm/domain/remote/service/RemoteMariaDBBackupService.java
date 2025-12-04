@@ -311,6 +311,7 @@ public class RemoteMariaDBBackupService {
         command.add("-u");
         command.add(request.getUsername());
         command.add("-p" + request.getPassword());
+        command.add("--ssl=false");
         command.add("-e");
         command.add("SELECT 1");
 
@@ -352,6 +353,7 @@ public class RemoteMariaDBBackupService {
         command.add("-u");
         command.add(request.getUsername());
         command.add("-p" + request.getPassword());
+        command.add("--ssl=false");
         command.add("--single-transaction");
         command.add("--routines");
         command.add("--triggers");
