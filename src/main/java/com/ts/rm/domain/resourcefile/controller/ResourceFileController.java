@@ -7,6 +7,7 @@ import com.ts.rm.domain.resourcefile.service.ResourceFileService;
 import com.ts.rm.global.file.HttpFileDownloadUtil;
 import com.ts.rm.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -40,6 +42,7 @@ public class ResourceFileController {
 
     private final ResourceFileService resourceFileService;
     private final ResourceFileDtoMapper resourceFileDtoMapper;
+    private final JwtTokenProvider jwtTokenProvider;
 
     /**
      * 리소스 파일 업로드
@@ -58,6 +61,7 @@ public class ResourceFileController {
                     + "- ETC: 없음"
     )
     public ApiResponse<ResourceFileDto.DetailResponse> uploadFile(
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authorizationHeader,
             @Parameter(description = "업로드할 파일", required = true)
             @RequestPart("file") MultipartFile file,
 
@@ -68,13 +72,13 @@ public class ResourceFileController {
             @RequestParam(required = false) String subCategory,
 
             @Parameter(description = "파일 설명", example = "MariaDB 백업 스크립트")
-            @RequestParam(required = false) String description,
-
-            @Parameter(description = "업로드 담당자", required = true, example = "admin@company.com")
-            @RequestParam String createdBy) {
+            @RequestParam(required = false) String description) {
 
         log.info("리소스 파일 업로드 요청 - 파일명: {}, 파일카테고리: {}, 서브카테고리: {}",
                 file.getOriginalFilename(), fileCategory, subCategory);
+
+        String token = authorizationHeader.substring(7);
+        String createdBy = jwtTokenProvider.getEmail(token);
 
         ResourceFileDto.UploadRequest request = new ResourceFileDto.UploadRequest(
                 fileCategory, subCategory, description, createdBy
