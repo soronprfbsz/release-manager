@@ -1,13 +1,11 @@
-package com.ts.rm.domain.remote.service;
+package com.ts.rm.domain.job.service;
 
-import com.ts.rm.domain.remote.dto.request.MariaDBRestoreRequest;
-import com.ts.rm.domain.remote.dto.response.BackupJobResponse;
+import com.ts.rm.domain.job.dto.MariaDBRestoreRequest;
+import com.ts.rm.domain.job.dto.JobResponse;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -25,48 +23,44 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
- * MariaDB 원격 복원 서비스
+ * MariaDB 복원 서비스
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RemoteMariaDBRestoreService {
-
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern(
-            "yyyyMMdd_HHmmss");
+public class MariaDBRestoreService {
 
     @Value("${app.release.base-path:/app/release_files}")
     private String releaseBasePath;
 
-    private final BackupJobStatusManager jobStatusManager;
+    private final JobStatusManager jobStatusManager;
 
     /**
-     * MariaDB 원격 복원 실행
+     * MariaDB 복원 비동기 실행
      *
-     * @param request 복원 요청 정보
-     * @return 복원 작업 응답
+     * @param request     복원 요청 정보
+     * @param jobId       작업 ID
+     * @param logFileName 로그 파일명
      */
-    public BackupJobResponse executeRestore(MariaDBRestoreRequest request) {
-        String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
-        String jobId = "restore_" + timestamp;
-        String logFileName = String.format("restore_remote_mariadb_%s.log", timestamp);
+    @Async("backupTaskExecutor")
+    public void executeRestoreAsync(MariaDBRestoreRequest request, String jobId,
+            String logFileName) {
 
-        Path backupFilePath = Paths.get(releaseBasePath + "/remote/backup_files", request.getBackupFileName());
-        Path logFilePath = Paths.get(releaseBasePath + "/remote/logs", logFileName);
+        Path backupFilePath = Paths.get(releaseBasePath + "/job/backup_files", request.getBackupFileName());
+        Path logFilePath = Paths.get(releaseBasePath + "/job/logs", logFileName);
 
-        log.info("원격 MariaDB 복원 시작 - jobId: {}, host: {}, backupFile: {}",
-                jobId, request.getHost(), request.getBackupFileName());
-
-        // 백업 파일 존재 확인
-        if (!Files.exists(backupFilePath)) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "백업 파일을 찾을 수 없습니다: " + request.getBackupFileName());
-        }
-
-        // 로그 디렉토리 생성
-        createDirectories();
+        log.info("복원 시작 - jobId: {}", jobId);
 
         try {
+            // 디렉토리 생성
+            createDirectories();
+
+            // 백업 파일 존재 확인
+            if (!Files.exists(backupFilePath)) {
+                throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                        "백업 파일을 찾을 수 없습니다: " + request.getBackupFileName());
+            }
+
             // 로그 파일 초기화
             initializeLogFile(logFilePath, request, backupFilePath);
 
@@ -83,8 +77,10 @@ public class RemoteMariaDBRestoreService {
             appendToLogFile(logFilePath, "복원 완료: " + request.getBackupFileName());
             appendToLogFile(logFilePath, "========================================");
 
-            return BackupJobResponse.createSuccess(jobId, request.getBackupFileName(),
-                    Files.size(backupFilePath), logFilePath.toString());
+            // 작업 상태 업데이트 (성공)
+            jobStatusManager.saveJobStatus(jobId,
+                    JobResponse.createSuccess(jobId, request.getBackupFileName(),
+                            Files.size(backupFilePath), "logs/" + logFileName));
 
         } catch (Exception e) {
             log.error("복원 실패 - jobId: {}, error: {}", jobId, e.getMessage(), e);
@@ -98,68 +94,10 @@ public class RemoteMariaDBRestoreService {
                 log.error("로그 파일 기록 실패", logError);
             }
 
-            return BackupJobResponse.createFailed(jobId, request.getBackupFileName(),
-                    logFilePath.toString(), e.getMessage());
-        }
-    }
-
-    /**
-     * MariaDB 원격 복원 비동기 실행
-     *
-     * @param request 복원 요청 정보
-     * @param jobId 작업 ID
-     * @param logFileName 로그 파일명
-     */
-    @Async("backupTaskExecutor")
-    public void executeRestoreAsync(MariaDBRestoreRequest request, String jobId,
-            String logFileName) {
-
-        Path backupFilePath = Paths.get(releaseBasePath + "/remote/backup_files", request.getBackupFileName());
-        Path logFilePath = Paths.get(releaseBasePath + "/remote/logs", logFileName);
-
-        log.info("비동기 복원 시작 - jobId: {}", jobId);
-
-        try {
-            // 디렉토리 생성
-            createDirectories();
-
-            // 로그 파일 초기화
-            initializeLogFile(logFilePath, request, backupFilePath);
-
-            // 연결 테스트
-            testConnection(request, logFilePath);
-
-            // 복원 실행
-            executeMariaDBRestore(request, backupFilePath, logFilePath);
-
-            log.info("비동기 복원 완료 - jobId: {}", jobId);
-
-            // 성공 로그 기록
-            appendToLogFile(logFilePath, "========================================");
-            appendToLogFile(logFilePath, "복원 완료: " + request.getBackupFileName());
-            appendToLogFile(logFilePath, "========================================");
-
-            // 작업 상태 업데이트 (성공)
-            jobStatusManager.saveJobStatus(jobId,
-                    BackupJobResponse.createSuccess(jobId, request.getBackupFileName(),
-                            Files.size(backupFilePath), logFilePath.toString()));
-
-        } catch (Exception e) {
-            log.error("비동기 복원 실패 - jobId: {}, error: {}", jobId, e.getMessage(), e);
-
-            // 실패 로그 기록
-            try {
-                appendToLogFile(logFilePath, "========================================");
-                appendToLogFile(logFilePath, "복원 실패: " + e.getMessage());
-                appendToLogFile(logFilePath, "========================================");
-            } catch (IOException logError) {
-                log.error("로그 파일 기록 실패", logError);
-            }
-
             // 작업 상태 업데이트 (실패)
             jobStatusManager.saveJobStatus(jobId,
-                    BackupJobResponse.createFailed(jobId, request.getBackupFileName(),
-                            logFilePath.toString(), e.getMessage()));
+                    JobResponse.createFailed(jobId, request.getBackupFileName(),
+                            "logs/" + logFileName, e.getMessage()));
         }
     }
 
@@ -168,7 +106,7 @@ public class RemoteMariaDBRestoreService {
      */
     private void createDirectories() {
         try {
-            Files.createDirectories(Paths.get(releaseBasePath + "/remote/logs"));
+            Files.createDirectories(Paths.get(releaseBasePath + "/job/logs"));
         } catch (IOException e) {
             log.error("디렉토리 생성 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다.");
@@ -182,7 +120,7 @@ public class RemoteMariaDBRestoreService {
             Path backupFilePath) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFilePath.toFile()))) {
             writer.write("=========================================\n");
-            writer.write("MariaDB 원격 복원\n");
+            writer.write("MariaDB 복원\n");
             writer.write("=========================================\n");
             writer.write("호스트: " + request.getHost() + ":" + request.getPort() + "\n");
             writer.write("백업 파일: " + request.getBackupFileName() + "\n");

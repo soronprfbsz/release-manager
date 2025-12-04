@@ -1,4 +1,4 @@
-package com.ts.rm.domain.remote.dto.request;
+package com.ts.rm.domain.job.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "MariaDB 원격 복원 요청")
+@Schema(description = "MariaDB 복원 요청")
 public class MariaDBRestoreRequest {
 
     @NotBlank(message = "컨테이너 이름은 필수입니다")
@@ -44,6 +44,6 @@ public class MariaDBRestoreRequest {
     private String password;
 
     @NotBlank(message = "백업 파일명은 필수입니다")
-    @Schema(description = "복원할 백업 파일명", example = "backup_remote_20251203_171500.sql", required = true)
+    @Schema(description = "복원할 백업 파일명", example = "backup_20251203_171500.sql", required = true)
     private String backupFileName;
 }
