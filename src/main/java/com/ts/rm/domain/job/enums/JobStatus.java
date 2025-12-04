@@ -1,14 +1,14 @@
-package com.ts.rm.domain.remote.enums;
+package com.ts.rm.domain.job.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 백업 작업 상태 열거형
+ * 작업 상태 열거형
  */
 @Getter
 @RequiredArgsConstructor
-public enum BackupJobStatus {
+public enum JobStatus {
 
     RUNNING("running", "실행 중"),
     SUCCESS("success", "성공"),
@@ -18,14 +18,14 @@ public enum BackupJobStatus {
     private final String description;
 
     /**
-     * 코드로 BackupJobStatus 조회
+     * 코드로 JobStatus 조회
      */
-    public static BackupJobStatus fromCode(String code) {
-        for (BackupJobStatus status : values()) {
+    public static JobStatus fromCode(String code) {
+        for (JobStatus status : values()) {
             if (status.getCode().equalsIgnoreCase(code)) {
                 return status;
             }
         }
-        throw new IllegalArgumentException("Unknown backup job status: " + code);
+        throw new IllegalArgumentException("Unknown job status: " + code);
     }
 }
