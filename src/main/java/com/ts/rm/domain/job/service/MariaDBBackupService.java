@@ -61,7 +61,7 @@ public class MariaDBBackupService {
 
         String relativePath = "job/backup_files/" + FILE_CATEGORY + "/" + backupFileName;
         Path backupFilePath = Paths.get(releaseBasePath, relativePath);
-        Path logFilePath = Paths.get(releaseBasePath + "/job/logs", logFileName);
+        Path logFilePath = Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY, logFileName);
 
         log.info("백업 시작 - jobId: {}", jobId);
 
@@ -135,7 +135,7 @@ public class MariaDBBackupService {
      */
     private void createDirectories() {
         try {
-            Files.createDirectories(Paths.get(releaseBasePath + "/job/logs"));
+            Files.createDirectories(Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY));
             Files.createDirectories(Paths.get(releaseBasePath + "/job/backup_files/" + FILE_CATEGORY));
         } catch (IOException e) {
             log.error("디렉토리 생성 실패", e);

@@ -221,22 +221,54 @@ deploy-job:
 
       echo "✓ 로컬 이미지 확인: ${LOCAL_IMAGE}"
 
-    # 릴리즈 파일 디렉토리 초기화 (기존 데이터 전체 보존)
+    # JAR에서 리소스 파일 추출 및 복사 (기존 파일 보존, 없는 파일만 복사)
     - |
-      echo "=== 릴리즈 파일 디렉토리 확인 ==="
+      echo "=== 리소스 파일 동기화 ==="
       RELEASE_DIR="/data/release_manager/release_files"
+      JAR_FILE=$(ls build/libs/*.jar | head -1)
+      TEMP_EXTRACT_DIR="/tmp/release_extract_$$"
 
-      # 디렉토리 및 권한 설정 (기존 파일 삭제하지 않음)
-      mkdir -p ${RELEASE_DIR}/patches
-      mkdir -p ${RELEASE_DIR}/remote/backup_files
-      mkdir -p ${RELEASE_DIR}/remote/logs
-      mkdir -p ${RELEASE_DIR}/resource
-      mkdir -p ${RELEASE_DIR}/version
+      if [ -f "$JAR_FILE" ]; then
+        echo "📦 JAR 파일에서 리소스 추출 중: $JAR_FILE"
+        mkdir -p ${TEMP_EXTRACT_DIR}
+
+        # JAR에서 release 디렉토리만 추출
+        unzip -q -o "$JAR_FILE" "BOOT-INF/classes/release/*" -d ${TEMP_EXTRACT_DIR} 2>/dev/null || true
+
+        if [ -d "${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release" ]; then
+          echo "📂 리소스 파일 동기화 중 (기존 파일 보존)..."
+
+          # rsync로 없는 파일만 복사 (--ignore-existing: 기존 파일 덮어쓰지 않음)
+          if command -v rsync > /dev/null 2>&1; then
+            rsync -av --ignore-existing ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release/ ${RELEASE_DIR}/
+          else
+            # rsync 없으면 cp로 대체 (디렉토리 구조 유지하며 복사)
+            cd ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release
+            find . -type f | while read file; do
+              dest="${RELEASE_DIR}/${file}"
+              if [ ! -f "$dest" ]; then
+                mkdir -p "$(dirname "$dest")"
+                cp "$file" "$dest"
+                echo "  복사: $file"
+              fi
+            done
+            cd - > /dev/null
+          fi
+
+          echo "✅ 리소스 파일 동기화 완료"
+        else
+          echo "⚠️  JAR에서 release 디렉토리를 찾을 수 없습니다"
+        fi
+
+        # 임시 디렉토리 정리
+        rm -rf ${TEMP_EXTRACT_DIR}
+      else
+        echo "⚠️  JAR 파일을 찾을 수 없습니다"
+      fi
+
       chmod -R 777 ${RELEASE_DIR}
-
-      echo "✅ 릴리즈 파일 디렉토리 준비 완료 (기존 데이터 보존됨)"
-      echo "📁 현재 디렉토리 구조:"
-      ls -la ${RELEASE_DIR}/ || true
+      echo "📁 최종 디렉토리 구조:"
+      ls -laR ${RELEASE_DIR}/ | head -50 || true
 
     - |
       echo "=== 기존 컨테이너 정리 ==="
