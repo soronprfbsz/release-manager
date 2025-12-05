@@ -58,7 +58,11 @@ public class SwaggerConfig {
                     new Tag().name("릴리즈 파일").description("릴리즈 파일 관리 API"),
                     new Tag().name("패치").description("패치 생성 및 조회 API"),
                     new Tag().name("고객사").description("고객사 관리 API"),
-                    new Tag().name("스크립트").description("DB 백업/복원 스크립트 다운로드 API")
+                    new Tag().name("엔지니어").description("엔지니어 관리 API"),
+                    new Tag().name("리소스 파일").description("리소스 파일 관리 API"),
+                    new Tag().name("작업").description("작업 관리 API"),
+                    new Tag().name("통계").description("통계 API"),
+                    new Tag().name("대시보드").description("대시보드 API")
             );
             openApi.setTags(orderedTags);
         };
