@@ -15,6 +15,8 @@ public interface PatchDtoMapper {
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "customerName", source = "customer.customerName")
+    @Mapping(target = "engineerId", source = "engineer.engineerId")
+    @Mapping(target = "engineerName", source = "engineer.engineerName")
     PatchDto.SimpleResponse toSimpleResponse(Patch patch);
 
     List<PatchDto.SimpleResponse> toSimpleResponseList(List<Patch> patches);
@@ -22,6 +24,8 @@ public interface PatchDtoMapper {
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "customerName", source = "customer.customerName")
+    @Mapping(target = "engineerId", source = "engineer.engineerId")
+    @Mapping(target = "engineerName", source = "engineer.engineerName")
     PatchDto.DetailResponse toDetailResponse(Patch patch);
 
     List<PatchDto.DetailResponse> toDetailResponseList(List<Patch> patches);

@@ -159,7 +159,7 @@ public class CumulativePatchGenerationScenarioTest {
                 .toVersion("1.3.1")
                 .createdBy(CREATED_BY)
                 .description("1.2.0에서 1.3.1로 업그레이드용 누적 패치")
-                .patchedBy("테스트 담당자")
+                .engineerId(null) // 엔지니어 미지정
                 .patchName(null) // 자동 생성
                 .build();
 
