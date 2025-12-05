@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
-@Tag(name = "MariaDB 백업", description = "MariaDB 백업 API")
+@Tag(name = "작업", description = "작업 관리 API")
 public class MariaDBBackupController {
 
     private final MariaDBBackupService backupService;

@@ -1,11 +1,15 @@
 package com.ts.rm.domain.engineer.entity;
 
+import com.ts.rm.domain.department.entity.Department;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -41,8 +45,9 @@ public class Engineer {
     @Column(name = "engineer_phone", length = 20)
     private String engineerPhone;
 
-    @Column(name = "department", length = 100)
-    private String department;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
 
     @Column(name = "description", length = 500)
     private String description;

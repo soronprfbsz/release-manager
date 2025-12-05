@@ -81,21 +81,21 @@ public class EngineerController {
     /**
      * 엔지니어 목록 조회 (페이징)
      *
-     * @param department 소속팀 필터 (optional)
+     * @param departmentId 부서 ID 필터 (optional)
      * @param keyword 이름 검색 키워드 (optional)
      * @param pageable 페이징 정보
      * @return 엔지니어 페이지
      */
     @Operation(summary = "엔지니어 목록 조회",
-            description = "엔지니어 목록을 조회합니다. department로 소속팀 필터링, keyword로 이름 검색 가능. page, size, sort 파라미터 사용 가능")
+            description = "엔지니어 목록을 조회합니다. departmentId로 부서 필터링, keyword로 이름 검색 가능. page, size, sort 파라미터 사용 가능")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<EngineerDto.DetailResponse>>> getEngineers(
-            @Parameter(description = "소속팀 필터")
-            @RequestParam(required = false) String department,
+            @Parameter(description = "부서 ID 필터")
+            @RequestParam(required = false) Long departmentId,
             @Parameter(description = "이름 검색 키워드")
             @RequestParam(required = false) String keyword,
             @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
-        Page<EngineerDto.DetailResponse> response = engineerService.getEngineers(department, keyword, pageable);
+        Page<EngineerDto.DetailResponse> response = engineerService.getEngineers(departmentId, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

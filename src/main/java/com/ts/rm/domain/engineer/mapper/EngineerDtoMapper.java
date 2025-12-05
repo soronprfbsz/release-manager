@@ -13,16 +13,20 @@ import org.mapstruct.Mapping;
 public interface EngineerDtoMapper {
 
     @Mapping(target = "engineerId", ignore = true)
+    @Mapping(target = "department", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     Engineer toEntity(EngineerDto.CreateRequest request);
 
+    @Mapping(target = "departmentId", source = "department.departmentId")
+    @Mapping(target = "departmentName", source = "department.departmentName")
     EngineerDto.DetailResponse toDetailResponse(Engineer engineer);
 
     List<EngineerDto.DetailResponse> toDetailResponseList(List<Engineer> engineers);
 
+    @Mapping(target = "departmentName", source = "department.departmentName")
     EngineerDto.SimpleResponse toSimpleResponse(Engineer engineer);
 
     List<EngineerDto.SimpleResponse> toSimpleResponseList(List<Engineer> engineers);

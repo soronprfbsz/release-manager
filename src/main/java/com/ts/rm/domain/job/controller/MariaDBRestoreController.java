@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
-@Tag(name = "MariaDB 복원", description = "MariaDB 복원 API")
+@Tag(name = "작업", description = "작업 관리 API")
 public class MariaDBRestoreController {
 
     private final MariaDBRestoreService restoreService;

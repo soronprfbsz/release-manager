@@ -1,5 +1,7 @@
 package com.ts.rm.domain.engineer.service;
 
+import com.ts.rm.domain.department.entity.Department;
+import com.ts.rm.domain.department.repository.DepartmentRepository;
 import com.ts.rm.domain.engineer.dto.EngineerDto;
 import com.ts.rm.domain.engineer.entity.Engineer;
 import com.ts.rm.domain.engineer.mapper.EngineerDtoMapper;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EngineerService {
 
     private final EngineerRepository engineerRepository;
+    private final DepartmentRepository departmentRepository;
     private final EngineerDtoMapper mapper;
 
     /**
@@ -44,6 +47,14 @@ public class EngineerService {
         }
 
         Engineer engineer = mapper.toEntity(request);
+
+        // 부서 설정
+        if (request.departmentId() != null) {
+            Department department = departmentRepository.findById(request.departmentId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
+            engineer.setDepartment(department);
+        }
+
         engineer.setCreatedBy(createdBy);
         engineer.setUpdatedBy(createdBy);
 
@@ -67,22 +78,22 @@ public class EngineerService {
     /**
      * 엔지니어 목록 조회 (페이징)
      *
-     * @param department 소속팀 필터 (null이면 전체)
+     * @param departmentId 부서 ID 필터 (null이면 전체)
      * @param keyword 이름 검색 키워드 (null이면 전체)
      * @param pageable 페이징 정보
      * @return 엔지니어 페이지
      */
-    public Page<EngineerDto.DetailResponse> getEngineers(String department, String keyword, Pageable pageable) {
+    public Page<EngineerDto.DetailResponse> getEngineers(Long departmentId, String keyword, Pageable pageable) {
         Page<Engineer> engineers;
 
-        boolean hasDepartment = department != null && !department.trim().isEmpty();
+        boolean hasDepartment = departmentId != null;
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
 
         if (hasDepartment && hasKeyword) {
-            engineers = engineerRepository.findByDepartmentAndEngineerNameContaining(
-                    department.trim(), keyword.trim(), pageable);
+            engineers = engineerRepository.findByDepartmentDepartmentIdAndEngineerNameContaining(
+                    departmentId, keyword.trim(), pageable);
         } else if (hasDepartment) {
-            engineers = engineerRepository.findByDepartment(department.trim(), pageable);
+            engineers = engineerRepository.findByDepartmentDepartmentId(departmentId, pageable);
         } else if (hasKeyword) {
             engineers = engineerRepository.findByEngineerNameContaining(keyword.trim(), pageable);
         } else {
@@ -121,8 +132,10 @@ public class EngineerService {
         if (request.engineerPhone() != null) {
             engineer.setEngineerPhone(request.engineerPhone());
         }
-        if (request.department() != null) {
-            engineer.setDepartment(request.department());
+        if (request.departmentId() != null) {
+            Department department = departmentRepository.findById(request.departmentId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
+            engineer.setDepartment(department);
         }
         if (request.description() != null) {
             engineer.setDescription(request.description());
