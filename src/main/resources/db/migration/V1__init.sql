@@ -138,37 +138,6 @@ CREATE TABLE IF NOT EXISTS release_file (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 파일 테이블';
 
 -- =========================================================
--- Section 6: Cumulative Patch 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS cumulative_patch (
-    patch_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '패치 ID',
-    release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
-    customer_id BIGINT COMMENT '고객사 ID (커스텀 패치인 경우)',
-    from_version VARCHAR(50) NOT NULL COMMENT '시작 버전',
-    to_version VARCHAR(50) NOT NULL COMMENT '종료 버전',
-    patch_name VARCHAR(100) NOT NULL COMMENT '패치 파일명',
-    output_path VARCHAR(500) NOT NULL COMMENT '생성된 패치 파일 경로',
-    description TEXT COMMENT '설명',
-    engineer_id BIGINT COMMENT '패치 담당자 (엔지니어 ID)',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    INDEX idx_cp_release_type (release_type),
-    INDEX idx_cp_customer_id (customer_id),
-    INDEX idx_cp_from_version (from_version),
-    INDEX idx_cp_to_version (to_version),
-    INDEX idx_cp_engineer_id (engineer_id),
-    INDEX idx_cp_created_at (created_at),
-
-    CONSTRAINT fk_cumulative_patch_customer FOREIGN KEY (customer_id)
-        REFERENCES customer(customer_id) ON DELETE SET NULL,
-    CONSTRAINT fk_cumulative_patch_engineer FOREIGN KEY (engineer_id)
-        REFERENCES engineer(engineer_id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='누적 패치 테이블';
-
--- =========================================================
 -- Section 7: Release Version Hierarchy 클로저 테이블 생성
 -- =========================================================
 
@@ -509,6 +478,115 @@ INSERT INTO account (account_name, email, password, role, status) VALUES
 ('시스템 관리자','admin@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'ADMIN', 'ACTIVE'),
 ('기본 사용자','m_user@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'USER', 'ACTIVE');
 
+
+
+-- =========================================================
+-- Section 28: 부서 기본 데이터
+-- =========================================================
+
+INSERT INTO department (department_name, description) VALUES
+('인프라기술팀', '인프라 기술 지원'),
+('서비스기술팀', '서비스 기술 지원'),
+('보안기술팀', '보안 기술 지원'),
+('개발2팀', '소프트웨어 개발');
+
+
+-- =========================================================
+-- Section 29: 엔지니어 기본 데이터
+-- =========================================================
+
+INSERT INTO engineer (engineer_email, position, engineer_name, department_id)
+VALUES ('shinss@tscientific.co.kr', '부장','신성수', 1),
+('yhkim0144@tscientific.co.kr', '과장','김요한', 1),
+('skykimtw@tscientific.co.kr', '과장','김태우', 1),
+('choi7733@tscientific.co.kr', '과장','최은빈', 1),
+('thdrudcks97@tscientific.co.kr', '대리','송경찬', 1),
+('swngh56@tscientific.co.kr', '사원','신주호', 1),
+('tjddyd3050@tscientific.co.kr', '사원', '최성용', 1),
+('yeonhyuck@tscientific.co.kr', '사원', '최연혁', 1),
+('yoonss@tscientific.co.kr', '이사', '윤성식', 2),
+('eu@tscientific.co.kr', '대리', '은지영', 2),
+('wychoi@tscientific.co.kr', '대리', '윤성식', 2),
+('kchh3617@tscientific.co.kr', '대리', '권찬혁', 2),
+('swoun4221@tscientific.co.kr', '사원', '신운성', 2),
+('rlaud95@tscientific.co.kr', '사원', '손기명', 2),
+('ljk0105@tscientific.co.kr', '사원', '이정규', 2),
+('jmkim@tscientific.co.kr', '차장', '김정목', 3),
+('ssyang9417@tscientific.co.kr', '과장', '송병준', 3),
+('dydtls888@tscientific.co.kr', '사원', '박용신', 3),
+('twins827@tscientific.co.kr', '사원', '박준성', 3),
+('tngur317@tscientific.co.kr', '사원', '오수혁', 3),
+('oyj961212@tscientific.co.kr', '사원', '오유준', 3),
+('yoonchul.lee@tscientific.co.kr', '사원', '이윤철', 3),
+('lkh2433@tscientific.co.kr', '사원', '이경호', 3),
+('pjh@tscientific.co.kr', '사원', '박재호', 3);
+
+
+-- =========================================================
+-- Section 30: 고객사 추가 (테스트용)
+-- =========================================================
+-- 고객사 테스트 데이터 INSERT (A~Z)
+INSERT INTO customer (created_by, customer_code, customer_name, description, is_active, updated_by) VALUES
+('m_user@tscientific.co.kr', 'customerA', 'A회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerB', 'B회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerC', 'C회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerD', 'D회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerE', 'E회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerF', 'F회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerG', 'G회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerH', 'H회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerI', 'I회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerJ', 'J회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerK', 'K회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerL', 'L회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerM', 'M회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerN', 'N회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerO', 'O회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerP', 'P회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerQ', 'Q회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerR', 'R회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerS', 'S회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerT', 'T회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerU', 'U회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerV', 'V회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerW', 'W회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerX', 'X회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerY', 'Y회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerZ', 'Z회사', NULL, true, 'm_user@tscientific.co.kr');
+
+
+-- =========================================================
+-- Section 6: Cumulative Patch 테이블 생성
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS cumulative_patch (
+    patch_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '패치 ID',
+    release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
+    customer_id BIGINT COMMENT '고객사 ID (커스텀 패치인 경우)',
+    from_version VARCHAR(50) NOT NULL COMMENT '시작 버전',
+    to_version VARCHAR(50) NOT NULL COMMENT '종료 버전',
+    patch_name VARCHAR(100) NOT NULL COMMENT '패치 파일명',
+    output_path VARCHAR(500) NOT NULL COMMENT '생성된 패치 파일 경로',
+    description TEXT COMMENT '설명',
+    engineer_id BIGINT COMMENT '패치 담당자 (엔지니어 ID)',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_cp_release_type (release_type),
+    INDEX idx_cp_customer_id (customer_id),
+    INDEX idx_cp_from_version (from_version),
+    INDEX idx_cp_to_version (to_version),
+    INDEX idx_cp_engineer_id (engineer_id),
+    INDEX idx_cp_created_at (created_at),
+
+    CONSTRAINT fk_cumulative_patch_customer FOREIGN KEY (customer_id)
+        REFERENCES customer(customer_id) ON DELETE SET NULL,
+    CONSTRAINT fk_cumulative_patch_engineer FOREIGN KEY (engineer_id)
+        REFERENCES engineer(engineer_id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='누적 패치 테이블';
+
+
 -- =========================================================
 -- Section 24: 릴리즈 버전 데이터
 -- =========================================================
@@ -632,77 +710,3 @@ INSERT INTO resource_file (file_type, file_category, sub_category, file_name, fi
 -- 문서
 INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
 ('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 'system');
-
--- =========================================================
--- Section 28: 부서 기본 데이터
--- =========================================================
-
-INSERT INTO department (department_name, description) VALUES
-('인프라기술팀', '인프라 기술 지원'),
-('서비스기술팀', '서비스 기술 지원'),
-('보안기술팀', '보안 기술 지원'),
-('개발2팀', '소프트웨어 개발');
-
-
--- =========================================================
--- Section 29: 엔지니어 기본 데이터
--- =========================================================
-
-INSERT INTO engineer (engineer_email, position, engineer_name, department_id)
-VALUES ('shinss@tscientific.co.kr', '부장','신성수', 1),
-('yhkim0144@tscientific.co.kr', '과장','김요한', 1),
-('skykimtw@tscientific.co.kr', '과장','김태우', 1),
-('choi7733@tscientific.co.kr', '과장','최은빈', 1),
-('thdrudcks97@tscientific.co.kr', '대리','송경찬', 1),
-('swngh56@tscientific.co.kr', '사원','신주호', 1),
-('tjddyd3050@tscientific.co.kr', '사원', '최성용', 1),
-('yeonhyuck@tscientific.co.kr', '사원', '최연혁', 1),
-('yoonss@tscientific.co.kr', '이사', '윤성식', 2),
-('eu@tscientific.co.kr', '대리', '은지영', 2),
-('wychoi@tscientific.co.kr', '대리', '윤성식', 2),
-('kchh3617@tscientific.co.kr', '대리', '권찬혁', 2),
-('swoun4221@tscientific.co.kr', '사원', '신운성', 2),
-('rlaud95@tscientific.co.kr', '사원', '손기명', 2),
-('ljk0105@tscientific.co.kr', '사원', '이정규', 2),
-('jmkim@tscientific.co.kr', '차장', '김정목', 3),
-('ssyang9417@tscientific.co.kr', '과장', '송병준', 3),
-('dydtls888@tscientific.co.kr', '사원', '박용신', 3),
-('twins827@tscientific.co.kr', '사원', '박준성', 3),
-('tngur317@tscientific.co.kr', '사원', '오수혁', 3),
-('oyj961212@tscientific.co.kr', '사원', '오유준', 3),
-('yoonchul.lee@tscientific.co.kr', '사원', '이윤철', 3),
-('lkh2433@tscientific.co.kr', '사원', '이경호', 3),
-('pjh@tscientific.co.kr', '사원', '박재호', 3);
-
-
--- =========================================================
--- Section 30: 고객사 추가 (테스트용)
--- =========================================================
--- 고객사 테스트 데이터 INSERT (A~Z)
-INSERT INTO customer (created_by, customer_code, customer_name, description, is_active, updated_by) VALUES
-('m_user@tscientific.co.kr', 'customerA', 'A회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerB', 'B회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerC', 'C회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerD', 'D회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerE', 'E회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerF', 'F회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerG', 'G회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerH', 'H회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerI', 'I회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerJ', 'J회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerK', 'K회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerL', 'L회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerM', 'M회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerN', 'N회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerO', 'O회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerP', 'P회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerQ', 'Q회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerR', 'R회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerS', 'S회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerT', 'T회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerU', 'U회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerV', 'V회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerW', 'W회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerX', 'X회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerY', 'Y회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerZ', 'Z회사', NULL, true, 'm_user@tscientific.co.kr');
