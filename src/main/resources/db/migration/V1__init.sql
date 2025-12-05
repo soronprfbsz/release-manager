@@ -238,7 +238,28 @@ CREATE TABLE IF NOT EXISTS backup_file (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 테이블';
 
 -- =========================================================
--- Section 10: 코드 타입 기본 데이터
+-- Section 10: Engineer 테이블 생성
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS engineer (
+    engineer_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '엔지니어 ID',
+    engineer_name VARCHAR(50) NOT NULL COMMENT '엔지니어 이름',
+    engineer_email VARCHAR(100) NOT NULL UNIQUE COMMENT '엔지니어 회사 이메일',
+    engineer_phone VARCHAR(20) COMMENT '엔지니어 연락처',
+    department VARCHAR(100) COMMENT '소속팀',
+    description VARCHAR(500) COMMENT '설명',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+    updated_by VARCHAR(100) NOT NULL COMMENT '수정자',
+
+    INDEX idx_engineer_name (engineer_name),
+    INDEX idx_engineer_email (engineer_email),
+    INDEX idx_department (department)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='엔지니어 테이블';
+
+-- =========================================================
+-- Section 11: 코드 타입 기본 데이터
 -- =========================================================
 
 INSERT INTO code_type (code_type_id, code_type_name, description) VALUES

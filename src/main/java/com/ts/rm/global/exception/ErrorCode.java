@@ -41,6 +41,10 @@ public enum ErrorCode {
   CUSTOMER_CODE_CONFLICT(HttpStatus.CONFLICT, "CU002", "error.customer.code_conflict"),
   CUSTOMER_ID_REQUIRED(HttpStatus.BAD_REQUEST, "CU003", "error.customer.id_required"),
 
+  // Engineer - 엔지니어
+  ENGINEER_NOT_FOUND(HttpStatus.NOT_FOUND, "E001", "error.engineer.not_found"),
+  ENGINEER_EMAIL_CONFLICT(HttpStatus.CONFLICT, "E002", "error.engineer.email_conflict"),
+
   // Release - 릴리즈
   RELEASE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "R001", "error.release.type_not_found"),
   RELEASE_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "R002", "error.release.version_not_found"),
