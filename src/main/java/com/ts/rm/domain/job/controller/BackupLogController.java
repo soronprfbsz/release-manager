@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/jobs/backup-files")
 @RequiredArgsConstructor
-@Tag(name = "백업 로그", description = "백업 파일 관련 로그 조회/다운로드 API")
+@Tag(name = "작업", description = "작업 관리 API")
 public class BackupLogController {
 
     private final BackupLogService backupLogService;

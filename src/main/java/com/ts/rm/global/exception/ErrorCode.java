@@ -45,6 +45,9 @@ public enum ErrorCode {
   ENGINEER_NOT_FOUND(HttpStatus.NOT_FOUND, "E001", "error.engineer.not_found"),
   ENGINEER_EMAIL_CONFLICT(HttpStatus.CONFLICT, "E002", "error.engineer.email_conflict"),
 
+  // Department - 부서
+  DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "error.department.not_found"),
+
   // Release - 릴리즈
   RELEASE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "R001", "error.release.type_not_found"),
   RELEASE_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "R002", "error.release.version_not_found"),

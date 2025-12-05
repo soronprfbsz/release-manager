@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/jobs/backup-files")
 @RequiredArgsConstructor
-@Tag(name = "백업 파일", description = "백업 파일 관리 API")
+@Tag(name = "작업", description = "작업 관리 API")
 public class BackupFileController {
 
     private final BackupFileService backupFileService;

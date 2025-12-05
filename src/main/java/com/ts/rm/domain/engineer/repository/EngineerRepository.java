@@ -24,9 +24,9 @@ public interface EngineerRepository extends JpaRepository<Engineer, Long> {
     boolean existsByEngineerEmail(String engineerEmail);
 
     /**
-     * 소속팀별 엔지니어 조회 (페이징)
+     * 부서 ID로 엔지니어 조회 (페이징)
      */
-    Page<Engineer> findByDepartment(String department, Pageable pageable);
+    Page<Engineer> findByDepartmentDepartmentId(Long departmentId, Pageable pageable);
 
     /**
      * 이름으로 검색 (부분 일치, 페이징)
@@ -34,7 +34,7 @@ public interface EngineerRepository extends JpaRepository<Engineer, Long> {
     Page<Engineer> findByEngineerNameContaining(String keyword, Pageable pageable);
 
     /**
-     * 소속팀과 이름으로 검색 (페이징)
+     * 부서 ID와 이름으로 검색 (페이징)
      */
-    Page<Engineer> findByDepartmentAndEngineerNameContaining(String department, String keyword, Pageable pageable);
+    Page<Engineer> findByDepartmentDepartmentIdAndEngineerNameContaining(Long departmentId, String keyword, Pageable pageable);
 }

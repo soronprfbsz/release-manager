@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
-@Tag(name = "Dashboard", description = "대시보드 API")
+@Tag(name = "대시보드", description = "대시보드 API")
 public class DashboardController {
 
     private final DashboardService dashboardService;

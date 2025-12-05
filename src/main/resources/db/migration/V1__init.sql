@@ -238,7 +238,21 @@ CREATE TABLE IF NOT EXISTS backup_file (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 테이블';
 
 -- =========================================================
--- Section 10: Engineer 테이블 생성
+-- Section 10: Department 테이블 생성
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS department (
+    department_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '부서 ID',
+    department_name VARCHAR(100) NOT NULL UNIQUE COMMENT '부서명',
+    description VARCHAR(500) COMMENT '설명',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_department_name (department_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='부서 테이블';
+
+-- =========================================================
+-- Section 11: Engineer 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS engineer (
@@ -246,16 +260,21 @@ CREATE TABLE IF NOT EXISTS engineer (
     engineer_name VARCHAR(50) NOT NULL COMMENT '엔지니어 이름',
     engineer_email VARCHAR(100) NOT NULL UNIQUE COMMENT '엔지니어 회사 이메일',
     engineer_phone VARCHAR(20) COMMENT '엔지니어 연락처',
-    department VARCHAR(100) COMMENT '소속팀',
+    position VARCHAR(100) COMMENT '직급 (code_type_id=POSITION 참조)',
+    department_id BIGINT COMMENT '소속 부서 ID',
     description VARCHAR(500) COMMENT '설명',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_by VARCHAR(100) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성자',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    updated_by VARCHAR(100) NOT NULL COMMENT '수정자',
+    updated_by VARCHAR(100) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정자',
 
     INDEX idx_engineer_name (engineer_name),
     INDEX idx_engineer_email (engineer_email),
-    INDEX idx_department (department)
+    INDEX idx_engineer_position (position),
+    INDEX idx_department_id (department_id),
+
+    CONSTRAINT fk_engineer_department FOREIGN KEY (department_id)
+        REFERENCES department(department_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='엔지니어 테이블';
 
 -- =========================================================
@@ -275,7 +294,8 @@ INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
 ('RESOURCE_FILE_CATEGORY', '리소스 파일 카테고리', '리소스 파일 기능적 대분류'),
 ('RESOURCE_SUBCATEGORY_SCRIPT', '스크립트 서브 카테고리', 'SCRIPT 카테고리 소분류'),
 ('RESOURCE_SUBCATEGORY_DOCUMENT', '문서 서브 카테고리', 'DOCUMENT 카테고리 소분류'),
-('BACKUP_FILE_CATEGORY', '백업 파일 카테고리', '백업 파일 분류 (MARIADB, CRATEDB)');
+('BACKUP_FILE_CATEGORY', '백업 파일 카테고리', '백업 파일 분류 (MARIADB, CRATEDB)'),
+('POSITION', '직급', '엔지니어 직급 구분');
 
 -- =========================================================
 -- Section 11: 계정 권한 코드
@@ -466,6 +486,18 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('BACKUP_FILE_CATEGORY', 'CRATEDB', 'CrateDB', 'CrateDB 백업 파일', 2, TRUE);
 
 -- =========================================================
+-- Section 22-1: 직급 코드
+-- =========================================================
+
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('POSITION', 'DIRECTOR', '이사', '이사', 1, TRUE),
+('POSITION', 'GENERAL_MANAGER', '부장', '부장', 2, TRUE),
+('POSITION', 'DEPUTY_MANAGER', '차장', '차장', 3, TRUE),
+('POSITION', 'MANAGER', '과장', '과장', 4, TRUE),
+('POSITION', 'ASSISTANT_MANAGER', '대리', '대리', 5, TRUE),
+('POSITION', 'STAFF', '사원', '사원', 6, TRUE);
+
+-- =========================================================
 -- Section 23: 기본 관리자 계정
 -- 패스워드: nms12345! (BCrypt 암호화)
 -- =========================================================
@@ -597,3 +629,44 @@ INSERT INTO resource_file (file_type, file_category, sub_category, file_name, fi
 -- 문서
 INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
 ('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 'system');
+
+-- =========================================================
+-- Section 28: 부서 기본 데이터
+-- =========================================================
+
+INSERT INTO department (department_name, description) VALUES
+('인프라기술팀', '인프라 기술 지원'),
+('서비스기술팀', '서비스 기술 지원'),
+('보안기술팀', '보안 기술 지원'),
+('개발2팀', '소프트웨어 개발');
+
+
+-- =========================================================
+-- Section 29: 엔지니어 기본 데이터
+-- =========================================================
+
+INSERT INTO engineer (engineer_email, position, engineer_name, department_id)
+VALUES ('shinss@tscientific.co.kr', '부장','신성수', 1),
+('yhkim0144@tscientific.co.kr', '과장','김요한', 1),
+('skykimtw@tscientific.co.kr', '과장','김태우', 1),
+('choi7733@tscientific.co.kr', '과장','최은빈', 1),
+('thdrudcks97@tscientific.co.kr', '대리','송경찬', 1),
+('swngh56@tscientific.co.kr', '사원','신주호', 1),
+('tjddyd3050@tscientific.co.kr', '사원', '최성용', 1),
+('yeonhyuck@tscientific.co.kr', '사원', '최연혁', 1),
+('yoonss@tscientific.co.kr', '이사', '윤성식', 2),
+('eu@tscientific.co.kr', '대리', '은지영', 2),
+('wychoi@tscientific.co.kr', '대리', '윤성식', 2),
+('kchh3617@tscientific.co.kr', '대리', '권찬혁', 2),
+('swoun4221@tscientific.co.kr', '사원', '신운성', 2),
+('rlaud95@tscientific.co.kr', '사원', '손기명', 2),
+('ljk0105@tscientific.co.kr', '사원', '이정규', 2),
+('jmkim@tscientific.co.kr', '차장', '김정목', 3),
+('ssyang9417@tscientific.co.kr', '과장', '송병준', 3),
+('dydtls888@tscientific.co.kr', '사원', '박용신', 3),
+('twins827@tscientific.co.kr', '사원', '박준성', 3),
+('tngur317@tscientific.co.kr', '사원', '오수혁', 3),
+('oyj961212@tscientific.co.kr', '사원', '오유준', 3),
+('yoonchul.lee@tscientific.co.kr', '사원', '이윤철', 3),
+('lkh2433@tscientific.co.kr', '사원', '이경호', 3),
+('pjh@tscientific.co.kr', '사원', '박재호', 3);

@@ -44,9 +44,8 @@ public final class EngineerDto {
             @Size(max = 20, message = "연락처는 20자 이하여야 합니다")
             String engineerPhone,
 
-            @Schema(description = "소속팀 (선택)", example = "개발팀", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-            @Size(max = 100, message = "소속팀은 100자 이하여야 합니다")
-            String department,
+            @Schema(description = "소속 부서 ID (선택)", example = "1", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+            Long departmentId,
 
             @Schema(description = "설명 (선택)", example = "백엔드 개발 담당", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
             @Size(max = 500, message = "설명은 500자 이하여야 합니다")
@@ -73,9 +72,8 @@ public final class EngineerDto {
             @Size(max = 20, message = "연락처는 20자 이하여야 합니다")
             String engineerPhone,
 
-            @Schema(description = "소속팀", example = "개발팀")
-            @Size(max = 100, message = "소속팀은 100자 이하여야 합니다")
-            String department,
+            @Schema(description = "소속 부서 ID", example = "1")
+            Long departmentId,
 
             @Schema(description = "설명", example = "백엔드 개발 담당")
             @Size(max = 500, message = "설명은 500자 이하여야 합니다")
@@ -104,8 +102,11 @@ public final class EngineerDto {
             @Schema(description = "연락처", example = "010-1234-5678")
             String engineerPhone,
 
-            @Schema(description = "소속팀", example = "개발팀")
-            String department,
+            @Schema(description = "소속 부서 ID", example = "1")
+            Long departmentId,
+
+            @Schema(description = "소속 부서명", example = "개발2팀")
+            String departmentName,
 
             @Schema(description = "설명", example = "백엔드 개발 담당")
             String description,
@@ -138,8 +139,8 @@ public final class EngineerDto {
             @Schema(description = "회사 이메일", example = "engineer@tscientific.co.kr")
             String engineerEmail,
 
-            @Schema(description = "소속팀", example = "개발팀")
-            String department
+            @Schema(description = "소속 부서명", example = "개발2팀")
+            String departmentName
     ) {
     }
 }
