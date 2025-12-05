@@ -29,26 +29,26 @@ public final class EngineerDto {
     @Builder
     @Schema(description = "엔지니어 생성 요청")
     public record CreateRequest(
-            @Schema(description = "엔지니어 이름", example = "홍길동")
+            @Schema(description = "엔지니어 이름", example = "홍길동", requiredMode = Schema.RequiredMode.REQUIRED)
             @NotBlank(message = "이름은 필수입니다")
             @Size(max = 50, message = "이름은 50자 이하여야 합니다")
             String engineerName,
 
-            @Schema(description = "회사 이메일", example = "engineer@tscientific.co.kr")
+            @Schema(description = "회사 이메일", example = "engineer@tscientific.co.kr", requiredMode = Schema.RequiredMode.REQUIRED)
             @NotBlank(message = "이메일은 필수입니다")
             @Email(message = "올바른 이메일 형식이 아닙니다")
             @Size(max = 100, message = "이메일은 100자 이하여야 합니다")
             String engineerEmail,
 
-            @Schema(description = "연락처", example = "010-1234-5678")
+            @Schema(description = "연락처 (선택)", example = "010-1234-5678", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
             @Size(max = 20, message = "연락처는 20자 이하여야 합니다")
             String engineerPhone,
 
-            @Schema(description = "소속팀", example = "개발팀")
+            @Schema(description = "소속팀 (선택)", example = "개발팀", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
             @Size(max = 100, message = "소속팀은 100자 이하여야 합니다")
             String department,
 
-            @Schema(description = "설명", example = "백엔드 개발 담당")
+            @Schema(description = "설명 (선택)", example = "백엔드 개발 담당", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
             @Size(max = 500, message = "설명은 500자 이하여야 합니다")
             String description
     ) {
