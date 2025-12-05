@@ -50,8 +50,8 @@ public final class PatchDto {
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
 
-            @Schema(description = "패치 담당자", example = "홍길동")
-            String patchedBy,
+            @Schema(description = "패치 담당자 (엔지니어 ID)", example = "1")
+            Long engineerId,
 
             @Schema(description = "패치 이름 (미입력 시 자동 생성: 날짜_fromversion_toversion)", example = "20251125_1.0.0_1.1.1")
             @Size(max = 100, message = "패치 이름은 100자 이하여야 합니다")
@@ -99,8 +99,11 @@ public final class PatchDto {
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
 
-            @Schema(description = "패치 담당자", example = "홍길동")
-            String patchedBy,
+            @Schema(description = "패치 담당자 (엔지니어 ID)", example = "1")
+            Long engineerId,
+
+            @Schema(description = "패치 담당자 이름", example = "홍길동")
+            String engineerName,
 
             @Schema(description = "등록일시")
             LocalDateTime createdAt,
@@ -143,8 +146,11 @@ public final class PatchDto {
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
 
-            @Schema(description = "패치 담당자", example = "홍길동")
-            String patchedBy,
+            @Schema(description = "패치 담당자 (엔지니어 ID)", example = "1")
+            Long engineerId,
+
+            @Schema(description = "패치 담당자 이름", example = "홍길동")
+            String engineerName,
 
             @Schema(description = "등록일시")
             LocalDateTime createdAt

@@ -29,7 +29,7 @@ class DashboardServiceTest {
     @Sql("/test-data/release-version-tree-test-data.sql")
     void getRecentData_Success() {
         // when
-        DashboardDto.Response response = dashboardService.getRecentData();
+        DashboardDto.Response response = dashboardService.getRecentData(4, 3);
 
         // then
         assertThat(response).isNotNull();
@@ -71,7 +71,7 @@ class DashboardServiceTest {
         // given - 테스트 데이터 없는 상태
 
         // when
-        DashboardDto.Response response = dashboardService.getRecentData();
+        DashboardDto.Response response = dashboardService.getRecentData(4, 3);
 
         // then
         assertThat(response).isNotNull();

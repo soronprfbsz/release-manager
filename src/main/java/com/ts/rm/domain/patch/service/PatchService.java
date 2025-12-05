@@ -2,6 +2,8 @@ package com.ts.rm.domain.patch.service;
 
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
+import com.ts.rm.domain.engineer.entity.Engineer;
+import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.domain.patch.dto.PatchDto;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.repository.PatchRepository;
@@ -47,6 +49,7 @@ public class PatchService {
     private final ReleaseVersionRepository releaseVersionRepository;
     private final ReleaseFileRepository releaseFileRepository;
     private final CustomerRepository customerRepository;
+    private final EngineerRepository engineerRepository;
     private final ScriptGenerator scriptGenerator;
 
     @Value("${app.release.base-path:src/main/resources/release}")
@@ -61,14 +64,14 @@ public class PatchService {
      * @param toVersion    To 버전 (예: 1.1.1)
      * @param createdBy    생성자
      * @param description  설명 (선택)
-     * @param patchedBy    패치 담당자 (선택)
+     * @param engineerId   패치 담당자 엔지니어 ID (선택)
      * @param patchName    패치 이름 (선택, 미입력 시 자동 생성)
      * @return 생성된 패치
      */
     @Transactional
     public Patch generatePatchByVersion(String releaseType, Long customerId,
             String fromVersion, String toVersion, String createdBy, String description,
-            String patchedBy, String patchName) {
+            Long engineerId, String patchName) {
 
         // 버전 조회
         ReleaseVersion from = releaseVersionRepository.findByReleaseTypeAndVersion(
@@ -82,7 +85,7 @@ public class PatchService {
                         "To 버전을 찾을 수 없습니다: " + toVersion));
 
         return generatePatch(from.getReleaseVersionId(), to.getReleaseVersionId(),
-                customerId, createdBy, description, patchedBy, patchName);
+                customerId, createdBy, description, engineerId, patchName);
     }
 
     /**
@@ -93,13 +96,13 @@ public class PatchService {
      * @param customerId    고객사 ID (선택)
      * @param createdBy     생성자
      * @param description   설명 (선택)
-     * @param patchedBy     패치 담당자 (선택)
+     * @param engineerId    패치 담당자 엔지니어 ID (선택)
      * @param patchName     패치 이름 (선택, 미입력 시 자동 생성)
      * @return 생성된 패치
      */
     @Transactional
     public Patch generatePatch(Long fromVersionId, Long toVersionId, Long customerId,
-            String createdBy, String description, String patchedBy, String patchName) {
+            String createdBy, String description, Long engineerId, String patchName) {
         try {
             // 1. 버전 조회 및 검증
             ReleaseVersion fromVersion = releaseVersionRepository.findById(fromVersionId)
@@ -137,6 +140,14 @@ public class PatchService {
                                 "고객사를 찾을 수 없습니다: " + customerId));
             }
 
+            // 3-1. 엔지니어 조회 (engineerId가 있는 경우)
+            Engineer engineer = null;
+            if (engineerId != null) {
+                engineer = engineerRepository.findById(engineerId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                                "엔지니어를 찾을 수 없습니다: " + engineerId));
+            }
+
             // 4. 패치 이름 결정 (입력값이 없으면 자동 생성: YYYYMMDDHHMMSS_fromversion_toversion)
             String resolvedPatchName = resolvePatchName(patchName, fromVersion.getVersion(), toVersion.getVersion());
 
@@ -147,7 +158,8 @@ public class PatchService {
             copySqlFiles(betweenVersions, outputPath);
 
             // 7. 패치 스크립트 생성
-            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, patchedBy);
+            String engineerName = engineer != null ? engineer.getEngineerName() : null;
+            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, engineerName);
 
             // 8. README 생성
             generateReadme(fromVersion, toVersion, betweenVersions, outputPath);
@@ -162,7 +174,7 @@ public class PatchService {
                     .outputPath(outputPath)
                     .createdBy(createdBy)
                     .description(description)
-                    .patchedBy(patchedBy)
+                    .engineer(engineer)
                     .build();
 
             Patch saved = patchRepository.save(patch);

@@ -1,5 +1,10 @@
 {
   "versions" : [ {
+    "version" : "1.1.4",
+    "createdAt" : "2025-12-05",
+    "createdBy" : "m_user@tscientific.co.kr",
+    "comment" : "ㅇㄴ"
+  }, {
     "version" : "1.1.2",
     "createdAt" : "2025-11-25",
     "createdBy" : "jhlee@tscientific",

@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
     patch_name VARCHAR(100) NOT NULL COMMENT '패치 파일명',
     output_path VARCHAR(500) NOT NULL COMMENT '생성된 패치 파일 경로',
     description TEXT COMMENT '설명',
-    patched_by VARCHAR(100) COMMENT '패치 담당자',
+    engineer_id BIGINT COMMENT '패치 담당자 (엔지니어 ID)',
     created_by VARCHAR(100) NOT NULL COMMENT '생성자',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
@@ -159,10 +159,13 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
     INDEX idx_cp_customer_id (customer_id),
     INDEX idx_cp_from_version (from_version),
     INDEX idx_cp_to_version (to_version),
+    INDEX idx_cp_engineer_id (engineer_id),
     INDEX idx_cp_created_at (created_at),
 
     CONSTRAINT fk_cumulative_patch_customer FOREIGN KEY (customer_id)
-        REFERENCES customer(customer_id) ON DELETE SET NULL
+        REFERENCES customer(customer_id) ON DELETE SET NULL,
+    CONSTRAINT fk_cumulative_patch_engineer FOREIGN KEY (engineer_id)
+        REFERENCES engineer(engineer_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='누적 패치 테이블';
 
 -- =========================================================
@@ -670,3 +673,36 @@ VALUES ('shinss@tscientific.co.kr', '부장','신성수', 1),
 ('yoonchul.lee@tscientific.co.kr', '사원', '이윤철', 3),
 ('lkh2433@tscientific.co.kr', '사원', '이경호', 3),
 ('pjh@tscientific.co.kr', '사원', '박재호', 3);
+
+
+-- =========================================================
+-- Section 30: 고객사 추가 (테스트용)
+-- =========================================================
+-- 고객사 테스트 데이터 INSERT (A~Z)
+INSERT INTO customer (created_by, customer_code, customer_name, description, is_active, updated_by) VALUES
+('m_user@tscientific.co.kr', 'customerA', 'A회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerB', 'B회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerC', 'C회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerD', 'D회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerE', 'E회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerF', 'F회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerG', 'G회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerH', 'H회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerI', 'I회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerJ', 'J회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerK', 'K회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerL', 'L회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerM', 'M회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerN', 'N회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerO', 'O회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerP', 'P회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerQ', 'Q회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerR', 'R회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerS', 'S회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerT', 'T회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerU', 'U회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerV', 'V회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerW', 'W회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerX', 'X회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerY', 'Y회사', NULL, true, 'm_user@tscientific.co.kr'),
+('m_user@tscientific.co.kr', 'customerZ', 'Z회사', NULL, true, 'm_user@tscientific.co.kr');

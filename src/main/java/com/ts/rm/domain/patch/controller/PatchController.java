@@ -64,7 +64,7 @@ public class PatchController {
                 request.toVersion(),
                 request.createdBy(),
                 request.description(),
-                request.patchedBy(),
+                request.engineerId(),
                 request.patchName()
         );
 
