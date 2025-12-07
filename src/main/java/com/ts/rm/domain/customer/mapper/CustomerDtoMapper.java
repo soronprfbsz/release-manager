@@ -24,4 +24,7 @@ public interface CustomerDtoMapper {
     CustomerDto.SimpleResponse toSimpleResponse(Customer customer);
 
     List<CustomerDto.SimpleResponse> toSimpleResponseList(List<Customer> customers);
+
+    @Mapping(target = "rowNumber", ignore = true)
+    CustomerDto.ListResponse toListResponse(Customer customer);
 }

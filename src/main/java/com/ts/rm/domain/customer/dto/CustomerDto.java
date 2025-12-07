@@ -120,4 +120,33 @@ public final class CustomerDto {
     ) {
 
     }
+
+    /**
+     * 고객사 목록 응답 (페이징용)
+     */
+    @Schema(description = "고객사 목록 응답")
+    public record ListResponse(
+            @Schema(description = "행 번호", example = "1")
+            Long rowNumber,
+
+            @Schema(description = "고객사 ID", example = "1")
+            Long customerId,
+
+            @Schema(description = "고객사 코드", example = "company_a")
+            String customerCode,
+
+            @Schema(description = "고객사명", example = "A회사")
+            String customerName,
+
+            @Schema(description = "설명", example = "고객사 설명")
+            String description,
+
+            @Schema(description = "활성 여부", example = "true")
+            Boolean isActive,
+
+            @Schema(description = "생성일시")
+            LocalDateTime createdAt
+    ) {
+
+    }
 }

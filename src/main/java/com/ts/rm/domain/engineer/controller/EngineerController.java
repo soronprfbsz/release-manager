@@ -89,13 +89,13 @@ public class EngineerController {
     @Operation(summary = "엔지니어 목록 조회",
             description = "엔지니어 목록을 조회합니다. departmentId로 부서 필터링, keyword로 이름 검색 가능. page, size, sort 파라미터 사용 가능")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<EngineerDto.DetailResponse>>> getEngineers(
+    public ResponseEntity<ApiResponse<Page<EngineerDto.ListResponse>>> getEngineers(
             @Parameter(description = "부서 ID 필터")
             @RequestParam(required = false) Long departmentId,
             @Parameter(description = "이름 검색 키워드")
             @RequestParam(required = false) String keyword,
             @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
-        Page<EngineerDto.DetailResponse> response = engineerService.getEngineers(departmentId, keyword, pageable);
+        Page<EngineerDto.ListResponse> response = engineerService.getEngineers(departmentId, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

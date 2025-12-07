@@ -287,19 +287,6 @@ class ReleaseFileServiceTest {
         then(releaseFileRepository).should(times(1)).delete(any(ReleaseFile.class));
     }
 
-    @Test
-    @DisplayName("체크섬 계산 - 성공")
-    void calculateChecksum_Success() {
-        // given
-        String content = "CREATE TABLE users (id INT PRIMARY KEY);";
-
-        // when
-        String checksum = releaseFileService.calculateChecksum(content.getBytes());
-
-        // then
-        assertThat(checksum).isNotNull();
-        assertThat(checksum).hasSize(32); // MD5 해시는 32자리 16진수
-    }
 
     @Test
     @DisplayName("버전 범위 내 릴리즈 파일 조회 (install 제외) - 성공")

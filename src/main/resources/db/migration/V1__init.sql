@@ -487,8 +487,7 @@ INSERT INTO account (account_name, email, password, role, status) VALUES
 INSERT INTO department (department_name, description) VALUES
 ('인프라기술팀', '인프라 기술 지원'),
 ('서비스기술팀', '서비스 기술 지원'),
-('보안기술팀', '보안 기술 지원'),
-('개발2팀', '소프트웨어 개발');
+('보안기술팀', '보안 기술 지원');
 
 
 -- =========================================================

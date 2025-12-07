@@ -1,31 +1,17 @@
 package com.ts.rm.domain.patch.service;
 
-import com.ts.rm.domain.customer.entity.Customer;
-import com.ts.rm.domain.customer.repository.CustomerRepository;
-import com.ts.rm.domain.engineer.entity.Engineer;
-import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.domain.patch.dto.PatchDto;
 import com.ts.rm.domain.patch.entity.Patch;
+import com.ts.rm.domain.patch.mapper.PatchDtoMapper;
 import com.ts.rm.domain.patch.repository.PatchRepository;
-import com.ts.rm.domain.patch.util.ScriptGenerator;
-import com.ts.rm.domain.releasefile.entity.ReleaseFile;
-import com.ts.rm.domain.releasefile.enums.FileCategory;
-import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
-import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
-import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
-import com.ts.rm.global.file.StreamingZipUtil;
+import com.ts.rm.global.pagination.PageRowNumberUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,12 +19,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 /**
- * Patch Service
+ * 패치 서비스 (오케스트레이터)
  *
- * <p>패치 생성 및 관리를 담당하는 서비스
+ * <p>패치 CRUD 및 다른 서비스들을 조율하는 역할을 담당합니다.
  */
 @Slf4j
 @Service
@@ -46,451 +31,34 @@ import org.springframework.util.StringUtils;
 public class PatchService {
 
     private final PatchRepository patchRepository;
-    private final ReleaseVersionRepository releaseVersionRepository;
-    private final ReleaseFileRepository releaseFileRepository;
-    private final CustomerRepository customerRepository;
-    private final EngineerRepository engineerRepository;
-    private final ScriptGenerator scriptGenerator;
+    private final PatchDtoMapper patchDtoMapper;
+    private final PatchGenerationService patchGenerationService;
+    private final PatchDownloadService patchDownloadService;
 
     @Value("${app.release.base-path:src/main/resources/release}")
     private String releaseBasePath;
 
     /**
-     * 패치 생성 (버전 문자열 기반)
-     *
-     * @param releaseType  릴리즈 타입 (STANDARD/CUSTOM)
-     * @param customerId   고객사 ID (CUSTOM인 경우)
-     * @param fromVersion  From 버전 (예: 1.0.0)
-     * @param toVersion    To 버전 (예: 1.1.1)
-     * @param createdBy    생성자
-     * @param description  설명 (선택)
-     * @param engineerId   패치 담당자 엔지니어 ID (선택)
-     * @param patchName    패치 이름 (선택, 미입력 시 자동 생성)
-     * @return 생성된 패치
+     * 패치 생성 (버전 문자열 기반) - 위임
      */
     @Transactional
     public Patch generatePatchByVersion(String releaseType, Long customerId,
             String fromVersion, String toVersion, String createdBy, String description,
             Long engineerId, String patchName) {
-
-        // 버전 조회
-        ReleaseVersion from = releaseVersionRepository.findByReleaseTypeAndVersion(
-                        releaseType.toUpperCase(), fromVersion)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
-                        "From 버전을 찾을 수 없습니다: " + fromVersion));
-
-        ReleaseVersion to = releaseVersionRepository.findByReleaseTypeAndVersion(
-                        releaseType.toUpperCase(), toVersion)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
-                        "To 버전을 찾을 수 없습니다: " + toVersion));
-
-        return generatePatch(from.getReleaseVersionId(), to.getReleaseVersionId(),
-                customerId, createdBy, description, engineerId, patchName);
+        return patchGenerationService.generatePatchByVersion(
+                releaseType, customerId, fromVersion, toVersion,
+                createdBy, description, engineerId, patchName);
     }
 
     /**
-     * 패치 생성 (버전 ID 기반)
-     *
-     * @param fromVersionId From 버전 ID
-     * @param toVersionId   To 버전 ID
-     * @param customerId    고객사 ID (선택)
-     * @param createdBy     생성자
-     * @param description   설명 (선택)
-     * @param engineerId    패치 담당자 엔지니어 ID (선택)
-     * @param patchName     패치 이름 (선택, 미입력 시 자동 생성)
-     * @return 생성된 패치
+     * 패치 생성 (버전 ID 기반) - 위임
      */
     @Transactional
     public Patch generatePatch(Long fromVersionId, Long toVersionId, Long customerId,
             String createdBy, String description, Long engineerId, String patchName) {
-        try {
-            // 1. 버전 조회 및 검증
-            ReleaseVersion fromVersion = releaseVersionRepository.findById(fromVersionId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
-                            "From 버전을 찾을 수 없습니다: " + fromVersionId));
-
-            ReleaseVersion toVersion = releaseVersionRepository.findById(toVersionId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
-                            "To 버전을 찾을 수 없습니다: " + toVersionId));
-
-            validateVersionRange(fromVersion, toVersion);
-
-            // 2. 중간 버전 목록 조회 (fromVersion < version <= toVersion)
-            List<ReleaseVersion> betweenVersions = releaseVersionRepository.findVersionsBetween(
-                    fromVersion.getReleaseType(),
-                    fromVersion.getVersion(),
-                    toVersion.getVersion()
-            );
-
-            if (betweenVersions.isEmpty()) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                        String.format("From %s와 To %s 사이에 패치할 버전이 없습니다.",
-                                fromVersion.getVersion(), toVersion.getVersion()));
-            }
-
-            log.info("패치 생성 시작 - From: {}, To: {}, 포함 버전: {}",
-                    fromVersion.getVersion(), toVersion.getVersion(),
-                    betweenVersions.stream().map(ReleaseVersion::getVersion).toList());
-
-            // 3. 고객사 조회 (customerId가 있는 경우)
-            Customer customer = null;
-            if (customerId != null) {
-                customer = customerRepository.findById(customerId)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND,
-                                "고객사를 찾을 수 없습니다: " + customerId));
-            }
-
-            // 3-1. 엔지니어 조회 (engineerId가 있는 경우)
-            Engineer engineer = null;
-            if (engineerId != null) {
-                engineer = engineerRepository.findById(engineerId)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                                "엔지니어를 찾을 수 없습니다: " + engineerId));
-            }
-
-            // 4. 패치 이름 결정 (입력값이 없으면 자동 생성: YYYYMMDDHHMMSS_fromversion_toversion)
-            String resolvedPatchName = resolvePatchName(patchName, fromVersion.getVersion(), toVersion.getVersion());
-
-            // 5. 출력 디렉토리 생성 (패치 이름으로)
-            String outputPath = createOutputDirectory(resolvedPatchName);
-
-            // 6. SQL 파일 복사
-            copySqlFiles(betweenVersions, outputPath);
-
-            // 7. 패치 스크립트 생성
-            String engineerName = engineer != null ? engineer.getEngineerName() : null;
-            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, engineerName);
-
-            // 8. README 생성
-            generateReadme(fromVersion, toVersion, betweenVersions, outputPath);
-
-            // 9. 패치 저장
-            Patch patch = Patch.builder()
-                    .releaseType(fromVersion.getReleaseType())
-                    .customer(customer)
-                    .fromVersion(fromVersion.getVersion())
-                    .toVersion(toVersion.getVersion())
-                    .patchName(resolvedPatchName)
-                    .outputPath(outputPath)
-                    .createdBy(createdBy)
-                    .description(description)
-                    .engineer(engineer)
-                    .build();
-
-            Patch saved = patchRepository.save(patch);
-
-            log.info("패치 생성 완료 - ID: {}, Path: {}", saved.getPatchId(),
-                    outputPath);
-
-            return saved;
-
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("패치 생성 실패", e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "패치 생성 중 오류가 발생했습니다: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 패치 이름 결정
-     *
-     * @param patchName   입력된 패치 이름 (nullable)
-     * @param fromVersion From 버전
-     * @param toVersion   To 버전
-     * @return 최종 패치 이름 (형식: YYYYMMDDHHmm_fromVersion_toVersion)
-     */
-    private String resolvePatchName(String patchName, String fromVersion, String toVersion) {
-        if (StringUtils.hasText(patchName)) {
-            return patchName;
-        }
-        // 기본값: 날짜시분_fromversion_toversion (예: 202511271430_1.0.0_1.1.1)
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
-        return String.format("%s_%s_%s", timestamp, fromVersion, toVersion);
-    }
-
-    /**
-     * 버전 범위 검증
-     */
-    private void validateVersionRange(ReleaseVersion fromVersion, ReleaseVersion toVersion) {
-        // 버전 비교: fromVersion < toVersion
-        if (compareVersions(fromVersion, toVersion) >= 0) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    String.format("From 버전은 To 버전보다 작아야 합니다. (From: %s, To: %s)",
-                            fromVersion.getVersion(), toVersion.getVersion()));
-        }
-
-        // 릴리즈 타입 일치 검증
-        if (!fromVersion.getReleaseType().equals(toVersion.getReleaseType())) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "From 버전과 To 버전의 릴리즈 타입이 일치하지 않습니다.");
-        }
-    }
-
-    /**
-     * 버전 비교 (v1 < v2 이면 -1, v1 == v2 이면 0, v1 > v2 이면 1)
-     */
-    private int compareVersions(ReleaseVersion v1, ReleaseVersion v2) {
-        if (v1.getMajorVersion() != v2.getMajorVersion()) {
-            return Integer.compare(v1.getMajorVersion(), v2.getMajorVersion());
-        }
-        if (v1.getMinorVersion() != v2.getMinorVersion()) {
-            return Integer.compare(v1.getMinorVersion(), v2.getMinorVersion());
-        }
-        return Integer.compare(v1.getPatchVersion(), v2.getPatchVersion());
-    }
-
-    /**
-     * 출력 디렉토리 생성
-     *
-     * @param patchName 패치 이름 (디렉토리명으로 사용)
-     * @return 상대 경로 (예: patches/20251127143025_1.0.0_1.1.1)
-     */
-    private String createOutputDirectory(String patchName) {
-        try {
-            // 출력 경로: patches/{patchName}
-            String relativePath = String.format("patches/%s", patchName);
-
-            Path outputDir = Paths.get(releaseBasePath, relativePath);
-
-            // 루트 디렉토리만 생성 (하위 디렉토리는 파일 복사 시 동적 생성)
-            Files.createDirectories(outputDir);
-
-            log.info("출력 디렉토리 생성 완료: {}", outputDir.toAbsolutePath());
-
-            return relativePath;
-
-        } catch (IOException e) {
-            log.error("출력 디렉토리 생성 실패: releaseBasePath={}, patchName={}",
-                    releaseBasePath, patchName, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "출력 디렉토리 생성 실패: " + releaseBasePath + "/patches/" + patchName);
-        }
-    }
-
-    /**
-     * 모든 파일 복사 (버전별 디렉토리 구조 유지)
-     * <p>⚠️ INSTALL 카테고리 버전은 패치 생성에서 제외됩니다.
-     */
-    private void copySqlFiles(List<ReleaseVersion> versions, String outputPath) {
-        try {
-            Path outputDir = Paths.get(releaseBasePath, outputPath);
-
-            for (ReleaseVersion version : versions) {
-                // INSTALL 카테고리 버전은 패치에서 제외
-                if (version.getReleaseCategory() != null
-                        && version.getReleaseCategory().isExcludedFromPatch()) {
-                    log.info("버전 {}는 INSTALL 카테고리이므로 패치에서 제외됩니다.", version.getVersion());
-                    continue;
-                }
-
-                // 모든 파일 조회
-                List<ReleaseFile> files = releaseFileRepository
-                        .findAllByReleaseVersionIdOrderByExecutionOrderAsc(
-                                version.getReleaseVersionId());
-
-                if (files.isEmpty()) {
-                    log.warn("버전 {}의 패치 대상 파일이 없습니다.", version.getVersion());
-                    continue;
-                }
-
-                log.info("버전 {} 패치 대상 파일: {}개", version.getVersion(), files.size());
-
-                for (ReleaseFile file : files) {
-                    copyFileByCategory(file, version, outputDir);
-                }
-
-                log.info("버전 {} 파일 복사 완료 - {}개", version.getVersion(), files.size());
-            }
-
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "파일 복사 실패: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 개별 파일 복사 (카테고리 기반)
-     * <p>Phase 5: 파일 카테고리별 디렉토리 구조 생성
-     */
-    private void copyFileByCategory(ReleaseFile file, ReleaseVersion version, Path outputDir) {
-        try {
-            // 원본 파일 경로
-            Path sourcePath = Paths.get(releaseBasePath, file.getFilePath());
-
-            if (!Files.exists(sourcePath)) {
-                log.warn("파일이 존재하지 않습니다: {}", sourcePath);
-                return;
-            }
-
-            // 대상 파일 경로 결정 (카테고리별)
-            Path targetPath = determineTargetPath(file, version, outputDir);
-
-            // 대상 디렉토리 생성
-            Files.createDirectories(targetPath.getParent());
-
-            // 파일 복사
-            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-            log.debug("파일 복사: {} -> {}", sourcePath.getFileName(), targetPath);
-
-        } catch (IOException e) {
-            log.error("파일 복사 실패: {}", file.getFileName(), e);
-        }
-    }
-
-    /**
-     * 대상 파일 경로 결정 (카테고리 기반)
-     * <p>디렉토리 구조:
-     * <ul>
-     *   <li>DATABASE: {db_type}/{version}/{file_name}</li>
-     *   <li>WEB/API/BATCH: {category}/{version}/{file_name}</li>
-     *   <li>CONFIG: config/{file_name}</li>
-     * </ul>
-     */
-    private Path determineTargetPath(ReleaseFile file, ReleaseVersion version, Path outputDir) {
-        FileCategory category = file.getFileCategory();
-
-        if (category == null) {
-            return outputDir.resolve(
-                    String.format("etc/%s/%s",
-                            version.getVersion(),
-                            file.getFileName())
-            );
-        }
-
-        switch (category) {
-            case DATABASE:
-                // sub_category를 소문자로 변환
-                String subCategory = file.getSubCategory() != null
-                        ? file.getSubCategory().toLowerCase()
-                        : "database";
-                return outputDir.resolve(
-                        String.format("database/%s/%s/%s",
-                                subCategory,
-                                version.getVersion(),
-                                file.getFileName())
-                );
-
-            case WEB:
-            case ENGINE:
-                // category를 소문자로 변환
-                return outputDir.resolve(
-                        String.format("%s/%s/%s",
-                                category.getCode().toLowerCase(),
-                                version.getVersion(),
-                                file.getFileName())
-                );
-
-            default:
-                return outputDir.resolve(
-                        String.format("etc/%s", file.getFileName())
-                );
-        }
-    }
-
-    private void generatePatchScripts(ReleaseVersion fromVersion, ReleaseVersion toVersion,
-            List<ReleaseVersion> versions, String outputPath, String patchedBy) {
-        try {
-            List<ReleaseFile> mariadbFiles = releaseFileRepository.findReleaseFilesBetweenVersionsBySubCategory(
-                    versions.get(0).getVersion(),
-                    versions.get(versions.size() - 1).getVersion(),
-                    "MARIADB"
-            );
-
-            List<ReleaseFile> cratedbFiles = releaseFileRepository.findReleaseFilesBetweenVersionsBySubCategory(
-                    versions.get(0).getVersion(),
-                    versions.get(versions.size() - 1).getVersion(),
-                    "CRATEDB"
-            );
-
-            // MariaDB 스크립트는 항상 생성 (VERSION_HISTORY INSERT를 위해 필수)
-            // SQL 파일이 없더라도 VERSION_HISTORY에 버전 이력을 기록해야 함
-            scriptGenerator.generateMariaDBPatchScript(fromVersion.getVersion(),
-                    toVersion.getVersion(), versions, mariadbFiles, outputPath, patchedBy);
-            if (mariadbFiles.isEmpty()) {
-                log.info("MariaDB SQL 파일은 없지만 VERSION_HISTORY 기록을 위해 스크립트 생성: {}/mariadb_patch.sh", outputPath);
-            } else {
-                log.info("MariaDB 패치 스크립트 생성 완료: {}/mariadb_patch.sh (SQL 파일 {}개)", outputPath, mariadbFiles.size());
-            }
-
-            // CrateDB 스크립트는 파일이 있을 때만 생성
-            if (!cratedbFiles.isEmpty()) {
-                scriptGenerator.generateCrateDBPatchScript(fromVersion.getVersion(),
-                        toVersion.getVersion(), versions, cratedbFiles, outputPath);
-                log.info("CrateDB 패치 스크립트 생성 완료: {}/cratedb_patch.sh", outputPath);
-            } else {
-                log.info("CrateDB 파일이 없어 스크립트를 생성하지 않습니다.");
-            }
-
-        } catch (Exception e) {
-            log.error("패치 스크립트 생성 실패: {}", outputPath, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "패치 스크립트 생성 실패: " + e.getMessage());
-        }
-    }
-
-
-    /**
-     * README.md 생성
-     */
-    private void generateReadme(ReleaseVersion fromVersion, ReleaseVersion toVersion,
-            List<ReleaseVersion> includedVersions, String outputPath) {
-        try {
-            Path readmePath = Paths.get(releaseBasePath, outputPath, "README.md");
-
-            StringBuilder content = new StringBuilder();
-            content.append(String.format("# 누적 패치: from-%s to %s\n\n",
-                    fromVersion.getVersion(), toVersion.getVersion()));
-            content.append("## 개요\n");
-            content.append(String.format(
-                    "이 패치는 **%s** 버전에서 **%s** 버전으로 업그레이드하기 위한 누적 패치입니다.\n\n",
-                    fromVersion.getVersion(), toVersion.getVersion()));
-
-            content.append("## 생성 정보\n");
-            content.append(String.format("- **생성일**: %s\n",
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
-            content.append(String.format("- **From Version**: %s\n", fromVersion.getVersion()));
-            content.append(String.format("- **To Version**: %s\n", toVersion.getVersion()));
-            content.append("- **포함된 버전**: ");
-            content.append(includedVersions.stream()
-                    .map(ReleaseVersion::getVersion)
-                    .reduce((a, b) -> a + ", " + b)
-                    .orElse(""));
-            content.append("\n\n");
-
-            content.append("## 디렉토리 구조\n");
-            content.append("```\n");
-            content.append(".\n");
-            content.append("├── mariadb_patch.sh            # MariaDB 패치 실행 스크립트\n");
-            content.append("├── cratedb_patch.sh            # CrateDB 패치 실행 스크립트\n");
-            content.append("├── database/\n");
-            content.append("│   ├── mariadb/\n");
-            content.append("│   │   ├── {version}/          # 누적된 SQL 파일들\n");
-            content.append("│   │   │   └── *.sql\n");
-            content.append("│   └── cratedb/\n");
-            content.append("│       ├── {version}/          # 누적된 SQL 파일들\n");
-            content.append("│       │   └── *.sql\n");
-            content.append("└── README.md                   # 이 파일\n");
-            content.append("```\n\n");
-
-            content.append("## 주의사항\n");
-            content.append("⚠️ **중요**: 이 패치는 여러 버전의 변경사항을 누적한 것입니다.\n");
-            content.append("- 패치 실행 전 반드시 백업을 수행하세요.\n");
-            content.append("- 패치 실행 중 오류 발생 시 로그를 확인하세요.\n\n");
-
-            content.append("---\n");
-            content.append("CREATED BY - Release Manager\n");
-
-            Files.writeString(readmePath, content.toString());
-
-            log.info("README.md 생성 완료: {}", readmePath);
-
-        } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "README 생성 실패: " + e.getMessage());
-        }
+        return patchGenerationService.generatePatch(
+                fromVersionId, toVersionId, customerId,
+                createdBy, description, engineerId, patchName);
     }
 
     /**
@@ -508,217 +76,80 @@ public class PatchService {
      *
      * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM, null이면 전체)
      * @param pageable    페이징 정보
-     * @return 패치 페이지
+     * @return 패치 목록 페이지 (rowNumber 포함)
      */
     @Transactional(readOnly = true)
-    public Page<Patch> listPatchesWithPaging(String releaseType, Pageable pageable) {
+    public Page<PatchDto.ListResponse> listPatchesWithPaging(String releaseType, Pageable pageable) {
+        Page<Patch> patches;
         if (releaseType != null) {
-            return patchRepository.findAllByReleaseTypeOrderByCreatedAtDesc(
+            patches = patchRepository.findAllByReleaseTypeOrderByCreatedAtDesc(
                     releaseType.toUpperCase(), pageable);
+        } else {
+            patches = patchRepository.findAllByOrderByCreatedAtDesc(pageable);
         }
-        return patchRepository.findAllByOrderByCreatedAtDesc(pageable);
+
+        // rowNumber 계산 (공통 유틸리티 사용)
+        return PageRowNumberUtil.mapWithRowNumber(patches, (patch, rowNumber) -> {
+            PatchDto.ListResponse response = patchDtoMapper.toListResponse(patch);
+            return new PatchDto.ListResponse(
+                    rowNumber,
+                    response.patchId(),
+                    response.releaseType(),
+                    response.customerCode(),
+                    response.customerName(),
+                    response.fromVersion(),
+                    response.toVersion(),
+                    response.patchName(),
+                    response.createdBy(),
+                    response.description(),
+                    response.engineerId(),
+                    response.engineerName(),
+                    response.createdAt()
+            );
+        });
     }
 
     /**
-     * 패치를 스트리밍 방식으로 ZIP 압축하여 출력 스트림에 작성
-     *
-     * @param patchId      패치 ID
-     * @param outputStream 출력 스트림
+     * 패치를 스트리밍 방식으로 ZIP 압축하여 출력 스트림에 작성 - 위임
      */
     @Transactional(readOnly = true)
     public void streamPatchAsZip(Long patchId, OutputStream outputStream) {
         Patch patch = getPatch(patchId);
-
-        Path patchDir = Paths.get(releaseBasePath, patch.getOutputPath());
-
-        if (!Files.exists(patchDir)) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
-        }
-
-        // 스트리밍 시작 전 파일 존재 여부 검증 (응답 헤더 설정 후 예외 발생 방지)
-        validatePatchDirectoryFiles(patchDir);
-
-        StreamingZipUtil.compressDirectoryToStream(outputStream, patchDir);
+        patchDownloadService.streamPatchAsZip(patch, outputStream);
     }
 
     /**
-     * 패치 ZIP 파일명 생성
-     *
-     * @param patchId 패치 ID
-     * @return ZIP 파일명 (예: 202511271430_1.0.0_1.1.1.zip)
+     * 패치 ZIP 파일명 생성 - 위임
      */
     public String getZipFileName(Long patchId) {
         Patch patch = getPatch(patchId);
-        return patch.getPatchName() + ".zip";
+        return patchDownloadService.getZipFileName(patch);
     }
 
     /**
-     * 패치 디렉토리의 압축 전 총 크기 계산
-     *
-     * <p>프론트엔드에서 진행률 표시를 위해 사용합니다.
-     * 디렉토리 내 모든 파일의 크기를 재귀적으로 계산합니다.
-     *
-     * @param patchId 패치 ID
-     * @return 압축 전 총 크기 (바이트)
-     * @throws BusinessException 디렉토리를 찾을 수 없거나 크기 계산 실패 시
+     * 패치 디렉토리의 압축 전 총 크기 계산 - 위임
      */
     public long calculateUncompressedSize(Long patchId) {
-        log.debug("압축 전 크기 계산 시작 - patchId: {}", patchId);
-
         Patch patch = getPatch(patchId);
-        Path patchDir = Paths.get(releaseBasePath, patch.getOutputPath());
-
-        if (!Files.exists(patchDir)) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
-        }
-
-        try {
-            long totalSize = calculateDirectorySize(patchDir);
-            log.info("압축 전 총 크기 계산 완료 - patchId: {}, totalSize: {} bytes ({} MB)",
-                    patchId, totalSize, totalSize / (1024.0 * 1024.0));
-            return totalSize;
-        } catch (IOException e) {
-            log.error("디렉토리 크기 계산 실패 - patchId: {}, path: {}", patchId, patchDir, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "디렉토리 크기 계산 실패: " + e.getMessage());
-        }
+        return patchDownloadService.calculateUncompressedSize(patch);
     }
 
     /**
-     * 디렉토리의 총 크기를 재귀적으로 계산
-     *
-     * @param directory 계산할 디렉토리 경로
-     * @return 총 크기 (바이트)
-     * @throws IOException 파일 접근 실패 시
-     */
-    private long calculateDirectorySize(Path directory) throws IOException {
-        return Files.walk(directory)
-                .filter(Files::isRegularFile)
-                .mapToLong(path -> {
-                    try {
-                        return Files.size(path);
-                    } catch (IOException e) {
-                        log.warn("파일 크기 계산 실패 - {}: {}", path, e.getMessage());
-                        return 0L;
-                    }
-                })
-                .sum();
-    }
-
-    /**
-     * 패치 디렉토리 내 파일 존재 여부 검증
-     *
-     * <p>스트리밍 시작 전에 디렉토리에 최소 1개 이상의 파일이 존재하는지 확인합니다.
-     * Content-Type 설정 후 예외 발생을 방지하기 위한 사전 검증입니다.
-     *
-     * @param directory 패치 디렉토리 경로
-     * @throws BusinessException 파일이 하나도 없을 경우
-     */
-    private void validatePatchDirectoryFiles(Path directory) {
-        try {
-            long fileCount = Files.walk(directory)
-                    .filter(Files::isRegularFile)
-                    .count();
-
-            if (fileCount == 0) {
-                throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                        "패치 디렉토리에 압축할 파일이 없습니다: " + directory);
-            }
-
-            log.debug("패치 파일 검증 완료 - 파일 개수: {}", fileCount);
-
-        } catch (IOException e) {
-            log.error("패치 디렉토리 검증 실패: {}", directory, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "패치 디렉토리 검증 중 오류가 발생했습니다: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 패치 ZIP 파일 내부 구조 조회
-     *
-     * @param patchId 패치 ID
-     * @return ZIP 파일 구조 (재귀적인 DirectoryNode)
+     * 패치 ZIP 파일 내부 구조 조회 - 위임
      */
     @Transactional(readOnly = true)
     public PatchDto.DirectoryNode getZipFileStructure(Long patchId) {
         Patch patch = getPatch(patchId);
-
-        Path patchDir = Paths.get(releaseBasePath, patch.getOutputPath());
-
-        if (!Files.exists(patchDir)) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
-        }
-
-        try {
-            // 루트 디렉토리 구조 생성
-            return buildDirectoryNode(patchDir, patchDir);
-
-        } catch (IOException e) {
-            log.error("패치 디렉토리 구조 조회 실패: {}", patchDir, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "패치 디렉토리 구조를 조회할 수 없습니다: " + e.getMessage());
-        }
+        return patchDownloadService.getZipFileStructure(patch);
     }
 
     /**
-     * 디렉토리 구조를 재귀적으로 생성
-     *
-     * @param directory 조회할 디렉토리
-     * @param basePath  기준 경로
-     * @return DirectoryNode (재귀 구조)
+     * 패치 파일 내용 조회 - 위임
      */
-    private PatchDto.DirectoryNode buildDirectoryNode(Path directory, Path basePath)
-            throws IOException {
-
-        String name = directory.getFileName() != null
-                ? directory.getFileName().toString()
-                : directory.toString();
-        String relativePath = basePath.relativize(directory).toString().replace("\\", "/");
-
-        // 빈 경로인 경우 "." 으로 표시
-        if (relativePath.isEmpty()) {
-            relativePath = ".";
-        }
-
-        java.util.List<PatchDto.FileNode> children = new java.util.ArrayList<>();
-
-        try (var stream = Files.list(directory)) {
-            stream.sorted().forEach(path -> {
-                try {
-                    if (Files.isDirectory(path)) {
-                        // 하위 디렉토리 재귀 조회
-                        PatchDto.DirectoryNode childDir = buildDirectoryNode(path, basePath);
-
-                        // 빈 디렉토리는 제외 (children이 비어있으면 추가하지 않음)
-                        if (!childDir.children().isEmpty()) {
-                            children.add(childDir);
-                        }
-                    } else {
-                        // 파일 정보 추가
-                        children.add(buildFileInfo(path, basePath));
-                    }
-                } catch (IOException e) {
-                    log.warn("파일/디렉토리 정보 조회 실패: {}", path, e);
-                }
-            });
-        }
-
-        return new PatchDto.DirectoryNode(name, "directory", relativePath, children);
-    }
-
-    /**
-     * 파일 정보 생성
-     */
-    private PatchDto.FileInfo buildFileInfo(Path filePath, Path basePath) throws IOException {
-        String name = filePath.getFileName().toString();
-        long size = Files.size(filePath);
-        String relativePath = basePath.relativize(filePath).toString().replace("\\", "/");
-
-        return new PatchDto.FileInfo(name, size, "file", relativePath);
+    @Transactional(readOnly = true)
+    public PatchDto.FileContentResponse getFileContent(Long patchId, String relativePath) {
+        Patch patch = getPatch(patchId);
+        return patchDownloadService.getFileContent(patch, relativePath);
     }
 
     /**
@@ -771,103 +202,6 @@ public class PatchService {
                             log.warn("파일/디렉토리 삭제 실패: {}", path, e);
                         }
                     });
-        }
-    }
-
-    /**
-     * 패치 파일 내용 조회
-     *
-     * @param patchId      패치 ID
-     * @param relativePath 파일 상대 경로 (예: mariadb/source_files/1.1.1/1.patch_mariadb_ddl.sql)
-     * @return 파일 내용
-     */
-    @Transactional(readOnly = true)
-    public PatchDto.FileContentResponse getFileContent(Long patchId, String relativePath) {
-        Patch patch = getPatch(patchId);
-
-        // 패치 디렉토리 경로
-        Path patchDir = Paths.get(releaseBasePath, patch.getOutputPath());
-
-        if (!Files.exists(patchDir)) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
-        }
-
-        // 상대 경로 검증 및 파일 경로 생성
-        Path filePath = validateAndResolvePath(patchDir, relativePath);
-
-        // 파일 존재 확인
-        if (!Files.exists(filePath)) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "파일을 찾을 수 없습니다: " + relativePath);
-        }
-
-        if (!Files.isRegularFile(filePath)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "디렉토리는 조회할 수 없습니다: " + relativePath);
-        }
-
-        try {
-            // 파일 크기 확인 (10MB 제한)
-            long fileSize = Files.size(filePath);
-            if (fileSize > 10 * 1024 * 1024) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                        "파일 크기가 너무 큽니다 (최대 10MB): " + fileSize + " bytes");
-            }
-
-            // 파일 내용 읽기 (UTF-8)
-            String content = Files.readString(filePath);
-
-            String fileName = filePath.getFileName().toString();
-
-            return new PatchDto.FileContentResponse(
-                    patchId,
-                    relativePath,
-                    fileName,
-                    fileSize,
-                    content
-            );
-
-        } catch (IOException e) {
-            log.error("파일 읽기 실패: {}", filePath, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "파일을 읽을 수 없습니다: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 경로 검증 및 해석 (경로 탐색 공격 방지)
-     *
-     * @param baseDir      기준 디렉토리
-     * @param relativePath 상대 경로
-     * @return 해석된 절대 경로
-     * @throws BusinessException 경로가 기준 디렉토리 외부를 가리키는 경우
-     */
-    private Path validateAndResolvePath(Path baseDir, String relativePath) {
-        if (relativePath == null || relativePath.trim().isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "파일 경로가 비어있습니다");
-        }
-
-        try {
-            // 상대 경로를 절대 경로로 변환
-            Path resolvedPath = baseDir.resolve(relativePath).normalize();
-
-            // 경로 탐색 공격 방지: 해석된 경로가 기준 디렉토리 내부에 있는지 확인
-            if (!resolvedPath.startsWith(baseDir)) {
-                log.warn("경로 탐색 공격 시도 감지: baseDir={}, relativePath={}, resolved={}",
-                        baseDir, relativePath, resolvedPath);
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                        "유효하지 않은 파일 경로입니다");
-            }
-
-            return resolvedPath;
-
-        } catch (Exception e) {
-            log.error("경로 해석 실패: baseDir={}, relativePath={}",
-                    baseDir, relativePath, e);
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "유효하지 않은 파일 경로입니다: " + e.getMessage());
         }
     }
 }

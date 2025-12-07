@@ -45,6 +45,9 @@ public class Engineer {
     @Column(name = "engineer_phone", length = 20)
     private String engineerPhone;
 
+    @Column(name = "position", length = 100)
+    private String position;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;

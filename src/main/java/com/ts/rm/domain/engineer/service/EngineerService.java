@@ -8,6 +8,7 @@ import com.ts.rm.domain.engineer.mapper.EngineerDtoMapper;
 import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.pagination.PageRowNumberUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -83,7 +84,7 @@ public class EngineerService {
      * @param pageable 페이징 정보
      * @return 엔지니어 페이지
      */
-    public Page<EngineerDto.DetailResponse> getEngineers(Long departmentId, String keyword, Pageable pageable) {
+    public Page<EngineerDto.ListResponse> getEngineers(Long departmentId, String keyword, Pageable pageable) {
         Page<Engineer> engineers;
 
         boolean hasDepartment = departmentId != null;
@@ -100,7 +101,22 @@ public class EngineerService {
             engineers = engineerRepository.findAll(pageable);
         }
 
-        return engineers.map(mapper::toDetailResponse);
+        // rowNumber 계산 (공통 유틸리티 사용)
+        return PageRowNumberUtil.mapWithRowNumber(engineers, (engineer, rowNumber) -> {
+            EngineerDto.ListResponse response = mapper.toListResponse(engineer);
+            return new EngineerDto.ListResponse(
+                    rowNumber,
+                    response.engineerId(),
+                    response.engineerName(),
+                    response.engineerEmail(),
+                    response.engineerPhone(),
+                    response.position(),
+                    response.departmentId(),
+                    response.departmentName(),
+                    response.description(),
+                    response.createdAt()
+            );
+        });
     }
 
     /**
@@ -131,6 +147,9 @@ public class EngineerService {
         }
         if (request.engineerPhone() != null) {
             engineer.setEngineerPhone(request.engineerPhone());
+        }
+        if (request.position() != null) {
+            engineer.setPosition(request.position());
         }
         if (request.departmentId() != null) {
             Department department = departmentRepository.findById(request.departmentId())

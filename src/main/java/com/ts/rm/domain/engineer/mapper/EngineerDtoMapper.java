@@ -30,4 +30,9 @@ public interface EngineerDtoMapper {
     EngineerDto.SimpleResponse toSimpleResponse(Engineer engineer);
 
     List<EngineerDto.SimpleResponse> toSimpleResponseList(List<Engineer> engineers);
+
+    @Mapping(target = "rowNumber", ignore = true)
+    @Mapping(target = "departmentId", source = "department.departmentId")
+    @Mapping(target = "departmentName", source = "department.departmentName")
+    EngineerDto.ListResponse toListResponse(Engineer engineer);
 }

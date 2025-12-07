@@ -44,6 +44,10 @@ public final class EngineerDto {
             @Size(max = 20, message = "연락처는 20자 이하여야 합니다")
             String engineerPhone,
 
+            @Schema(description = "직급 (선택)", example = "책임", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+            @Size(max = 100, message = "직급은 100자 이하여야 합니다")
+            String position,
+
             @Schema(description = "소속 부서 ID (선택)", example = "1", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
             Long departmentId,
 
@@ -71,6 +75,10 @@ public final class EngineerDto {
             @Schema(description = "연락처", example = "010-1234-5678")
             @Size(max = 20, message = "연락처는 20자 이하여야 합니다")
             String engineerPhone,
+
+            @Schema(description = "직급", example = "책임")
+            @Size(max = 100, message = "직급은 100자 이하여야 합니다")
+            String position,
 
             @Schema(description = "소속 부서 ID", example = "1")
             Long departmentId,
@@ -101,6 +109,9 @@ public final class EngineerDto {
 
             @Schema(description = "연락처", example = "010-1234-5678")
             String engineerPhone,
+
+            @Schema(description = "직급", example = "책임")
+            String position,
 
             @Schema(description = "소속 부서 ID", example = "1")
             Long departmentId,
@@ -139,8 +150,48 @@ public final class EngineerDto {
             @Schema(description = "회사 이메일", example = "engineer@tscientific.co.kr")
             String engineerEmail,
 
+            @Schema(description = "직급", example = "책임")
+            String position,
+
             @Schema(description = "소속 부서명", example = "개발2팀")
             String departmentName
+    ) {
+    }
+
+    /**
+     * 엔지니어 목록 응답 (페이징용)
+     */
+    @Schema(description = "엔지니어 목록 응답")
+    public record ListResponse(
+            @Schema(description = "행 번호", example = "1")
+            Long rowNumber,
+
+            @Schema(description = "엔지니어 ID", example = "1")
+            Long engineerId,
+
+            @Schema(description = "엔지니어 이름", example = "홍길동")
+            String engineerName,
+
+            @Schema(description = "회사 이메일", example = "engineer@tscientific.co.kr")
+            String engineerEmail,
+
+            @Schema(description = "연락처", example = "010-1234-5678")
+            String engineerPhone,
+
+            @Schema(description = "직급", example = "책임")
+            String position,
+
+            @Schema(description = "소속 부서 ID", example = "1")
+            Long departmentId,
+
+            @Schema(description = "소속 부서명", example = "개발2팀")
+            String departmentName,
+
+            @Schema(description = "설명", example = "백엔드 개발 담당")
+            String description,
+
+            @Schema(description = "생성일시")
+            LocalDateTime createdAt
     ) {
     }
 }

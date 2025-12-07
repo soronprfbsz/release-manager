@@ -53,7 +53,10 @@ class PatchServiceTest {
     private EngineerRepository engineerRepository;
 
     @Mock
-    private ScriptGenerator scriptGenerator;
+    private ScriptGenerator mariaDBScriptGenerator;
+
+    @Mock
+    private ScriptGenerator crateDBScriptGenerator;
 
     @InjectMocks
     private PatchService patchService;
