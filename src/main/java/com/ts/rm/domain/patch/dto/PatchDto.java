@@ -159,6 +159,53 @@ public final class PatchDto {
     }
 
     /**
+     * 패치 목록 응답 (페이징용)
+     */
+    @Schema(description = "패치 목록 응답")
+    public record ListResponse(
+            @Schema(description = "행 번호", example = "1")
+            Long rowNumber,
+
+            @Schema(description = "패치 ID", example = "1")
+            Long patchId,
+
+            @Schema(description = "릴리즈 타입", example = "standard")
+            String releaseType,
+
+            @Schema(description = "고객사 코드", example = "company_a")
+            String customerCode,
+
+            @Schema(description = "고객사명", example = "A 회사")
+            String customerName,
+
+            @Schema(description = "시작 버전", example = "1.0.0")
+            String fromVersion,
+
+            @Schema(description = "종료 버전", example = "1.1.1")
+            String toVersion,
+
+            @Schema(description = "패치 이름", example = "20251125_1.0.0_1.1.1")
+            String patchName,
+
+            @Schema(description = "생성자", example = "admin@tscientific")
+            String createdBy,
+
+            @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
+            String description,
+
+            @Schema(description = "패치 담당자 (엔지니어 ID)", example = "1")
+            Long engineerId,
+
+            @Schema(description = "패치 담당자 이름", example = "홍길동")
+            String engineerName,
+
+            @Schema(description = "등록일시")
+            LocalDateTime createdAt
+    ) {
+
+    }
+
+    /**
      * 파일 노드 (파일 또는 디렉토리)
      */
     @Schema(description = "파일 노드 (파일 또는 디렉토리)")

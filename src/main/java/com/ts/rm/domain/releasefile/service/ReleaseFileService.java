@@ -1,25 +1,21 @@
 package com.ts.rm.domain.releasefile.service;
 
+import com.ts.rm.domain.common.service.FileStorageService;
 import com.ts.rm.domain.releasefile.dto.ReleaseFileDto;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.mapper.ReleaseFileDtoMapper;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
-import com.ts.rm.domain.releasefile.util.SubCategoryValidator;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.file.StreamingZipUtil;
 import com.ts.rm.global.file.StreamingZipUtil.ZipFileEntry;
-import com.ts.rm.domain.common.service.FileStorageService;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * ReleaseFile Service
+ * ReleaseFile 오케스트레이터 서비스
+ *
+ * <p>파일 CRUD, 조회, 다운로드를 담당하며 업로드는 {@link ReleaseFileUploadService}에 위임합니다.
  */
 @Slf4j
 @Service
@@ -42,7 +40,14 @@ public class ReleaseFileService {
     private final ReleaseVersionRepository releaseVersionRepository;
     private final ReleaseFileDtoMapper mapper;
     private final FileStorageService fileStorageService;
+    private final ReleaseFileUploadService uploadService;
 
+    /**
+     * 릴리즈 파일 메타데이터 생성 (물리적 파일 없이)
+     *
+     * @param request 생성 요청 정보
+     * @return 생성된 파일 정보
+     */
     @Transactional
     public ReleaseFileDto.DetailResponse createReleaseFile(ReleaseFileDto.CreateRequest request) {
         log.info("Creating release file: {} for versionId: {}", request.fileName(),
@@ -50,13 +55,13 @@ public class ReleaseFileService {
 
         ReleaseVersion releaseVersion = findReleaseVersionById(request.releaseVersionId());
 
+        // fileCategory와 subCategory는 request에서 명시적으로 제공되어야 함
+        // null이면 기본값 사용
         FileCategory fileCategory = request.fileCategory() != null
                 ? FileCategory.fromCode(request.fileCategory())
-                : determineFileCategory(request.fileName(), request.subCategory());
+                : FileCategory.DATABASE; // 기본값
 
-        String subCategory = request.subCategory() != null
-                ? request.subCategory()
-                : determineSubCategory(fileCategory, request.subCategory());
+        String subCategory = request.subCategory();
 
         ReleaseFile releaseFile = ReleaseFile.builder()
                 .releaseVersion(releaseVersion)
@@ -150,96 +155,18 @@ public class ReleaseFileService {
         log.info("Release file deleted successfully with releaseFileId: {}", releaseFileId);
     }
 
+    /**
+     * 릴리즈 파일 업로드 (위임)
+     *
+     * @param versionId 릴리즈 버전 ID
+     * @param files     업로드할 파일 목록
+     * @param request   업로드 요청 정보
+     * @return 생성된 파일 정보 목록
+     */
     @Transactional
     public List<ReleaseFileDto.DetailResponse> uploadReleaseFiles(Long versionId,
             List<MultipartFile> files, ReleaseFileDto.UploadRequest request) {
-        log.info("Uploading {} release files for versionId: {}", files.size(), versionId);
-
-        ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
-
-        List<ReleaseFileDto.DetailResponse> responses = new ArrayList<>();
-
-        int maxOrder = releaseFileRepository
-                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId)
-                .stream()
-                .mapToInt(ReleaseFile::getExecutionOrder)
-                .max()
-                .orElse(0);
-
-        int executionOrder = maxOrder + 1;
-
-        for (MultipartFile file : files) {
-            try {
-                validateFile(file);
-
-                byte[] content = file.getBytes();
-                String checksum = calculateChecksum(content);
-
-                FileCategory fileCategory = request.fileCategory() != null
-                        ? FileCategory.fromCode(request.fileCategory())
-                        : determineFileCategory(file.getOriginalFilename(), request.subCategory());
-
-                String subCategory = request.subCategory() != null
-                        ? request.subCategory()
-                        : determineSubCategory(fileCategory, null);
-
-                String categoryPath = subCategory != null ? subCategory : fileCategory.getCode();
-                String relativePath = String.format("versions/%s/%s/%s/%s/%s",
-                        releaseVersion.getReleaseType().toLowerCase(),
-                        releaseVersion.getMajorMinor(),
-                        releaseVersion.getVersion(),
-                        categoryPath.toLowerCase(),
-                        file.getOriginalFilename());
-
-                fileStorageService.saveFile(file, relativePath);
-
-                String fileType = determineFileType(file.getOriginalFilename());
-
-                ReleaseFile releaseFile = ReleaseFile.builder()
-                        .releaseVersion(releaseVersion)
-                        .fileType(fileType)
-                        .fileCategory(fileCategory)
-                        .subCategory(subCategory)
-                        .fileName(file.getOriginalFilename())
-                        .filePath(relativePath)
-                        .fileSize(file.getSize())
-                        .checksum(checksum)
-                        .executionOrder(executionOrder++)
-                        .description(request.uploadedBy() + "가 업로드한 파일")
-                        .build();
-
-                ReleaseFile savedReleaseFile = releaseFileRepository.save(releaseFile);
-                responses.add(mapper.toDetailResponse(savedReleaseFile));
-
-                log.info("Release file uploaded: {} -> {}", file.getOriginalFilename(), relativePath);
-
-            } catch (IOException e) {
-                log.error("Failed to upload release file: {}", file.getOriginalFilename(), e);
-                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                        "파일 업로드 실패: " + e.getMessage());
-            }
-        }
-
-        log.info("Successfully uploaded {} release files", responses.size());
-        return responses;
-    }
-
-    private void validateFile(MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "빈 파일입니다");
-        }
-
-        String fileName = file.getOriginalFilename();
-        if (fileName == null || !fileName.toLowerCase().endsWith(".sql")) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "SQL 파일만 업로드 가능합니다: " + fileName);
-        }
-
-        long maxSize = 10 * 1024 * 1024;
-        if (file.getSize() > maxSize) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "파일 크기는 10MB를 초과할 수 없습니다");
-        }
+        return uploadService.uploadReleaseFiles(versionId, files, request);
     }
 
     public Resource downloadReleaseFile(Long releaseFileId) {
@@ -400,129 +327,38 @@ public class ReleaseFileService {
         return totalSize;
     }
 
+    /**
+     * 버전별 ZIP 파일명 생성
+     *
+     * @param versionId 릴리즈 버전 ID
+     * @return ZIP 파일명 (예: release_1.1.0.zip)
+     */
     public String getVersionZipFileName(Long versionId) {
         ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
         return String.format("release_%s.zip", releaseVersion.getVersion());
     }
 
-    public String calculateChecksum(byte[] content) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] hashBytes = md.digest(content);
-
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hashBytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-
-        } catch (NoSuchAlgorithmException e) {
-            log.error("MD5 algorithm not found", e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
-    }
-
+    /**
+     * 릴리즈 버전 조회
+     *
+     * @param versionId 버전 ID
+     * @return ReleaseVersion 엔티티
+     * @throws BusinessException 버전을 찾을 수 없을 경우
+     */
     private ReleaseVersion findReleaseVersionById(Long versionId) {
         return releaseVersionRepository.findById(versionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND));
     }
 
+    /**
+     * 릴리즈 파일 조회
+     *
+     * @param releaseFileId 파일 ID
+     * @return ReleaseFile 엔티티
+     * @throws BusinessException 파일을 찾을 수 없을 경우
+     */
     private ReleaseFile findReleaseFileById(Long releaseFileId) {
         return releaseFileRepository.findById(releaseFileId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_FILE_NOT_FOUND));
     }
-
-    private String determineFileType(String fileName) {
-        String lowerCaseFileName = fileName.toLowerCase();
-
-        if (lowerCaseFileName.endsWith(".sql")) {
-            return "SQL";
-        } else if (lowerCaseFileName.endsWith(".md")) {
-            return "MD";
-        } else if (lowerCaseFileName.endsWith(".pdf")) {
-            return "PDF";
-        } else if (lowerCaseFileName.endsWith(".exe")) {
-            return "EXE";
-        } else if (lowerCaseFileName.endsWith(".sh")) {
-            return "SH";
-        } else if (lowerCaseFileName.endsWith(".txt")) {
-            return "TXT";
-        } else if (lowerCaseFileName.endsWith(".war")) {
-            return "WAR";
-        } else if (lowerCaseFileName.endsWith(".jar")) {
-            return "JAR";
-        } else if (lowerCaseFileName.endsWith(".tar") || lowerCaseFileName.endsWith(".tar.gz")) {
-            return "TAR";
-        } else if (lowerCaseFileName.endsWith(".zip")) {
-            return "ZIP";
-        } else {
-            return "UNDEFINED";
-        }
-    }
-
-    /**
-     * 파일명으로 파일 카테고리 결정
-     */
-    private FileCategory determineFileCategory(String fileName, String subCategory) {
-        String lowerCaseFileName = fileName.toLowerCase();
-
-        // SQL 파일 → DATABASE
-        if (lowerCaseFileName.endsWith(".sql")) {
-            return FileCategory.DATABASE;
-        }
-
-        // 빌드 산출물 파일 → WEB, ENGINE
-        if (lowerCaseFileName.endsWith(".war")) {
-            return FileCategory.WEB;
-        }
-        if (lowerCaseFileName.endsWith(".jar")) {
-            return lowerCaseFileName.contains("engine") ? FileCategory.ENGINE : FileCategory.WEB;
-        }
-        if (lowerCaseFileName.endsWith(".tar") || lowerCaseFileName.endsWith(".tar.gz")) {
-            if (lowerCaseFileName.contains("web")) {
-                return FileCategory.WEB;
-            } else {
-                return FileCategory.ENGINE;
-            }
-        }
-
-        // 문서 파일 → ENGINE (기본 카테고리)
-        if (lowerCaseFileName.endsWith(".pdf") || lowerCaseFileName.endsWith(".md")
-                || lowerCaseFileName.endsWith(".txt")) {
-            return FileCategory.ENGINE;
-        }
-
-        // 실행 파일 → ENGINE (기본 카테고리)
-        if (lowerCaseFileName.endsWith(".exe") || lowerCaseFileName.endsWith(".sh")) {
-            return FileCategory.ENGINE;
-        }
-
-        // 기본값: 하위 카테고리가 DB 타입이면 DATABASE, 아니면 ENGINE
-        return (subCategory != null && (subCategory.equalsIgnoreCase("mariadb")
-                || subCategory.equalsIgnoreCase("cratedb")))
-                ? FileCategory.DATABASE
-                : FileCategory.ENGINE;
-    }
-
-    private String determineSubCategory(FileCategory fileCategory, String subCategory) {
-        if (subCategory != null && !subCategory.isEmpty()) {
-            String upperSubCategory = subCategory.toUpperCase();
-
-            // DATABASE와 ENGINE 카테고리는 폴더명 기반 판단 후 CODE 테이블에 존재하는지 확인
-            if (fileCategory == FileCategory.DATABASE || fileCategory == FileCategory.ENGINE) {
-                // SubCategoryValidator를 통해 유효한 값인지 확인
-                if (SubCategoryValidator.isValid(fileCategory, upperSubCategory)) {
-                    return upperSubCategory;
-                } else {
-                    // 유효하지 않은 값이면 ETC로 반환
-                    return "ETC";
-                }
-            }
-
-            // 다른 카테고리(WEB, INSTALL)는 명시적으로 전달된 값만 사용
-            return upperSubCategory;
-        }
-        return null;
-    }
-
 }

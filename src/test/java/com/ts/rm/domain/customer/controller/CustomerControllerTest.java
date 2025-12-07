@@ -86,6 +86,7 @@ class CustomerControllerTest {
     private PasswordEncoder passwordEncoder;
 
     private CustomerDto.DetailResponse detailResponse;
+    private CustomerDto.ListResponse listResponse;
     private CustomerDto.SimpleResponse simpleResponse;
 
     private MockedStatic<SecurityContextHolder> securityContextHolderMock;
@@ -119,6 +120,16 @@ class CustomerControllerTest {
                 "admin@tscientific",
                 now,
                 "admin@tscientific"
+        );
+
+        listResponse = new CustomerDto.ListResponse(
+                1L,
+                1L,
+                "company_a",
+                "A회사",
+                "A회사 설명",
+                true,
+                now
         );
 
         simpleResponse = new CustomerDto.SimpleResponse(
@@ -179,7 +190,7 @@ class CustomerControllerTest {
     @DisplayName("활성 고객사 목록 조회 - 성공")
     void getActiveCustomers_Success() throws Exception {
         // given
-        Page<CustomerDto.DetailResponse> page = new PageImpl<>(List.of(detailResponse));
+        Page<CustomerDto.ListResponse> page = new PageImpl<>(List.of(listResponse));
         given(customerService.getCustomersWithPaging(eq(true), isNull(), any(Pageable.class)))
                 .willReturn(page);
 
@@ -196,7 +207,7 @@ class CustomerControllerTest {
     @DisplayName("전체 고객사 목록 조회 - 성공")
     void getAllCustomers_Success() throws Exception {
         // given
-        Page<CustomerDto.DetailResponse> page = new PageImpl<>(List.of(detailResponse));
+        Page<CustomerDto.ListResponse> page = new PageImpl<>(List.of(listResponse));
         given(customerService.getCustomersWithPaging(isNull(), isNull(), any(Pageable.class)))
                 .willReturn(page);
 

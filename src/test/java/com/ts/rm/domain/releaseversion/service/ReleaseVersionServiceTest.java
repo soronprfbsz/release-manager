@@ -22,7 +22,6 @@ import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.domain.releaseversion.util.ReleaseMetadataManager;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
-import com.ts.rm.domain.common.service.FileStorageService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +33,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * ReleaseVersion Service 단위 테스트 (TDD)
@@ -62,7 +60,10 @@ class ReleaseVersionServiceTest {
     private ReleaseMetadataManager metadataManager;
 
     @Mock
-    private FileStorageService fileStorageService;
+    private ReleaseVersionFileSystemService fileSystemService;
+
+    @Mock
+    private ReleaseVersionTreeService treeService;
 
     @InjectMocks
     private ReleaseVersionService releaseVersionService;
@@ -74,10 +75,6 @@ class ReleaseVersionServiceTest {
 
     @BeforeEach
     void setUp() {
-        // @Value 주입을 위한 설정 (테스트 전용 경로)
-        ReflectionTestUtils.setField(releaseVersionService, "baseReleasePath",
-                "build/test-release");
-
         testCustomer = Customer.builder()
                 .customerId(1L)
                 .customerCode("company_a")

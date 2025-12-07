@@ -2,6 +2,8 @@ package com.ts.rm.domain.releaseversion.controller;
 
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.service.ReleaseVersionService;
+import com.ts.rm.domain.releaseversion.service.ReleaseVersionTreeService;
+import com.ts.rm.domain.releaseversion.service.ReleaseVersionUploadService;
 import com.ts.rm.global.response.ApiResponse;
 import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +38,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class ReleaseVersionController {
 
     private final ReleaseVersionService releaseVersionService;
+    private final ReleaseVersionUploadService uploadService;
+    private final ReleaseVersionTreeService treeService;
     private final JwtTokenProvider jwtTokenProvider;
 
     /**
@@ -102,7 +106,7 @@ public class ReleaseVersionController {
         log.info("버전 생성자: {}", createdBy);
 
         // 버전 생성
-        ReleaseVersionDto.CreateVersionResponse response = releaseVersionService.createStandardVersionWithZip(
+        ReleaseVersionDto.CreateVersionResponse response = uploadService.createStandardVersionWithZip(
                 request.version(),
                 request.releaseCategory(),
                 request.comment(),
@@ -151,7 +155,7 @@ public class ReleaseVersionController {
                description = "표준 릴리즈 버전들을 계층 구조로 조회합니다 (프론트엔드 트리 렌더링용)")
     @GetMapping("/standard/tree")
     public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getStandardReleaseTree() {
-        ReleaseVersionDto.TreeResponse response = releaseVersionService.getStandardReleaseTree();
+        ReleaseVersionDto.TreeResponse response = treeService.getStandardReleaseTree();
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -167,7 +171,7 @@ public class ReleaseVersionController {
     public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getCustomReleaseTree(
             @Parameter(description = "고객사 코드", required = true, example = "company_a")
             @PathVariable("customer-code") String customerCode) {
-        ReleaseVersionDto.TreeResponse response = releaseVersionService.getCustomReleaseTree(customerCode);
+        ReleaseVersionDto.TreeResponse response = treeService.getCustomReleaseTree(customerCode);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -212,7 +216,10 @@ public class ReleaseVersionController {
 
         log.info("릴리즈 버전 파일 트리 조회 요청 - ID: {}", id);
 
-        ReleaseVersionDto.FileTreeResponse response = releaseVersionService.getVersionFileTree(id);
+        // 버전 조회
+        com.ts.rm.domain.releaseversion.entity.ReleaseVersion version = releaseVersionService.findVersionById(id);
+
+        ReleaseVersionDto.FileTreeResponse response = treeService.getVersionFileTree(id, version);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

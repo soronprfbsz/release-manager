@@ -93,13 +93,13 @@ public class CustomerController {
     @Operation(summary = "고객사 목록 조회",
             description = "고객사 목록 조회합니다. isActive로 활성화 여부 필터링, keyword로 고객사명 검색 가능. page, size, sort 파라미터 사용 가능")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<CustomerDto.DetailResponse>>> getCustomers(
+    public ResponseEntity<ApiResponse<Page<CustomerDto.ListResponse>>> getCustomers(
             @Parameter(description = "활성화 여부 (true: 활성화만, false: 비활성화만, null: 전체)")
             @RequestParam(required = false) Boolean isActive,
             @Parameter(description = "고객사명 검색 키워드")
             @RequestParam(required = false) String keyword,
             @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
-        Page<CustomerDto.DetailResponse> response = customerService.getCustomersWithPaging(isActive, keyword, pageable);
+        Page<CustomerDto.ListResponse> response = customerService.getCustomersWithPaging(isActive, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

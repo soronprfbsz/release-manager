@@ -8,14 +8,11 @@ import com.ts.rm.global.file.HttpFileDownloadUtil;
 import com.ts.rm.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import java.io.IOException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -94,7 +91,7 @@ public class PatchController {
      */
     @GetMapping
     @Operation(summary = "패치 목록 조회", description = "패치 목록을 페이징하여 조회합니다. page, size, sort 파라미터 사용 가능")
-    public ApiResponse<Page<PatchDto.SimpleResponse>> listPatches(
+    public ApiResponse<Page<PatchDto.ListResponse>> listPatches(
             @Parameter(description = "릴리즈 타입 (STANDARD/CUSTOM)")
             @RequestParam(required = false) String releaseType,
             @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
@@ -102,8 +99,7 @@ public class PatchController {
         log.info("패치 목록 조회 요청 - releaseType: {}, page: {}, size: {}",
                 releaseType, pageable.getPageNumber(), pageable.getPageSize());
 
-        Page<Patch> patches = patchService.listPatchesWithPaging(releaseType, pageable);
-        Page<PatchDto.SimpleResponse> response = patches.map(patchDtoMapper::toSimpleResponse);
+        Page<PatchDto.ListResponse> response = patchService.listPatchesWithPaging(releaseType, pageable);
 
         return ApiResponse.success(response);
     }

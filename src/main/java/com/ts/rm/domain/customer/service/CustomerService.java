@@ -6,6 +6,7 @@ import com.ts.rm.domain.customer.mapper.CustomerDtoMapper;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.pagination.PageRowNumberUtil;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -111,7 +112,7 @@ public class CustomerService {
      * @param pageable 페이징 정보
      * @return 고객사 페이지
      */
-    public Page<CustomerDto.DetailResponse> getCustomersWithPaging(Boolean isActive, String keyword, Pageable pageable) {
+    public Page<CustomerDto.ListResponse> getCustomersWithPaging(Boolean isActive, String keyword, Pageable pageable) {
         Page<Customer> customers;
 
         // 키워드 검색이 있는 경우
@@ -127,7 +128,19 @@ public class CustomerService {
             customers = customerRepository.findAll(pageable);
         }
 
-        return customers.map(mapper::toDetailResponse);
+        // rowNumber 계산 (공통 유틸리티 사용)
+        return PageRowNumberUtil.mapWithRowNumber(customers, (customer, rowNumber) -> {
+            CustomerDto.ListResponse response = mapper.toListResponse(customer);
+            return new CustomerDto.ListResponse(
+                    rowNumber,
+                    response.customerId(),
+                    response.customerCode(),
+                    response.customerName(),
+                    response.description(),
+                    response.isActive(),
+                    response.createdAt()
+            );
+        });
     }
 
     /**

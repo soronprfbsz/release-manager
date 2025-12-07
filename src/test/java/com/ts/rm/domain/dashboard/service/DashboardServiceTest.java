@@ -63,7 +63,9 @@ class DashboardServiceTest {
     @Test
     @DisplayName("대시보드 최근 데이터 조회 - 데이터가 없어도 에러 없이 응답")
     @Sql(statements = {
+            "DELETE FROM cumulative_patch",
             "DELETE FROM release_file",
+            "DELETE FROM release_version_hierarchy",
             "DELETE FROM release_version",
             "DELETE FROM customer"
     })

@@ -6,6 +6,7 @@ import com.ts.rm.domain.job.mapper.BackupFileDtoMapper;
 import com.ts.rm.domain.job.repository.BackupFileRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.pagination.PageRowNumberUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -184,14 +185,9 @@ public class BackupFileService {
                 pageable
         );
 
-        // Page 변환 시 rowNumber 계산
-        return backupFiles.map(backupFile -> {
+        // Page 변환 시 rowNumber 계산 (공통 유틸리티 사용)
+        return PageRowNumberUtil.mapWithRowNumber(backupFiles, (backupFile, rowNumber) -> {
             BackupFileDto.ListResponse response = backupFileDtoMapper.toListResponse(backupFile);
-            // rowNumber 계산: 내림차순 정렬이므로 전체에서 역순으로 계산
-            long totalElements = backupFiles.getTotalElements();
-            int indexInPage = backupFiles.getContent().indexOf(backupFile);
-            long rowNumber = totalElements - pageable.getOffset() - indexInPage;
-
             return new BackupFileDto.ListResponse(
                     rowNumber,
                     response.backupFileId(),
