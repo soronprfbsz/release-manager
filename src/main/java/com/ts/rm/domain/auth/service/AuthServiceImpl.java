@@ -69,7 +69,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public TokenResponse signIn(SignInRequest request) {
         // 1. 계정 조회
         Account account = accountRepository.findByEmail(request.getEmail())
@@ -80,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 3. 비밀번호 검증
         if (!passwordEncoder.matches(request.getPassword(), account.getPassword())) {
-            handleLoginFailure(account);
+            handleLoginFailure(account);  // 별도 트랜잭션으로 저장 후 예외 발생
             throw new BadCredentialsException("이메일 또는 비밀번호가 일치하지 않습니다.");
         }
 
@@ -155,9 +154,12 @@ public class AuthServiceImpl implements AuthService {
     /**
      * 로그인 실패 처리 (시도 횟수 증가 및 10분 계정 잠금)
      *
+     * <p>별도 트랜잭션으로 실행하여 예외 발생 시에도 DB에 저장되도록 함
+     *
      * @param account 계정 엔티티
      */
-    private void handleLoginFailure(Account account) {
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void handleLoginFailure(Account account) {
         int attemptCount = account.getLoginAttemptCount() + 1;
         account.setLoginAttemptCount(attemptCount);
 
@@ -179,7 +181,8 @@ public class AuthServiceImpl implements AuthService {
      *
      * @param account 계정 엔티티
      */
-    private void handleLoginSuccess(Account account) {
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void handleLoginSuccess(Account account) {
         account.setLastLoginAt(LocalDateTime.now());
         account.setLoginAttemptCount(0);
         accountRepository.save(account);
