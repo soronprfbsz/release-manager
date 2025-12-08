@@ -128,24 +128,12 @@ public class CustomerService {
      *
      * @param isActive 활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
      * @param keyword  고객사명 검색 키워드
-     * @param pageable 페이징 정보
+     * @param pageable 페이징 정보 (sort에 "project.projectName", "lastPatchedVersion", "lastPatchedAt" 사용 가능)
      * @return 고객사 페이지
      */
     public Page<CustomerDto.ListResponse> getCustomersWithPaging(Boolean isActive, String keyword, Pageable pageable) {
-        Page<Customer> customers;
-
-        // 키워드 검색이 있는 경우
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            customers = customerRepository.findByCustomerNameContaining(keyword.trim(), pageable);
-        }
-        // 활성화 여부 필터링
-        else if (isActive != null) {
-            customers = customerRepository.findAllByIsActive(isActive, pageable);
-        }
-        // 전체 조회
-        else {
-            customers = customerRepository.findAll(pageable);
-        }
+        // QueryDSL Custom 메서드 사용 (프로젝트 정보 JOIN 정렬 지원)
+        Page<Customer> customers = customerRepository.findAllWithProjectInfo(isActive, keyword, pageable);
 
         // rowNumber 계산 (공통 유틸리티 사용)
         return PageRowNumberUtil.mapWithRowNumber(customers, (customer, rowNumber) -> {
@@ -165,6 +153,8 @@ public class CustomerService {
 
     /**
      * 고객사 정보 수정
+     *
+     * <p>프로젝트 정보는 수정 불가 (기존 프로젝트 정보 유지)
      *
      * @param customerId    고객사 ID
      * @param request       수정 요청
@@ -192,13 +182,8 @@ public class CustomerService {
         // updatedBy는 항상 설정 (JWT에서 추출)
         customer.setUpdatedBy(updatedBy);
 
-        // 프로젝트 연결 처리 (제공된 경우에만 업데이트)
-        CustomerDto.ProjectInfo projectInfo;
-        if (request.projectId() != null) {
-            projectInfo = updateCustomerProject(customer, request.projectId());
-        } else {
-            projectInfo = getProjectInfoByCustomerId(customerId);
-        }
+        // 기존 프로젝트 정보 조회 (프로젝트는 수정 불가)
+        CustomerDto.ProjectInfo projectInfo = getProjectInfoByCustomerId(customerId);
 
         // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Customer updated successfully with customerId: {}", customerId);
@@ -285,25 +270,6 @@ public class CustomerService {
                 null,
                 null
         );
-    }
-
-    /**
-     * 고객사 수정 시 프로젝트 연결 업데이트
-     */
-    private CustomerDto.ProjectInfo updateCustomerProject(Customer customer, String projectId) {
-        Long customerId = customer.getCustomerId();
-
-        // 기존 프로젝트 연결 모두 삭제
-        List<CustomerProject> existingProjects = customerProjectRepository.findAllByCustomer_CustomerId(customerId);
-        customerProjectRepository.deleteAll(existingProjects);
-
-        // 빈 문자열이면 프로젝트 연결 해제만 수행
-        if (projectId.isBlank()) {
-            return null;
-        }
-
-        // 새 프로젝트 연결
-        return saveCustomerProject(customer, projectId);
     }
 
     /**

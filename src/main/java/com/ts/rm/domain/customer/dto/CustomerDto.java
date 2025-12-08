@@ -49,6 +49,8 @@ public final class CustomerDto {
 
     /**
      * 고객사 수정 요청
+     *
+     * <p>프로젝트 정보는 수정 불가 (고객사 생성 시에만 설정 가능)
      */
     @Builder
     @Schema(description = "고객사 수정 요청")
@@ -60,10 +62,7 @@ public final class CustomerDto {
             String description,
 
             @Schema(description = "활성 여부", example = "true")
-            Boolean isActive,
-
-            @Schema(description = "사용 프로젝트 ID (제공 시 기존 프로젝트를 대체)", example = "infraeye2")
-            String projectId
+            Boolean isActive
     ) {
 
     }
