@@ -7,6 +7,8 @@ import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.repository.PatchRepository;
 import com.ts.rm.domain.patch.util.ScriptGenerator;
+import com.ts.rm.domain.project.entity.Project;
+import com.ts.rm.domain.project.repository.ProjectRepository;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
@@ -44,6 +46,7 @@ public class PatchGenerationService {
     private final ReleaseFileRepository releaseFileRepository;
     private final CustomerRepository customerRepository;
     private final EngineerRepository engineerRepository;
+    private final ProjectRepository projectRepository;
     private final ScriptGenerator mariaDBScriptGenerator;
     private final ScriptGenerator crateDBScriptGenerator;
 
@@ -53,6 +56,7 @@ public class PatchGenerationService {
     /**
      * 패치 생성 (버전 문자열 기반)
      *
+     * @param projectId    프로젝트 ID
      * @param releaseType  릴리즈 타입 (STANDARD/CUSTOM)
      * @param customerId   고객사 ID (CUSTOM인 경우)
      * @param fromVersion  From 버전 (예: 1.0.0)
@@ -64,28 +68,29 @@ public class PatchGenerationService {
      * @return 생성된 패치
      */
     @Transactional
-    public Patch generatePatchByVersion(String releaseType, Long customerId,
+    public Patch generatePatchByVersion(String projectId, String releaseType, Long customerId,
             String fromVersion, String toVersion, String createdBy, String description,
             Long engineerId, String patchName) {
 
-        // 버전 조회
-        ReleaseVersion from = releaseVersionRepository.findByReleaseTypeAndVersion(
-                        releaseType.toUpperCase(), fromVersion)
+        // 버전 조회 (프로젝트 내에서)
+        ReleaseVersion from = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersion(
+                        projectId, releaseType.toUpperCase(), fromVersion)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                         "From 버전을 찾을 수 없습니다: " + fromVersion));
 
-        ReleaseVersion to = releaseVersionRepository.findByReleaseTypeAndVersion(
-                        releaseType.toUpperCase(), toVersion)
+        ReleaseVersion to = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersion(
+                        projectId, releaseType.toUpperCase(), toVersion)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                         "To 버전을 찾을 수 없습니다: " + toVersion));
 
-        return generatePatch(from.getReleaseVersionId(), to.getReleaseVersionId(),
+        return generatePatch(projectId, from.getReleaseVersionId(), to.getReleaseVersionId(),
                 customerId, createdBy, description, engineerId, patchName);
     }
 
     /**
      * 패치 생성 (버전 ID 기반)
      *
+     * @param projectId     프로젝트 ID
      * @param fromVersionId From 버전 ID
      * @param toVersionId   To 버전 ID
      * @param customerId    고객사 ID (선택)
@@ -96,9 +101,14 @@ public class PatchGenerationService {
      * @return 생성된 패치
      */
     @Transactional
-    public Patch generatePatch(Long fromVersionId, Long toVersionId, Long customerId,
+    public Patch generatePatch(String projectId, Long fromVersionId, Long toVersionId, Long customerId,
             String createdBy, String description, Long engineerId, String patchName) {
         try {
+            // 프로젝트 조회
+            Project project = projectRepository.findById(projectId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND,
+                            "프로젝트를 찾을 수 없습니다: " + projectId));
+
             // 1. 버전 조회 및 검증
             ReleaseVersion fromVersion = releaseVersionRepository.findById(fromVersionId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
@@ -123,8 +133,8 @@ public class PatchGenerationService {
                                 fromVersion.getVersion(), toVersion.getVersion()));
             }
 
-            log.info("패치 생성 시작 - From: {}, To: {}, 포함 버전: {}",
-                    fromVersion.getVersion(), toVersion.getVersion(),
+            log.info("패치 생성 시작 - Project: {}, From: {}, To: {}, 포함 버전: {}",
+                    projectId, fromVersion.getVersion(), toVersion.getVersion(),
                     betweenVersions.stream().map(ReleaseVersion::getVersion).toList());
 
             // 3. 고객사 조회 (customerId가 있는 경우)
@@ -161,6 +171,7 @@ public class PatchGenerationService {
 
             // 9. 패치 저장
             Patch patch = Patch.builder()
+                    .project(project)
                     .releaseType(fromVersion.getReleaseType())
                     .customer(customer)
                     .fromVersion(fromVersion.getVersion())
@@ -282,7 +293,7 @@ public class PatchGenerationService {
 
                 // 모든 파일 조회
                 List<ReleaseFile> files = releaseFileRepository
-                        .findAllByReleaseVersionIdOrderByExecutionOrderAsc(
+                        .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(
                                 version.getReleaseVersionId());
 
                 if (files.isEmpty()) {

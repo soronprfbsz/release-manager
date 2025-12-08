@@ -19,6 +19,16 @@ public interface ReleaseVersionHierarchyRepositoryCustom {
     List<ReleaseVersion> findAllByReleaseTypeWithHierarchy(String releaseType);
 
     /**
+     * 프로젝트 + 릴리즈 타입별 모든 버전을 계층 구조로 조회
+     *
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @return 릴리즈 버전 목록 (버전 순서대로 정렬)
+     */
+    List<ReleaseVersion> findAllByProjectIdAndReleaseTypeWithHierarchy(String projectId,
+            String releaseType);
+
+    /**
      * 특정 릴리즈 타입 + 고객사 코드의 모든 버전을 계층 구조로 조회
      *
      * @param releaseType  릴리즈 타입 (CUSTOM)
@@ -27,4 +37,15 @@ public interface ReleaseVersionHierarchyRepositoryCustom {
      */
     List<ReleaseVersion> findAllByReleaseTypeAndCustomerWithHierarchy(String releaseType,
             String customerCode);
+
+    /**
+     * 프로젝트 + 릴리즈 타입 + 고객사 코드의 모든 버전을 계층 구조로 조회
+     *
+     * @param projectId    프로젝트 ID
+     * @param releaseType  릴리즈 타입 (CUSTOM)
+     * @param customerCode 고객사 코드
+     * @return 릴리즈 버전 목록 (버전 순서대로 정렬)
+     */
+    List<ReleaseVersion> findAllByProjectIdAndReleaseTypeAndCustomerWithHierarchy(String projectId,
+            String releaseType, String customerCode);
 }

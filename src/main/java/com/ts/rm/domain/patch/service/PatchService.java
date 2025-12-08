@@ -42,11 +42,11 @@ public class PatchService {
      * 패치 생성 (버전 문자열 기반) - 위임
      */
     @Transactional
-    public Patch generatePatchByVersion(String releaseType, Long customerId,
+    public Patch generatePatchByVersion(String projectId, String releaseType, Long customerId,
             String fromVersion, String toVersion, String createdBy, String description,
             Long engineerId, String patchName) {
         return patchGenerationService.generatePatchByVersion(
-                releaseType, customerId, fromVersion, toVersion,
+                projectId, releaseType, customerId, fromVersion, toVersion,
                 createdBy, description, engineerId, patchName);
     }
 
@@ -54,10 +54,10 @@ public class PatchService {
      * 패치 생성 (버전 ID 기반) - 위임
      */
     @Transactional
-    public Patch generatePatch(Long fromVersionId, Long toVersionId, Long customerId,
+    public Patch generatePatch(String projectId, Long fromVersionId, Long toVersionId, Long customerId,
             String createdBy, String description, Long engineerId, String patchName) {
         return patchGenerationService.generatePatch(
-                fromVersionId, toVersionId, customerId,
+                projectId, fromVersionId, toVersionId, customerId,
                 createdBy, description, engineerId, patchName);
     }
 
@@ -94,6 +94,7 @@ public class PatchService {
             return new PatchDto.ListResponse(
                     rowNumber,
                     response.patchId(),
+                    response.projectId(),
                     response.releaseType(),
                     response.customerCode(),
                     response.customerName(),

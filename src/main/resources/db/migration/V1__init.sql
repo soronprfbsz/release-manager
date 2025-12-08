@@ -6,7 +6,7 @@
 -- =========================================================
 
 -- =========================================================
--- Section 1: Code 시스템 테이블 생성
+-- Code 시스템 테이블 생성
 -- =========================================================
 
 -- code_type 테이블 생성
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS code (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='코드 테이블';
 
 -- =========================================================
--- Section 2: Account 테이블 생성
+-- Account 테이블 생성
 -- =========================================================
 
 -- account 테이블 생성
@@ -58,7 +58,21 @@ CREATE TABLE IF NOT EXISTS account (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='계정 테이블';
 
 -- =========================================================
--- Section 3: Customer 테이블 생성
+-- Project 테이블 생성
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS project (
+    project_id VARCHAR(50) PRIMARY KEY COMMENT '프로젝트 ID (예: infraeye1, infraeye2)',
+    project_name VARCHAR(100) NOT NULL COMMENT '프로젝트 명',
+    description TEXT COMMENT '설명',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    created_by VARCHAR(100) NOT NULL DEFAULT 'SYSTEM' COMMENT '생성자',
+
+    INDEX idx_project_name (project_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='프로젝트 테이블';
+
+-- =========================================================
+-- Customer 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS customer (
@@ -78,15 +92,16 @@ CREATE TABLE IF NOT EXISTS customer (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사 테이블';
 
 -- =========================================================
--- Section 4: Release Version 테이블 생성
+-- Release Version 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS release_version (
     release_version_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '릴리즈 버전 ID',
+    project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
     release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
     release_category VARCHAR(20) NOT NULL DEFAULT 'PATCH' COMMENT '릴리즈 카테고리 (INSTALL/PATCH)',
     customer_id BIGINT COMMENT '고객사 ID (커스텀 릴리즈인 경우)',
-    version VARCHAR(50) NOT NULL UNIQUE COMMENT '버전 번호 (예: 1.1.0)',
+    version VARCHAR(50) NOT NULL COMMENT '버전 번호 (예: 1.1.0)',
     major_version INT NOT NULL COMMENT '메이저 버전',
     minor_version INT NOT NULL COMMENT '마이너 버전',
     patch_version INT NOT NULL COMMENT '패치 버전',
@@ -95,6 +110,7 @@ CREATE TABLE IF NOT EXISTS release_version (
     created_by VARCHAR(100) NOT NULL COMMENT '생성자',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
 
+    INDEX idx_project_id (project_id),
     INDEX idx_release_type (release_type),
     INDEX idx_release_category (release_category),
     INDEX idx_customer_id (customer_id),
@@ -102,12 +118,16 @@ CREATE TABLE IF NOT EXISTS release_version (
     INDEX idx_major_minor (major_version, minor_version),
     INDEX idx_created_at (created_at),
 
+    UNIQUE KEY uk_project_version (project_id, version),
+
+    CONSTRAINT fk_release_version_project FOREIGN KEY (project_id)
+        REFERENCES project(project_id) ON DELETE RESTRICT,
     CONSTRAINT fk_release_version_customer FOREIGN KEY (customer_id)
         REFERENCES customer(customer_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 버전 테이블';
 
 -- =========================================================
--- Section 5: Release File 테이블 생성
+-- Release File 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS release_file (
@@ -138,7 +158,7 @@ CREATE TABLE IF NOT EXISTS release_file (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 파일 테이블';
 
 -- =========================================================
--- Section 7: Release Version Hierarchy 클로저 테이블 생성
+-- Release Version Hierarchy 클로저 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS release_version_hierarchy (
@@ -160,7 +180,7 @@ CREATE TABLE IF NOT EXISTS release_version_hierarchy (
 COMMENT='릴리즈 버전 계층 구조 테이블 (Closure Table)';
 
 -- =========================================================
--- Section 8: Resource File 테이블 생성
+-- Resource File 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS resource_file (
@@ -186,7 +206,7 @@ CREATE TABLE IF NOT EXISTS resource_file (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='리소스 파일 테이블';
 
 -- =========================================================
--- Section 9: Backup File 테이블 생성 (Job 도메인)
+-- Backup File 테이블 생성 (Job 도메인)
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS backup_file (
@@ -210,7 +230,7 @@ CREATE TABLE IF NOT EXISTS backup_file (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 테이블';
 
 -- =========================================================
--- Section 10: Department 테이블 생성
+-- Department 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS department (
@@ -224,7 +244,7 @@ CREATE TABLE IF NOT EXISTS department (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='부서 테이블';
 
 -- =========================================================
--- Section 11: Engineer 테이블 생성
+-- Engineer 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS engineer (
@@ -250,7 +270,7 @@ CREATE TABLE IF NOT EXISTS engineer (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='엔지니어 테이블';
 
 -- =========================================================
--- Section 11: 코드 타입 기본 데이터
+-- 코드 타입 기본 데이터
 -- =========================================================
 
 INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
@@ -270,7 +290,7 @@ INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
 ('POSITION', '직급', '엔지니어 직급 구분');
 
 -- =========================================================
--- Section 11: 계정 권한 코드
+-- 계정 권한 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VALUES
@@ -279,7 +299,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VAL
 ('ACCOUNT_ROLE', 'GUEST', '게스트', '게스트 사용자 권한', 3);
 
 -- =========================================================
--- Section 12: 계정 상태 코드
+-- 계정 상태 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VALUES
@@ -288,7 +308,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VAL
 ('ACCOUNT_STATUS', 'SUSPENDED', '정지', '정지 상태', 3);
 
 -- =========================================================
--- Section 13: 릴리즈 타입 코드
+-- 릴리즈 타입 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -296,7 +316,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('RELEASE_TYPE', 'CUSTOM', '커스텀 릴리즈', '특정 고객사 전용 릴리즈', 2, TRUE);
 
 -- =========================================================
--- Section 14: 릴리즈 카테고리 코드
+-- 릴리즈 카테고리 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -304,7 +324,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('RELEASE_CATEGORY', 'PATCH', '패치본', '업데이트용 패치 릴리즈', 2, TRUE);
 
 -- =========================================================
--- Section 15: 데이터베이스 타입 코드
+-- 데이터베이스 타입 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -312,7 +332,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('DATABASE_TYPE', 'CRATEDB', 'CrateDB', 'CrateDB 데이터베이스', 2, TRUE);
 
 -- =========================================================
--- Section 16: 파일 타입 코드 (확장자)
+-- 파일 타입 코드 (확장자)
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -330,7 +350,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_TYPE', 'UNDEFINED', 'UNDEFINED', '정의되지 않은 파일 타입', 99, TRUE);
 
 -- =========================================================
--- Section 17: 파일 카테고리 코드 (기능적 대분류)
+-- 파일 카테고리 코드 (기능적 대분류)
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -340,7 +360,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_CATEGORY', 'ETC', 'ETC', '기타 파일', 4, TRUE);
 
 -- =========================================================
--- Section 18: 파일 서브 카테고리 코드 (카테고리별 소분류)
+-- 파일 서브 카테고리 코드 (카테고리별 소분류)
 -- =========================================================
 
 -- DATABASE 서브 카테고리
@@ -418,7 +438,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_SUBCATEGORY_ENGINE', 'ETC', 'ETC', '기타 파일', 65, TRUE);
 
 -- =========================================================
--- Section 19: 리소스 파일 카테고리 코드
+-- 리소스 파일 카테고리 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -427,7 +447,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('RESOURCE_FILE_CATEGORY', 'ETC', '기타', '기타 파일', 3, TRUE);
 
 -- =========================================================
--- Section 20: 리소스 파일 서브카테고리 - SCRIPT
+-- 리소스 파일 서브카테고리 - SCRIPT
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -438,7 +458,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('RESOURCE_SUBCATEGORY_SCRIPT', 'ETC', '기타', '기타', 99, TRUE);
 
 -- =========================================================
--- Section 21: 리소스 파일 서브카테고리 - DOCUMENT
+-- 리소스 파일 서브카테고리 - DOCUMENT
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -450,7 +470,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('RESOURCE_SUBCATEGORY_DOCUMENT', 'ETC', '기타', '기타 문서', 99, TRUE);
 
 -- =========================================================
--- Section 22: 백업 파일 카테고리 코드
+-- 백업 파일 카테고리 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -458,7 +478,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('BACKUP_FILE_CATEGORY', 'CRATEDB', 'CrateDB', 'CrateDB 백업 파일', 2, TRUE);
 
 -- =========================================================
--- Section 22-1: 직급 코드
+-- 직급 코드
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -470,7 +490,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('POSITION', 'STAFF', '사원', '사원', 6, TRUE);
 
 -- =========================================================
--- Section 23: 기본 관리자 계정
+-- 기본 관리자 계정
 -- 패스워드: nms12345! (BCrypt 암호화)
 -- =========================================================
 
@@ -481,7 +501,7 @@ INSERT INTO account (account_name, email, password, role, status) VALUES
 
 
 -- =========================================================
--- Section 28: 부서 기본 데이터
+-- 부서 기본 데이터
 -- =========================================================
 
 INSERT INTO department (department_name, description) VALUES
@@ -491,7 +511,7 @@ INSERT INTO department (department_name, description) VALUES
 
 
 -- =========================================================
--- Section 29: 엔지니어 기본 데이터
+-- 엔지니어 기본 데이터
 -- =========================================================
 
 INSERT INTO engineer (engineer_email, position, engineer_name, department_id)
@@ -522,7 +542,7 @@ VALUES ('shinss@tscientific.co.kr', '부장','신성수', 1),
 
 
 -- =========================================================
--- Section 30: 고객사 추가 (테스트용)
+-- 고객사 추가 (테스트용)
 -- =========================================================
 -- 고객사 테스트 데이터 INSERT (A~Z)
 INSERT INTO customer (created_by, customer_code, customer_name, description, is_active, updated_by) VALUES
@@ -555,11 +575,12 @@ INSERT INTO customer (created_by, customer_code, customer_name, description, is_
 
 
 -- =========================================================
--- Section 6: Cumulative Patch 테이블 생성
+-- Cumulative Patch 테이블 생성
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS cumulative_patch (
     patch_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '패치 ID',
+    project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
     release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
     customer_id BIGINT COMMENT '고객사 ID (커스텀 패치인 경우)',
     from_version VARCHAR(50) NOT NULL COMMENT '시작 버전',
@@ -572,6 +593,7 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
+    INDEX idx_cp_project_id (project_id),
     INDEX idx_cp_release_type (release_type),
     INDEX idx_cp_customer_id (customer_id),
     INDEX idx_cp_from_version (from_version),
@@ -579,6 +601,8 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
     INDEX idx_cp_engineer_id (engineer_id),
     INDEX idx_cp_created_at (created_at),
 
+    CONSTRAINT fk_cumulative_patch_project FOREIGN KEY (project_id)
+        REFERENCES project(project_id) ON DELETE RESTRICT,
     CONSTRAINT fk_cumulative_patch_customer FOREIGN KEY (customer_id)
         REFERENCES customer(customer_id) ON DELETE SET NULL,
     CONSTRAINT fk_cumulative_patch_engineer FOREIGN KEY (engineer_id)
@@ -587,21 +611,29 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
 
 
 -- =========================================================
--- Section 24: 릴리즈 버전 데이터
+-- 프로젝트 데이터
+-- =========================================================
+
+INSERT INTO project (project_id, project_name, description, created_by) VALUES
+('infraeye1', 'Infraeye 1', 'Infraeye 1.0', 'SYSTEM'),
+('infraeye2', 'Infraeye 2', 'Infraeye 2.0', 'SYSTEM');
+
+-- =========================================================
+-- 릴리즈 버전 데이터
 -- =========================================================
 
 INSERT INTO release_version (
-    release_type, release_category, customer_id, version,
+    project_id, release_type, release_category, customer_id, version,
     major_version, minor_version, patch_version,
     created_by, comment, created_at
 ) VALUES
-('STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, 'TS', '최초 설치본', '2025-01-01 00:00:00'),
-('STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, 'jhlee@tscientific', '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경', '2025-10-31 00:00:00'),
-('STANDARD', 'PATCH', NULL, '1.1.1', 1, 1, 1, 'jhlee@tscientific', 'SMS - 운영관리 - 파일 기능 관련 테이블 추가', '2025-11-05 00:00:00'),
-('STANDARD', 'PATCH', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', '2025-11-25 00:00:00');
+('infraeye2', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, 'TS', '최초 설치본', '2025-01-01 00:00:00'),
+('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, 'jhlee@tscientific', '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경', '2025-10-31 00:00:00'),
+('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.1', 1, 1, 1, 'jhlee@tscientific', 'SMS - 운영관리 - 파일 기능 관련 테이블 추가', '2025-11-05 00:00:00'),
+('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', '2025-11-25 00:00:00');
 
 -- =========================================================
--- Section 25: 릴리즈 파일 데이터
+-- 릴리즈 파일 데이터
 -- =========================================================
 
 INSERT INTO release_file (
@@ -671,7 +703,7 @@ INSERT INTO release_file (
     1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, 'SMS 로그 모니터링 정책 상세 테이블 추가');
 
 -- =========================================================
--- Section 26: 계층 구조 데이터
+-- 계층 구조 데이터
 -- =========================================================
 
 -- 1.0.0 (release_version_id = 1)
@@ -693,7 +725,7 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (1, 4, 3);
 
 -- =========================================================
--- Section 27: 리소스 파일 데이터
+-- 리소스 파일 데이터
 -- =========================================================
 
 -- MariaDB 스크립트

@@ -1,6 +1,7 @@
 package com.ts.rm.domain.releaseversion.entity;
 
 import com.ts.rm.domain.customer.entity.Customer;
+import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import jakarta.persistence.CascadeType;
@@ -43,6 +44,10 @@ public class ReleaseVersion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "release_version_id")
     private Long releaseVersionId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
     @Column(name = "release_type", nullable = false, length = 20)
     private String releaseType;

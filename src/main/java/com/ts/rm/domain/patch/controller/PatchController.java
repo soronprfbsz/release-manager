@@ -51,10 +51,11 @@ public class PatchController {
     public ApiResponse<PatchDto.DetailResponse> generatePatch(
             @Valid @RequestBody PatchDto.GenerateRequest request) {
 
-        log.info("패치 생성 요청 - From: {}, To: {}, Type: {}, PatchName: {}",
-                request.fromVersion(), request.toVersion(), request.type(), request.patchName());
+        log.info("패치 생성 요청 - Project: {}, From: {}, To: {}, Type: {}, PatchName: {}",
+                request.projectId(), request.fromVersion(), request.toVersion(), request.type(), request.patchName());
 
         Patch patch = patchService.generatePatchByVersion(
+                request.projectId(),
                 request.type(),
                 request.customerId(),
                 request.fromVersion(),

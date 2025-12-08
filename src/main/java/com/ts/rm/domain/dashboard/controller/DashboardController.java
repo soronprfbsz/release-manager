@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping("/api/projects/{projectId}/dashboard")
 @RequiredArgsConstructor
 @Tag(name = "대시보드", description = "대시보드 API")
 public class DashboardController {
@@ -27,7 +28,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     /**
-     * 대시보드 최근 데이터 조회
+     * 프로젝트별 대시보드 최근 데이터 조회
      *
      * <p>다음 정보를 포함합니다:
      * <ul>
@@ -36,6 +37,7 @@ public class DashboardController {
      *   <li>최근 생성 패치 N개 (STANDARD, 기본값: 3)</li>
      * </ul>
      *
+     * @param projectId    프로젝트 ID
      * @param versionLimit 최근 릴리즈 버전 조회 개수 (기본값: 3)
      * @param patchLimit   최근 생성 패치 조회 개수 (기본값: 3)
      * @return 대시보드 응답
@@ -43,19 +45,22 @@ public class DashboardController {
     @GetMapping("/recent")
     @Operation(
             summary = "대시보드 최근 데이터 조회",
-            description = "최신 설치본 1개, 최근 릴리즈 버전 N개, 최근 생성 패치 N개를 조회합니다.\n\n"
+            description = "프로젝트별 최신 설치본 1개, 최근 릴리즈 버전 N개, 최근 생성 패치 N개를 조회합니다.\n\n"
                     + "**파라미터**:\n"
                     + "- `versionLimit`: 최근 릴리즈 버전 조회 개수 (기본값: 3)\n"
                     + "- `patchLimit`: 최근 생성 패치 조회 개수 (기본값: 3)"
     )
     public ResponseEntity<ApiResponse<DashboardDto.Response>> getRecentData(
+            @Parameter(description = "프로젝트 ID", required = true, example = "infraeye2")
+            @PathVariable String projectId,
+
             @Parameter(description = "최근 릴리즈 버전 조회 개수", example = "3")
             @RequestParam(defaultValue = "3") int versionLimit,
 
             @Parameter(description = "최근 생성 패치 조회 개수", example = "3")
             @RequestParam(defaultValue = "3") int patchLimit) {
 
-        DashboardDto.Response response = dashboardService.getRecentData(versionLimit, patchLimit);
+        DashboardDto.Response response = dashboardService.getRecentData(projectId, versionLimit, patchLimit);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

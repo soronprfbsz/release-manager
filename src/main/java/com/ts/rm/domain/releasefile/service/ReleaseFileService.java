@@ -91,7 +91,7 @@ public class ReleaseFileService {
         findReleaseVersionById(versionId);
 
         List<ReleaseFile> releaseFiles = releaseFileRepository
-                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
+                .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(versionId);
         return mapper.toSimpleResponseList(releaseFiles);
     }
 
@@ -100,7 +100,7 @@ public class ReleaseFileService {
         findReleaseVersionById(versionId);
 
         List<ReleaseFile> releaseFiles = releaseFileRepository
-                .findByReleaseVersionIdAndFileCategory(versionId, fileCategory);
+                .findByReleaseVersion_ReleaseVersionIdAndFileCategoryOrderByExecutionOrderAsc(versionId, fileCategory);
         return mapper.toSimpleResponseList(releaseFiles);
     }
 
@@ -109,7 +109,7 @@ public class ReleaseFileService {
         findReleaseVersionById(versionId);
 
         List<ReleaseFile> releaseFiles = releaseFileRepository
-                .findByReleaseVersionIdAndSubCategory(versionId, subCategory);
+                .findByReleaseVersion_ReleaseVersionIdAndSubCategoryOrderByExecutionOrderAsc(versionId, subCategory);
         return mapper.toSimpleResponseList(releaseFiles);
     }
 
@@ -196,7 +196,7 @@ public class ReleaseFileService {
         ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
 
         List<ReleaseFile> releaseFiles = releaseFileRepository
-                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
+                .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(versionId);
 
         if (releaseFiles.isEmpty()) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
@@ -296,7 +296,7 @@ public class ReleaseFileService {
         ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
 
         List<ReleaseFile> releaseFiles = releaseFileRepository
-                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
+                .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(versionId);
 
         if (releaseFiles.isEmpty()) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND,

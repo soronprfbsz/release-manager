@@ -56,7 +56,7 @@ public class ReleaseFileUploadService {
         List<ReleaseFileDto.DetailResponse> responses = new ArrayList<>();
 
         int maxOrder = releaseFileRepository
-                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId)
+                .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(versionId)
                 .stream()
                 .mapToInt(ReleaseFile::getExecutionOrder)
                 .max()

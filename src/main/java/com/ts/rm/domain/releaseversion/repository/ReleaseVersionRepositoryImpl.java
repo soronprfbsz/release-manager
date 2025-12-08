@@ -3,7 +3,9 @@ package com.ts.rm.domain.releaseversion.repository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.releaseversion.entity.QReleaseVersion;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
+import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -62,6 +64,76 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                         rv.minorVersion.asc(),
                         rv.patchVersion.asc()
                 )
+                .fetch();
+    }
+
+    @Override
+    public Optional<ReleaseVersion> findLatestByReleaseTypeAndCategory(String releaseType,
+            ReleaseCategory releaseCategory) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        ReleaseVersion result = queryFactory
+                .selectFrom(rv)
+                .where(
+                        rv.releaseType.eq(releaseType),
+                        rv.releaseCategory.eq(releaseCategory)
+                )
+                .orderBy(rv.createdAt.desc())
+                .limit(1)
+                .fetchOne();
+
+        return Optional.ofNullable(result);
+    }
+
+    @Override
+    public List<ReleaseVersion> findRecentByReleaseTypeAndCategory(String releaseType,
+            ReleaseCategory releaseCategory, int limit) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        return queryFactory
+                .selectFrom(rv)
+                .where(
+                        rv.releaseType.eq(releaseType),
+                        rv.releaseCategory.eq(releaseCategory)
+                )
+                .orderBy(rv.createdAt.desc())
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public Optional<ReleaseVersion> findLatestByProjectIdAndReleaseTypeAndCategory(String projectId,
+            String releaseType, ReleaseCategory releaseCategory) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        ReleaseVersion result = queryFactory
+                .selectFrom(rv)
+                .where(
+                        rv.project.projectId.eq(projectId),
+                        rv.releaseType.eq(releaseType),
+                        rv.releaseCategory.eq(releaseCategory)
+                )
+                .orderBy(rv.createdAt.desc())
+                .limit(1)
+                .fetchOne();
+
+        return Optional.ofNullable(result);
+    }
+
+    @Override
+    public List<ReleaseVersion> findRecentByProjectIdAndReleaseTypeAndCategory(String projectId,
+            String releaseType, ReleaseCategory releaseCategory, int limit) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        return queryFactory
+                .selectFrom(rv)
+                .where(
+                        rv.project.projectId.eq(projectId),
+                        rv.releaseType.eq(releaseType),
+                        rv.releaseCategory.eq(releaseCategory)
+                )
+                .orderBy(rv.createdAt.desc())
+                .limit(limit)
                 .fetch();
     }
 }

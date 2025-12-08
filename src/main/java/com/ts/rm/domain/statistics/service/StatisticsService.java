@@ -35,21 +35,22 @@ public class StatisticsService {
     private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     /**
-     * 고객사별 패치 Top-N 조회
+     * 프로젝트별 고객사별 패치 Top-N 조회
      *
      * <p>최근 n개월간 패치가 가장 많이 나간 고객사 Top-N을 조회합니다.
      *
-     * @param months 조회 기간 (개월)
-     * @param topN   상위 N개
+     * @param projectId 프로젝트 ID
+     * @param months    조회 기간 (개월)
+     * @param topN      상위 N개
      * @return 고객사별 패치 통계 응답
      */
-    public TopCustomersResponse getTopCustomersByPatchCount(int months, int topN) {
-        log.info("고객사별 패치 Top-{} 조회 - 최근 {}개월", topN, months);
+    public TopCustomersResponse getTopCustomersByPatchCount(String projectId, int months, int topN) {
+        log.info("프로젝트별 고객사별 패치 Top-{} 조회 - projectId: {}, 최근 {}개월", topN, projectId, months);
 
         LocalDateTime startDate = LocalDateTime.now().minusMonths(months);
 
         List<CustomerPatchCount> customers =
-                patchStatisticsRepository.findTopCustomersByPatchCount(startDate, topN);
+                patchStatisticsRepository.findTopCustomersByPatchCount(projectId, startDate, topN);
 
         log.info("고객사별 패치 통계 조회 완료 - 결과 건수: {}", customers.size());
 
@@ -57,21 +58,22 @@ public class StatisticsService {
     }
 
     /**
-     * 월별+고객별 패치 통계 조회
+     * 프로젝트별 월별+고객별 패치 통계 조회
      *
      * <p>최근 n개월간 월별+고객별 패치 생성 건수를 조회합니다.
      *
-     * @param months 조회 기간 (개월)
+     * @param projectId 프로젝트 ID
+     * @param months    조회 기간 (개월)
      * @return 월별+고객별 패치 통계 응답
      */
-    public MonthlyPatchResponse getMonthlyPatchCounts(int months) {
-        log.info("월별+고객별 패치 통계 조회 - 최근 {}개월", months);
+    public MonthlyPatchResponse getMonthlyPatchCounts(String projectId, int months) {
+        log.info("프로젝트별 월별+고객별 패치 통계 조회 - projectId: {}, 최근 {}개월", projectId, months);
 
         LocalDateTime startDate = LocalDateTime.now().minusMonths(months);
 
         // 원본 데이터 조회
         List<MonthlyCustomerPatchRaw> rawData =
-                patchStatisticsRepository.findMonthlyCustomerPatchCounts(startDate);
+                patchStatisticsRepository.findMonthlyCustomerPatchCounts(projectId, startDate);
 
         // 데이터가 없으면 빈 응답 반환 (프론트엔드에서 nodata 처리 가능)
         if (rawData.isEmpty()) {

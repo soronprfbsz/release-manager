@@ -44,6 +44,30 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
     }
 
     @Override
+    public List<ReleaseVersion> findAllByProjectIdAndReleaseTypeWithHierarchy(String projectId,
+            String releaseType) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+        QReleaseVersionHierarchy h = QReleaseVersionHierarchy.releaseVersionHierarchy;
+
+        return queryFactory
+                .selectDistinct(rv)
+                .from(h)
+                .innerJoin(h.descendant, rv)
+                .leftJoin(rv.project).fetchJoin()
+                .where(
+                        h.depth.eq(0),
+                        rv.project.projectId.eq(projectId),
+                        rv.releaseType.eq(releaseType)
+                )
+                .orderBy(
+                        rv.majorVersion.asc(),
+                        rv.minorVersion.asc(),
+                        rv.patchVersion.asc()
+                )
+                .fetch();
+    }
+
+    @Override
     public List<ReleaseVersion> findAllByReleaseTypeAndCustomerWithHierarchy(String releaseType,
             String customerCode) {
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
@@ -56,6 +80,32 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
                 .leftJoin(rv.customer).fetchJoin()
                 .where(
                         h.depth.eq(0),
+                        rv.releaseType.eq(releaseType),
+                        rv.customer.customerCode.eq(customerCode)
+                )
+                .orderBy(
+                        rv.majorVersion.asc(),
+                        rv.minorVersion.asc(),
+                        rv.patchVersion.asc()
+                )
+                .fetch();
+    }
+
+    @Override
+    public List<ReleaseVersion> findAllByProjectIdAndReleaseTypeAndCustomerWithHierarchy(
+            String projectId, String releaseType, String customerCode) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+        QReleaseVersionHierarchy h = QReleaseVersionHierarchy.releaseVersionHierarchy;
+
+        return queryFactory
+                .selectDistinct(rv)
+                .from(h)
+                .innerJoin(h.descendant, rv)
+                .leftJoin(rv.project).fetchJoin()
+                .leftJoin(rv.customer).fetchJoin()
+                .where(
+                        h.depth.eq(0),
+                        rv.project.projectId.eq(projectId),
                         rv.releaseType.eq(releaseType),
                         rv.customer.customerCode.eq(customerCode)
                 )

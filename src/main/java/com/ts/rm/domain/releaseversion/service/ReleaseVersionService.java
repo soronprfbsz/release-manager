@@ -2,6 +2,8 @@ package com.ts.rm.domain.releaseversion.service;
 
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
+import com.ts.rm.domain.project.entity.Project;
+import com.ts.rm.domain.project.repository.ProjectRepository;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
@@ -36,6 +38,7 @@ public class ReleaseVersionService {
     private final ReleaseFileRepository releaseFileRepository;
     private final ReleaseVersionHierarchyRepository hierarchyRepository;
     private final CustomerRepository customerRepository;
+    private final ProjectRepository projectRepository;
     private final ReleaseVersionDtoMapper mapper;
     private final ReleaseMetadataManager metadataManager;
 
@@ -167,7 +170,7 @@ public class ReleaseVersionService {
         try {
             // 2. release_file 삭제 (명시적으로)
             List<ReleaseFile> releaseFiles = releaseFileRepository
-                    .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
+                    .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(versionId);
             releaseFileRepository.deleteAll(releaseFiles);
             log.info("release_file 삭제 완료 - {} 개", releaseFiles.size());
 
@@ -203,16 +206,26 @@ public class ReleaseVersionService {
     private ReleaseVersionDto.DetailResponse createVersion(String releaseType,
             Customer customer, ReleaseVersionDto.CreateRequest request) {
 
+        // 프로젝트 ID 필수 검증
+        if (request.projectId() == null || request.projectId().isBlank()) {
+            throw new BusinessException(ErrorCode.PROJECT_ID_REQUIRED);
+        }
+
+        // Project 조회
+        Project project = projectRepository.findById(request.projectId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
+
         // 버전 파싱
         VersionInfo versionInfo = VersionParser.parse(request.version());
 
-        // 중복 검증
-        if (releaseVersionRepository.existsByVersion(request.version())) {
+        // 중복 검증 (프로젝트 내에서 동일 버전 확인)
+        if (releaseVersionRepository.existsByProject_ProjectIdAndVersion(request.projectId(), request.version())) {
             throw new BusinessException(ErrorCode.RELEASE_VERSION_CONFLICT);
         }
 
         // Entity 생성
         ReleaseVersion version = ReleaseVersion.builder()
+                .project(project)
                 .releaseType(releaseType)
                 .releaseCategory(request.releaseCategory() != null ? request.releaseCategory() : com.ts.rm.domain.releaseversion.enums.ReleaseCategory.PATCH)
                 .customer(customer)
@@ -236,8 +249,8 @@ public class ReleaseVersionService {
         // release_metadata.json 업데이트
         metadataManager.addVersionEntry(savedVersion);
 
-        log.info("Release version created successfully with id: {}",
-                savedVersion.getReleaseVersionId());
+        log.info("Release version created successfully with id: {}, projectId: {}",
+                savedVersion.getReleaseVersionId(), project.getProjectId());
         return mapper.toDetailResponse(savedVersion);
     }
 
@@ -273,6 +286,7 @@ public class ReleaseVersionService {
 
         return new ReleaseVersionDto.SimpleResponse(
                 response.releaseVersionId(),
+                response.projectId(),
                 response.releaseType(),
                 response.customerCode(),
                 response.version(),

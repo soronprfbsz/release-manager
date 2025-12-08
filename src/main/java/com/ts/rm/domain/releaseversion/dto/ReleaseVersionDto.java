@@ -29,6 +29,9 @@ public final class ReleaseVersionDto {
     @Builder
     @Schema(description = "릴리즈 버전 생성 요청")
     public record CreateRequest(
+            @Schema(description = "프로젝트 ID", example = "infraeye2") @NotBlank(message = "프로젝트 ID는 필수입니다") @Size(max = 50, message = "프로젝트 ID는 50자 이하여야 합니다")
+            String projectId,
+
             @Schema(description = "버전 (예: 1.1.0)", example = "1.1.0") @NotBlank(message = "버전은 필수입니다") @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+$", message = "버전 형식이 올바르지 않습니다 (예: 1.1.0)")
             String version,
 
@@ -73,6 +76,12 @@ public final class ReleaseVersionDto {
     public record DetailResponse(
             @Schema(description = "릴리즈 버전 ID", example = "1")
             Long releaseVersionId,
+
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
+
+            @Schema(description = "프로젝트명", example = "Infraeye 2")
+            String projectName,
 
             @Schema(description = "릴리즈 타입", example = "standard")
             String releaseType,
@@ -123,6 +132,9 @@ public final class ReleaseVersionDto {
     public record SimpleResponse(
             @Schema(description = "릴리즈 버전 ID", example = "1")
             Long releaseVersionId,
+
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
 
             @Schema(description = "릴리즈 타입", example = "standard")
             String releaseType,
@@ -231,6 +243,11 @@ public final class ReleaseVersionDto {
     @Builder
     @Schema(description = "표준 릴리즈 버전 생성 요청")
     public record CreateStandardVersionRequest(
+            @Schema(description = "프로젝트 ID", example = "infraeye2", required = true)
+            @NotBlank(message = "프로젝트 ID는 필수입니다")
+            @Size(max = 50, message = "프로젝트 ID는 50자 이하여야 합니다")
+            String projectId,
+
             @Schema(description = "버전 (예: 1.1.3)", example = "1.1.3", required = true)
             @NotBlank(message = "버전은 필수입니다")
             @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+$", message = "버전 형식이 올바르지 않습니다 (예: 1.1.3)")
@@ -305,6 +322,9 @@ public final class ReleaseVersionDto {
     public record CreateVersionResponse(
             @Schema(description = "릴리즈 버전 ID", example = "5")
             Long releaseVersionId,
+
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
 
             @Schema(description = "버전", example = "1.1.3")
             String version,
