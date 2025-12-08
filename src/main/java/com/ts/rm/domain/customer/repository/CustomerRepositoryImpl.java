@@ -76,7 +76,7 @@ public class CustomerRepositoryImpl implements CustomerRepositoryCustom {
                 countQuery,
                 pageable,
                 sortMapping,
-                customer.createdAt.desc() // 기본 정렬
+                customer.customerName.asc() // 기본 정렬: 고객사명 오름차순
         );
     }
 
