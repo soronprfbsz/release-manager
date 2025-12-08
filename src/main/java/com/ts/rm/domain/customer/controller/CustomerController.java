@@ -98,7 +98,7 @@ public class CustomerController {
             @RequestParam(required = false) Boolean isActive,
             @Parameter(description = "고객사명 검색 키워드")
             @RequestParam(required = false) String keyword,
-            @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 10, sort = "customerName", direction = org.springframework.data.domain.Sort.Direction.ASC) Pageable pageable) {
         Page<CustomerDto.ListResponse> response = customerService.getCustomersWithPaging(isActive, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
