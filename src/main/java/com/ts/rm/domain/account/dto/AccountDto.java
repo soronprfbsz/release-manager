@@ -141,4 +141,36 @@ public final class AccountDto {
     ) {
 
     }
+
+    /**
+     * 계정 목록 응답 (페이징용)
+     */
+    @Schema(description = "계정 목록 응답")
+    public record ListResponse(
+            @Schema(description = "행 번호", example = "1")
+            Long rowNumber,
+
+            @Schema(description = "계정 ID", example = "1")
+            Long accountId,
+
+            @Schema(description = "이메일", example = "account@example.com")
+            String email,
+
+            @Schema(description = "이름", example = "홍길동")
+            String accountName,
+
+            @Schema(description = "권한", example = "USER")
+            String role,
+
+            @Schema(description = "상태", example = "ACTIVE")
+            String status,
+
+            @Schema(description = "마지막 로그인 일시")
+            LocalDateTime lastLoginAt,
+
+            @Schema(description = "생성일시")
+            LocalDateTime createdAt
+    ) {
+
+    }
 }

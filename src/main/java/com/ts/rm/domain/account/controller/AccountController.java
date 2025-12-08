@@ -61,7 +61,7 @@ public class AccountController {
                     + "- `/api/accounts?page=1&size=20&sort=accountName,asc`\n"
                     + "- `/api/accounts?status=ACTIVE&keyword=홍길동&page=0&size=10`"
     )
-    public ResponseEntity<ApiResponse<Page<AccountDto.SimpleResponse>>> getAccounts(
+    public ResponseEntity<ApiResponse<Page<AccountDto.ListResponse>>> getAccounts(
             @Parameter(description = "계정 상태 (ACTIVE, INACTIVE)", example = "ACTIVE")
             @RequestParam(required = false) AccountStatus status,
             @Parameter(description = "계정명 검색 키워드", example = "홍길동")
@@ -69,7 +69,7 @@ public class AccountController {
             @PageableDefault(size = 20, sort = "accountId", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("GET /api/accounts - status: {}, keyword: {}, pageable: {}", status, keyword, pageable);
 
-        Page<AccountDto.SimpleResponse> accountPage = accountService.getAccounts(status, keyword, pageable);
+        Page<AccountDto.ListResponse> accountPage = accountService.getAccounts(status, keyword, pageable);
 
         log.info("Found {} accounts (page {}/{})", accountPage.getNumberOfElements(),
                 accountPage.getNumber() + 1, accountPage.getTotalPages());
