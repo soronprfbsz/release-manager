@@ -1,298 +1,9 @@
 -- =========================================================
--- V1: Release Manager 통합 초기화 스크립트
--- 작성일: 2025-12-04
--- 작성자: Claude Code
--- 설명: 모든 테이블 및 초기 데이터 생성
+-- V1: Release Manager 초기 데이터 삽입
 -- =========================================================
 
 -- =========================================================
--- Code 시스템 테이블 생성
--- =========================================================
-
--- code_type 테이블 생성
-CREATE TABLE IF NOT EXISTS code_type (
-    code_type_id VARCHAR(50) PRIMARY KEY COMMENT '코드 타입 ID',
-    code_type_name VARCHAR(100) NOT NULL COMMENT '코드 타입 명',
-    description VARCHAR(200) COMMENT '설명',
-    is_enabled BOOLEAN NOT NULL DEFAULT TRUE COMMENT '사용 여부',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    INDEX idx_code_type_name (code_type_name),
-    INDEX idx_is_enabled (is_enabled)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='코드 타입 테이블';
-
--- code 테이블 생성
-CREATE TABLE IF NOT EXISTS code (
-    code_type_id VARCHAR(50) NOT NULL COMMENT '코드 타입',
-    code_id VARCHAR(100) NOT NULL COMMENT '코드 ID',
-    code_name VARCHAR(100) NOT NULL COMMENT '코드 명',
-    description VARCHAR(200) COMMENT '설명',
-    sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
-    is_enabled BOOLEAN NOT NULL DEFAULT TRUE COMMENT '사용 여부',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    PRIMARY KEY (code_type_id, code_id),
-    INDEX idx_code_type_id (code_type_id),
-    INDEX idx_is_enabled (is_enabled),
-    CONSTRAINT fk_code_type FOREIGN KEY (code_type_id) REFERENCES code_type(code_type_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='코드 테이블';
-
--- =========================================================
--- Account 테이블 생성
--- =========================================================
-
--- account 테이블 생성
-CREATE TABLE IF NOT EXISTS account (
-    account_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '계정 ID',
-    account_name VARCHAR(50) NOT NULL COMMENT '계정 이름',
-    email VARCHAR(50) NOT NULL UNIQUE COMMENT '이메일',
-    password VARCHAR(100) NOT NULL COMMENT '비밀번호',
-    role VARCHAR(100) NOT NULL COMMENT '계정 권한',
-    status VARCHAR(100) NOT NULL COMMENT '계정 상태',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    INDEX idx_email (email),
-    INDEX idx_role (role),
-    INDEX idx_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='계정 테이블';
-
--- =========================================================
--- Project 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS project (
-    project_id VARCHAR(50) PRIMARY KEY COMMENT '프로젝트 ID (예: infraeye1, infraeye2)',
-    project_name VARCHAR(100) NOT NULL COMMENT '프로젝트 명',
-    description TEXT COMMENT '설명',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    created_by VARCHAR(100) NOT NULL DEFAULT 'SYSTEM' COMMENT '생성자',
-
-    INDEX idx_project_name (project_name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='프로젝트 테이블';
-
--- =========================================================
--- Customer 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS customer (
-    customer_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '고객사 ID',
-    customer_code VARCHAR(50) NOT NULL UNIQUE COMMENT '고객사 코드',
-    customer_name VARCHAR(100) NOT NULL COMMENT '고객사 명',
-    description VARCHAR(255) COMMENT '설명',
-    is_active BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
-    updated_by VARCHAR(100) NOT NULL COMMENT '수정자',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    INDEX idx_customer_code (customer_code),
-    INDEX idx_customer_name (customer_name),
-    INDEX idx_is_active (is_active)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사 테이블';
-
--- =========================================================
--- Customer Project 매핑 테이블 생성 (복합 PK)
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS customer_project (
-    customer_id BIGINT NOT NULL COMMENT '고객사 ID',
-    project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
-    last_patched_version VARCHAR(50) COMMENT '마지막 패치 버전 (to_version)',
-    last_patched_at DATETIME COMMENT '마지막 패치 일시',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    PRIMARY KEY (customer_id, project_id),
-    INDEX idx_cp_project_id (project_id),
-    INDEX idx_cp_last_patched_at (last_patched_at),
-
-    CONSTRAINT fk_customer_project_customer FOREIGN KEY (customer_id)
-        REFERENCES customer(customer_id) ON DELETE CASCADE,
-    CONSTRAINT fk_customer_project_project FOREIGN KEY (project_id)
-        REFERENCES project(project_id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사-프로젝트 매핑 테이블';
-
--- =========================================================
--- Release Version 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS release_version (
-    release_version_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '릴리즈 버전 ID',
-    project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
-    release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
-    release_category VARCHAR(20) NOT NULL DEFAULT 'PATCH' COMMENT '릴리즈 카테고리 (INSTALL/PATCH)',
-    customer_id BIGINT COMMENT '고객사 ID (커스텀 릴리즈인 경우)',
-    version VARCHAR(50) NOT NULL COMMENT '버전 번호 (예: 1.1.0)',
-    major_version INT NOT NULL COMMENT '메이저 버전',
-    minor_version INT NOT NULL COMMENT '마이너 버전',
-    patch_version INT NOT NULL COMMENT '패치 버전',
-    custom_version VARCHAR(100) COMMENT '커스텀 버전',
-    comment TEXT COMMENT '버전 설명',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-
-    INDEX idx_project_id (project_id),
-    INDEX idx_release_type (release_type),
-    INDEX idx_release_category (release_category),
-    INDEX idx_customer_id (customer_id),
-    INDEX idx_version (version),
-    INDEX idx_major_minor (major_version, minor_version),
-    INDEX idx_created_at (created_at),
-
-    UNIQUE KEY uk_project_version (project_id, version),
-
-    CONSTRAINT fk_release_version_project FOREIGN KEY (project_id)
-        REFERENCES project(project_id) ON DELETE RESTRICT,
-    CONSTRAINT fk_release_version_customer FOREIGN KEY (customer_id)
-        REFERENCES customer(customer_id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 버전 테이블';
-
--- =========================================================
--- Release File 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS release_file (
-    release_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '릴리즈 파일 ID',
-    release_version_id BIGINT NOT NULL COMMENT '릴리즈 버전 ID',
-    file_type VARCHAR(50) NOT NULL COMMENT '파일 타입 (SQL, PDF, MD, EXE, SH, TXT)',
-    file_category VARCHAR(50) COMMENT '파일 카테고리 (DATABASE, WEB, ENGINE, ETC)',
-    sub_category VARCHAR(50) COMMENT '하위 카테고리 (MARIADB, CRATEDB, METADATA 등)',
-    file_name VARCHAR(255) NOT NULL COMMENT '파일명',
-    file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (물리 경로)',
-    relative_path VARCHAR(500) COMMENT 'ZIP 파일 내부 상대 경로',
-    file_size BIGINT COMMENT '파일 크기 (bytes)',
-    checksum VARCHAR(64) COMMENT '파일 체크섬 (MD5)',
-    execution_order INT NOT NULL DEFAULT 1 COMMENT '실행 순서',
-    description TEXT COMMENT '파일 설명',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    INDEX idx_release_version_id (release_version_id),
-    INDEX idx_file_type (file_type),
-    INDEX idx_file_category (file_category),
-    INDEX idx_sub_category (sub_category),
-    INDEX idx_file_path (file_path),
-    INDEX idx_execution_order (execution_order),
-
-    CONSTRAINT fk_release_file_version FOREIGN KEY (release_version_id)
-        REFERENCES release_version(release_version_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 파일 테이블';
-
--- =========================================================
--- Release Version Hierarchy 클로저 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS release_version_hierarchy (
-    ancestor_id BIGINT NOT NULL COMMENT '상위 버전 ID (조상)',
-    descendant_id BIGINT NOT NULL COMMENT '하위 버전 ID (후손)',
-    depth INT NOT NULL COMMENT '계층 깊이 (0=자기자신, 1=직접 자식, 2=손자...)',
-
-    PRIMARY KEY (ancestor_id, descendant_id),
-
-    INDEX idx_ancestor (ancestor_id),
-    INDEX idx_descendant (descendant_id),
-    INDEX idx_depth (depth),
-
-    CONSTRAINT fk_hierarchy_ancestor FOREIGN KEY (ancestor_id)
-        REFERENCES release_version(release_version_id) ON DELETE CASCADE,
-    CONSTRAINT fk_hierarchy_descendant FOREIGN KEY (descendant_id)
-        REFERENCES release_version(release_version_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='릴리즈 버전 계층 구조 테이블 (Closure Table)';
-
--- =========================================================
--- Resource File 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS resource_file (
-    resource_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '리소스 파일 ID',
-    file_type VARCHAR(20) NOT NULL COMMENT '파일 타입 (확장자 대문자, 예: SH, PDF, MD)',
-    file_category VARCHAR(50) NOT NULL COMMENT '파일 카테고리 (SCRIPT, DOCUMENT, ETC)',
-    sub_category VARCHAR(50) COMMENT '하위 카테고리',
-    file_name VARCHAR(255) NOT NULL COMMENT '파일명',
-    file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (resource/ 하위 상대경로)',
-    file_size BIGINT COMMENT '파일 크기 (bytes)',
-    checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
-    description TEXT COMMENT '파일 설명',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    INDEX idx_rf_file_type (file_type),
-    INDEX idx_rf_file_category (file_category),
-    INDEX idx_rf_sub_category (sub_category),
-    INDEX idx_rf_file_name (file_name),
-    INDEX idx_rf_file_path (file_path),
-    INDEX idx_rf_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='리소스 파일 테이블';
-
--- =========================================================
--- Backup File 테이블 생성 (Job 도메인)
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS backup_file (
-    backup_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '백업 파일 ID',
-    file_category VARCHAR(20) NOT NULL COMMENT '파일 카테고리 (MARIADB, CRATEDB)',
-    file_type VARCHAR(20) NOT NULL COMMENT '파일 타입 (확장자 대문자, 예: SQL)',
-    file_name VARCHAR(255) NOT NULL COMMENT '파일명',
-    file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (job/backup_files/ 하위 상대경로)',
-    file_size BIGINT COMMENT '파일 크기 (bytes)',
-    checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
-    description TEXT COMMENT '파일 설명',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    INDEX idx_bf_file_category (file_category),
-    INDEX idx_bf_file_type (file_type),
-    INDEX idx_bf_file_name (file_name),
-    INDEX idx_bf_file_path (file_path),
-    INDEX idx_bf_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 테이블';
-
--- =========================================================
--- Department 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS department (
-    department_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '부서 ID',
-    department_name VARCHAR(100) NOT NULL UNIQUE COMMENT '부서명',
-    description VARCHAR(500) COMMENT '설명',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    INDEX idx_department_name (department_name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='부서 테이블';
-
--- =========================================================
--- Engineer 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS engineer (
-    engineer_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '엔지니어 ID',
-    engineer_name VARCHAR(50) NOT NULL COMMENT '엔지니어 이름',
-    engineer_email VARCHAR(100) NOT NULL UNIQUE COMMENT '엔지니어 회사 이메일',
-    engineer_phone VARCHAR(20) COMMENT '엔지니어 연락처',
-    position VARCHAR(100) COMMENT '직급 (code_type_id=POSITION 참조)',
-    department_id BIGINT COMMENT '소속 부서 ID',
-    description VARCHAR(500) COMMENT '설명',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    created_by VARCHAR(100) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성자',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    updated_by VARCHAR(100) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정자',
-
-    INDEX idx_engineer_name (engineer_name),
-    INDEX idx_engineer_email (engineer_email),
-    INDEX idx_engineer_position (position),
-    INDEX idx_department_id (department_id),
-
-    CONSTRAINT fk_engineer_department FOREIGN KEY (department_id)
-        REFERENCES department(department_id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='엔지니어 테이블';
-
--- =========================================================
--- 코드 타입 기본 데이터
+-- 코드 타입
 -- =========================================================
 
 INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
@@ -519,14 +230,11 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 
 -- =========================================================
 -- 기본 관리자 계정
--- 패스워드: nms12345! (BCrypt 암호화)
 -- =========================================================
 
 INSERT INTO account (account_name, email, password, role, status) VALUES
 ('시스템 관리자','admin@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'ADMIN', 'ACTIVE'),
 ('기본 사용자','m_user@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'USER', 'ACTIVE');
-
-
 
 -- =========================================================
 -- 부서 기본 데이터
@@ -536,7 +244,6 @@ INSERT INTO department (department_name, description) VALUES
 ('인프라기술팀', '인프라 기술 지원'),
 ('서비스기술팀', '서비스 기술 지원'),
 ('보안기술팀', '보안 기술 지원');
-
 
 -- =========================================================
 -- 엔지니어 기본 데이터
@@ -567,7 +274,6 @@ VALUES ('shinss@tscientific.co.kr', '부장','신성수', 1),
 ('yoonchul.lee@tscientific.co.kr', '사원', '이윤철', 3),
 ('lkh2433@tscientific.co.kr', '사원', '이경호', 3),
 ('pjh@tscientific.co.kr', '사원', '박재호', 3);
-
 
 -- =========================================================
 -- 고객사 추가 (테스트용)
@@ -600,43 +306,6 @@ INSERT INTO customer (created_by, customer_code, customer_name, description, is_
 ('m_user@tscientific.co.kr', 'customerX', 'X회사', NULL, true, 'm_user@tscientific.co.kr'),
 ('m_user@tscientific.co.kr', 'customerY', 'Y회사', NULL, true, 'm_user@tscientific.co.kr'),
 ('m_user@tscientific.co.kr', 'customerZ', 'Z회사', NULL, true, 'm_user@tscientific.co.kr');
-
-
--- =========================================================
--- Cumulative Patch 테이블 생성
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS cumulative_patch (
-    patch_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '패치 ID',
-    project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
-    release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
-    customer_id BIGINT COMMENT '고객사 ID (커스텀 패치인 경우)',
-    from_version VARCHAR(50) NOT NULL COMMENT '시작 버전',
-    to_version VARCHAR(50) NOT NULL COMMENT '종료 버전',
-    patch_name VARCHAR(100) NOT NULL COMMENT '패치 파일명',
-    output_path VARCHAR(500) NOT NULL COMMENT '생성된 패치 파일 경로',
-    description TEXT COMMENT '설명',
-    engineer_id BIGINT COMMENT '패치 담당자 (엔지니어 ID)',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    INDEX idx_cp_project_id (project_id),
-    INDEX idx_cp_release_type (release_type),
-    INDEX idx_cp_customer_id (customer_id),
-    INDEX idx_cp_from_version (from_version),
-    INDEX idx_cp_to_version (to_version),
-    INDEX idx_cp_engineer_id (engineer_id),
-    INDEX idx_cp_created_at (created_at),
-
-    CONSTRAINT fk_cumulative_patch_project FOREIGN KEY (project_id)
-        REFERENCES project(project_id) ON DELETE RESTRICT,
-    CONSTRAINT fk_cumulative_patch_customer FOREIGN KEY (customer_id)
-        REFERENCES customer(customer_id) ON DELETE SET NULL,
-    CONSTRAINT fk_cumulative_patch_engineer FOREIGN KEY (engineer_id)
-        REFERENCES engineer(engineer_id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='누적 패치 테이블';
-
 
 -- =========================================================
 -- 프로젝트 데이터
@@ -779,14 +448,152 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 
 -- 스크립트 - MariaDB
 INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
-('SH', 'SCRIPT', 'MARIADB', 'mariadb_backup.sh', 'script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 백업 스크립트', 'system'),
-('SH', 'SCRIPT', 'MARIADB', 'mariadb_restore.sh', 'script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 복원 스크립트', 'system');
+('SH', 'SCRIPT', 'MARIADB', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 백업 스크립트', 'system'),
+('SH', 'SCRIPT', 'MARIADB', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 복원 스크립트', 'system');
 
 -- 스크립트 - CrateDB
 INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
-('SH', 'SCRIPT', 'CRATEDB', 'cratedb_backup.sh', 'script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 백업 스크립트', 'system'),
-('SH', 'SCRIPT', 'CRATEDB', 'cratedb_restore.sh', 'script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 복원 스크립트', 'system');
+('SH', 'SCRIPT', 'CRATEDB', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 백업 스크립트', 'system'),
+('SH', 'SCRIPT', 'CRATEDB', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 복원 스크립트', 'system');
 
 -- 문서 - Infraeye 2
 INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
-('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 'system');
+('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 'system');
+
+-- =========================================================
+-- 메뉴 데이터 삽입
+-- =========================================================
+
+-- 1depth 메뉴 (순서대로 삽입)
+INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
+('version_management', '버전 관리', 1),
+('patch_management', '패치 관리', 2),
+('operation_management', '운영 관리', 3),
+('job_management', '작업 관리', 4),
+('resource_management', '리소스 관리', 5);
+
+-- 2depth 메뉴
+-- 버전 관리 하위
+INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
+('version_standard', 'Standard', 1),
+('version_custom', 'Custom', 2);
+
+-- 패치 관리 하위
+INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
+('patch_standard', 'Standard', 1),
+('patch_custom', 'Custom', 2);
+
+-- 운영 관리 하위
+INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
+('operation_customer', '고객사', 1),
+('operation_engineer', '엔지니어', 2),
+('operation_account', '계정', 3);
+
+-- 작업 관리 하위
+INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
+('job_mariadb', 'MariaDB', 1);
+
+-- =========================================================
+-- 메뉴 계층 구조 데이터 삽입 (Closure Table)
+-- =========================================================
+
+-- 1depth 메뉴 (자기 자신)
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('version_management', 'version_management', 0),
+('patch_management', 'patch_management', 0),
+('operation_management', 'operation_management', 0),
+('job_management', 'job_management', 0),
+('resource_management', 'resource_management', 0);
+
+-- 2depth 메뉴 (자기 자신)
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('version_standard', 'version_standard', 0),
+('version_custom', 'version_custom', 0),
+('patch_standard', 'patch_standard', 0),
+('patch_custom', 'patch_custom', 0),
+('operation_customer', 'operation_customer', 0),
+('operation_engineer', 'operation_engineer', 0),
+('operation_account', 'operation_account', 0),
+('job_mariadb', 'job_mariadb', 0);
+
+-- 부모-자식 관계 (depth=1)
+-- 버전 관리
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('version_management', 'version_standard', 1),
+('version_management', 'version_custom', 1);
+
+-- 패치 관리
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('patch_management', 'patch_standard', 1),
+('patch_management', 'patch_custom', 1);
+
+-- 운영 관리
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('operation_management', 'operation_customer', 1),
+('operation_management', 'operation_engineer', 1),
+('operation_management', 'operation_account', 1);
+
+-- 작업 관리
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('job_management', 'job_mariadb', 1);
+
+-- =========================================================
+-- 메뉴 권한 데이터 삽입
+-- =========================================================
+
+-- ADMIN: 모든 메뉴 접근 가능
+INSERT INTO menu_role (menu_id, role) VALUES
+-- 1depth
+('version_management', 'ADMIN'),
+('patch_management', 'ADMIN'),
+('operation_management', 'ADMIN'),
+('job_management', 'ADMIN'),
+('resource_management', 'ADMIN'),
+-- 2depth - 버전 관리
+('version_standard', 'ADMIN'),
+('version_custom', 'ADMIN'),
+-- 2depth - 패치 관리
+('patch_standard', 'ADMIN'),
+('patch_custom', 'ADMIN'),
+-- 2depth - 운영 관리
+('operation_customer', 'ADMIN'),
+('operation_engineer', 'ADMIN'),
+('operation_account', 'ADMIN'),
+-- 2depth - 작업 관리
+('job_mariadb', 'ADMIN');
+
+-- USER: 계정 메뉴 제외
+INSERT INTO menu_role (menu_id, role) VALUES
+-- 1depth
+('version_management', 'USER'),
+('patch_management', 'USER'),
+('operation_management', 'USER'),
+('job_management', 'USER'),
+('resource_management', 'USER'),
+-- 2depth - 버전 관리
+('version_standard', 'USER'),
+('version_custom', 'USER'),
+-- 2depth - 패치 관리
+('patch_standard', 'USER'),
+('patch_custom', 'USER'),
+-- 2depth - 운영 관리 (계정 제외)
+('operation_customer', 'USER'),
+('operation_engineer', 'USER'),
+-- 2depth - 작업 관리
+('job_mariadb', 'USER');
+
+-- GUEST: 운영 관리 전체 제외
+INSERT INTO menu_role (menu_id, role) VALUES
+-- 1depth (운영 관리 제외)
+('version_management', 'GUEST'),
+('patch_management', 'GUEST'),
+('job_management', 'GUEST'),
+('resource_management', 'GUEST'),
+-- 2depth - 버전 관리
+('version_standard', 'GUEST'),
+('version_custom', 'GUEST'),
+-- 2depth - 패치 관리
+('patch_standard', 'GUEST'),
+('patch_custom', 'GUEST'),
+-- 2depth - 작업 관리
+('job_mariadb', 'GUEST');

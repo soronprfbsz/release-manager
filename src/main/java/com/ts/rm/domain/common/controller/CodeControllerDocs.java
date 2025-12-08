@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 /**
  * CodeController Swagger 문서화 인터페이스
  */
-@Tag(name = "코드", description = "공통 코드 API")
+@Tag(name = "기본", description = "공통 코드, 메뉴 등 솔루션 기본 API")
 public interface CodeControllerDocs {
 
     @Operation(

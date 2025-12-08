@@ -1,26 +1,26 @@
-package com.ts.rm.domain.statistics.repository;
+package com.ts.rm.domain.analytics.repository;
 
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.StringTemplate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.CustomerPatchCount;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.MonthlyCustomerPatchRaw;
 import com.ts.rm.domain.customer.entity.QCustomer;
 import com.ts.rm.domain.patch.entity.QPatch;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.CustomerPatchCount;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyCustomerPatchRaw;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 /**
- * 패치 통계 Repository 구현체
+ * 패치 분석 Repository 구현체
  *
- * <p>QueryDSL을 사용한 패치 통계 집계 쿼리 구현
+ * <p>QueryDSL을 사용한 패치 분석 집계 쿼리 구현
  */
 @Repository
 @RequiredArgsConstructor
-public class PatchStatisticsRepositoryImpl implements PatchStatisticsRepository {
+public class PatchAnalyticsRepositoryImpl implements PatchAnalyticsRepository {
 
     private final JPAQueryFactory queryFactory;
 

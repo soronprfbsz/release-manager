@@ -1,11 +1,11 @@
-package com.ts.rm.domain.statistics.service;
+package com.ts.rm.domain.analytics.service;
 
-import com.ts.rm.domain.statistics.dto.StatisticsDto.CustomerPatchCount;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyCustomerPatchCount;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyCustomerPatchRaw;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyPatchResponse;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.TopCustomersResponse;
-import com.ts.rm.domain.statistics.repository.PatchStatisticsRepository;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.CustomerPatchCount;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.MonthlyCustomerPatchCount;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.MonthlyCustomerPatchRaw;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.MonthlyPatchResponse;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.TopCustomersResponse;
+import com.ts.rm.domain.analytics.repository.PatchAnalyticsRepository;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -21,17 +21,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 통계 서비스
+ * 분석 서비스
  *
- * <p>패치 관련 통계 조회 비즈니스 로직
+ * <p>패치 관련 분석 조회 비즈니스 로직
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class StatisticsService {
+public class AnalyticsService {
 
-    private final PatchStatisticsRepository patchStatisticsRepository;
+    private final PatchAnalyticsRepository patchAnalyticsRepository;
     private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     /**
@@ -50,7 +50,7 @@ public class StatisticsService {
         LocalDateTime startDate = LocalDateTime.now().minusMonths(months);
 
         List<CustomerPatchCount> customers =
-                patchStatisticsRepository.findTopCustomersByPatchCount(projectId, startDate, topN);
+                patchAnalyticsRepository.findTopCustomersByPatchCount(projectId, startDate, topN);
 
         log.info("고객사별 패치 통계 조회 완료 - 결과 건수: {}", customers.size());
 
@@ -73,7 +73,7 @@ public class StatisticsService {
 
         // 원본 데이터 조회
         List<MonthlyCustomerPatchRaw> rawData =
-                patchStatisticsRepository.findMonthlyCustomerPatchCounts(projectId, startDate);
+                patchAnalyticsRepository.findMonthlyCustomerPatchCounts(projectId, startDate);
 
         // 데이터가 없으면 빈 응답 반환 (프론트엔드에서 nodata 처리 가능)
         if (rawData.isEmpty()) {

@@ -280,4 +280,159 @@ class AccountServiceTest {
         assertThat(result).hasSize(1);
         then(accountRepository).should(times(1)).findByAccountNameContaining("테스트");
     }
+
+    // ========================================
+    // adminUpdateAccount 테스트
+    // ========================================
+
+    @Test
+    @DisplayName("관리자 계정 수정 - 비밀번호만 수정")
+    void adminUpdateAccount_UpdatePasswordOnly_Success() {
+        // given
+        AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
+                .password("newPassword123")
+                .build();
+
+        AccountDto.DetailResponse expectedResponse = new AccountDto.DetailResponse(
+                1L, "test@example.com", "테스트계정", "USER", "ACTIVE",
+                LocalDateTime.now(), LocalDateTime.now()
+        );
+
+        given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
+        given(mapper.toDetailResponse(any(Account.class))).willReturn(expectedResponse);
+
+        // when
+        AccountDto.DetailResponse result = accountService.adminUpdateAccount(1L, request);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.accountId()).isEqualTo(1L);
+        then(accountRepository).should(times(1)).findByAccountId(1L);
+    }
+
+    @Test
+    @DisplayName("관리자 계정 수정 - role만 수정")
+    void adminUpdateAccount_UpdateRoleOnly_Success() {
+        // given
+        AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
+                .role("ADMIN")
+                .build();
+
+        AccountDto.DetailResponse expectedResponse = new AccountDto.DetailResponse(
+                1L, "test@example.com", "테스트계정", "ADMIN", "ACTIVE",
+                LocalDateTime.now(), LocalDateTime.now()
+        );
+
+        given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
+        given(mapper.toDetailResponse(any(Account.class))).willReturn(expectedResponse);
+
+        // when
+        AccountDto.DetailResponse result = accountService.adminUpdateAccount(1L, request);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.role()).isEqualTo("ADMIN");
+        then(accountRepository).should(times(1)).findByAccountId(1L);
+    }
+
+    @Test
+    @DisplayName("관리자 계정 수정 - status만 수정")
+    void adminUpdateAccount_UpdateStatusOnly_Success() {
+        // given
+        AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
+                .status("INACTIVE")
+                .build();
+
+        AccountDto.DetailResponse expectedResponse = new AccountDto.DetailResponse(
+                1L, "test@example.com", "테스트계정", "USER", "INACTIVE",
+                LocalDateTime.now(), LocalDateTime.now()
+        );
+
+        given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
+        given(mapper.toDetailResponse(any(Account.class))).willReturn(expectedResponse);
+
+        // when
+        AccountDto.DetailResponse result = accountService.adminUpdateAccount(1L, request);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo("INACTIVE");
+        then(accountRepository).should(times(1)).findByAccountId(1L);
+    }
+
+    @Test
+    @DisplayName("관리자 계정 수정 - 모든 필드 수정")
+    void adminUpdateAccount_UpdateAllFields_Success() {
+        // given
+        AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
+                .password("newPassword123")
+                .role("ADMIN")
+                .status("INACTIVE")
+                .build();
+
+        AccountDto.DetailResponse expectedResponse = new AccountDto.DetailResponse(
+                1L, "test@example.com", "테스트계정", "ADMIN", "INACTIVE",
+                LocalDateTime.now(), LocalDateTime.now()
+        );
+
+        given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
+        given(mapper.toDetailResponse(any(Account.class))).willReturn(expectedResponse);
+
+        // when
+        AccountDto.DetailResponse result = accountService.adminUpdateAccount(1L, request);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.role()).isEqualTo("ADMIN");
+        assertThat(result.status()).isEqualTo("INACTIVE");
+        then(accountRepository).should(times(1)).findByAccountId(1L);
+    }
+
+    @Test
+    @DisplayName("관리자 계정 수정 - 잘못된 role 값으로 실패")
+    void adminUpdateAccount_InvalidRole_Fail() {
+        // given
+        AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
+                .role("INVALID_ROLE")
+                .build();
+
+        given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
+
+        // when & then
+        assertThatThrownBy(() -> accountService.adminUpdateAccount(1L, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
+    }
+
+    @Test
+    @DisplayName("관리자 계정 수정 - 잘못된 status 값으로 실패")
+    void adminUpdateAccount_InvalidStatus_Fail() {
+        // given
+        AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
+                .status("INVALID_STATUS")
+                .build();
+
+        given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.of(testAccount));
+
+        // when & then
+        assertThatThrownBy(() -> accountService.adminUpdateAccount(1L, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
+    }
+
+    @Test
+    @DisplayName("관리자 계정 수정 - 존재하지 않는 계정 ID로 실패")
+    void adminUpdateAccount_AccountNotFound_Fail() {
+        // given
+        AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
+                .password("newPassword123")
+                .build();
+
+        given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> accountService.adminUpdateAccount(999L, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ACCOUNT_NOT_FOUND);
+    }
 }
