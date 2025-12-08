@@ -160,7 +160,7 @@ public class PatchGenerationService {
             String resolvedPatchName = resolvePatchName(patchName, fromVersion.getVersion(), toVersion.getVersion());
 
             // 5. 출력 디렉토리 생성 (패치 이름으로)
-            String outputPath = createOutputDirectory(resolvedPatchName);
+            String outputPath = createOutputDirectory(resolvedPatchName, projectId);
 
             // 6. SQL 파일 복사
             copySqlFiles(betweenVersions, outputPath);
@@ -259,12 +259,12 @@ public class PatchGenerationService {
      * 출력 디렉토리 생성
      *
      * @param patchName 패치 이름 (디렉토리명으로 사용)
-     * @return 상대 경로 (예: patches/20251127143025_1.0.0_1.1.1)
+     * @return 상대 경로 (예: patches/{projectId}/20251127143025_1.0.0_1.1.1)
      */
-    private String createOutputDirectory(String patchName) {
+    private String createOutputDirectory(String patchName, String projectId) {
         try {
-            // 출력 경로: patches/{patchName}
-            String relativePath = String.format("patches/%s", patchName);
+            // 출력 경로: patches/{projectId}/{patchName}
+            String relativePath = String.format("patches/%s/%s", projectId, patchName);
 
             Path outputDir = Paths.get(releaseBasePath, relativePath);
 
@@ -276,10 +276,10 @@ public class PatchGenerationService {
             return relativePath;
 
         } catch (IOException e) {
-            log.error("출력 디렉토리 생성 실패: releaseBasePath={}, patchName={}",
-                    releaseBasePath, patchName, e);
+            log.error("출력 디렉토리 생성 실패: releaseBasePath={}, projectId={}, patchName={}",
+                    releaseBasePath, projectId, patchName, e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "출력 디렉토리 생성 실패: " + releaseBasePath + "/patches/" + patchName);
+                    "출력 디렉토리 생성 실패: " + releaseBasePath + "/patches/" + projectId + "/" + patchName);
         }
     }
 

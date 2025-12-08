@@ -79,8 +79,10 @@ public class ReleaseFileUploadService {
                         ? request.subCategory()
                         : determineSubCategory(fileCategory, null);
 
+                String projectId = releaseVersion.getProject() != null ? releaseVersion.getProject().getProjectId() : "infraeye2";
                 String categoryPath = subCategory != null ? subCategory : fileCategory.getCode();
-                String relativePath = String.format("versions/%s/%s/%s/%s/%s",
+                String relativePath = String.format("versions/%s/%s/%s/%s/%s/%s",
+                        projectId,
                         releaseVersion.getReleaseType().toLowerCase(),
                         releaseVersion.getMajorMinor(),
                         releaseVersion.getVersion(),

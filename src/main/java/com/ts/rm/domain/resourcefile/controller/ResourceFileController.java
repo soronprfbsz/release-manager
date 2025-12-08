@@ -50,25 +50,27 @@ public class ResourceFileController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
             summary = "리소스 파일 업로드",
-            description = "스크립트 또는 문서 파일을 업로드합니다.\n\n"
+            description = "스크립트, Docker, 문서 등 리소스 파일을 업로드합니다.\n\n"
                     + "**파일 카테고리 (fileCategory)**:\n"
-                    + "- `SCRIPT`: 쉘 스크립트 파일\n"
+                    + "- `SCRIPT`: 스크립트 파일\n"
+                    + "- `DOCKER`: Docker 관련 파일\n"
                     + "- `DOCUMENT`: 문서 파일\n"
                     + "- `ETC`: 기타 파일\n\n"
-                    + "**서브 카테고리 (subCategory)**:\n"
-                    + "- SCRIPT: MARIADB_BACKUP, MARIADB_RESTORE, CRATEDB_BACKUP, CRATEDB_RESTORE, ETC\n"
-                    + "- DOCUMENT: PDF, TXT, MD, DOC, HWP, ETC\n"
-                    + "- ETC: 없음"
+                    + "**하위 카테고리 (subCategory)**:\n"
+                    + "- SCRIPT: MARIADB, CRATEDB, ETC\n"
+                    + "- DOCKER: SERVICE, DOCKERFILE, ETC\n"
+                    + "- DOCUMENT: INFRAEYE1, INFRAEYE2, ETC\n"
+                    + "- ETC: ETC"
     )
     public ApiResponse<ResourceFileDto.DetailResponse> uploadFile(
             @Parameter(hidden = true) @RequestHeader("Authorization") String authorizationHeader,
             @Parameter(description = "업로드할 파일", required = true)
             @RequestPart("file") MultipartFile file,
 
-            @Parameter(description = "파일 카테고리 (SCRIPT/DOCUMENT/ETC)", required = true, example = "SCRIPT")
+            @Parameter(description = "파일 카테고리 (SCRIPT/DOCKER/DOCUMENT/ETC)", required = true, example = "SCRIPT")
             @RequestParam String fileCategory,
 
-            @Parameter(description = "서브 카테고리 (예: MARIADB_BACKUP, PDF)", example = "MARIADB_BACKUP")
+            @Parameter(description = "하위 카테고리 (예: MARIADB, INFRAEYE2)", example = "MARIADB")
             @RequestParam(required = false) String subCategory,
 
             @Parameter(description = "파일 설명", example = "MariaDB 백업 스크립트")
@@ -114,11 +116,11 @@ public class ResourceFileController {
             summary = "리소스 파일 목록 조회",
             description = "리소스 파일 목록을 조회합니다.\n\n"
                     + "**필터링**:\n"
-                    + "- `fileCategory` 파라미터로 파일 카테고리별 필터링 가능 (SCRIPT/DOCUMENT/ETC)\n"
+                    + "- `fileCategory` 파라미터로 파일 카테고리별 필터링 가능 (SCRIPT/DOCKER/DOCUMENT/ETC)\n"
                     + "- 생략 시 전체 목록 반환"
     )
     public ApiResponse<List<ResourceFileDto.SimpleResponse>> listResourceFiles(
-            @Parameter(description = "파일 카테고리 필터 (SCRIPT/DOCUMENT/ETC)")
+            @Parameter(description = "파일 카테고리 필터 (SCRIPT/DOCKER/DOCUMENT/ETC)")
             @RequestParam(required = false) String fileCategory) {
 
         log.info("리소스 파일 목록 조회 요청 - 파일카테고리: {}", fileCategory);
@@ -133,6 +135,61 @@ public class ResourceFileController {
         List<ResourceFileDto.SimpleResponse> response = resourceFileDtoMapper.toSimpleResponseList(resourceFiles);
 
         return ApiResponse.success(response);
+    }
+
+    /**
+     * 리소스 파일 분류 가이드 조회
+     */
+    @GetMapping("/categories")
+    @Operation(
+            summary = "리소스 파일 분류 가이드 조회",
+            description = "리소스 파일 업로드 시 사용 가능한 카테고리 및 하위 카테고리 목록을 조회합니다."
+    )
+    public ApiResponse<java.util.List<ResourceFileDto.CategoryGuideResponse>> getCategoryGuide() {
+        log.info("리소스 파일 분류 가이드 조회 요청");
+
+        java.util.List<ResourceFileDto.CategoryGuideResponse> guides = java.util.List.of(
+                new ResourceFileDto.CategoryGuideResponse(
+                        "SCRIPT",
+                        "스크립트",
+                        "스크립트 파일 (백업, 복원 등)",
+                        java.util.List.of(
+                                new ResourceFileDto.SubCategoryInfo("MARIADB", "MariaDB", "MariaDB 관련 스크립트"),
+                                new ResourceFileDto.SubCategoryInfo("CRATEDB", "CrateDB", "CrateDB 관련 스크립트"),
+                                new ResourceFileDto.SubCategoryInfo("ETC", "기타", "기타 스크립트")
+                        )
+                ),
+                new ResourceFileDto.CategoryGuideResponse(
+                        "DOCKER",
+                        "Docker",
+                        "Docker 관련 파일 (컴포즈, Dockerfile 등)",
+                        java.util.List.of(
+                                new ResourceFileDto.SubCategoryInfo("SERVICE", "서비스 실행", "Docker 서비스 실행 관련 파일"),
+                                new ResourceFileDto.SubCategoryInfo("DOCKERFILE", "Dockerfile", "Dockerfile 및 빌드 관련 파일"),
+                                new ResourceFileDto.SubCategoryInfo("ETC", "기타", "기타 Docker 파일")
+                        )
+                ),
+                new ResourceFileDto.CategoryGuideResponse(
+                        "DOCUMENT",
+                        "문서",
+                        "설치 가이드 및 기타 문서",
+                        java.util.List.of(
+                                new ResourceFileDto.SubCategoryInfo("INFRAEYE1", "Infraeye 1", "Infraeye 1 관련 문서"),
+                                new ResourceFileDto.SubCategoryInfo("INFRAEYE2", "Infraeye 2", "Infraeye 2 관련 문서"),
+                                new ResourceFileDto.SubCategoryInfo("ETC", "기타", "기타 문서")
+                        )
+                ),
+                new ResourceFileDto.CategoryGuideResponse(
+                        "ETC",
+                        "기타",
+                        "기타 리소스 파일",
+                        java.util.List.of(
+                                new ResourceFileDto.SubCategoryInfo("ETC", "기타", "기타 분류되지 않은 파일")
+                        )
+                )
+        );
+
+        return ApiResponse.success(guides);
     }
 
     /**
