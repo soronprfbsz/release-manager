@@ -38,4 +38,12 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
      * 계정 이름으로 검색 (부분 일치, 페이징)
      */
     Page<Account> findByAccountNameContaining(String keyword, Pageable pageable);
+
+    /**
+     * 특정 권한을 가진 계정 개수 조회
+     *
+     * @param role 권한 (ADMIN, USER 등)
+     * @return 해당 권한을 가진 계정 개수
+     */
+    long countByRole(String role);
 }
