@@ -74,17 +74,32 @@ public class PatchService {
     /**
      * 패치 목록 페이징 조회
      *
+     * @param projectId   프로젝트 ID (null이면 전체)
      * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM, null이면 전체)
      * @param pageable    페이징 정보
      * @return 패치 목록 페이지 (rowNumber 포함)
      */
     @Transactional(readOnly = true)
-    public Page<PatchDto.ListResponse> listPatchesWithPaging(String releaseType, Pageable pageable) {
+    public Page<PatchDto.ListResponse> listPatchesWithPaging(String projectId, String releaseType, Pageable pageable) {
         Page<Patch> patches;
-        if (releaseType != null) {
+
+        // projectId와 releaseType 모두 있는 경우
+        if (projectId != null && releaseType != null) {
+            patches = patchRepository.findAllByProject_ProjectIdAndReleaseTypeOrderByCreatedAtDesc(
+                    projectId, releaseType.toUpperCase(), pageable);
+        }
+        // projectId만 있는 경우
+        else if (projectId != null) {
+            patches = patchRepository.findAllByProject_ProjectIdOrderByCreatedAtDesc(
+                    projectId, pageable);
+        }
+        // releaseType만 있는 경우
+        else if (releaseType != null) {
             patches = patchRepository.findAllByReleaseTypeOrderByCreatedAtDesc(
                     releaseType.toUpperCase(), pageable);
-        } else {
+        }
+        // 둘 다 없는 경우 (전체 조회)
+        else {
             patches = patchRepository.findAllByOrderByCreatedAtDesc(pageable);
         }
 

@@ -17,11 +17,18 @@ public final class ResourceFileDto {
      */
     @Schema(description = "리소스 파일 업로드 요청")
     public record UploadRequest(
-            @Schema(description = "파일 카테고리 (SCRIPT/DOCUMENT/ETC)", example = "SCRIPT")
+            @Schema(description = "파일 카테고리",
+                    example = "SCRIPT",
+                    allowableValues = {"SCRIPT", "DOCKER", "DOCUMENT", "ETC"})
             @NotBlank(message = "파일 카테고리는 필수입니다")
             String fileCategory,
 
-            @Schema(description = "서브 카테고리 (SCRIPT: MARIADB_BACKUP, MARIADB_RESTORE 등 / DOCUMENT: PDF, TXT 등)", example = "MARIADB_BACKUP")
+            @Schema(description = "하위 카테고리\n" +
+                    "- SCRIPT: MARIADB, CRATEDB, ETC\n" +
+                    "- DOCKER: SERVICE, DOCKERFILE, ETC\n" +
+                    "- DOCUMENT: INFRAEYE1, INFRAEYE2, ETC\n" +
+                    "- ETC: ETC",
+                    example = "MARIADB")
             String subCategory,
 
             @Schema(description = "파일 설명", example = "MariaDB 백업 스크립트")
@@ -104,6 +111,41 @@ public final class ResourceFileDto {
 
             @Schema(description = "생성일시", example = "2025-12-04T10:30:00")
             LocalDateTime createdAt
+    ) {
+    }
+
+    /**
+     * 분류 가이드 응답
+     */
+    @Schema(description = "리소스 파일 분류 가이드")
+    public record CategoryGuideResponse(
+            @Schema(description = "카테고리 코드", example = "SCRIPT")
+            String code,
+
+            @Schema(description = "카테고리 표시명", example = "스크립트")
+            String displayName,
+
+            @Schema(description = "카테고리 설명", example = "스크립트 파일 (백업, 복원 등)")
+            String description,
+
+            @Schema(description = "하위 카테고리 목록")
+            java.util.List<SubCategoryInfo> subCategories
+    ) {
+    }
+
+    /**
+     * 하위 카테고리 정보
+     */
+    @Schema(description = "하위 카테고리 정보")
+    public record SubCategoryInfo(
+            @Schema(description = "하위 카테고리 코드", example = "MARIADB")
+            String code,
+
+            @Schema(description = "하위 카테고리 표시명", example = "MariaDB")
+            String displayName,
+
+            @Schema(description = "하위 카테고리 설명", example = "MariaDB 관련 스크립트")
+            String description
     ) {
     }
 }

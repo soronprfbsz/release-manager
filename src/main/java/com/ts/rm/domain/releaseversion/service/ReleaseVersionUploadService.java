@@ -88,10 +88,11 @@ public class ReleaseVersionUploadService {
             Long versionId = savedVersion.getReleaseVersionId();
 
             // 버전 디렉토리 경로 저장 (롤백 시 사용)
+            String projectId = savedVersion.getProject() != null ? savedVersion.getProject().getProjectId() : "infraeye2";
             String[] parts = request.version().split("\\.");
             String majorMinor = parts[0] + "." + parts[1] + ".x";
-            versionDir = String.format("%s/version/standard/%s/%s",
-                    baseReleasePath, majorMinor, request.version());
+            versionDir = String.format("%s/versions/%s/standard/%s/%s",
+                    baseReleasePath, projectId, majorMinor, request.version());
 
             // 2. MariaDB 파일 업로드
             if (mariadbFiles != null && !mariadbFiles.isEmpty()) {
@@ -166,7 +167,7 @@ public class ReleaseVersionUploadService {
             validateZipStructure(tempDir);
 
             // 5. 버전 디렉토리 생성
-            versionPath = fileSystemService.createVersionDirectory(versionInfo);
+            versionPath = fileSystemService.createVersionDirectory(versionInfo, projectId);
 
             // 6. 파일 복사 및 DB 저장
             ReleaseVersion savedVersion = copyFilesAndSaveToDb(project, tempDir, versionPath, versionInfo, releaseCategory, createdBy, comment);
@@ -241,8 +242,10 @@ public class ReleaseVersionUploadService {
                 byte[] content = file.getBytes();
                 String checksum = calculateChecksum(content);
 
-                // 파일 경로 생성: versions/{type}/{majorMinor}/{version}/{subCategory}/{fileName}
-                String relativePath = String.format("versions/%s/%s/%s/%s/%s",
+                // 파일 경로 생성: versions/{projectId}/{type}/{majorMinor}/{version}/{subCategory}/{fileName}
+                String projectId = releaseVersion.getProject() != null ? releaseVersion.getProject().getProjectId() : "infraeye2";
+                String relativePath = String.format("versions/%s/%s/%s/%s/%s/%s",
+                        projectId,
                         releaseVersion.getReleaseType().toLowerCase(),
                         releaseVersion.getMajorMinor(),
                         releaseVersion.getVersion(),

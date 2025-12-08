@@ -37,22 +37,25 @@ public class ReleaseVersionFileSystemService {
      * 릴리즈 디렉토리 구조 생성
      *
      * <pre>
-     * versions/{type}/{majorMinor}.x/{version}/mariadb/
-     * versions/{type}/{majorMinor}.x/{version}/cratedb/
+     * versions/{projectId}/{type}/{majorMinor}.x/{version}/mariadb/
+     * versions/{projectId}/{type}/{majorMinor}.x/{version}/cratedb/
      * </pre>
      */
     public void createDirectoryStructure(ReleaseVersion version, Customer customer) {
         try {
+            String projectId = version.getProject() != null ? version.getProject().getProjectId() : "infraeye2";
             String basePath;
 
             if ("STANDARD".equals(version.getReleaseType())) {
-                basePath = String.format("versions/standard/%s/%s",
+                basePath = String.format("versions/%s/standard/%s/%s",
+                        projectId,
                         version.getMajorMinor(),
                         version.getVersion());
             } else {
                 // CUSTOM인 경우 고객사 코드 사용
                 String customerCode = customer != null ? customer.getCustomerCode() : "unknown";
-                basePath = String.format("versions/custom/%s/%s/%s",
+                basePath = String.format("versions/%s/custom/%s/%s/%s",
+                        projectId,
                         customerCode,
                         version.getMajorMinor(),
                         version.getVersion());
@@ -77,14 +80,16 @@ public class ReleaseVersionFileSystemService {
     /**
      * 버전 디렉토리 생성
      *
+     * @param versionInfo 버전 정보
+     * @param projectId   프로젝트 ID
      * @return 생성된 버전 경로
      */
-    public Path createVersionDirectory(VersionInfo versionInfo) throws IOException {
-        // 경로: resources/release/versions/standard/{major}.{minor}.x/{version}/
+    public Path createVersionDirectory(VersionInfo versionInfo, String projectId) throws IOException {
+        // 경로: resources/release/versions/{projectId}/standard/{major}.{minor}.x/{version}/
         String majorMinor = versionInfo.getMajorMinor();
         String version = versionInfo.getMajorVersion() + "." + versionInfo.getMinorVersion() + "." + versionInfo.getPatchVersion();
 
-        Path versionPath = Paths.get(baseReleasePath, "versions", "standard",
+        Path versionPath = Paths.get(baseReleasePath, "versions", projectId, "standard",
                 majorMinor, version);
 
         Files.createDirectories(versionPath);
@@ -99,16 +104,17 @@ public class ReleaseVersionFileSystemService {
      * @param version 릴리즈 버전 엔티티
      */
     public void deleteVersionDirectory(ReleaseVersion version) {
+        String projectId = version.getProject() != null ? version.getProject().getProjectId() : "infraeye2";
         Path versionPath;
 
         if ("STANDARD".equals(version.getReleaseType())) {
-            versionPath = Paths.get(baseReleasePath, "versions", "standard",
+            versionPath = Paths.get(baseReleasePath, "versions", projectId, "standard",
                     version.getMajorMinor(), version.getVersion());
         } else {
             String customerCode = version.getCustomer() != null
                     ? version.getCustomer().getCustomerCode()
                     : "unknown";
-            versionPath = Paths.get(baseReleasePath, "versions", "custom",
+            versionPath = Paths.get(baseReleasePath, "versions", projectId, "custom",
                     customerCode, version.getMajorMinor(), version.getVersion());
         }
 

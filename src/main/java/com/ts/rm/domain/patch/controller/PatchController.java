@@ -91,16 +91,19 @@ public class PatchController {
      * 패치 목록 조회 (페이징)
      */
     @GetMapping
-    @Operation(summary = "패치 목록 조회", description = "패치 목록을 페이징하여 조회합니다. page, size, sort 파라미터 사용 가능")
+    @Operation(summary = "패치 목록 조회",
+               description = "패치 목록을 페이징하여 조회합니다. projectId와 releaseType으로 필터링 가능. page, size, sort 파라미터 사용 가능")
     public ApiResponse<Page<PatchDto.ListResponse>> listPatches(
+            @Parameter(description = "프로젝트 ID (예: infraeye2)")
+            @RequestParam(required = false) String projectId,
             @Parameter(description = "릴리즈 타입 (STANDARD/CUSTOM)")
             @RequestParam(required = false) String releaseType,
             @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
 
-        log.info("패치 목록 조회 요청 - releaseType: {}, page: {}, size: {}",
-                releaseType, pageable.getPageNumber(), pageable.getPageSize());
+        log.info("패치 목록 조회 요청 - projectId: {}, releaseType: {}, page: {}, size: {}",
+                projectId, releaseType, pageable.getPageNumber(), pageable.getPageSize());
 
-        Page<PatchDto.ListResponse> response = patchService.listPatchesWithPaging(releaseType, pageable);
+        Page<PatchDto.ListResponse> response = patchService.listPatchesWithPaging(projectId, releaseType, pageable);
 
         return ApiResponse.success(response);
     }

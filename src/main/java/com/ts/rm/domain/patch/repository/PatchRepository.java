@@ -34,6 +34,26 @@ public interface PatchRepository extends JpaRepository<Patch, Long>, PatchReposi
     Page<Patch> findAllByReleaseTypeOrderByCreatedAtDesc(String releaseType, Pageable pageable);
 
     /**
+     * 프로젝트별 패치 페이징 조회 (최신순)
+     *
+     * @param projectId 프로젝트 ID
+     * @param pageable  페이징 정보
+     * @return 패치 페이지
+     */
+    Page<Patch> findAllByProject_ProjectIdOrderByCreatedAtDesc(String projectId, Pageable pageable);
+
+    /**
+     * 프로젝트 및 릴리즈 타입별 패치 페이징 조회 (최신순)
+     *
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @param pageable    페이징 정보
+     * @return 패치 페이지
+     */
+    Page<Patch> findAllByProject_ProjectIdAndReleaseTypeOrderByCreatedAtDesc(
+            String projectId, String releaseType, Pageable pageable);
+
+    /**
      * 릴리즈 타입별 패치 조회 (최신순) - 비페이징
      *
      * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
