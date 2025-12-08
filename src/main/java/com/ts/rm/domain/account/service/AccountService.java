@@ -8,6 +8,7 @@ import com.ts.rm.domain.account.mapper.AccountDtoMapper;
 import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.pagination.PageRowNumberUtil;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +58,7 @@ public class AccountService {
      * @param pageable 페이징 정보
      * @return 계정 페이지
      */
-    public org.springframework.data.domain.Page<AccountDto.SimpleResponse> getAccounts(
+    public org.springframework.data.domain.Page<AccountDto.ListResponse> getAccounts(
             AccountStatus status, String keyword, org.springframework.data.domain.Pageable pageable) {
         org.springframework.data.domain.Page<Account> accountPage;
 
@@ -74,7 +75,19 @@ public class AccountService {
             accountPage = accountRepository.findAll(pageable);
         }
 
-        return accountPage.map(mapper::toSimpleResponse);
+        // rowNumber 계산 (공통 유틸리티 사용)
+        return PageRowNumberUtil.mapWithRowNumber(accountPage, (account, rowNumber) ->
+                new AccountDto.ListResponse(
+                        rowNumber,
+                        account.getAccountId(),
+                        account.getEmail(),
+                        account.getAccountName(),
+                        account.getRole(),
+                        account.getStatus(),
+                        account.getLastLoginAt(),
+                        account.getCreatedAt()
+                )
+        );
     }
 
     @Transactional
