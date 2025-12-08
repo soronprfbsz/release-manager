@@ -50,29 +50,31 @@ public class AccountService {
     }
 
     /**
-     * 계정 목록 조회 (필터링 및 검색)
+     * 계정 목록 조회 (필터링 및 검색, 페이징)
      *
-     * @param status  계정 상태 필터 (ACTIVE, INACTIVE 등, null이면 전체)
-     * @param keyword 계정명 검색 키워드
-     * @return 계정 목록
+     * @param status   계정 상태 필터 (ACTIVE, INACTIVE 등, null이면 전체)
+     * @param keyword  계정명 검색 키워드
+     * @param pageable 페이징 정보
+     * @return 계정 페이지
      */
-    public List<AccountDto.SimpleResponse> getAccounts(AccountStatus status, String keyword) {
-        List<Account> accounts;
+    public org.springframework.data.domain.Page<AccountDto.SimpleResponse> getAccounts(
+            AccountStatus status, String keyword, org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<Account> accountPage;
 
         // 키워드 검색이 있는 경우
         if (keyword != null && !keyword.trim().isEmpty()) {
-            accounts = accountRepository.findByAccountNameContaining(keyword.trim());
+            accountPage = accountRepository.findByAccountNameContaining(keyword.trim(), pageable);
         }
         // 상태 필터링
         else if (status != null) {
-            accounts = accountRepository.findAllByStatus(status.name());
+            accountPage = accountRepository.findAllByStatus(status.name(), pageable);
         }
         // 전체 조회
         else {
-            accounts = accountRepository.findAll();
+            accountPage = accountRepository.findAll(pageable);
         }
 
-        return mapper.toSimpleResponseList(accounts);
+        return accountPage.map(mapper::toSimpleResponse);
     }
 
     @Transactional

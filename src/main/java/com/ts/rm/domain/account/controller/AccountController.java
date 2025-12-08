@@ -9,9 +9,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,25 +41,39 @@ public class AccountController {
     private final AccountService accountService;
 
     /**
-     * 계정 목록 조회
+     * 계정 목록 조회 (페이징)
      *
-     * @param status  계정 상태 필터 (선택사항: ACTIVE, INACTIVE)
-     * @param keyword 계정명 검색 키워드 (선택사항)
-     * @return 계정 목록
+     * @param status   계정 상태 필터 (선택사항: ACTIVE, INACTIVE)
+     * @param keyword  계정명 검색 키워드 (선택사항)
+     * @param pageable 페이징 정보 (page, size, sort)
+     * @return 계정 페이지
      */
     @GetMapping
-    @Operation(summary = "계정 목록 조회", description = "등록된 모든 계정 목록을 조회합니다. 상태 필터 및 계정명 검색을 지원합니다.")
-    public ResponseEntity<ApiResponse<List<AccountDto.SimpleResponse>>> getAccounts(
+    @Operation(
+            summary = "계정 목록 조회 (페이징)",
+            description = "등록된 계정 목록을 페이징으로 조회합니다. 상태 필터 및 계정명 검색을 지원합니다.\n\n"
+                    + "**페이징 파라미터**:\n"
+                    + "- `page`: 페이지 번호 (0부터 시작, 기본값: 0)\n"
+                    + "- `size`: 페이지 크기 (기본값: 20)\n"
+                    + "- `sort`: 정렬 기준 (기본값: accountId,desc)\n\n"
+                    + "**예시**:\n"
+                    + "- `/api/accounts?page=0&size=10`\n"
+                    + "- `/api/accounts?page=1&size=20&sort=accountName,asc`\n"
+                    + "- `/api/accounts?status=ACTIVE&keyword=홍길동&page=0&size=10`"
+    )
+    public ResponseEntity<ApiResponse<Page<AccountDto.SimpleResponse>>> getAccounts(
             @Parameter(description = "계정 상태 (ACTIVE, INACTIVE)", example = "ACTIVE")
             @RequestParam(required = false) AccountStatus status,
             @Parameter(description = "계정명 검색 키워드", example = "홍길동")
-            @RequestParam(required = false) String keyword) {
-        log.info("GET /api/accounts - status: {}, keyword: {}", status, keyword);
+            @RequestParam(required = false) String keyword,
+            @PageableDefault(size = 20, sort = "accountId", direction = Sort.Direction.DESC) Pageable pageable) {
+        log.info("GET /api/accounts - status: {}, keyword: {}, pageable: {}", status, keyword, pageable);
 
-        List<AccountDto.SimpleResponse> accounts = accountService.getAccounts(status, keyword);
+        Page<AccountDto.SimpleResponse> accountPage = accountService.getAccounts(status, keyword, pageable);
 
-        log.info("Found {} accounts", accounts.size());
-        return ResponseEntity.ok(ApiResponse.success(accounts));
+        log.info("Found {} accounts (page {}/{})", accountPage.getNumberOfElements(),
+                accountPage.getNumber() + 1, accountPage.getTotalPages());
+        return ResponseEntity.ok(ApiResponse.success(accountPage));
     }
 
     /**

@@ -1,8 +1,9 @@
 package com.ts.rm.domain.account.repository;
 
 import com.ts.rm.domain.account.entity.Account;
-import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -24,9 +25,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByAccountId(Long accountId);
 
     /**
-     * 상태별 계정 조회
+     * 상태별 계정 조회 (페이징)
      */
-    List<Account> findAllByStatus(String status);
+    Page<Account> findAllByStatus(String status, Pageable pageable);
 
     /**
      * 이메일 존재 여부 확인
@@ -34,7 +35,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     boolean existsByEmail(String email);
 
     /**
-     * 계정 이름으로 검색 (부분 일치)
+     * 계정 이름으로 검색 (부분 일치, 페이징)
      */
-    List<Account> findByAccountNameContaining(String keyword);
+    Page<Account> findByAccountNameContaining(String keyword, Pageable pageable);
 }
