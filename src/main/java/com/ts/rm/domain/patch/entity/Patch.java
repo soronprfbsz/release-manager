@@ -2,6 +2,7 @@ package com.ts.rm.domain.patch.entity;
 
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.engineer.entity.Engineer;
+import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,6 +38,10 @@ public class Patch extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "patch_id")
     private Long patchId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
     @Column(name = "release_type", nullable = false, length = 20)
     private String releaseType;

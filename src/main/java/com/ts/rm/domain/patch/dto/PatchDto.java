@@ -25,6 +25,11 @@ public final class PatchDto {
     @Builder
     @Schema(description = "패치 생성 요청")
     public record GenerateRequest(
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            @NotBlank(message = "프로젝트 ID는 필수입니다")
+            @Size(max = 50, message = "프로젝트 ID는 50자 이하여야 합니다")
+            String projectId,
+
             @Schema(description = "릴리즈 타입", example = "standard")
             @NotBlank(message = "릴리즈 타입은 필수입니다")
             String type,
@@ -71,6 +76,12 @@ public final class PatchDto {
     public record DetailResponse(
             @Schema(description = "패치 ID", example = "1")
             Long patchId,
+
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
+
+            @Schema(description = "프로젝트명", example = "Infraeye 2")
+            String projectName,
 
             @Schema(description = "릴리즈 타입", example = "standard")
             String releaseType,
@@ -122,6 +133,9 @@ public final class PatchDto {
             @Schema(description = "패치 ID", example = "1")
             Long patchId,
 
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
+
             @Schema(description = "릴리즈 타입", example = "standard")
             String releaseType,
 
@@ -168,6 +182,9 @@ public final class PatchDto {
 
             @Schema(description = "패치 ID", example = "1")
             Long patchId,
+
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
 
             @Schema(description = "릴리즈 타입", example = "standard")
             String releaseType,

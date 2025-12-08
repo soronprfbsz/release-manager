@@ -1,6 +1,8 @@
 package com.ts.rm.domain.releaseversion.service;
 
 import com.ts.rm.domain.common.service.FileStorageService;
+import com.ts.rm.domain.project.entity.Project;
+import com.ts.rm.domain.project.repository.ProjectRepository;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
@@ -41,6 +43,7 @@ public class ReleaseVersionUploadService {
 
     private final ReleaseVersionRepository releaseVersionRepository;
     private final ReleaseFileRepository releaseFileRepository;
+    private final ProjectRepository projectRepository;
     private final ReleaseMetadataManager metadataManager;
     private final FileStorageService fileStorageService;
     private final ReleaseVersionFileSystemService fileSystemService;
@@ -125,23 +128,29 @@ public class ReleaseVersionUploadService {
     /**
      * ZIP 파일로 표준 릴리즈 버전 생성
      *
-     * @param version        버전 (예: 1.1.3)
+     * @param projectId       프로젝트 ID
+     * @param version         버전 (예: 1.1.3)
      * @param releaseCategory 릴리즈 카테고리
-     * @param comment        패치 노트 내용
-     * @param zipFile        패치 파일이 포함된 ZIP 파일
-     * @param createdBy      생성자 이메일 (JWT에서 추출)
+     * @param comment         패치 노트 내용
+     * @param zipFile         패치 파일이 포함된 ZIP 파일
+     * @param createdBy       생성자 이메일 (JWT에서 추출)
      * @return 생성된 버전 응답
      */
     @Transactional
     public ReleaseVersionDto.CreateVersionResponse createStandardVersionWithZip(
-            String version, ReleaseCategory releaseCategory, String comment, MultipartFile zipFile, String createdBy) {
+            String projectId, String version, ReleaseCategory releaseCategory, String comment, MultipartFile zipFile, String createdBy) {
 
-        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - version: {}, releaseCategory: {}, createdBy: {}",
-                version, releaseCategory, createdBy);
+        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - projectId: {}, version: {}, releaseCategory: {}, createdBy: {}",
+                projectId, version, releaseCategory, createdBy);
+
+        // 0. 프로젝트 조회
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND,
+                        "프로젝트를 찾을 수 없습니다: " + projectId));
 
         // 1. 버전 파싱 및 검증
         VersionInfo versionInfo = VersionParser.parse(version);
-        validateNewVersion("STANDARD", null, versionInfo);
+        validateNewVersion(projectId, "STANDARD", versionInfo);
 
         // 2. ZIP 파일 검증
         validateZipFile(zipFile);
@@ -160,16 +169,17 @@ public class ReleaseVersionUploadService {
             versionPath = fileSystemService.createVersionDirectory(versionInfo);
 
             // 6. 파일 복사 및 DB 저장
-            ReleaseVersion savedVersion = copyFilesAndSaveToDb(tempDir, versionPath, versionInfo, releaseCategory, createdBy, comment);
+            ReleaseVersion savedVersion = copyFilesAndSaveToDb(project, tempDir, versionPath, versionInfo, releaseCategory, createdBy, comment);
 
             // 7. release_metadata.json 업데이트
             metadataManager.addVersionEntry(savedVersion);
 
-            log.info("ZIP 파일로 표준 릴리즈 버전 생성 완료 - version: {}, ID: {}", version, savedVersion.getReleaseVersionId());
+            log.info("ZIP 파일로 표준 릴리즈 버전 생성 완료 - projectId: {}, version: {}, ID: {}", projectId, version, savedVersion.getReleaseVersionId());
 
             // 8. 응답 생성
             return new ReleaseVersionDto.CreateVersionResponse(
                     savedVersion.getReleaseVersionId(),
+                    projectId,
                     version,
                     versionInfo.getMajorVersion(),
                     versionInfo.getMinorVersion(),
@@ -215,7 +225,7 @@ public class ReleaseVersionUploadService {
 
         // 기존 파일 중 최대 실행 순서 조회 (전체 기준)
         int maxOrder = releaseFileRepository
-                .findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId)
+                .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(versionId)
                 .stream()
                 .mapToInt(ReleaseFile::getExecutionOrder)
                 .max()
@@ -388,13 +398,14 @@ public class ReleaseVersionUploadService {
      *
      * @return 저장된 ReleaseVersion 엔티티
      */
-    public ReleaseVersion copyFilesAndSaveToDb(Path tempDir, Path versionPath,
+    public ReleaseVersion copyFilesAndSaveToDb(Project project, Path tempDir, Path versionPath,
                                                 VersionInfo versionInfo, ReleaseCategory releaseCategory, String createdBy, String comment) throws IOException {
         String version = versionInfo.getMajorVersion() + "." + versionInfo.getMinorVersion() + "." + versionInfo.getPatchVersion();
 
         // ReleaseVersion 생성 및 저장
         final ReleaseVersion savedVersion = releaseVersionRepository.save(
                 ReleaseVersion.builder()
+                        .project(project)
                         .releaseType("STANDARD")
                         .releaseCategory(releaseCategory)
                         .version(version)
@@ -660,11 +671,11 @@ public class ReleaseVersionUploadService {
     /**
      * 새 버전 검증 (중복 확인)
      */
-    public void validateNewVersion(String releaseType, Long customerId, VersionInfo versionInfo) {
+    public void validateNewVersion(String projectId, String releaseType, VersionInfo versionInfo) {
         String version = versionInfo.getMajorVersion() + "." + versionInfo.getMinorVersion() + "." + versionInfo.getPatchVersion();
 
-        // 중복 버전 확인
-        boolean exists = releaseVersionRepository.findByReleaseTypeAndVersion(releaseType, version).isPresent();
+        // 중복 버전 확인 (프로젝트 내에서)
+        boolean exists = releaseVersionRepository.existsByProject_ProjectIdAndVersion(projectId, version);
         if (exists) {
             throw new BusinessException(ErrorCode.RELEASE_VERSION_CONFLICT,
                     "이미 존재하는 버전입니다: " + version);
@@ -678,7 +689,7 @@ public class ReleaseVersionUploadService {
      * @return 파일 목록 (상대 경로)
      */
     public List<String> getCreatedFilesList(ReleaseVersion releaseVersion) {
-        return releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(
+        return releaseFileRepository.findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(
                         releaseVersion.getReleaseVersionId())
                 .stream()
                 .map(file -> {

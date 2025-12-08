@@ -96,8 +96,8 @@ public class ReleaseVersionController {
             @Parameter(description = "JWT 토큰 (Bearer {token})", required = true)
             @RequestHeader("Authorization") String authorization) {
 
-        log.info("표준 릴리즈 버전 생성 요청 - version: {}, releaseCategory: {}, comment: {}, fileSize: {}",
-                request.version(), request.releaseCategory(), request.comment(), patchFiles.getSize());
+        log.info("표준 릴리즈 버전 생성 요청 - projectId: {}, version: {}, releaseCategory: {}, comment: {}, fileSize: {}",
+                request.projectId(), request.version(), request.releaseCategory(), request.comment(), patchFiles.getSize());
 
         // JWT 토큰에서 이메일 추출
         String token = extractToken(authorization);
@@ -107,6 +107,7 @@ public class ReleaseVersionController {
 
         // 버전 생성
         ReleaseVersionDto.CreateVersionResponse response = uploadService.createStandardVersionWithZip(
+                request.projectId(),
                 request.version(),
                 request.releaseCategory(),
                 request.comment(),
@@ -147,31 +148,37 @@ public class ReleaseVersionController {
     }
 
     /**
-     * 표준 릴리즈 버전 트리 조회
+     * 표준 릴리즈 버전 트리 조회 (프로젝트별)
      *
+     * @param projectId 프로젝트 ID
      * @return 릴리즈 버전 트리 (계층 구조)
      */
     @Operation(summary = "표준 릴리즈 버전 트리 조회",
-               description = "표준 릴리즈 버전들을 계층 구조로 조회합니다 (프론트엔드 트리 렌더링용)")
-    @GetMapping("/standard/tree")
-    public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getStandardReleaseTree() {
-        ReleaseVersionDto.TreeResponse response = treeService.getStandardReleaseTree();
+               description = "프로젝트별 표준 릴리즈 버전들을 계층 구조로 조회합니다 (프론트엔드 트리 렌더링용)")
+    @GetMapping("/projects/{projectId}/standard/tree")
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getStandardReleaseTree(
+            @Parameter(description = "프로젝트 ID", required = true, example = "infraeye2")
+            @PathVariable String projectId) {
+        ReleaseVersionDto.TreeResponse response = treeService.getStandardReleaseTree(projectId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
-     * 커스텀 릴리즈 버전 트리 조회
+     * 커스텀 릴리즈 버전 트리 조회 (프로젝트별)
      *
+     * @param projectId    프로젝트 ID
      * @param customerCode 고객사 코드
      * @return 릴리즈 버전 트리 (계층 구조)
      */
     @Operation(summary = "커스텀 릴리즈 버전 트리 조회",
-               description = "특정 고객사의 커스텀 릴리즈 버전들을 계층 구조로 조회합니다 (프론트엔드 트리 렌더링용)")
-    @GetMapping("/custom/{customer-code}/tree")
+               description = "프로젝트별 특정 고객사의 커스텀 릴리즈 버전들을 계층 구조로 조회합니다 (프론트엔드 트리 렌더링용)")
+    @GetMapping("/projects/{projectId}/custom/{customer-code}/tree")
     public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getCustomReleaseTree(
+            @Parameter(description = "프로젝트 ID", required = true, example = "infraeye2")
+            @PathVariable String projectId,
             @Parameter(description = "고객사 코드", required = true, example = "company_a")
             @PathVariable("customer-code") String customerCode) {
-        ReleaseVersionDto.TreeResponse response = treeService.getCustomReleaseTree(customerCode);
+        ReleaseVersionDto.TreeResponse response = treeService.getCustomReleaseTree(projectId, customerCode);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

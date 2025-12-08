@@ -12,6 +12,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface PatchDtoMapper {
 
+    @Mapping(target = "projectId", source = "project.projectId")
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "customerName", source = "customer.customerName")
@@ -21,6 +22,8 @@ public interface PatchDtoMapper {
 
     List<PatchDto.SimpleResponse> toSimpleResponseList(List<Patch> patches);
 
+    @Mapping(target = "projectId", source = "project.projectId")
+    @Mapping(target = "projectName", source = "project.projectName")
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "customerName", source = "customer.customerName")
@@ -31,6 +34,7 @@ public interface PatchDtoMapper {
     List<PatchDto.DetailResponse> toDetailResponseList(List<Patch> patches);
 
     @Mapping(target = "rowNumber", ignore = true)
+    @Mapping(target = "projectId", source = "project.projectId")
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "customerName", source = "customer.customerName")

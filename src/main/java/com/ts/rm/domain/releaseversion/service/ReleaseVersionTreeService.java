@@ -35,47 +35,52 @@ public class ReleaseVersionTreeService {
     private final ReleaseFileRepository releaseFileRepository;
 
     /**
-     * 표준 릴리즈 버전 트리 조회
+     * 표준 릴리즈 버전 트리 조회 (프로젝트별)
      *
+     * @param projectId 프로젝트 ID
      * @return 릴리즈 버전 트리
      */
-    public ReleaseVersionDto.TreeResponse getStandardReleaseTree() {
-        log.info("Getting standard release tree");
-        return buildReleaseTree("STANDARD", null);
+    public ReleaseVersionDto.TreeResponse getStandardReleaseTree(String projectId) {
+        log.info("Getting standard release tree for project: {}", projectId);
+        return buildReleaseTree(projectId, "STANDARD", null);
     }
 
     /**
-     * 커스텀 릴리즈 버전 트리 조회
+     * 커스텀 릴리즈 버전 트리 조회 (프로젝트별)
      *
+     * @param projectId    프로젝트 ID
      * @param customerCode 고객사 코드
      * @return 릴리즈 버전 트리
      */
-    public ReleaseVersionDto.TreeResponse getCustomReleaseTree(String customerCode) {
-        log.info("Getting custom release tree for customer: {}", customerCode);
-        return buildReleaseTree("CUSTOM", customerCode);
+    public ReleaseVersionDto.TreeResponse getCustomReleaseTree(String projectId, String customerCode) {
+        log.info("Getting custom release tree for project: {}, customer: {}", projectId, customerCode);
+        return buildReleaseTree(projectId, "CUSTOM", customerCode);
     }
 
     /**
      * 릴리즈 버전 트리 빌드 (DB 기반)
      *
+     * @param projectId    프로젝트 ID
      * @param releaseType  릴리즈 타입 (STANDARD, CUSTOM)
      * @param customerCode 고객사 코드 (CUSTOM인 경우 필수)
      * @return 릴리즈 버전 트리
      */
-    private ReleaseVersionDto.TreeResponse buildReleaseTree(String releaseType, String customerCode) {
+    private ReleaseVersionDto.TreeResponse buildReleaseTree(String projectId, String releaseType,
+            String customerCode) {
         try {
             // 클로저 테이블을 통한 버전 조회
             List<ReleaseVersion> versions;
             if ("CUSTOM".equals(releaseType) && customerCode != null) {
-                versions = hierarchyRepository.findAllByReleaseTypeAndCustomerWithHierarchy(
-                        releaseType, customerCode);
+                versions = hierarchyRepository.findAllByProjectIdAndReleaseTypeAndCustomerWithHierarchy(
+                        projectId, releaseType, customerCode);
             } else {
-                versions = hierarchyRepository.findAllByReleaseTypeWithHierarchy(releaseType);
+                versions = hierarchyRepository.findAllByProjectIdAndReleaseTypeWithHierarchy(
+                        projectId, releaseType);
             }
 
             if (versions.isEmpty()) {
-                log.warn("No versions found for releaseType: {}, customerCode: {}", releaseType,
-                        customerCode);
+                log.warn("No versions found for projectId: {}, releaseType: {}, customerCode: {}",
+                        projectId, releaseType, customerCode);
                 return new ReleaseVersionDto.TreeResponse(releaseType, customerCode, List.of());
             }
 
@@ -207,7 +212,7 @@ public class ReleaseVersionTreeService {
      */
     public ReleaseVersionDto.FileTreeResponse getVersionFileTree(Long versionId, ReleaseVersion version) {
         // 모든 파일 조회 (relativePath 순으로 정렬)
-        List<ReleaseFile> files = releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(versionId);
+        List<ReleaseFile> files = releaseFileRepository.findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(versionId);
 
         // 파일 트리 생성
         ReleaseVersionDto.FileTreeNode rootNode = buildFileTree(files);

@@ -5,16 +5,16 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 /**
  * Patch Repository
  *
  * <p>누적 패치 조회 및 관리를 위한 Repository
+ * <p>Spring Data JPA 메서드 네이밍으로 CRUD 처리
+ * <p>복잡한 쿼리(LIMIT 포함 등)는 PatchRepositoryCustom에서 QueryDSL로 처리
  * <p>업데이트는 JPA Dirty Checking 사용 (Service에서 엔티티 조회 후 setter 호출)
  */
-public interface PatchRepository extends JpaRepository<Patch, Long> {
+public interface PatchRepository extends JpaRepository<Patch, Long>, PatchRepositoryCustom {
 
     /**
      * 패치 페이징 조회 (최신순)
@@ -39,9 +39,7 @@ public interface PatchRepository extends JpaRepository<Patch, Long> {
      * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
      * @return 패치 목록
      */
-    @Query("SELECT p FROM Patch p WHERE p.releaseType = :releaseType ORDER BY p.createdAt DESC")
-    List<Patch> findAllByReleaseTypeOrderByCreatedAtDesc(
-            @Param("releaseType") String releaseType);
+    List<Patch> findAllByReleaseTypeOrderByCreatedAtDesc(String releaseType);
 
     /**
      * 고객사별 패치 조회 (최신순)
@@ -49,8 +47,7 @@ public interface PatchRepository extends JpaRepository<Patch, Long> {
      * @param customerId 고객사 ID
      * @return 패치 목록
      */
-    @Query("SELECT p FROM Patch p WHERE p.customer.customerId = :customerId ORDER BY p.createdAt DESC")
-    List<Patch> findAllByCustomerIdOrderByCreatedAtDesc(@Param("customerId") Long customerId);
+    List<Patch> findAllByCustomer_CustomerIdOrderByCreatedAtDesc(Long customerId);
 
     /**
      * 버전 범위로 패치 조회
@@ -60,18 +57,6 @@ public interface PatchRepository extends JpaRepository<Patch, Long> {
      * @param toVersion   종료 버전
      * @return 패치 목록
      */
-    @Query("SELECT p FROM Patch p WHERE p.releaseType = :releaseType AND p.fromVersion = :fromVersion AND p.toVersion = :toVersion")
-    List<Patch> findByVersionRange(@Param("releaseType") String releaseType,
-            @Param("fromVersion") String fromVersion, @Param("toVersion") String toVersion);
-
-    /**
-     * 릴리즈 타입별 최근 N개 패치 조회
-     *
-     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
-     * @param limit       조회 개수
-     * @return 최근 패치 목록
-     */
-    @Query(value = "SELECT p FROM Patch p WHERE p.releaseType = :releaseType ORDER BY p.createdAt DESC LIMIT :limit")
-    List<Patch> findRecentByReleaseType(@Param("releaseType") String releaseType,
-            @Param("limit") int limit);
+    List<Patch> findByReleaseTypeAndFromVersionAndToVersion(String releaseType,
+            String fromVersion, String toVersion);
 }

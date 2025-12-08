@@ -13,6 +13,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = {ReleaseFileDtoMapper.class})
 public interface ReleaseVersionDtoMapper {
 
+    @Mapping(target = "projectId", source = "project.projectId")
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "patchFileCount", expression = "java(releaseVersion.getReleaseFiles() != null ? releaseVersion.getReleaseFiles().size() : 0)")
@@ -22,6 +23,8 @@ public interface ReleaseVersionDtoMapper {
     List<ReleaseVersionDto.SimpleResponse> toSimpleResponseList(
             List<ReleaseVersion> releaseVersions);
 
+    @Mapping(target = "projectId", source = "project.projectId")
+    @Mapping(target = "projectName", source = "project.projectName")
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "releaseFiles", source = "releaseFiles")

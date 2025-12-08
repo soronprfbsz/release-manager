@@ -25,16 +25,18 @@ public class PatchStatisticsRepositoryImpl implements PatchStatisticsRepository 
     private final JPAQueryFactory queryFactory;
 
     /**
-     * 기간 내 고객사별 패치 건수 Top-N 조회
+     * 프로젝트별 기간 내 고객사별 패치 건수 Top-N 조회
      *
      * <p>CUSTOM 타입 패치만 집계 (STANDARD는 고객사가 없음)
      *
+     * @param projectId 프로젝트 ID
      * @param startDate 시작일시
      * @param topN      상위 N개
      * @return 고객사별 패치 건수 목록 (내림차순)
      */
     @Override
-    public List<CustomerPatchCount> findTopCustomersByPatchCount(LocalDateTime startDate, int topN) {
+    public List<CustomerPatchCount> findTopCustomersByPatchCount(String projectId,
+            LocalDateTime startDate, int topN) {
         QPatch patch = QPatch.patch;
         QCustomer customer = QCustomer.customer;
 
@@ -47,6 +49,7 @@ public class PatchStatisticsRepositoryImpl implements PatchStatisticsRepository 
                 .from(patch)
                 .join(patch.customer, customer)
                 .where(
+                        patch.project.projectId.eq(projectId),
                         patch.createdAt.goe(startDate),
                         patch.customer.isNotNull()
                 )
@@ -61,15 +64,17 @@ public class PatchStatisticsRepositoryImpl implements PatchStatisticsRepository 
     }
 
     /**
-     * 기간 내 월별+고객별 패치 건수 조회
+     * 프로젝트별 기간 내 월별+고객별 패치 건수 조회
      *
      * <p>CUSTOM 타입 패치만 집계 (고객사별 통계이므로)
      *
+     * @param projectId 프로젝트 ID
      * @param startDate 시작일시
      * @return 월별+고객별 패치 건수 목록 (연월 오름차순, 고객명 오름차순)
      */
     @Override
-    public List<MonthlyCustomerPatchRaw> findMonthlyCustomerPatchCounts(LocalDateTime startDate) {
+    public List<MonthlyCustomerPatchRaw> findMonthlyCustomerPatchCounts(String projectId,
+            LocalDateTime startDate) {
         QPatch patch = QPatch.patch;
         QCustomer customer = QCustomer.customer;
 
@@ -87,6 +92,7 @@ public class PatchStatisticsRepositoryImpl implements PatchStatisticsRepository 
                 .from(patch)
                 .join(patch.customer, customer)
                 .where(
+                        patch.project.projectId.eq(projectId),
                         patch.createdAt.goe(startDate),
                         patch.customer.isNotNull()
                 )

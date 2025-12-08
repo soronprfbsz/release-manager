@@ -48,6 +48,11 @@ public enum ErrorCode {
   // Department - 부서
   DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "error.department.not_found"),
 
+  // Project - 프로젝트
+  PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "error.project.not_found"),
+  PROJECT_ID_CONFLICT(HttpStatus.CONFLICT, "P002", "error.project.id_conflict"),
+  PROJECT_ID_REQUIRED(HttpStatus.BAD_REQUEST, "P003", "error.project.id_required"),
+
   // Release - 릴리즈
   RELEASE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "R001", "error.release.type_not_found"),
   RELEASE_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "R002", "error.release.version_not_found"),
