@@ -1,6 +1,7 @@
 package com.ts.rm.domain.auth.service;
 
 import com.ts.rm.domain.account.entity.Account;
+import com.ts.rm.domain.account.enums.AccountStatus;
 import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.auth.dto.SignInRequest;
 import com.ts.rm.domain.auth.dto.SignUpRequest;
@@ -8,7 +9,10 @@ import com.ts.rm.domain.auth.dto.SignUpResponse;
 import com.ts.rm.domain.auth.dto.TokenResponse;
 import com.ts.rm.domain.refreshtoken.entity.RefreshToken;
 import com.ts.rm.domain.refreshtoken.service.RefreshTokenService;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.security.jwt.JwtTokenProvider;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -31,6 +35,8 @@ public class AuthServiceImpl implements AuthService {
 
     private static final String USER = "USER";
     private static final String ACTIVE = "ACTIVE";
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
+    private static final int LOCK_DURATION_MINUTES = 10;
 
     @Override
     @Transactional
@@ -69,20 +75,27 @@ public class AuthServiceImpl implements AuthService {
         Account account = accountRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("이메일 또는 비밀번호가 일치하지 않습니다."));
 
-        // 2. 비밀번호 검증
+        // 2. 계정 상태 검증
+        validateAccountStatus(account);
+
+        // 3. 비밀번호 검증
         if (!passwordEncoder.matches(request.getPassword(), account.getPassword())) {
+            handleLoginFailure(account);
             throw new BadCredentialsException("이메일 또는 비밀번호가 일치하지 않습니다.");
         }
 
-        // 3. Access Token 생성
+        // 4. 로그인 성공 처리
+        handleLoginSuccess(account);
+
+        // 5. Access Token 생성
         String accessToken = jwtTokenProvider.generateToken(account.getEmail(), account.getRole());
 
-        // 4. Refresh Token 생성 및 저장
+        // 6. Refresh Token 생성 및 저장
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(account);
 
         log.info("User signed in: {}", account.getEmail());
 
-        // 5. 응답 생성
+        // 7. 응답 생성
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken.getToken())
@@ -96,6 +109,82 @@ public class AuthServiceImpl implements AuthService {
                         .role(account.getRole())
                         .build())
                 .build();
+    }
+
+    /**
+     * 계정 상태 검증 (계정 잠금 및 상태 확인)
+     *
+     * @param account 계정 엔티티
+     * @throws BusinessException LOCKED, SUSPENDED 또는 INACTIVE 상태일 경우
+     */
+    private void validateAccountStatus(Account account) {
+        // 1. 계정 잠금 확인 (10분 임시 잠금)
+        if (account.getLockedUntil() != null && LocalDateTime.now().isBefore(account.getLockedUntil())) {
+            log.warn("Login attempt for locked account: {} (locked until: {})",
+                    account.getEmail(), account.getLockedUntil());
+            throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
+        }
+
+        // 2. 잠금 시간이 지났으면 자동 해제
+        if (account.getLockedUntil() != null && LocalDateTime.now().isAfter(account.getLockedUntil())) {
+            account.setLockedUntil(null);
+            account.setLoginAttemptCount(0);
+            accountRepository.save(account);
+            log.info("Account lock expired and reset: {}", account.getEmail());
+        }
+
+        // 3. 계정 상태 확인
+        AccountStatus status = AccountStatus.valueOf(account.getStatus());
+
+        switch (status) {
+            case SUSPENDED:
+                log.warn("Login attempt for suspended account: {}", account.getEmail());
+                throw new BusinessException(ErrorCode.ACCOUNT_SUSPENDED);
+            case INACTIVE:
+                log.warn("Login attempt for inactive account: {}", account.getEmail());
+                throw new BusinessException(ErrorCode.ACCOUNT_INACTIVE);
+            case ACTIVE:
+                // 정상 상태, 계속 진행
+                break;
+            default:
+                log.error("Unknown account status: {}", status);
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    /**
+     * 로그인 실패 처리 (시도 횟수 증가 및 10분 계정 잠금)
+     *
+     * @param account 계정 엔티티
+     */
+    private void handleLoginFailure(Account account) {
+        int attemptCount = account.getLoginAttemptCount() + 1;
+        account.setLoginAttemptCount(attemptCount);
+
+        log.warn("Login failed for {}: attempt {}/{}", account.getEmail(), attemptCount, MAX_LOGIN_ATTEMPTS);
+
+        // 5회 이상 실패 시 10분간 계정 잠금
+        if (attemptCount >= MAX_LOGIN_ATTEMPTS) {
+            LocalDateTime lockUntil = LocalDateTime.now().plusMinutes(LOCK_DURATION_MINUTES);
+            account.setLockedUntil(lockUntil);
+            log.warn("Account locked until {} due to {} failed login attempts: {}",
+                    lockUntil, attemptCount, account.getEmail());
+        }
+
+        accountRepository.save(account);
+    }
+
+    /**
+     * 로그인 성공 처리 (마지막 로그인 시간 기록, 시도 횟수 초기화)
+     *
+     * @param account 계정 엔티티
+     */
+    private void handleLoginSuccess(Account account) {
+        account.setLastLoginAt(LocalDateTime.now());
+        account.setLoginAttemptCount(0);
+        accountRepository.save(account);
+
+        log.info("Login success for {}: last login updated", account.getEmail());
     }
 
     @Override
