@@ -1,15 +1,15 @@
-package com.ts.rm.domain.statistics.dto;
+package com.ts.rm.domain.analytics.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 통계 API DTO
+ * 분석 API DTO
  */
-public final class StatisticsDto {
+public final class AnalyticsDto {
 
-    private StatisticsDto() {
+    private AnalyticsDto() {
     }
 
     /**

@@ -2,6 +2,7 @@ package com.ts.rm.domain.account.service;
 
 import com.ts.rm.domain.account.dto.AccountDto;
 import com.ts.rm.domain.account.entity.Account;
+import com.ts.rm.domain.account.enums.AccountRole;
 import com.ts.rm.domain.account.enums.AccountStatus;
 import com.ts.rm.domain.account.mapper.AccountDtoMapper;
 import com.ts.rm.domain.account.repository.AccountRepository;
@@ -122,6 +123,56 @@ public class AccountService {
 
         // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Account status updated - accountId: {}, status: {}", accountId, status);
+    }
+
+    /**
+     * 계정 수정 (ADMIN 전용 - 비밀번호, 권한, 상태 수정)
+     *
+     * @param accountId 계정 ID
+     * @param request   수정 요청 (password, role, status)
+     * @return 수정된 계정 상세 정보
+     */
+    @Transactional
+    public AccountDto.DetailResponse adminUpdateAccount(Long accountId,
+            AccountDto.AdminUpdateRequest request) {
+        log.info("Admin updating account with accountId: {}", accountId);
+
+        // 엔티티 조회
+        Account account = findAccountByAccountId(accountId);
+
+        // Setter를 통한 수정 (JPA Dirty Checking)
+        if (request.password() != null && !request.password().isBlank()) {
+            account.setPassword(request.password());
+            log.debug("Password updated for accountId: {}", accountId);
+        }
+
+        if (request.role() != null && !request.role().isBlank()) {
+            // role 유효성 검증
+            try {
+                AccountRole.valueOf(request.role());
+                account.setRole(request.role());
+                log.debug("Role updated to {} for accountId: {}", request.role(), accountId);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid role value: {}", request.role());
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+        }
+
+        if (request.status() != null && !request.status().isBlank()) {
+            // status 유효성 검증
+            try {
+                AccountStatus.valueOf(request.status());
+                account.setStatus(request.status());
+                log.debug("Status updated to {} for accountId: {}", request.status(), accountId);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid status value: {}", request.status());
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+        }
+
+        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
+        log.info("Account updated successfully by admin with accountId: {}", accountId);
+        return mapper.toDetailResponse(account);
     }
 
     private Account findAccountByAccountId(Long accountId) {

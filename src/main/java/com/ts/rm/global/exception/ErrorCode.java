@@ -35,6 +35,7 @@ public enum ErrorCode {
   INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AU006", "error.auth.invalid_access_token"),
   EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AU007", "error.auth.expired_access_token"),
   ACCESS_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AU008", "error.auth.access_token_not_found"),
+  FORBIDDEN(HttpStatus.FORBIDDEN, "AU009", "error.auth.forbidden"),
 
   // Customer - 고객사
   CUSTOMER_NOT_FOUND(HttpStatus.NOT_FOUND, "CU001", "error.customer.not_found"),

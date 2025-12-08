@@ -1,16 +1,16 @@
-package com.ts.rm.domain.statistics.repository;
+package com.ts.rm.domain.analytics.repository;
 
-import com.ts.rm.domain.statistics.dto.StatisticsDto.CustomerPatchCount;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyCustomerPatchRaw;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.CustomerPatchCount;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.MonthlyCustomerPatchRaw;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 패치 통계 Repository
+ * 패치 분석 Repository
  *
- * <p>QueryDSL을 사용한 패치 통계 집계 쿼리
+ * <p>QueryDSL을 사용한 패치 분석 집계 쿼리
  */
-public interface PatchStatisticsRepository {
+public interface PatchAnalyticsRepository {
 
     /**
      * 프로젝트별 기간 내 고객사별 패치 건수 Top-N 조회

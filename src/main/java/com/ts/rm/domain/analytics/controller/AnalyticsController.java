@@ -1,8 +1,8 @@
-package com.ts.rm.domain.statistics.controller;
+package com.ts.rm.domain.analytics.controller;
 
-import com.ts.rm.domain.statistics.dto.StatisticsDto.MonthlyPatchResponse;
-import com.ts.rm.domain.statistics.dto.StatisticsDto.TopCustomersResponse;
-import com.ts.rm.domain.statistics.service.StatisticsService;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.MonthlyPatchResponse;
+import com.ts.rm.domain.analytics.dto.AnalyticsDto.TopCustomersResponse;
+import com.ts.rm.domain.analytics.service.AnalyticsService;
 import com.ts.rm.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,18 +16,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 통계 API Controller
+ * 분석 API Controller
  *
- * <p>패치 관련 통계 조회 API
+ * <p>패치 관련 분석 조회 API
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/projects/{projectId}/statistics")
+@RequestMapping("/api/projects/{projectId}/analytics")
 @RequiredArgsConstructor
-@Tag(name = "통계", description = "패치 통계 조회 API")
-public class StatisticsController {
+@Tag(name = "데이터 분석", description = "데이터 분석 API")
+public class AnalyticsController {
 
-    private final StatisticsService statisticsService;
+    private final AnalyticsService analyticsService;
 
     /**
      * 프로젝트별 고객사별 패치 Top-N 조회
@@ -57,7 +57,7 @@ public class StatisticsController {
 
         log.info("프로젝트별 고객사별 패치 Top-{} 조회 요청 - projectId: {}, 최근 {}개월", topN, projectId, months);
 
-        TopCustomersResponse response = statisticsService.getTopCustomersByPatchCount(projectId, months, topN);
+        TopCustomersResponse response = analyticsService.getTopCustomersByPatchCount(projectId, months, topN);
 
         return ApiResponse.success(response);
     }
@@ -98,7 +98,7 @@ public class StatisticsController {
 
         log.info("프로젝트별 월별+고객별 패치 통계 조회 요청 - projectId: {}, 최근 {}개월", projectId, months);
 
-        MonthlyPatchResponse response = statisticsService.getMonthlyPatchCounts(projectId, months);
+        MonthlyPatchResponse response = analyticsService.getMonthlyPatchCounts(projectId, months);
 
         return ApiResponse.success(response);
     }

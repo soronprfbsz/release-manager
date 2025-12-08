@@ -54,6 +54,8 @@ public class SwaggerConfig {
             // 원하는 순서대로 태그 재정렬
             List<Tag> orderedTags = List.of(
                     new Tag().name("인증").description("회원가입, 로그인, 토큰 갱신 API"),
+                    new Tag().name("계정").description("계정 관리 API"),
+                    new Tag().name("기본").description("공통 코드, 메뉴 등 솔루션 기본 API"),
                     new Tag().name("릴리즈 버전").description("릴리즈 버전 관리 API"),
                     new Tag().name("릴리즈 파일").description("릴리즈 파일 관리 API"),
                     new Tag().name("패치").description("패치 생성 및 조회 API"),
@@ -62,9 +64,9 @@ public class SwaggerConfig {
                     new Tag().name("부서").description("부서 관리 API"),
                     new Tag().name("리소스 파일").description("리소스 파일 관리 API"),
                     new Tag().name("작업").description("작업 관리 API"),
-                    new Tag().name("코드").description("공통 코드 API"),
-                    new Tag().name("통계").description("통계 API"),
-                    new Tag().name("대시보드").description("대시보드 API")
+                    new Tag().name("대시보드").description("대시보드 API"),
+                    new Tag().name("프로젝트").description("프로젝트 관리 API"),
+                    new Tag().name("데이터 분석").description("데이터 분석 API")
             );
             openApi.setTags(orderedTags);
         };

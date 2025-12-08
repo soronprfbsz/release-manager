@@ -57,7 +57,7 @@ public final class AccountDto {
     }
 
     /**
-     * 계정 수정 요청
+     * 계정 수정 요청 (본인 정보 수정용)
      */
     @Builder
     @Schema(description = "계정 수정 요청")
@@ -67,6 +67,24 @@ public final class AccountDto {
 
             @Schema(description = "비밀번호 (8~100자)", example = "password1234") @Size(min = 8, max = 100, message = "비밀번호는 8자 이상 100자 이하여야 합니다")
             String password
+    ) {
+
+    }
+
+    /**
+     * 계정 수정 요청 (ADMIN용 - 비밀번호, 권한, 상태 수정)
+     */
+    @Builder
+    @Schema(description = "계정 수정 요청 (ADMIN 전용)")
+    public record AdminUpdateRequest(
+            @Schema(description = "비밀번호 (8~100자)", example = "newPassword1234") @Size(min = 8, max = 100, message = "비밀번호는 8자 이상 100자 이하여야 합니다")
+            String password,
+
+            @Schema(description = "권한 (ADMIN, USER)", example = "USER")
+            String role,
+
+            @Schema(description = "상태 (ACTIVE, INACTIVE)", example = "ACTIVE")
+            String status
     ) {
 
     }

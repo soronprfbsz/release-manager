@@ -1,6 +1,8 @@
 package com.ts.rm.domain.auth.dto;
 
+import com.ts.rm.domain.menu.dto.MenuDto.MenuResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,6 +37,9 @@ public class TokenResponse {
 
     @Schema(description = "계정 정보")
     private AccountInfo accountInfo;
+
+    @Schema(description = "메뉴 목록 (계층 구조)")
+    private List<MenuResponse> menus;
 
     /**
      * 계정 정보 내부 클래스
