@@ -34,7 +34,10 @@ public final class CustomerDto {
             String description,
 
             @Schema(description = "활성 여부", example = "true", defaultValue = "true")
-            Boolean isActive
+            Boolean isActive,
+
+            @Schema(description = "사용 프로젝트 ID", example = "infraeye2")
+            String projectId
     ) {
 
         public CreateRequest {
@@ -57,7 +60,10 @@ public final class CustomerDto {
             String description,
 
             @Schema(description = "활성 여부", example = "true")
-            Boolean isActive
+            Boolean isActive,
+
+            @Schema(description = "사용 프로젝트 ID (제공 시 기존 프로젝트를 대체)", example = "infraeye2")
+            String projectId
     ) {
 
     }
@@ -65,6 +71,26 @@ public final class CustomerDto {
     // ========================================
     // Response DTOs
     // ========================================
+
+    /**
+     * 프로젝트 정보 (고객사 응답에 포함)
+     */
+    @Schema(description = "고객사 프로젝트 정보")
+    public record ProjectInfo(
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
+
+            @Schema(description = "프로젝트명", example = "Infraeye 2")
+            String projectName,
+
+            @Schema(description = "마지막 패치 버전", example = "1.2.0")
+            String lastPatchedVersion,
+
+            @Schema(description = "마지막 패치 일시")
+            LocalDateTime lastPatchedAt
+    ) {
+
+    }
 
     /**
      * 고객사 상세 응답
@@ -85,6 +111,9 @@ public final class CustomerDto {
 
             @Schema(description = "활성 여부", example = "true")
             Boolean isActive,
+
+            @Schema(description = "사용 프로젝트 정보")
+            ProjectInfo project,
 
             @Schema(description = "생성일시")
             LocalDateTime createdAt,
@@ -143,6 +172,9 @@ public final class CustomerDto {
 
             @Schema(description = "활성 여부", example = "true")
             Boolean isActive,
+
+            @Schema(description = "사용 프로젝트 정보")
+            ProjectInfo project,
 
             @Schema(description = "생성일시")
             LocalDateTime createdAt

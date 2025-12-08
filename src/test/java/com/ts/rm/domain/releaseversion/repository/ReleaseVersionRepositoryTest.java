@@ -184,7 +184,7 @@ class ReleaseVersionRepositoryTest {
 
         // when
         List<ReleaseVersion> versions = releaseVersionRepository
-                .findAllByCustomerIdOrderByCreatedAtDesc(testCustomer.getCustomerId());
+                .findAllByCustomer_CustomerIdOrderByCreatedAtDesc(testCustomer.getCustomerId());
 
         // then
         assertThat(versions).hasSize(2);
@@ -196,9 +196,9 @@ class ReleaseVersionRepositoryTest {
         // given
         createAndSaveStandardVersions();
 
-        // when - 이제 majorVersion, minorVersion을 파라미터로 받음
+        // when - majorVersion, minorVersion을 파라미터로 받음
         List<ReleaseVersion> versions = releaseVersionRepository
-                .findAllByMajorMinorOrderByPatchVersionDesc(1, 1);
+                .findAllByMajorVersionAndMinorVersionOrderByPatchVersionDesc(1, 1);
 
         // then
         assertThat(versions).hasSize(2);

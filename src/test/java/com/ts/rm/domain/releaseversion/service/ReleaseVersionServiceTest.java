@@ -104,6 +104,8 @@ class ReleaseVersionServiceTest {
 
         detailResponse = new ReleaseVersionDto.DetailResponse(
                 1L,
+                "infraeye2",
+                "Infraeye 2",
                 "STANDARD",
                 ReleaseCategory.PATCH,
                 null,
@@ -268,7 +270,7 @@ class ReleaseVersionServiceTest {
         List<ReleaseVersion> versions = List.of(testVersion);
         List<ReleaseVersionDto.SimpleResponse> simpleResponses = List.of(
                 new ReleaseVersionDto.SimpleResponse(
-                        1L, "STANDARD", null, "1.1.0", "1.1.x",
+                        1L, "infraeye2", "STANDARD", null, "1.1.0", "1.1.x",
                         "jhlee@tscientific", "새로운 기능", new ArrayList<>(),
                         LocalDateTime.now(), 0
                 )
@@ -329,7 +331,7 @@ class ReleaseVersionServiceTest {
         List<ReleaseVersion> versions = List.of(testVersion);
         List<ReleaseVersionDto.SimpleResponse> simpleResponses = List.of(
                 new ReleaseVersionDto.SimpleResponse(
-                        1L, "STANDARD", null, "1.1.0", "1.1.x",
+                        1L, "infraeye2", "STANDARD", null, "1.1.0", "1.1.x",
                         "jhlee@tscientific", "새로운 기능", new ArrayList<>(),
                         LocalDateTime.now(), 0
                 )

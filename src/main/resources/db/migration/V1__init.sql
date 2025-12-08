@@ -92,6 +92,28 @@ CREATE TABLE IF NOT EXISTS customer (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사 테이블';
 
 -- =========================================================
+-- Customer Project 매핑 테이블 생성 (복합 PK)
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS customer_project (
+    customer_id BIGINT NOT NULL COMMENT '고객사 ID',
+    project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
+    last_patched_version VARCHAR(50) COMMENT '마지막 패치 버전 (to_version)',
+    last_patched_at DATETIME COMMENT '마지막 패치 일시',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    PRIMARY KEY (customer_id, project_id),
+    INDEX idx_cp_project_id (project_id),
+    INDEX idx_cp_last_patched_at (last_patched_at),
+
+    CONSTRAINT fk_customer_project_customer FOREIGN KEY (customer_id)
+        REFERENCES customer(customer_id) ON DELETE CASCADE,
+    CONSTRAINT fk_customer_project_project FOREIGN KEY (project_id)
+        REFERENCES project(project_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사-프로젝트 매핑 테이블';
+
+-- =========================================================
 -- Release Version 테이블 생성
 -- =========================================================
 

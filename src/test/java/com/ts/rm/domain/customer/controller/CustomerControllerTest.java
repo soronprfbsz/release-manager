@@ -116,6 +116,7 @@ class CustomerControllerTest {
                 "A회사",
                 "A회사 설명",
                 true,
+                null,
                 now,
                 "admin@tscientific",
                 now,
@@ -129,6 +130,7 @@ class CustomerControllerTest {
                 "A회사",
                 "A회사 설명",
                 true,
+                null,
                 now
         );
 
@@ -235,6 +237,7 @@ class CustomerControllerTest {
                 "수정된회사",
                 "수정된설명",
                 true,
+                null,
                 detailResponse.createdAt(),
                 "admin@tscientific",
                 LocalDateTime.now(),
