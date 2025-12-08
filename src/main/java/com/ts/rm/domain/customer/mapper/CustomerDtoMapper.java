@@ -17,6 +17,7 @@ public interface CustomerDtoMapper {
     @Mapping(target = "updatedBy", ignore = true)
     Customer toEntity(CustomerDto.CreateRequest request);
 
+    @Mapping(target = "project", ignore = true)
     CustomerDto.DetailResponse toDetailResponse(Customer customer);
 
     List<CustomerDto.DetailResponse> toDetailResponseList(List<Customer> customers);
@@ -26,5 +27,6 @@ public interface CustomerDtoMapper {
     List<CustomerDto.SimpleResponse> toSimpleResponseList(List<Customer> customers);
 
     @Mapping(target = "rowNumber", ignore = true)
+    @Mapping(target = "project", ignore = true)
     CustomerDto.ListResponse toListResponse(Customer customer);
 }

@@ -641,6 +641,21 @@ INSERT INTO project (project_id, project_name, description, created_by) VALUES
 ('infraeye2', 'Infraeye 2', 'Infraeye 2.0', 'SYSTEM');
 
 -- =========================================================
+-- Customer-Project 매핑 초기 데이터 (모든 고객사를 infraeye2에 연결)
+-- =========================================================
+
+INSERT INTO customer_project (customer_id, project_id)
+SELECT customer_id, 'infraeye2'
+FROM customer
+WHERE customer_code IN (
+    'customerA', 'customerB', 'customerC', 'customerD', 'customerE', 'customerF',
+    'customerG', 'customerH', 'customerI', 'customerJ', 'customerK', 'customerL',
+    'customerM', 'customerN', 'customerO', 'customerP', 'customerQ', 'customerR',
+    'customerS', 'customerT', 'customerU', 'customerV', 'customerW', 'customerX',
+    'customerY', 'customerZ'
+);
+
+-- =========================================================
 -- 릴리즈 버전 데이터
 -- =========================================================
 
