@@ -184,7 +184,7 @@ class ReleaseFileServiceTest {
         );
 
         given(releaseVersionRepository.findById(anyLong())).willReturn(Optional.of(testVersion));
-        given(releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
+        given(releaseFileRepository.findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
                 .willReturn(releaseFiles);
         given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
 
@@ -209,7 +209,7 @@ class ReleaseFileServiceTest {
         );
 
         given(releaseVersionRepository.findById(anyLong())).willReturn(Optional.of(testVersion));
-        given(releaseFileRepository.findByReleaseVersionIdAndFileCategory(anyLong(), any(FileCategory.class)))
+        given(releaseFileRepository.findByReleaseVersion_ReleaseVersionIdAndFileCategoryOrderByExecutionOrderAsc(anyLong(), any(FileCategory.class)))
                 .willReturn(releaseFiles);
         given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
 

@@ -134,7 +134,7 @@ class ReleaseFileUploadServiceTest {
                 .build();
 
         given(releaseVersionRepository.findById(anyLong())).willReturn(Optional.of(testVersion));
-        given(releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
+        given(releaseFileRepository.findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
                 .willReturn(List.of());
 
         // when & then
@@ -164,7 +164,7 @@ class ReleaseFileUploadServiceTest {
                 .build();
 
         given(releaseVersionRepository.findById(anyLong())).willReturn(Optional.of(testVersion));
-        given(releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
+        given(releaseFileRepository.findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
                 .willReturn(List.of());
 
         // when & then
@@ -195,7 +195,7 @@ class ReleaseFileUploadServiceTest {
                 .build();
 
         given(releaseVersionRepository.findById(anyLong())).willReturn(Optional.of(testVersion));
-        given(releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
+        given(releaseFileRepository.findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
                 .willReturn(List.of());
 
         // when & then
@@ -252,7 +252,7 @@ class ReleaseFileUploadServiceTest {
                 .build();
 
         given(releaseVersionRepository.findById(anyLong())).willReturn(Optional.of(testVersion));
-        given(releaseFileRepository.findAllByReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
+        given(releaseFileRepository.findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(anyLong()))
                 .willReturn(List.of());
         given(fileStorageService.saveFile(any(MultipartFile.class), anyString()))
                 .willReturn("versions/standard/1.1.x/1.1.0/mariadb/001_create_users_table.sql");

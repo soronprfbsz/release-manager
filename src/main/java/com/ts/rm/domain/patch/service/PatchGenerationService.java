@@ -1,6 +1,8 @@
 package com.ts.rm.domain.patch.service;
 
 import com.ts.rm.domain.customer.entity.Customer;
+import com.ts.rm.domain.customer.entity.CustomerProject;
+import com.ts.rm.domain.customer.repository.CustomerProjectRepository;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.engineer.entity.Engineer;
 import com.ts.rm.domain.engineer.repository.EngineerRepository;
@@ -45,6 +47,7 @@ public class PatchGenerationService {
     private final ReleaseVersionRepository releaseVersionRepository;
     private final ReleaseFileRepository releaseFileRepository;
     private final CustomerRepository customerRepository;
+    private final CustomerProjectRepository customerProjectRepository;
     private final EngineerRepository engineerRepository;
     private final ProjectRepository projectRepository;
     private final ScriptGenerator mariaDBScriptGenerator;
@@ -184,6 +187,11 @@ public class PatchGenerationService {
                     .build();
 
             Patch saved = patchRepository.save(patch);
+
+            // 10. CustomerProject 마지막 패치 정보 업데이트 (고객사가 지정된 경우)
+            if (customer != null) {
+                updateCustomerProjectPatchInfo(customer, project, toVersion.getVersion());
+            }
 
             log.info("패치 생성 완료 - ID: {}, Path: {}", saved.getPatchId(),
                     outputPath);
@@ -499,5 +507,32 @@ public class PatchGenerationService {
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
                     "README 생성 실패: " + e.getMessage());
         }
+    }
+
+    /**
+     * CustomerProject 마지막 패치 정보 업데이트
+     *
+     * <p>고객사-프로젝트 매핑이 없으면 새로 생성하고, 있으면 업데이트합니다.
+     *
+     * @param customer  고객사
+     * @param project   프로젝트
+     * @param toVersion 패치된 버전 (to_version)
+     */
+    private void updateCustomerProjectPatchInfo(Customer customer, Project project, String toVersion) {
+        CustomerProject customerProject = customerProjectRepository
+                .findByCustomer_CustomerIdAndProject_ProjectId(customer.getCustomerId(), project.getProjectId())
+                .orElseGet(() -> {
+                    // 매핑이 없으면 새로 생성
+                    log.info("고객사-프로젝트 매핑 생성 - customerId: {}, projectId: {}",
+                            customer.getCustomerId(), project.getProjectId());
+                    return CustomerProject.create(customer, project);
+                });
+
+        // 마지막 패치 정보 업데이트
+        customerProject.updateLastPatchInfo(toVersion, LocalDateTime.now());
+        customerProjectRepository.save(customerProject);
+
+        log.info("CustomerProject 업데이트 완료 - customerId: {}, projectId: {}, lastPatchedVersion: {}",
+                customer.getCustomerId(), project.getProjectId(), toVersion);
     }
 }

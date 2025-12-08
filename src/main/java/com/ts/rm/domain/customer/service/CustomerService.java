@@ -2,8 +2,12 @@ package com.ts.rm.domain.customer.service;
 
 import com.ts.rm.domain.customer.dto.CustomerDto;
 import com.ts.rm.domain.customer.entity.Customer;
+import com.ts.rm.domain.customer.entity.CustomerProject;
 import com.ts.rm.domain.customer.mapper.CustomerDtoMapper;
+import com.ts.rm.domain.customer.repository.CustomerProjectRepository;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
+import com.ts.rm.domain.project.entity.Project;
+import com.ts.rm.domain.project.repository.ProjectRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.pagination.PageRowNumberUtil;
@@ -27,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final CustomerProjectRepository customerProjectRepository;
+    private final ProjectRepository projectRepository;
     private final CustomerDtoMapper mapper;
 
     /**
@@ -51,8 +57,14 @@ public class CustomerService {
 
         Customer savedCustomer = customerRepository.save(customer);
 
+        // 프로젝트 연결 처리
+        CustomerDto.ProjectInfo projectInfo = null;
+        if (request.projectId() != null && !request.projectId().isBlank()) {
+            projectInfo = saveCustomerProject(savedCustomer, request.projectId());
+        }
+
         log.info("Customer created successfully with id: {}", savedCustomer.getCustomerId());
-        return mapper.toDetailResponse(savedCustomer);
+        return toDetailResponseWithProject(savedCustomer, projectInfo);
     }
 
     /**
@@ -63,7 +75,8 @@ public class CustomerService {
      */
     public CustomerDto.DetailResponse getCustomerById(Long customerId) {
         Customer customer = findCustomerById(customerId);
-        return mapper.toDetailResponse(customer);
+        CustomerDto.ProjectInfo projectInfo = getProjectInfoByCustomerId(customerId);
+        return toDetailResponseWithProject(customer, projectInfo);
     }
 
     /**
@@ -75,7 +88,8 @@ public class CustomerService {
     public CustomerDto.DetailResponse getCustomerByCode(String customerCode) {
         Customer customer = customerRepository.findByCustomerCode(customerCode)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND));
-        return mapper.toDetailResponse(customer);
+        CustomerDto.ProjectInfo projectInfo = getProjectInfoByCustomerId(customer.getCustomerId());
+        return toDetailResponseWithProject(customer, projectInfo);
     }
 
     /**
@@ -101,7 +115,12 @@ public class CustomerService {
             customers = customerRepository.findAll();
         }
 
-        return mapper.toDetailResponseList(customers);
+        return customers.stream()
+                .map(customer -> {
+                    CustomerDto.ProjectInfo projectInfo = getProjectInfoByCustomerId(customer.getCustomerId());
+                    return toDetailResponseWithProject(customer, projectInfo);
+                })
+                .toList();
     }
 
     /**
@@ -130,15 +149,16 @@ public class CustomerService {
 
         // rowNumber 계산 (공통 유틸리티 사용)
         return PageRowNumberUtil.mapWithRowNumber(customers, (customer, rowNumber) -> {
-            CustomerDto.ListResponse response = mapper.toListResponse(customer);
+            CustomerDto.ProjectInfo projectInfo = getProjectInfoByCustomerId(customer.getCustomerId());
             return new CustomerDto.ListResponse(
                     rowNumber,
-                    response.customerId(),
-                    response.customerCode(),
-                    response.customerName(),
-                    response.description(),
-                    response.isActive(),
-                    response.createdAt()
+                    customer.getCustomerId(),
+                    customer.getCustomerCode(),
+                    customer.getCustomerName(),
+                    customer.getDescription(),
+                    customer.getIsActive(),
+                    projectInfo,
+                    customer.getCreatedAt()
             );
         });
     }
@@ -172,9 +192,17 @@ public class CustomerService {
         // updatedBy는 항상 설정 (JWT에서 추출)
         customer.setUpdatedBy(updatedBy);
 
+        // 프로젝트 연결 처리 (제공된 경우에만 업데이트)
+        CustomerDto.ProjectInfo projectInfo;
+        if (request.projectId() != null) {
+            projectInfo = updateCustomerProject(customer, request.projectId());
+        } else {
+            projectInfo = getProjectInfoByCustomerId(customerId);
+        }
+
         // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Customer updated successfully with customerId: {}", customerId);
-        return mapper.toDetailResponse(customer);
+        return toDetailResponseWithProject(customer, projectInfo);
     }
 
     /**
@@ -220,5 +248,80 @@ public class CustomerService {
     private Customer findCustomerById(Long customerId) {
         return customerRepository.findById(customerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND));
+    }
+
+    /**
+     * 고객사 ID로 프로젝트 정보 조회 (단일 프로젝트)
+     */
+    private CustomerDto.ProjectInfo getProjectInfoByCustomerId(Long customerId) {
+        List<CustomerProject> customerProjects = customerProjectRepository.findAllByCustomerIdWithProject(customerId);
+        if (customerProjects.isEmpty()) {
+            return null;
+        }
+        // 첫 번째 프로젝트만 반환 (현재 고객사당 하나의 프로젝트만 사용)
+        CustomerProject cp = customerProjects.get(0);
+        return new CustomerDto.ProjectInfo(
+                cp.getProject().getProjectId(),
+                cp.getProject().getProjectName(),
+                cp.getLastPatchedVersion(),
+                cp.getLastPatchedAt()
+        );
+    }
+
+    /**
+     * 고객사 생성 시 프로젝트 연결 저장
+     */
+    private CustomerDto.ProjectInfo saveCustomerProject(Customer customer, String projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND,
+                        "프로젝트를 찾을 수 없습니다: " + projectId));
+
+        CustomerProject customerProject = CustomerProject.create(customer, project);
+        customerProjectRepository.save(customerProject);
+
+        return new CustomerDto.ProjectInfo(
+                project.getProjectId(),
+                project.getProjectName(),
+                null,
+                null
+        );
+    }
+
+    /**
+     * 고객사 수정 시 프로젝트 연결 업데이트
+     */
+    private CustomerDto.ProjectInfo updateCustomerProject(Customer customer, String projectId) {
+        Long customerId = customer.getCustomerId();
+
+        // 기존 프로젝트 연결 모두 삭제
+        List<CustomerProject> existingProjects = customerProjectRepository.findAllByCustomer_CustomerId(customerId);
+        customerProjectRepository.deleteAll(existingProjects);
+
+        // 빈 문자열이면 프로젝트 연결 해제만 수행
+        if (projectId.isBlank()) {
+            return null;
+        }
+
+        // 새 프로젝트 연결
+        return saveCustomerProject(customer, projectId);
+    }
+
+    /**
+     * Customer 엔티티와 프로젝트 정보로 DetailResponse 생성
+     */
+    private CustomerDto.DetailResponse toDetailResponseWithProject(Customer customer,
+            CustomerDto.ProjectInfo projectInfo) {
+        return new CustomerDto.DetailResponse(
+                customer.getCustomerId(),
+                customer.getCustomerCode(),
+                customer.getCustomerName(),
+                customer.getDescription(),
+                customer.getIsActive(),
+                projectInfo,
+                customer.getCreatedAt(),
+                customer.getCreatedBy(),
+                customer.getUpdatedAt(),
+                customer.getUpdatedBy()
+        );
     }
 }

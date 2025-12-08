@@ -13,7 +13,9 @@ import static org.mockito.Mockito.times;
 import com.ts.rm.domain.customer.dto.CustomerDto;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.mapper.CustomerDtoMapper;
+import com.ts.rm.domain.customer.repository.CustomerProjectRepository;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
+import com.ts.rm.domain.project.repository.ProjectRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import java.time.LocalDateTime;
@@ -38,6 +40,12 @@ class CustomerServiceTest {
 
     @Mock
     private CustomerRepository customerRepository;
+
+    @Mock
+    private CustomerProjectRepository customerProjectRepository;
+
+    @Mock
+    private ProjectRepository projectRepository;
 
     @Mock
     private CustomerDtoMapper mapper;
@@ -75,6 +83,7 @@ class CustomerServiceTest {
                 "A회사",
                 "A회사 설명",
                 true,
+                null,
                 LocalDateTime.now(),
                 "admin@tscientific",
                 LocalDateTime.now(),
@@ -96,7 +105,6 @@ class CustomerServiceTest {
         given(customerRepository.existsByCustomerCode(anyString())).willReturn(false);
         given(mapper.toEntity(any(CustomerDto.CreateRequest.class))).willReturn(testCustomer);
         given(customerRepository.save(any(Customer.class))).willReturn(testCustomer);
-        given(mapper.toDetailResponse(any(Customer.class))).willReturn(detailResponse);
 
         // when
         CustomerDto.DetailResponse result = customerService.createCustomer(createRequest, "admin@tscientific");
@@ -130,7 +138,7 @@ class CustomerServiceTest {
     void getCustomerById_Success() {
         // given
         given(customerRepository.findById(anyLong())).willReturn(Optional.of(testCustomer));
-        given(mapper.toDetailResponse(any(Customer.class))).willReturn(detailResponse);
+        given(customerProjectRepository.findAllByCustomerIdWithProject(anyLong())).willReturn(List.of());
 
         // when
         CustomerDto.DetailResponse result = customerService.getCustomerById(1L);
@@ -162,7 +170,7 @@ class CustomerServiceTest {
         // given
         given(customerRepository.findByCustomerCode(anyString())).willReturn(
                 Optional.of(testCustomer));
-        given(mapper.toDetailResponse(any(Customer.class))).willReturn(detailResponse);
+        given(customerProjectRepository.findAllByCustomerIdWithProject(anyLong())).willReturn(List.of());
 
         // when
         CustomerDto.DetailResponse result = customerService.getCustomerByCode("company_a");
@@ -179,10 +187,9 @@ class CustomerServiceTest {
     void getActiveCustomers_Success() {
         // given
         List<Customer> customers = List.of(testCustomer);
-        List<CustomerDto.DetailResponse> responses = List.of(detailResponse);
 
         given(customerRepository.findAllByIsActive(true)).willReturn(customers);
-        given(mapper.toDetailResponseList(any())).willReturn(responses);
+        given(customerProjectRepository.findAllByCustomerIdWithProject(anyLong())).willReturn(List.of());
 
         // when
         List<CustomerDto.DetailResponse> result = customerService.getCustomers(true, null);
@@ -199,10 +206,9 @@ class CustomerServiceTest {
     void getAllCustomers_Success() {
         // given
         List<Customer> customers = List.of(testCustomer);
-        List<CustomerDto.DetailResponse> responses = List.of(detailResponse);
 
         given(customerRepository.findAll()).willReturn(customers);
-        given(mapper.toDetailResponseList(any())).willReturn(responses);
+        given(customerProjectRepository.findAllByCustomerIdWithProject(anyLong())).willReturn(List.of());
 
         // when
         List<CustomerDto.DetailResponse> result = customerService.getCustomers(null, null);
@@ -224,7 +230,7 @@ class CustomerServiceTest {
                 .build();
 
         given(customerRepository.findById(anyLong())).willReturn(Optional.of(testCustomer));
-        given(mapper.toDetailResponse(any(Customer.class))).willReturn(detailResponse);
+        given(customerProjectRepository.findAllByCustomerIdWithProject(anyLong())).willReturn(List.of());
 
         // when
         CustomerDto.DetailResponse result = customerService.updateCustomer(1L, updateRequest, "admin@tscientific");
@@ -233,7 +239,6 @@ class CustomerServiceTest {
         assertThat(result).isNotNull();
         // JPA Dirty Checking 사용 - 엔티티 조회만 검증
         then(customerRepository).should(times(1)).findById(1L);
-        then(mapper).should(times(1)).toDetailResponse(any(Customer.class));
     }
 
     @Test
@@ -282,10 +287,9 @@ class CustomerServiceTest {
     void searchCustomersByName_Success() {
         // given
         List<Customer> customers = List.of(testCustomer);
-        List<CustomerDto.DetailResponse> responses = List.of(detailResponse);
 
         given(customerRepository.findByCustomerNameContaining(anyString())).willReturn(customers);
-        given(mapper.toDetailResponseList(any())).willReturn(responses);
+        given(customerProjectRepository.findAllByCustomerIdWithProject(anyLong())).willReturn(List.of());
 
         // when
         List<CustomerDto.DetailResponse> result = customerService.getCustomers(null, "A회사");
