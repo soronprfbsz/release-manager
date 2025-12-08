@@ -79,14 +79,14 @@ public class AccountController {
     /**
      * 계정 수정 (ADMIN 전용)
      *
-     * <p>비밀번호, 권한(role), 상태(status)를 수정할 수 있습니다.
+     * <p>권한(role), 상태(status)를 수정할 수 있습니다.
      *
      * @param accountId 계정 ID
-     * @param request   수정 요청 (password, role, status)
+     * @param request   수정 요청 (role, status)
      * @return 수정된 계정 상세 정보
      */
     @PutMapping("/{accountId}")
-    @Operation(summary = "계정 수정 (ADMIN 전용)", description = "특정 계정의 비밀번호, 권한, 상태를 수정합니다. ADMIN 권한이 필요합니다.")
+    @Operation(summary = "계정 수정 (ADMIN 전용)", description = "특정 계정의 권한, 상태를 수정합니다. ADMIN 권한이 필요합니다.")
     public ResponseEntity<ApiResponse<AccountDto.DetailResponse>> updateAccount(
             @Parameter(description = "계정 ID", example = "1", required = true)
             @PathVariable Long accountId,
