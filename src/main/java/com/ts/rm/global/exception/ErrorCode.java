@@ -25,6 +25,7 @@ public enum ErrorCode {
   // Account - 계정
   ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "A001", "error.account.not_found"),
   ACCOUNT_EMAIL_CONFLICT(HttpStatus.CONFLICT, "A002", "error.account.email_conflict"),
+  LAST_ADMIN_CANNOT_DELETE(HttpStatus.BAD_REQUEST, "A003", "error.account.last_admin_cannot_delete"),
 
   // Auth - 인증
   INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AU001", "error.auth.invalid_credentials"),

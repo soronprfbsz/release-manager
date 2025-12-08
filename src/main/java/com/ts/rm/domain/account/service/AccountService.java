@@ -116,8 +116,20 @@ public class AccountService {
     public void deleteAccount(Long accountId) {
         log.info("Deleting account with accountId: {}", accountId);
 
-        // JpaRepository의 deleteById 사용 (존재하지 않으면 EmptyResultDataAccessException 발생)
-        accountRepository.deleteById(accountId);
+        // 1. 삭제할 계정 조회
+        Account account = findAccountByAccountId(accountId);
+
+        // 2. ADMIN 계정인 경우, 마지막 ADMIN인지 확인
+        if (AccountRole.ADMIN.getCodeId().equals(account.getRole())) {
+            long adminCount = accountRepository.countByRole(AccountRole.ADMIN.getCodeId());
+            if (adminCount <= 1) {
+                log.warn("Cannot delete last ADMIN account - accountId: {}", accountId);
+                throw new BusinessException(ErrorCode.LAST_ADMIN_CANNOT_DELETE);
+            }
+        }
+
+        // 3. 계정 삭제
+        accountRepository.delete(account);
 
         log.info("Account deleted successfully with accountId: {}", accountId);
     }
