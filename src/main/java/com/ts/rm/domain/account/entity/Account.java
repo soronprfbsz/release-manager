@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -41,4 +42,14 @@ public class Account extends BaseEntity {
 
     @Column(name = "status", nullable = false, length = 100)
     private String status;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
+    @Column(name = "login_attempt_count", nullable = false)
+    @Builder.Default
+    private Integer loginAttemptCount = 0;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
 }

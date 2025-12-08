@@ -13,6 +13,9 @@ import org.mapstruct.Mapping;
 public interface AccountDtoMapper {
 
     @Mapping(target = "accountId", ignore = true)
+    @Mapping(target = "lastLoginAt", ignore = true)
+    @Mapping(target = "loginAttemptCount", constant = "0")
+    @Mapping(target = "lockedUntil", ignore = true)
     Account toEntity(AccountDto.CreateRequest request);
 
     AccountDto.DetailResponse toDetailResponse(Account account);
