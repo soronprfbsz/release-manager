@@ -307,6 +307,7 @@ INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
 ('FILE_SUBCATEGORY_ENGINE', '엔진 파일 서브 카테고리', 'ENGINE 카테고리 소분류'),
 ('RESOURCE_FILE_CATEGORY', '리소스 파일 카테고리', '리소스 파일 기능적 대분류'),
 ('RESOURCE_SUBCATEGORY_SCRIPT', '스크립트 서브 카테고리', 'SCRIPT 카테고리 소분류'),
+('RESOURCE_SUBCATEGORY_DOCKER', 'Docker 서브 카테고리', 'DOCKER 카테고리 소분류'),
 ('RESOURCE_SUBCATEGORY_DOCUMENT', '문서 서브 카테고리', 'DOCUMENT 카테고리 소분류'),
 ('BACKUP_FILE_CATEGORY', '백업 파일 카테고리', '백업 파일 분류 (MARIADB, CRATEDB)'),
 ('POSITION', '직급', '엔지니어 직급 구분');
@@ -464,31 +465,36 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('RESOURCE_FILE_CATEGORY', 'SCRIPT', '스크립트', '스크립트 파일', 1, TRUE),
-('RESOURCE_FILE_CATEGORY', 'DOCUMENT', '문서', '문서 파일', 2, TRUE),
-('RESOURCE_FILE_CATEGORY', 'ETC', '기타', '기타 파일', 3, TRUE);
+('RESOURCE_FILE_CATEGORY', 'SCRIPT', '스크립트', '스크립트 파일 (백업, 복원 등)', 1, TRUE),
+('RESOURCE_FILE_CATEGORY', 'DOCKER', 'Docker', 'Docker 관련 파일 (컴포즈, Dockerfile 등)', 2, TRUE),
+('RESOURCE_FILE_CATEGORY', 'DOCUMENT', '문서', '설치 가이드 및 기타 문서', 3, TRUE),
+('RESOURCE_FILE_CATEGORY', 'ETC', '기타', '기타 리소스 파일', 99, TRUE);
 
 -- =========================================================
 -- 리소스 파일 서브카테고리 - SCRIPT
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('RESOURCE_SUBCATEGORY_SCRIPT', 'MARIADB_BACKUP', 'MARIADB 백업', 'MariaDB 백업 스크립트', 1, TRUE),
-('RESOURCE_SUBCATEGORY_SCRIPT', 'MARIADB_RESTORE', 'MARIADB 복원', 'MariaDB 복원 스크립트', 2, TRUE),
-('RESOURCE_SUBCATEGORY_SCRIPT', 'CRATEDB_BACKUP', 'CRATEDB 백업', 'CrateDB 백업 스크립트', 3, TRUE),
-('RESOURCE_SUBCATEGORY_SCRIPT', 'CRATEDB_RESTORE', 'CRATEDB 복원', 'CrateDB 복원 스크립트', 4, TRUE),
-('RESOURCE_SUBCATEGORY_SCRIPT', 'ETC', '기타', '기타', 99, TRUE);
+('RESOURCE_SUBCATEGORY_SCRIPT', 'MARIADB', 'MariaDB', 'MariaDB 관련 스크립트', 1, TRUE),
+('RESOURCE_SUBCATEGORY_SCRIPT', 'CRATEDB', 'CrateDB', 'CrateDB 관련 스크립트', 2, TRUE),
+('RESOURCE_SUBCATEGORY_SCRIPT', 'ETC', '기타', '기타 스크립트', 99, TRUE);
+
+-- =========================================================
+-- 리소스 파일 서브카테고리 - DOCKER
+-- =========================================================
+
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('RESOURCE_SUBCATEGORY_DOCKER', 'SERVICE', '서비스 실행', 'Docker 서비스 실행 관련 파일', 1, TRUE),
+('RESOURCE_SUBCATEGORY_DOCKER', 'DOCKERFILE', 'Dockerfile', 'Dockerfile 및 빌드 관련 파일', 2, TRUE),
+('RESOURCE_SUBCATEGORY_DOCKER', 'ETC', '기타', '기타 Docker 파일', 99, TRUE);
 
 -- =========================================================
 -- 리소스 파일 서브카테고리 - DOCUMENT
 -- =========================================================
 
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE1', 'Infraeye1', 'Infraeye1 문서', 1, TRUE),
-('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE2', 'Infraeye2', 'Infraeye2 문서', 2, TRUE),
-('RESOURCE_SUBCATEGORY_DOCUMENT', 'DATABASE', '데이터베이스', 'DATABASE 관련 문서', 3, TRUE),
-('RESOURCE_SUBCATEGORY_DOCUMENT', 'OS', 'O/S', 'O/S 관련 문서', 4, TRUE),
-('RESOURCE_SUBCATEGORY_DOCUMENT', 'LANGUAGE', '언어', '언어 관련 문서', 5, TRUE),
+('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE1', 'Infraeye 1', 'Infraeye 1 관련 문서', 1, TRUE),
+('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE2', 'Infraeye 2', 'Infraeye 2 관련 문서', 2, TRUE),
 ('RESOURCE_SUBCATEGORY_DOCUMENT', 'ETC', '기타', '기타 문서', 99, TRUE);
 
 -- =========================================================
@@ -773,14 +779,14 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 
 -- 스크립트 - MariaDB
 INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
-('SH', 'SCRIPT', 'MARIADB', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 백업 스크립트', 'system'),
-('SH', 'SCRIPT', 'MARIADB', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 복원 스크립트', 'system');
+('SH', 'SCRIPT', 'MARIADB', 'mariadb_backup.sh', 'script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 백업 스크립트', 'system'),
+('SH', 'SCRIPT', 'MARIADB', 'mariadb_restore.sh', 'script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 복원 스크립트', 'system');
 
 -- 스크립트 - CrateDB
 INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
-('SH', 'SCRIPT', 'CRATEDB', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 백업 스크립트', 'system'),
-('SH', 'SCRIPT', 'CRATEDB', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 복원 스크립트', 'system');
+('SH', 'SCRIPT', 'CRATEDB', 'cratedb_backup.sh', 'script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 백업 스크립트', 'system'),
+('SH', 'SCRIPT', 'CRATEDB', 'cratedb_restore.sh', 'script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 복원 스크립트', 'system');
 
 -- 문서 - Infraeye 2
 INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
-('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 'system');
+('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 'system');

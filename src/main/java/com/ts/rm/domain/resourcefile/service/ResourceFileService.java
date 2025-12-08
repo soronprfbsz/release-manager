@@ -200,13 +200,13 @@ public class ResourceFileService {
     /**
      * 저장 경로 생성
      *
-     * @param category     카테고리 (script, document)
-     * @param subDirectory 서브 디렉토리 (MARIADB, CRATEDB 등)
+     * @param category     카테고리 (script, document, docker 등)
+     * @param subDirectory 서브 디렉토리 (MARIADB, CRATEDB, INFRAEYE1, INFRAEYE2 등)
      * @param fileName     파일명
-     * @return 상대 경로 (예: resource/script/MARIADB/backup.sh)
+     * @return 상대 경로 (예: script/MARIADB/backup.sh)
      */
     private String buildRelativePath(String category, String subDirectory, String fileName) {
-        StringBuilder pathBuilder = new StringBuilder("resource/");
+        StringBuilder pathBuilder = new StringBuilder();
         pathBuilder.append(category.toLowerCase());
 
         if (subDirectory != null && !subDirectory.isBlank()) {
