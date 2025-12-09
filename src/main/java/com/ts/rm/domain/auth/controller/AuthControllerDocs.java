@@ -1,0 +1,118 @@
+package com.ts.rm.domain.auth.controller;
+
+import com.ts.rm.domain.auth.dto.AccessTokenResponse;
+import com.ts.rm.domain.auth.dto.SignInRequest;
+import com.ts.rm.domain.auth.dto.SignUpRequest;
+import com.ts.rm.domain.auth.dto.SignUpResponse;
+import com.ts.rm.global.response.ApiResponse;
+import com.ts.rm.global.response.SwaggerResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.Map;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.RequestBody;
+
+/**
+ * AuthController Swagger 문서화 인터페이스
+ */
+@Tag(name = "인증", description = "회원가입, 로그인, 토큰 갱신 API")
+@SwaggerResponse
+public interface AuthControllerDocs {
+
+    @Operation(
+            summary = "회원가입",
+            description = "새로운 계정을 생성합니다.",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "생성됨",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SignUpApiResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<SignUpResponse>> signUp(
+            @RequestBody SignUpRequest request
+    );
+
+    @Operation(
+            summary = "로그인",
+            description = "이메일과 비밀번호로 로그인합니다. Access Token은 응답 본문에, Refresh Token은 HttpOnly Cookie로 전달됩니다.",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AccessTokenApiResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<AccessTokenResponse>> signIn(
+            @RequestBody SignInRequest request,
+            HttpServletResponse response
+    );
+
+    @Operation(
+            summary = "토큰 갱신",
+            description = "Cookie의 Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급받습니다.",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AccessTokenApiResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<AccessTokenResponse>> refreshToken(
+            @CookieValue(name = "refreshToken", required = true) String refreshToken,
+            HttpServletResponse response
+    );
+
+    @Operation(
+            summary = "로그아웃",
+            description = "Cookie의 Refresh Token을 무효화하고 로그아웃합니다.",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    example = "{\"status\": \"success\", \"data\": {\"message\": \"로그아웃되었습니다.\"}}"
+                            )
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<Map<String, String>>> logout(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response
+    );
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 회원가입 응답
+     */
+    @Schema(description = "회원가입 API 응답")
+    class SignUpApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "회원가입 정보")
+        public SignUpResponse data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - Access Token 응답
+     */
+    @Schema(description = "Access Token API 응답")
+    class AccessTokenApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "Access Token 정보")
+        public AccessTokenResponse data;
+    }
+}

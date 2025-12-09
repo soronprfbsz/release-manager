@@ -4,9 +4,6 @@ import com.ts.rm.domain.job.dto.BackupFileDto;
 import com.ts.rm.domain.job.service.BackupFileService;
 import com.ts.rm.global.file.HttpFileDownloadUtil;
 import com.ts.rm.global.response.ApiResponse;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -33,33 +30,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/jobs/backup-files")
 @RequiredArgsConstructor
-@Tag(name = "작업", description = "작업 관리 API")
-public class BackupFileController {
+public class BackupFileController implements BackupFileControllerDocs {
 
     private final BackupFileService backupFileService;
 
-    /**
-     * 백업 파일 목록 조회 (검색 + 페이징)
-     */
+    @Override
     @GetMapping
-    @Operation(
-            summary = "백업 파일 목록 조회",
-            description = "백업 파일 목록을 검색 조건과 페이징으로 조회합니다.\n\n"
-                    + "**검색 조건**:\n"
-                    + "- `fileCategory`: 파일 카테고리 (MARIADB, CRATEDB)\n"
-                    + "- `fileType`: 파일 타입 (확장자 대문자, 예: SQL, GZ, ZIP)\n"
-                    + "- `fileName`: 파일명 (부분 일치)"
-    )
     public ApiResponse<Page<BackupFileDto.ListResponse>> listBackupFiles(
-            @Parameter(description = "파일 카테고리 (MARIADB, CRATEDB)")
             @RequestParam(required = false) String fileCategory,
-
-            @Parameter(description = "파일 타입 (예: SQL, GZ, ZIP)")
             @RequestParam(required = false) String fileType,
-
-            @Parameter(description = "파일명 (부분 일치)")
             @RequestParam(required = false) String fileName,
-
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
@@ -73,17 +53,9 @@ public class BackupFileController {
         return ApiResponse.success(response);
     }
 
-    /**
-     * 백업 파일 다운로드
-     */
+    @Override
     @GetMapping("/{id}/download")
-    @Operation(
-            summary = "백업 파일 다운로드",
-            description = "백업 파일을 다운로드합니다."
-    )
-    public void downloadBackupFile(
-            @PathVariable Long id,
-            HttpServletResponse response) throws IOException {
+    public void downloadBackupFile(@PathVariable Long id, HttpServletResponse response) throws IOException {
 
         log.info("백업 파일 다운로드 요청 - ID: {}", id);
 
@@ -100,19 +72,8 @@ public class BackupFileController {
         log.info("백업 파일 다운로드 완료 - ID: {}, fileName: {}", id, fileName);
     }
 
-    /**
-     * 백업 파일 삭제
-     */
+    @Override
     @DeleteMapping("/{id}")
-    @Operation(
-            summary = "백업 파일 삭제",
-            description = "백업 파일을 삭제합니다.\n\n"
-                    + "**삭제 범위**:\n"
-                    + "- DB 레코드 (backup_file 테이블)\n"
-                    + "- 실제 파일\n\n"
-                    + "**주의사항**:\n"
-                    + "- 삭제된 데이터는 복구할 수 없습니다."
-    )
     public ApiResponse<Void> deleteBackupFile(@PathVariable Long id) {
 
         log.info("백업 파일 삭제 요청 - ID: {}", id);

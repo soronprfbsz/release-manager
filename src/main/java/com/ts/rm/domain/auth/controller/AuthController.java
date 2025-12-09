@@ -8,10 +8,6 @@ import com.ts.rm.domain.auth.dto.TokenResponse;
 import com.ts.rm.domain.auth.service.AuthService;
 import com.ts.rm.domain.refreshtoken.service.RefreshTokenService;
 import com.ts.rm.global.response.ApiResponse;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -36,8 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "인증", description = "회원가입, 로그인, 토큰 갱신 API")
-public class AuthController {
+public class AuthController implements AuthControllerDocs {
 
     private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
@@ -54,8 +49,8 @@ public class AuthController {
      * @param request 회원가입 요청 DTO
      * @return 회원가입 응답 DTO
      */
+    @Override
     @PostMapping("/signup")
-    @Operation(summary = "회원가입", description = "새로운 계정을 생성합니다.")
     public ResponseEntity<ApiResponse<SignUpResponse>> signUp(@Valid @RequestBody SignUpRequest request) {
         log.info("Sign up request received for email: {}", request.getEmail());
         SignUpResponse response = authService.signUp(request);
@@ -72,8 +67,8 @@ public class AuthController {
      * @param response HTTP 응답 (Cookie 설정용)
      * @return AccessTokenResponse (Access Token만 포함)
      */
+    @Override
     @PostMapping("/signin")
-    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인합니다. Access Token은 응답 본문에, Refresh Token은 HttpOnly Cookie로 전달됩니다.")
     public ResponseEntity<ApiResponse<AccessTokenResponse>> signIn(
             @Valid @RequestBody SignInRequest request,
             HttpServletResponse response) {
@@ -99,8 +94,8 @@ public class AuthController {
      * @param response HTTP 응답 (Cookie 설정용)
      * @return 새로운 AccessTokenResponse
      */
+    @Override
     @PostMapping("/refresh")
-    @Operation(summary = "토큰 갱신", description = "Cookie의 Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급받습니다.")
     public ResponseEntity<ApiResponse<AccessTokenResponse>> refreshToken(
             @CookieValue(name = "refreshToken", required = true) String refreshToken,
             HttpServletResponse response) {
@@ -125,8 +120,8 @@ public class AuthController {
      * @param response HTTP 응답 (Cookie 삭제용)
      * @return 로그아웃 완료 메시지
      */
+    @Override
     @PostMapping("/logout")
-    @Operation(summary = "로그아웃", description = "Cookie의 Refresh Token을 무효화하고 로그아웃합니다.")
     public ResponseEntity<ApiResponse<Map<String, String>>> logout(
             @CookieValue(name = "refreshToken", required = false) String refreshToken,
             HttpServletResponse response) {
