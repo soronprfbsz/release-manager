@@ -491,7 +491,8 @@ INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
 
 -- 작업 관리 하위
 INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
-('job_mariadb', 'MariaDB', 1);
+('job_mariadb', 'MariaDB', 1),
+('job_terminal', '터미널', 2);
 
 -- =========================================================
 -- 메뉴 계층 구조 데이터 삽입 (Closure Table)
@@ -514,7 +515,8 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('operation_customer', 'operation_customer', 0),
 ('operation_engineer', 'operation_engineer', 0),
 ('operation_account', 'operation_account', 0),
-('job_mariadb', 'job_mariadb', 0);
+('job_mariadb', 'job_mariadb', 0),
+('job_terminal', 'job_terminal', 0);
 
 -- 부모-자식 관계 (depth=1)
 -- 버전 관리
@@ -535,7 +537,8 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 
 -- 작업 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('job_management', 'job_mariadb', 1);
+('job_management', 'job_mariadb', 1),
+('job_management', 'job_terminal', 1);
 
 -- =========================================================
 -- 메뉴 권한 데이터 삽입
@@ -560,7 +563,8 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('operation_engineer', 'ADMIN'),
 ('operation_account', 'ADMIN'),
 -- 2depth - 작업 관리
-('job_mariadb', 'ADMIN');
+('job_mariadb', 'ADMIN'),
+('job_terminal', 'ADMIN');
 
 -- USER: 계정 메뉴 제외
 INSERT INTO menu_role (menu_id, role) VALUES
@@ -580,7 +584,8 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('operation_customer', 'USER'),
 ('operation_engineer', 'USER'),
 -- 2depth - 작업 관리
-('job_mariadb', 'USER');
+('job_mariadb', 'USER'),
+('job_terminal', 'USER');
 
 -- GUEST: 운영 관리 전체 제외
 INSERT INTO menu_role (menu_id, role) VALUES
@@ -596,4 +601,5 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('patch_standard', 'GUEST'),
 ('patch_custom', 'GUEST'),
 -- 2depth - 작업 관리
-('job_mariadb', 'GUEST');
+('job_mariadb', 'GUEST'),
+('job_terminal', 'GUEST');
