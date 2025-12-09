@@ -5,11 +5,6 @@ import com.ts.rm.domain.customer.service.CustomerService;
 import com.ts.rm.global.response.ApiResponse;
 import com.ts.rm.global.security.SecurityUtil;
 import com.ts.rm.global.security.TokenInfo;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,11 +31,10 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>고객사 관리 REST API
  */
 @Slf4j
-@Tag(name = "고객사", description = "고객사 관리 API")
 @RestController
 @RequestMapping("/api/customers")
 @RequiredArgsConstructor
-public class CustomerController {
+public class CustomerController implements CustomerControllerDocs {
 
     private final CustomerService customerService;
 
@@ -50,8 +44,7 @@ public class CustomerController {
      * @param request 고객사 생성 요청
      * @return 생성된 고객사 정보
      */
-    @Operation(summary = "고객사 생성",
-            description = "새로운 고객사를 생성합니다. Authorization 헤더에 JWT 토큰 필수 (Bearer {token})")
+    @Override
     @PostMapping
     public ResponseEntity<ApiResponse<CustomerDto.DetailResponse>> createCustomer(
             @Valid @RequestBody CustomerDto.CreateRequest request) {
@@ -74,10 +67,9 @@ public class CustomerController {
      * @param id 고객사 ID
      * @return 고객사 상세 정보
      */
-    @Operation(summary = "고객사 조회 (ID)", description = "ID로 고객사 정보를 조회합니다")
+    @Override
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CustomerDto.DetailResponse>> getCustomerById(
-            @Parameter(description = "고객사 ID", required = true) @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CustomerDto.DetailResponse>> getCustomerById(@PathVariable Long id) {
         CustomerDto.DetailResponse response = customerService.getCustomerById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -90,15 +82,12 @@ public class CustomerController {
      * @param pageable 페이징 정보
      * @return 고객사 페이지
      */
-    @Operation(summary = "고객사 목록 조회",
-            description = "고객사 목록 조회합니다. isActive로 활성화 여부 필터링, keyword로 고객사명 검색 가능. page, size, sort 파라미터 사용 가능")
+    @Override
     @GetMapping
     public ResponseEntity<ApiResponse<Page<CustomerDto.ListResponse>>> getCustomers(
-            @Parameter(description = "활성화 여부 (true: 활성화만, false: 비활성화만, null: 전체)")
             @RequestParam(required = false) Boolean isActive,
-            @Parameter(description = "고객사명 검색 키워드")
             @RequestParam(required = false) String keyword,
-            @ParameterObject @PageableDefault(size = 10, sort = "customerName", direction = org.springframework.data.domain.Sort.Direction.ASC) Pageable pageable) {
+            @ParameterObject Pageable pageable) {
         Page<CustomerDto.ListResponse> response = customerService.getCustomersWithPaging(isActive, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -110,11 +99,10 @@ public class CustomerController {
      * @param request 수정 요청
      * @return 수정된 고객사 정보
      */
-    @Operation(summary = "고객사 정보 수정",
-            description = "고객사 정보를 수정합니다.")
+    @Override
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<CustomerDto.DetailResponse>> updateCustomer(
-            @Parameter(description = "고객사 ID", required = true) @PathVariable Long id,
+            @PathVariable Long id,
             @Valid @RequestBody CustomerDto.UpdateRequest request) {
 
         log.info("고객사 수정 요청 - id: {}", id);
@@ -133,10 +121,9 @@ public class CustomerController {
      * @param id 고객사 ID
      * @return 성공 응답
      */
-    @Operation(summary = "고객사 삭제", description = "고객사를 삭제합니다")
+    @Override
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteCustomer(
-            @Parameter(description = "고객사 ID", required = true) @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteCustomer(@PathVariable Long id) {
         customerService.deleteCustomer(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -148,11 +135,11 @@ public class CustomerController {
      * @param isActive 활성화 여부 (true: 활성화, false: 비활성화)
      * @return 성공 응답
      */
-    @Operation(summary = "고객사 활성화 상태 변경", description = "고객사의 활성화 상태를 변경합니다")
+    @Override
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<Void>> updateCustomerStatus(
-            @Parameter(description = "고객사 ID", required = true) @PathVariable Long id,
-            @Parameter(description = "활성화 여부", required = true) @RequestParam Boolean isActive) {
+            @PathVariable Long id,
+            @RequestParam Boolean isActive) {
         customerService.updateCustomerStatus(id, isActive);
         return ResponseEntity.ok(ApiResponse.success(null));
     }

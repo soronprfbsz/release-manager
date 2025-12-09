@@ -5,9 +5,6 @@ import com.ts.rm.domain.engineer.service.EngineerService;
 import com.ts.rm.global.response.ApiResponse;
 import com.ts.rm.global.security.SecurityUtil;
 import com.ts.rm.global.security.TokenInfo;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>엔지니어 관리 REST API
  */
 @Slf4j
-@Tag(name = "엔지니어", description = "엔지니어 관리 API")
 @RestController
 @RequestMapping("/api/engineers")
 @RequiredArgsConstructor
-public class EngineerController {
+public class EngineerController implements EngineerControllerDocs {
 
     private final EngineerService engineerService;
 
@@ -47,8 +43,7 @@ public class EngineerController {
      * @param request 엔지니어 생성 요청
      * @return 생성된 엔지니어 정보
      */
-    @Operation(summary = "엔지니어 생성",
-            description = "새로운 엔지니어를 등록합니다. Authorization 헤더에 JWT 토큰 필수 (Bearer {token})")
+    @Override
     @PostMapping
     public ResponseEntity<ApiResponse<EngineerDto.DetailResponse>> createEngineer(
             @Valid @RequestBody EngineerDto.CreateRequest request) {
@@ -70,10 +65,9 @@ public class EngineerController {
      * @param id 엔지니어 ID
      * @return 엔지니어 상세 정보
      */
-    @Operation(summary = "엔지니어 조회 (ID)", description = "ID로 엔지니어 정보를 조회합니다")
+    @Override
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<EngineerDto.DetailResponse>> getEngineerById(
-            @Parameter(description = "엔지니어 ID", required = true) @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<EngineerDto.DetailResponse>> getEngineerById(@PathVariable Long id) {
         EngineerDto.DetailResponse response = engineerService.getEngineerById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -86,15 +80,12 @@ public class EngineerController {
      * @param pageable 페이징 정보
      * @return 엔지니어 페이지
      */
-    @Operation(summary = "엔지니어 목록 조회",
-            description = "엔지니어 목록을 조회합니다. departmentId로 부서 필터링, keyword로 이름 검색 가능. page, size, sort 파라미터 사용 가능")
+    @Override
     @GetMapping
     public ResponseEntity<ApiResponse<Page<EngineerDto.ListResponse>>> getEngineers(
-            @Parameter(description = "부서 ID 필터")
             @RequestParam(required = false) Long departmentId,
-            @Parameter(description = "이름 검색 키워드")
             @RequestParam(required = false) String keyword,
-            @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+            @ParameterObject Pageable pageable) {
         Page<EngineerDto.ListResponse> response = engineerService.getEngineers(departmentId, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -106,11 +97,10 @@ public class EngineerController {
      * @param request 수정 요청
      * @return 수정된 엔지니어 정보
      */
-    @Operation(summary = "엔지니어 정보 수정",
-            description = "엔지니어 정보를 수정합니다.")
+    @Override
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<EngineerDto.DetailResponse>> updateEngineer(
-            @Parameter(description = "엔지니어 ID", required = true) @PathVariable Long id,
+            @PathVariable Long id,
             @Valid @RequestBody EngineerDto.UpdateRequest request) {
 
         log.info("엔지니어 수정 요청 - id: {}", id);
@@ -128,10 +118,9 @@ public class EngineerController {
      * @param id 엔지니어 ID
      * @return 성공 응답
      */
-    @Operation(summary = "엔지니어 삭제", description = "엔지니어를 삭제합니다")
+    @Override
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteEngineer(
-            @Parameter(description = "엔지니어 ID", required = true) @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteEngineer(@PathVariable Long id) {
         engineerService.deleteEngineer(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }

@@ -1,19 +1,16 @@
 package com.ts.rm.domain.job.controller;
 
-import com.ts.rm.domain.job.dto.MariaDBBackupRequest;
 import com.ts.rm.domain.job.dto.JobResponse;
+import com.ts.rm.domain.job.dto.MariaDBBackupRequest;
 import com.ts.rm.domain.job.service.JobStatusManager;
 import com.ts.rm.domain.job.service.MariaDBBackupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.response.ApiResponse;
 import com.ts.rm.global.security.jwt.JwtTokenProvider;
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -32,8 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
-@Tag(name = "작업", description = "작업 관리 API")
-public class MariaDBBackupController {
+public class MariaDBBackupController implements MariaDBBackupControllerDocs {
 
     private final MariaDBBackupService backupService;
     private final JobStatusManager jobStatusManager;
@@ -42,16 +38,10 @@ public class MariaDBBackupController {
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern(
             "yyyyMMdd_HHmmss");
 
-    /**
-     * MariaDB 백업 실행 (비동기)
-     *
-     * @param request 백업 요청 정보
-     * @return 백업 작업 시작 응답
-     */
+    @Override
     @PostMapping("/mariadb-backup")
-    @Operation(summary = "MariaDB 백업", description = "MariaDB 서버의 데이터베이스를 비동기로 백업합니다.")
     public ResponseEntity<ApiResponse<JobResponse>> executeBackup(
-            @Parameter(hidden = true) @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader("Authorization") String authorizationHeader,
             @Valid @RequestBody MariaDBBackupRequest request) {
 
         log.info("MariaDB 백업 요청 - host: {}, database: {}",
@@ -87,16 +77,9 @@ public class MariaDBBackupController {
         return ResponseEntity.ok(ApiResponse.success(runningResponse));
     }
 
-    /**
-     * 백업 작업 상태 조회
-     *
-     * @param jobId 작업 ID
-     * @return 작업 상태 응답
-     */
+    @Override
     @GetMapping("/mariadb-backup/job-status/{jobId}")
-    @Operation(summary = "백업 작업 상태 조회", description = "백업 작업의 현재 상태를 조회합니다.")
-    public ResponseEntity<ApiResponse<JobResponse>> getBackupJobStatus(
-            @PathVariable String jobId) {
+    public ResponseEntity<ApiResponse<JobResponse>> getBackupJobStatus(@PathVariable String jobId) {
 
         log.info("백업 작업 상태 조회 요청 - jobId: {}", jobId);
 

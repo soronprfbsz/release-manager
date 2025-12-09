@@ -18,27 +18,6 @@ import java.lang.annotation.Target;
 @ApiResponses(
         value = {
                 @ApiResponse(
-                        responseCode = "200",
-                        description = "성공",
-                        content =
-                        @Content(
-                                mediaType = "application/json",
-                                schema = @Schema(implementation = com.ts.rm.global.response.ApiResponse.class),
-                                examples =
-                                @ExampleObject(
-                                        name = "Success",
-                                        value =
-                                                """
-                                                        {
-                                                        "status": "success",
-                                                        "data": {
-                                                        	"id": 1,
-                                                        	"email": "user@example.com",
-                                                        	"name": "홍길동"
-                                                        }
-                                                        }
-                                                        """))),
-                @ApiResponse(
                         responseCode = "4xx",
                         description = "클라이언트 에러 (잘못된 요청)",
                         content =
@@ -54,10 +33,7 @@ import java.lang.annotation.Target;
                                                         "data": {
                                                         	"code": "C001",
                                                         	"message": "잘못된 입력값입니다",
-                                                        	"detail": {
-                                                        	"email": "이메일 형식이 올바르지 않습니다",
-                                                        	"age": "양수여야 합니다"
-                                                        	}
+                                                        	"detail": {}
                                                         }
                                                         }
                                                         """))),
