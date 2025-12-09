@@ -208,6 +208,28 @@ CREATE TABLE IF NOT EXISTS backup_file (
     INDEX idx_bf_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 테이블';
 
+CREATE TABLE IF NOT EXISTS backup_file_log (
+    backup_file_log_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '백업 파일 로그 ID',
+    backup_file_id BIGINT NOT NULL COMMENT '백업 파일 ID',
+    log_type VARCHAR(20) NOT NULL COMMENT '로그 타입 (BACKUP, RESTORE)',
+    log_file_name VARCHAR(255) NOT NULL COMMENT '로그 파일명',
+    log_file_path VARCHAR(500) NOT NULL COMMENT '로그 파일 경로 (job/logs/ 하위 상대경로)',
+    file_size BIGINT COMMENT '파일 크기 (bytes)',
+    checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
+    description TEXT COMMENT '로그 설명',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_bfl_backup_file_id (backup_file_id),
+    INDEX idx_bfl_log_type (log_type),
+    INDEX idx_bfl_log_file_name (log_file_name),
+    INDEX idx_bfl_created_at (created_at),
+
+    CONSTRAINT fk_backup_file_log_backup_file FOREIGN KEY (backup_file_id)
+        REFERENCES backup_file(backup_file_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 로그 테이블';
+
 CREATE TABLE IF NOT EXISTS department (
     department_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '부서 ID',
     department_name VARCHAR(100) NOT NULL UNIQUE COMMENT '부서명',

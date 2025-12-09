@@ -92,7 +92,13 @@ public class PatchController {
      */
     @GetMapping
     @Operation(summary = "패치 목록 조회",
-               description = "패치 목록을 페이징하여 조회합니다. projectId와 releaseType으로 필터링 가능. page, size, sort 파라미터 사용 가능")
+               description = "패치 목록을 페이징하여 조회합니다. projectId와 releaseType으로 필터링 가능. page, size, sort 파라미터 사용 가능\n\n"
+                       + "정렬 가능 필드:\n"
+                       + "- patchName: 패치명\n"
+                       + "- customerName: 고객사명\n"
+                       + "- engineerName: 담당 엔지니어명\n"
+                       + "- createdBy: 생성자\n"
+                       + "- createdAt: 생성일시")
     public ApiResponse<Page<PatchDto.ListResponse>> listPatches(
             @Parameter(description = "프로젝트 ID (예: infraeye2)")
             @RequestParam(required = false) String projectId,
@@ -103,7 +109,10 @@ public class PatchController {
         log.info("패치 목록 조회 요청 - projectId: {}, releaseType: {}, page: {}, size: {}",
                 projectId, releaseType, pageable.getPageNumber(), pageable.getPageSize());
 
-        Page<PatchDto.ListResponse> response = patchService.listPatchesWithPaging(projectId, releaseType, pageable);
+        // API 정렬 필드를 엔티티 경로로 매핑
+        Pageable mappedPageable = com.ts.rm.global.querydsl.SortFieldMapper.mapPatchSortFields(pageable);
+
+        Page<PatchDto.ListResponse> response = patchService.listPatchesWithPaging(projectId, releaseType, mappedPageable);
 
         return ApiResponse.success(response);
     }

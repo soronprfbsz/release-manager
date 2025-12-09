@@ -120,7 +120,10 @@ public class ReleaseVersionUploadService {
             // 예외 발생 시 파일시스템 롤백
             log.error("Error creating version with files, rolling back filesystem changes", e);
             if (versionDir != null) {
-                fileSystemService.rollbackFileSystem(versionDir, request.version());
+                String projectId = savedVersion.getProject() != null
+                        ? savedVersion.getProject().getProjectId()
+                        : "infraeye2";
+                fileSystemService.rollbackFileSystem(versionDir, projectId, request.version());
             }
             throw e; // DB 트랜잭션 롤백을 위해 예외 재발생
         }

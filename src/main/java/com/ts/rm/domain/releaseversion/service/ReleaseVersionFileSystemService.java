@@ -174,9 +174,10 @@ public class ReleaseVersionFileSystemService {
      * 파일시스템 롤백 (버전 디렉토리 및 release_metadata.json 복원)
      *
      * @param versionDir 생성된 버전 디렉토리 경로
+     * @param projectId  프로젝트 ID
      * @param version    버전 번호
      */
-    public void rollbackFileSystem(String versionDir, String version) {
+    public void rollbackFileSystem(String versionDir, String projectId, String version) {
         try {
             // 1. 버전 디렉토리 삭제
             Path versionPath = Paths.get(versionDir);
@@ -193,7 +194,7 @@ public class ReleaseVersionFileSystemService {
             }
 
             // 3. release_metadata.json에서 해당 버전 엔트리 제거
-            metadataManager.removeVersionEntry("STANDARD", version);
+            metadataManager.removeVersionEntry(projectId, "STANDARD", null, version);
             log.warn("Rolling back: Removed version {} from release_metadata.json", version);
 
         } catch (Exception e) {

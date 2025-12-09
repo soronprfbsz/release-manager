@@ -2,6 +2,8 @@ package com.ts.rm.domain.job.service;
 
 import com.ts.rm.domain.job.dto.BackupLogDto;
 import com.ts.rm.domain.job.entity.BackupFile;
+import com.ts.rm.domain.job.entity.BackupFileLog;
+import com.ts.rm.domain.job.repository.BackupFileLogRepository;
 import com.ts.rm.domain.job.repository.BackupFileRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
@@ -11,13 +13,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,6 +41,7 @@ public class BackupLogService {
     private static final String LOG_TYPE_RESTORE = "RESTORE";
 
     private final BackupFileRepository backupFileRepository;
+    private final BackupFileLogRepository backupFileLogRepository;
 
     @Value("${app.release.base-path:/app/release_files}")
     private String releaseBasePath;
@@ -52,7 +49,7 @@ public class BackupLogService {
     /**
      * 백업 파일에 대한 관련 로그 파일 목록 조회
      *
-     * <p>backupFileId를 기준으로 해당 백업 파일의 백업 로그와 복원 로그를 모두 조회합니다.
+     * <p>DB에서 backupFileId를 기준으로 해당 백업 파일의 백업 로그와 복원 로그를 모두 조회합니다.
      *
      * @param backupFileId 백업 파일 ID
      * @return 로그 파일 목록 응답
@@ -62,29 +59,14 @@ public class BackupLogService {
 
         log.info("백업 로그 조회 - backupFileId: {}", backupFileId);
 
-        List<BackupLogDto.LogFileInfo> logFiles = new ArrayList<>();
-        Path logDir = Paths.get(releaseBasePath, "job/logs", backupFile.getFileCategory());
+        // DB에서 로그 파일 정보 조회
+        List<BackupFileLog> logEntities = backupFileLogRepository
+                .findByBackupFile_BackupFileIdOrderByCreatedAtDesc(backupFileId);
 
-        if (!Files.exists(logDir)) {
-            log.warn("로그 디렉토리 존재하지 않음: {}", logDir);
-            return new BackupLogDto.LogListResponse(
-                    backupFileId,
-                    backupFile.getFileName(),
-                    List.of()
-            );
-        }
-
-        // 백업 로그 파일 조회 (backup_{backupFileId}_{timestamp}.log)
-        String backupLogPrefix = String.format("backup_%d_", backupFileId);
-        logFiles.addAll(findLogsByPrefix(logDir, backupLogPrefix, LOG_TYPE_BACKUP));
-
-        // 복원 로그 파일 조회 (restore_{backupFileId}_{timestamp}.log)
-        String restoreLogPrefix = String.format("restore_%d_", backupFileId);
-        logFiles.addAll(findLogsByPrefix(logDir, restoreLogPrefix, LOG_TYPE_RESTORE));
-
-        // 수정일시 기준 내림차순 정렬
-        logFiles.sort(Comparator.comparing(BackupLogDto.LogFileInfo::lastModified,
-                Comparator.nullsLast(Comparator.reverseOrder())));
+        // Entity를 DTO로 변환
+        List<BackupLogDto.LogFileInfo> logFiles = logEntities.stream()
+                .map(this::toLogFileInfo)
+                .toList();
 
         log.info("백업 로그 조회 완료 - backupFileId: {}, 로그 파일 수: {}",
                 backupFileId, logFiles.size());
@@ -105,16 +87,22 @@ public class BackupLogService {
      */
     public void downloadLogFile(Long backupFileId, String logFileName, OutputStream outputStream) {
         BackupFile backupFile = getBackupFile(backupFileId);
-        Path logFilePath = Paths.get(releaseBasePath, "job/logs",
-                backupFile.getFileCategory(), logFileName);
 
         log.info("로그 파일 다운로드 - backupFileId: {}, logFileName: {}", backupFileId, logFileName);
 
         // 보안: 경로 순회 공격 방지
         validateLogFileName(logFileName);
 
-        // 보안: 요청한 backupFileId와 로그 파일이 일치하는지 검증
-        validateLogFileOwnership(backupFileId, logFileName);
+        // DB에서 로그 파일 정보 조회하여 소유권 검증
+        BackupFileLog logEntity = backupFileLogRepository
+                .findByBackupFile_BackupFileIdOrderByCreatedAtDesc(backupFileId).stream()
+                .filter(log -> log.getLogFileName().equals(logFileName))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                        "해당 백업 파일의 로그가 아니거나 존재하지 않습니다"));
+
+        // 실제 파일 경로 구성 (job/logs/{fileCategory}/{backupFileName}/{logFileName})
+        Path logFilePath = Paths.get(releaseBasePath, logEntity.getLogFilePath());
 
         if (!Files.exists(logFilePath)) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND,
@@ -142,12 +130,17 @@ public class BackupLogService {
      * @return 파일 크기 (bytes)
      */
     public long getLogFileSize(Long backupFileId, String logFileName) {
-        BackupFile backupFile = getBackupFile(backupFileId);
-        Path logFilePath = Paths.get(releaseBasePath, "job/logs",
-                backupFile.getFileCategory(), logFileName);
-
         validateLogFileName(logFileName);
-        validateLogFileOwnership(backupFileId, logFileName);
+
+        // DB에서 로그 파일 정보 조회
+        BackupFileLog logEntity = backupFileLogRepository
+                .findByBackupFile_BackupFileIdOrderByCreatedAtDesc(backupFileId).stream()
+                .filter(log -> log.getLogFileName().equals(logFileName))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                        "해당 백업 파일의 로그가 아니거나 존재하지 않습니다"));
+
+        Path logFilePath = Paths.get(releaseBasePath, logEntity.getLogFilePath());
 
         if (!Files.exists(logFilePath)) {
             throw new BusinessException(ErrorCode.FILE_NOT_FOUND,
@@ -172,54 +165,16 @@ public class BackupLogService {
     }
 
     /**
-     * 특정 prefix로 시작하는 로그 파일 목록 조회
-     *
-     * @param logDir  로그 디렉토리
-     * @param prefix  파일명 prefix (예: "backup_1_", "restore_1_")
-     * @param logType 로그 타입 (BACKUP, RESTORE)
-     * @return 로그 파일 정보 목록
+     * BackupFileLog Entity를 LogFileInfo DTO로 변환
      */
-    private List<BackupLogDto.LogFileInfo> findLogsByPrefix(Path logDir, String prefix, String logType) {
-        List<BackupLogDto.LogFileInfo> logFiles = new ArrayList<>();
-
-        try (Stream<Path> files = Files.list(logDir)) {
-            files.filter(path -> path.getFileName().toString().startsWith(prefix))
-                    .filter(path -> path.getFileName().toString().endsWith(".log"))
-                    .forEach(path -> logFiles.add(createLogFileInfo(path, logType)));
-        } catch (IOException e) {
-            log.warn("로그 파일 검색 실패 - prefix: {}, error: {}", prefix, e.getMessage());
-        }
-
-        return logFiles;
-    }
-
-    /**
-     * 로그 파일 정보 생성
-     */
-    private BackupLogDto.LogFileInfo createLogFileInfo(Path logPath, String logType) {
-        try {
-            BasicFileAttributes attrs = Files.readAttributes(logPath, BasicFileAttributes.class);
-            long fileSize = attrs.size();
-            LocalDateTime lastModified = LocalDateTime.ofInstant(
-                    attrs.lastModifiedTime().toInstant(), ZoneId.systemDefault());
-
-            return new BackupLogDto.LogFileInfo(
-                    logPath.getFileName().toString(),
-                    logType,
-                    fileSize,
-                    BackupLogDto.formatFileSize(fileSize),
-                    lastModified
-            );
-        } catch (IOException e) {
-            log.warn("로그 파일 정보 조회 실패: {}", logPath, e);
-            return new BackupLogDto.LogFileInfo(
-                    logPath.getFileName().toString(),
-                    logType,
-                    null,
-                    "-",
-                    null
-            );
-        }
+    private BackupLogDto.LogFileInfo toLogFileInfo(BackupFileLog logEntity) {
+        return new BackupLogDto.LogFileInfo(
+                logEntity.getLogFileName(),
+                logEntity.getLogType(),
+                logEntity.getFileSize(),
+                BackupLogDto.formatFileSize(logEntity.getFileSize()),
+                logEntity.getCreatedAt()
+        );
     }
 
     /**
@@ -242,23 +197,93 @@ public class BackupLogService {
     }
 
     /**
-     * 로그 파일 소유권 검증
+     * 로그 파일 경로 생성 헬퍼 메서드
      *
-     * <p>요청한 backupFileId와 로그 파일명의 ID가 일치하는지 검증합니다.
-     * 다른 백업 파일의 로그에 접근하는 것을 방지합니다.
+     * <p>새로운 경로 구조: job/logs/{fileCategory}/{backupFileName}/{logFileName}
      *
-     * @param backupFileId 요청한 백업 파일 ID
-     * @param logFileName  로그 파일명
+     * @param backupFile  백업 파일 정보
+     * @param logFileName 로그 파일명
+     * @return 로그 파일 상대 경로
      */
-    private void validateLogFileOwnership(Long backupFileId, String logFileName) {
-        // 로그 파일명 패턴: (backup|restore)_{backupFileId}_{timestamp}.log
-        String expectedBackupPrefix = String.format("backup_%d_", backupFileId);
-        String expectedRestorePrefix = String.format("restore_%d_", backupFileId);
+    public static String buildLogFilePath(BackupFile backupFile, String logFileName) {
+        // job/logs/MARIADB/backup_20250101_120000.sql/backup_1_20250101_120500.log
+        return String.format("job/logs/%s/%s/%s",
+                backupFile.getFileCategory(),
+                backupFile.getFileName(),
+                logFileName);
+    }
 
-        if (!logFileName.startsWith(expectedBackupPrefix)
-                && !logFileName.startsWith(expectedRestorePrefix)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "해당 백업 파일의 로그가 아닙니다");
+    /**
+     * 로그 파일 생성 (DB에 메타데이터 저장)
+     *
+     * <p>백업/복원 작업 시 로그 파일을 생성하고 DB에 메타데이터를 저장합니다.
+     *
+     * @param backupFile  백업 파일 정보
+     * @param logFileName 로그 파일명
+     * @param logType     로그 타입 (BACKUP, RESTORE)
+     * @param createdBy   생성자
+     * @return 생성된 로그 파일 엔티티
+     */
+    @Transactional
+    public BackupFileLog createLogFile(BackupFile backupFile, String logFileName,
+            String logType, String createdBy) {
+        String logFilePath = buildLogFilePath(backupFile, logFileName);
+
+        // 실제 파일 디렉토리 생성
+        Path logDir = Paths.get(releaseBasePath, "job/logs",
+                backupFile.getFileCategory(), backupFile.getFileName());
+        try {
+            Files.createDirectories(logDir);
+        } catch (IOException e) {
+            log.error("로그 디렉토리 생성 실패: {}", logDir, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "로그 디렉토리 생성에 실패했습니다");
         }
+
+        // DB에 메타데이터 저장
+        BackupFileLog logEntity = BackupFileLog.builder()
+                .backupFile(backupFile)
+                .logType(logType)
+                .logFileName(logFileName)
+                .logFilePath(logFilePath)
+                .createdBy(createdBy)
+                .build();
+
+        return backupFileLogRepository.save(logEntity);
+    }
+
+    /**
+     * 로그 파일 삭제 (DB 메타데이터 및 실제 파일 삭제)
+     *
+     * @param backupFileId 백업 파일 ID
+     * @param logFileName  삭제할 로그 파일명
+     */
+    @Transactional
+    public void deleteLogFile(Long backupFileId, String logFileName) {
+        validateLogFileName(logFileName);
+
+        // DB에서 로그 파일 정보 조회
+        BackupFileLog logEntity = backupFileLogRepository
+                .findByBackupFile_BackupFileIdOrderByCreatedAtDesc(backupFileId).stream()
+                .filter(log -> log.getLogFileName().equals(logFileName))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                        "해당 백업 파일의 로그가 아니거나 존재하지 않습니다"));
+
+        // 실제 파일 삭제
+        Path logFilePath = Paths.get(releaseBasePath, logEntity.getLogFilePath());
+        try {
+            if (Files.exists(logFilePath)) {
+                Files.delete(logFilePath);
+                log.info("로그 파일 삭제 완료: {}", logFilePath);
+            }
+        } catch (IOException e) {
+            log.warn("로그 파일 삭제 실패 (DB에서는 삭제 진행): {}", logFilePath, e);
+        }
+
+        // DB에서 메타데이터 삭제
+        backupFileLogRepository.delete(logEntity);
+        log.info("로그 파일 메타데이터 삭제 완료 - backupFileId: {}, logFileName: {}",
+                backupFileId, logFileName);
     }
 }

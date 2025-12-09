@@ -82,19 +82,23 @@ public class ReleaseMetadataManager {
     /**
      * release_metadata.json에서 특정 버전 엔트리 제거
      *
+     * @param projectId   프로젝트 ID
      * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @param customerCode 고객사 코드 (CUSTOM인 경우 필수)
      * @param version     버전 번호
      */
-    public void removeVersionEntry(String releaseType, String version) {
+    public void removeVersionEntry(String projectId, String releaseType, String customerCode, String version) {
         try {
             // release_metadata.json 경로 결정
             Path metadataPath;
             if ("STANDARD".equals(releaseType)) {
-                metadataPath = Paths.get(baseReleasePath, "versions/standard/release_metadata.json");
+                metadataPath = Paths.get(baseReleasePath, "versions", projectId, "standard", "release_metadata.json");
             } else {
-                // CUSTOM의 경우 customerCode가 필요하지만, 삭제 시점에는 알 수 없으므로 스킵
-                log.warn("Cannot remove custom version entry without customerCode");
-                return;
+                if (customerCode == null) {
+                    log.warn("Cannot remove custom version entry without customerCode");
+                    return;
+                }
+                metadataPath = Paths.get(baseReleasePath, "versions", projectId, "custom", customerCode, "release_metadata.json");
             }
 
             if (!Files.exists(metadataPath)) {
@@ -116,7 +120,7 @@ public class ReleaseMetadataManager {
             // JSON 파일 쓰기
             writeMetadataDocument(metadataPath, updatedDocument);
 
-            log.info("release_metadata.json에서 버전 제거 완료: {}", version);
+            log.info("release_metadata.json에서 버전 제거 완료 - projectId: {}, version: {}", projectId, version);
 
         } catch (IOException e) {
             log.error("release_metadata.json 버전 제거 실패: {}", version, e);
@@ -127,24 +131,25 @@ public class ReleaseMetadataManager {
     /**
      * release_metadata.json에서 특정 버전의 메타데이터 조회
      *
+     * @param projectId    프로젝트 ID
      * @param releaseType  릴리즈 타입 (STANDARD/CUSTOM)
      * @param customerCode 고객사 코드 (CUSTOM인 경우 필수)
      * @param version      버전 번호
      * @return 버전 메타데이터 (없으면 null)
      */
-    public VersionMetadata getVersionMetadata(String releaseType, String customerCode,
+    public VersionMetadata getVersionMetadata(String projectId, String releaseType, String customerCode,
             String version) {
         try {
             // release_metadata.json 경로 결정
             Path metadataPath;
             if ("STANDARD".equals(releaseType)) {
-                metadataPath = Paths.get(baseReleasePath, "versions/standard/release_metadata.json");
+                metadataPath = Paths.get(baseReleasePath, "versions", projectId, "standard", "release_metadata.json");
             } else {
                 if (customerCode == null) {
                     log.warn("customerCode is required for CUSTOM release type");
                     return null;
                 }
-                metadataPath = Paths.get(baseReleasePath, "versions/custom", customerCode,
+                metadataPath = Paths.get(baseReleasePath, "versions", projectId, "custom", customerCode,
                         "release_metadata.json");
             }
 
@@ -179,19 +184,17 @@ public class ReleaseMetadataManager {
      * release_metadata.json 경로 결정
      */
     private Path getMetadataPath(ReleaseVersion version) {
-        String relativePath;
+        String projectId = version.getProject() != null ? version.getProject().getProjectId() : "default";
 
         if ("STANDARD".equals(version.getReleaseType())) {
-            relativePath = "versions/standard/release_metadata.json";
+            return Paths.get(baseReleasePath, "versions", projectId, "standard", "release_metadata.json");
         } else {
             // CUSTOM인 경우 고객사 폴더
             String customerCode = version.getCustomer() != null
                     ? version.getCustomer().getCustomerCode()
                     : "unknown";
-            relativePath = String.format("versions/custom/%s/release_metadata.json", customerCode);
+            return Paths.get(baseReleasePath, "versions", projectId, "custom", customerCode, "release_metadata.json");
         }
-
-        return Paths.get(baseReleasePath, relativePath);
     }
 
     /**
