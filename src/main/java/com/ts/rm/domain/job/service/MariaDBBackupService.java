@@ -46,19 +46,18 @@ public class MariaDBBackupService {
     /**
      * MariaDB 백업 비동기 실행
      *
-     * @param request     백업 요청 정보
-     * @param createdBy   생성자
-     * @param jobId       작업 ID
-     * @param logFileName 로그 파일명
+     * @param request        백업 요청 정보
+     * @param createdBy      생성자
+     * @param jobId          작업 ID
+     * @param logFileName    로그 파일명
+     * @param backupFileName 백업 파일명 (Controller에서 결정됨)
      */
     @Async("backupTaskExecutor")
     @Transactional
     public void executeBackupAsync(MariaDBBackupRequest request, String createdBy,
-            String jobId, String logFileName) {
+            String jobId, String logFileName, String backupFileName) {
 
         String timestamp = jobId.replace("backup_", "");
-        String backupFileName = String.format("backup_%s_%s.sql", request.getDatabase(), timestamp);
-
         String relativePath = "job/backup_files/" + FILE_CATEGORY + "/" + backupFileName;
         Path backupFilePath = Paths.get(releaseBasePath, relativePath);
         Path logFilePath = Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY, logFileName);

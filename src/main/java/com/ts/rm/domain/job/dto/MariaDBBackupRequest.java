@@ -36,6 +36,10 @@ public class MariaDBBackupRequest {
     @Schema(description = "백업할 데이터베이스명", example = "my_database", requiredMode = Schema.RequiredMode.REQUIRED)
     private String database;
 
+    @Schema(description = "백업 파일명 (선택사항, 미입력 시 자동 생성: backup_{database}_{timestamp}.sql)",
+            example = "custom_backup_file.sql")
+    private String fileName;
+
     @Schema(description = "백업 파일 설명", example = "월간 정기 백업")
     private String description;
 }

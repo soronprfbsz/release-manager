@@ -64,13 +64,25 @@ public class MariaDBBackupController {
         String jobId = "backup_" + timestamp;
         String logFileName = String.format("backup_mariadb_%s.log", timestamp);
 
+        // 백업 파일명 결정: 사용자 입력 or 자동 생성
+        String backupFileName;
+        if (request.getFileName() != null && !request.getFileName().isBlank()) {
+            backupFileName = request.getFileName().trim();
+            // .sql 확장자 자동 추가
+            if (!backupFileName.toLowerCase().endsWith(".sql")) {
+                backupFileName += ".sql";
+            }
+        } else {
+            // 자동 생성: backup_{database}_{timestamp}.sql
+            backupFileName = String.format("backup_%s_%s.sql", request.getDatabase(), timestamp);
+        }
+
         // 작업 시작 상태 저장
-        String backupFileName = String.format("backup_%s_%s.sql", request.getDatabase(), timestamp);
         JobResponse runningResponse = JobResponse.createRunning(jobId, backupFileName, "logs/" + logFileName);
         jobStatusManager.saveJobStatus(jobId, runningResponse);
 
         // 비동기 백업 실행
-        backupService.executeBackupAsync(request, createdBy, jobId, logFileName);
+        backupService.executeBackupAsync(request, createdBy, jobId, logFileName, backupFileName);
 
         return ResponseEntity.ok(ApiResponse.success(runningResponse));
     }

@@ -187,7 +187,9 @@ public class ReleaseVersionService {
             fileSystemService.deleteVersionDirectory(version);
 
             // 6. release_metadata.json에서 버전 정보 제거
-            metadataManager.removeVersionEntry(releaseType, versionNumber);
+            String projectId = version.getProject() != null ? version.getProject().getProjectId() : "infraeye2";
+            String customerCode = version.getCustomer() != null ? version.getCustomer().getCustomerCode() : null;
+            metadataManager.removeVersionEntry(projectId, releaseType, customerCode, versionNumber);
 
             log.info("버전 삭제 완료 - version: {}", versionNumber);
 
