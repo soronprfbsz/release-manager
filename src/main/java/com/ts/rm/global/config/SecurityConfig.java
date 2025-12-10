@@ -62,7 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/error").permitAll()  // Spring Boot 기본 에러 처리 엔드포인트
                         // WebSocket 엔드포인트 - SockJS handshake 허용 (STOMP CONNECT에서 JWT 검증)
-                        .requestMatchers("/ws/terminal/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()  // 모든 WebSocket 엔드포인트 (/ws/remote-execution, /ws/terminal 등)
                         // 파일 다운로드 API - 브라우저 네이티브 다운로드 방식 사용으로 인증 제외
                         .requestMatchers("/api/releases/files/*/download").permitAll()  // 릴리즈 파일 다운로드
                         .requestMatchers("/api/releases/versions/*/download").permitAll()  // 릴리즈 버전 전체 다운로드

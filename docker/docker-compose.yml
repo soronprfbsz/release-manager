@@ -63,6 +63,37 @@ services:
       retries: 5
       start_period: 20s
 
+#  clickhouse:
+#    image: clickhouse/clickhouse-server:24.12.1.1614
+#    container_name: release-manager-clickhouse
+#    env_file:
+#      - ../.env
+#    ports:
+#      - "0.0.0.0:${CLICKHOUSE_HTTP_PORT:-18123}:8123"  # HTTP 인터페이스
+#      - "0.0.0.0:${CLICKHOUSE_NATIVE_PORT:-19000}:9000"  # Native TCP 프로토콜
+#    volumes:
+#      - /data/release_manager/clickhouse/data:/var/lib/clickhouse
+#      - /data/release_manager/clickhouse/logs:/var/log/clickhouse-server
+#      - ./init-clickhouse.sql:/docker-entrypoint-initdb.d/init.sql:ro
+#    networks:
+#      - network-ts
+#    restart: always
+#    ulimits:
+#      nofile:
+#        soft: 262144
+#        hard: 262144
+#    environment:
+#      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-terminal_history}
+#      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-ts_dev}
+#      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-netcruz!#$134}
+#      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+#    healthcheck:
+#      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 30s
+
   app:
     image: ${DOCKER_IMAGE:-ts/release-manager-api:latest}
     build:
@@ -90,6 +121,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+#      clickhouse:
+#        condition: service_healthy
     healthcheck:
       test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:${SERVER_PORT:-8081}/actuator/health || exit 1"]
       interval: 30s
