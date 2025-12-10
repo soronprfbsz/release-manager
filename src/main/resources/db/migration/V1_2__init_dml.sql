@@ -518,6 +518,7 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('job_mariadb', 'job_mariadb', 0),
 ('job_terminal', 'job_terminal', 0);
 
+
 -- 부모-자식 관계 (depth=1)
 -- 버전 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES

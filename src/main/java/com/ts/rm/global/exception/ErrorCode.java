@@ -73,6 +73,18 @@ public enum ErrorCode {
   FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RF004", "error.resource.upload_failed"),
   FILE_DOWNLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RF005", "error.resource.download_failed"),
 
+  // SSH - SSH 연결 및 실행
+  SSH_CONNECTION_FAILED(HttpStatus.BAD_GATEWAY, "SSH001", "error.ssh.connection_failed"),
+  SSH_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "SSH002", "error.ssh.authentication_failed"),
+  SSH_EXECUTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SSH003", "error.ssh.execution_failed"),
+  SSH_CHANNEL_OPEN_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SSH004", "error.ssh.channel_open_failed"),
+  SSH_IO_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SSH005", "error.ssh.io_error"),
+
+  // Shell - 대화형 셸
+  SHELL_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "SH001", "error.shell.session_not_found"),
+  SHELL_NOT_CONNECTED(HttpStatus.BAD_REQUEST, "SH002", "error.shell.not_connected"),
+  SHELL_EXECUTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SH003", "error.shell.execution_failed"),
+
   // ========================================
   // ERROR - 서버 에러 (5xx)
   // ========================================
