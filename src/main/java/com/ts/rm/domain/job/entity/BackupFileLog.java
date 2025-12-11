@@ -55,7 +55,7 @@ public class BackupFileLog extends BaseEntity {
     private String logFileName;
 
     /**
-     * 로그 파일 경로 (job/logs/ 하위 상대경로)
+     * 로그 파일 경로 (job/{fileCategory}/logs/ 하위 상대경로)
      */
     @Column(name = "log_file_path", nullable = false, length = 500)
     private String logFilePath;

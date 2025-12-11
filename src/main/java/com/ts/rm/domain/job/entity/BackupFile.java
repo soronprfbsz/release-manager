@@ -51,7 +51,7 @@ public class BackupFile extends BaseEntity {
     private String fileName;
 
     /**
-     * 파일 경로 (job/backup_files/ 하위 상대경로)
+     * 파일 경로 (job/{fileCategory}/backup_files/ 하위 상대경로)
      */
     @Column(name = "file_path", nullable = false, length = 500)
     private String filePath;

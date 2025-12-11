@@ -33,12 +33,14 @@ import org.springframework.stereotype.Service;
 public class MariaDBRestoreService {
 
     private static final String FILE_CATEGORY = "MARIADB";
+    private static final String LOG_TYPE_RESTORE = "RESTORE";
 
     @Value("${app.release.base-path:/app/release_files}")
     private String releaseBasePath;
 
     private final JobStatusManager jobStatusManager;
     private final BackupFileRepository backupFileRepository;
+    private final BackupLogService backupLogService;
 
     /**
      * MariaDB 복원 비동기 실행
@@ -57,7 +59,7 @@ public class MariaDBRestoreService {
                         "백업 파일을 찾을 수 없습니다: " + request.getBackupFileId()));
 
         Path backupFilePath = Paths.get(releaseBasePath, backupFile.getFilePath());
-        Path logFilePath = Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY, logFileName);
+        Path logFilePath = Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs", logFileName);
 
         log.info("복원 시작 - jobId: {}, backupFileId: {}", jobId, request.getBackupFileId());
 
@@ -86,6 +88,15 @@ public class MariaDBRestoreService {
             appendToLogFile(logFilePath, "========================================");
             appendToLogFile(logFilePath, "복원 완료: " + backupFile.getFileName());
             appendToLogFile(logFilePath, "========================================");
+
+            // 로그 파일 크기 및 체크섬 계산
+            long logFileSize = Files.size(logFilePath);
+            String logChecksum = com.ts.rm.global.file.FileChecksumUtil.calculateChecksum(logFilePath);
+
+            // BackupFileLog 테이블에 로그 파일 정보 저장
+            backupLogService.createLogFile(backupFile, logFileName, LOG_TYPE_RESTORE,
+                    request.getUsername(), logFileSize, logChecksum);
+            log.info("복원 로그 DB 저장 완료 - logFileName: {}", logFileName);
 
             // 작업 상태 업데이트 (성공)
             jobStatusManager.saveJobStatus(jobId,
@@ -117,7 +128,7 @@ public class MariaDBRestoreService {
      */
     private void createDirectories() {
         try {
-            Files.createDirectories(Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY));
+            Files.createDirectories(Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs"));
         } catch (IOException e) {
             log.error("디렉토리 생성 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다.");
