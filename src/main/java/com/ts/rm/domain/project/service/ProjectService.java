@@ -70,16 +70,6 @@ public class ProjectService {
     }
 
     /**
-     * 프로젝트 간단 목록 조회 (선택용)
-     *
-     * @return 프로젝트 간단 목록
-     */
-    public List<ProjectDto.SimpleResponse> getProjectsForSelect() {
-        List<Project> projects = projectRepository.findAllByOrderByProjectNameAsc();
-        return mapper.toSimpleResponseList(projects);
-    }
-
-    /**
      * 프로젝트 정보 수정
      *
      * @param projectId 프로젝트 ID

@@ -1,13 +1,13 @@
-package com.ts.rm.domain.shell.adapter;
+package com.ts.rm.domain.terminal.adapter;
 
 import com.jcraft.jsch.Session;
-import com.ts.rm.domain.shell.dto.SshConnectionDto;
+import com.ts.rm.domain.terminal.dto.SshConnectionDto;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.ssh.client.SshClient;
 import com.ts.rm.global.ssh.dto.SshConnectionInfo;
 import com.ts.rm.global.ssh.dto.SshExecutionContext;
-import com.ts.rm.global.ssh.executor.SshInteractiveExecutor;
+import com.ts.rm.global.ssh.executor.SshShellExecutor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.function.Consumer;
 
 /**
- * 셸 SSH 어댑터
+ * SSH 어댑터
  * <p>
  * Global SSH 모듈을 Domain Shell 모듈에 연결하는 어댑터입니다.
  * Global 예외를 Domain 예외로 변환합니다.
@@ -24,10 +24,10 @@ import java.util.function.Consumer;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ShellSshAdapter {
+public class SshAdapter {
 
     private final SshClient sshClient;
-    private final SshInteractiveExecutor interactiveExecutor;
+    private final SshShellExecutor interactiveExecutor;
 
     /**
      * SSH 연결
@@ -64,12 +64,12 @@ public class ShellSshAdapter {
     }
 
     /**
-     * 대화형 셸 열기
+     * 대화형 터미널 열기
      *
      * @param session        SSH 세션
      * @param outputConsumer 출력 처리 콜백
      * @return SSH 실행 컨텍스트
-     * @throws BusinessException 셸 열기 실패
+     * @throws BusinessException 터미널 열기 실패
      */
     public SshExecutionContext openShell(Session session, Consumer<String> outputConsumer) {
         // Global SSH 실행기 사용 (예외는 Global에서 BusinessException으로 발생)
@@ -89,7 +89,7 @@ public class ShellSshAdapter {
     }
 
     /**
-     * 셸 닫기
+     * 터미널 닫기
      *
      * @param context SSH 실행 컨텍스트
      */
@@ -98,7 +98,7 @@ public class ShellSshAdapter {
     }
 
     /**
-     * 셸 연결 상태 확인
+     * 터미널 연결 상태 확인
      *
      * @param context SSH 실행 컨텍스트
      * @return 연결 여부

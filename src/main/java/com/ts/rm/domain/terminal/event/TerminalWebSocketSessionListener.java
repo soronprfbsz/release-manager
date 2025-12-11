@@ -1,6 +1,6 @@
-package com.ts.rm.domain.shell.event;
+package com.ts.rm.domain.terminal.event;
 
-import com.ts.rm.domain.shell.service.InteractiveShellOrchestrator;
+import com.ts.rm.domain.terminal.service.TerminalService;
 import com.ts.rm.global.websocket.dto.WebSocketSessionMetadata;
 import com.ts.rm.global.websocket.event.WebSocketSessionEventListener;
 import lombok.RequiredArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 셸 WebSocket 세션 이벤트 리스너
+ * 터미널 WebSocket 세션 이벤트 리스너
  * <p>
  * WebSocket 연결 해제 시 SSH 세션을 자동으로 정리합니다.
  * </p>
@@ -16,9 +16,9 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ShellWebSocketSessionListener implements WebSocketSessionEventListener {
+public class TerminalWebSocketSessionListener implements WebSocketSessionEventListener {
 
-    private final InteractiveShellOrchestrator shellOrchestrator;
+    private final TerminalService shellOrchestrator;
 
     /**
      * WebSocket 연결 해제 시 SSH 세션 자동 종료
@@ -32,7 +32,7 @@ public class ShellWebSocketSessionListener implements WebSocketSessionEventListe
         log.warn("WebSocket 연결 해제 감지 - SSH 세션 자동 정리 시작: shellSessionId={}", shellSessionId);
 
         try {
-            // SSH 세션 종료 (셸 닫기, SSH 연결 해제, DB 상태 업데이트)
+            // SSH 세션 종료 (터미널 닫기, SSH 연결 해제, DB 상태 업데이트)
             shellOrchestrator.disconnect(shellSessionId);
 
             log.info("SSH 세션 자동 정리 완료: shellSessionId={}", shellSessionId);
@@ -56,10 +56,10 @@ public class ShellWebSocketSessionListener implements WebSocketSessionEventListe
     /**
      * 이 리스너가 처리할 비즈니스 타입
      *
-     * @return "SHELL" - 셸 세션만 처리
+     * @return "TERMINAL" - 터미널 세션만 처리
      */
     @Override
     public String getBusinessType() {
-        return "SHELL";
+        return "TERMINAL";
     }
 }

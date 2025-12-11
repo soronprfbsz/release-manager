@@ -1,4 +1,4 @@
-package com.ts.rm.domain.shell.dto;
+package com.ts.rm.domain.terminal.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;

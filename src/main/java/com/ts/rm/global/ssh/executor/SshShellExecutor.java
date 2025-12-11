@@ -14,15 +14,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 /**
- * SSH 대화형 실행기
+ * SSH 셸 실행기
  * <p>
- * ChannelShell을 사용하여 대화형 SSH 터미널을 실행합니다.
+ * ChannelShell을 사용하여 SSH 터미널을 실행합니다.
  * 비즈니스 로직과 독립적으로 재사용 가능합니다.
  * </p>
  */
 @Slf4j
 @Component
-public class SshInteractiveExecutor {
+public class SshShellExecutor {
 
     /**
      * 기본 PTY 설정
@@ -34,7 +34,7 @@ public class SshInteractiveExecutor {
     private static final int DEFAULT_HEIGHT = 480;
 
     /**
-     * 대화형 셸 열기
+     * 셸 열기
      *
      * @param session        SSH 세션
      * @param outputConsumer 출력 처리 콜백 (실시간 출력 전달)
@@ -58,12 +58,12 @@ public class SshInteractiveExecutor {
             OutputStream outputStream = channel.getOutputStream();
             InputStream inputStream = channel.getInputStream();
 
-            log.info("대화형 셸 열기 시작 (PTY: {}, Size: {}x{})",
+            log.info("셸 열기 시작 (PTY: {}, Size: {}x{})",
                     DEFAULT_PTY_TYPE, DEFAULT_COLS, DEFAULT_ROWS);
 
             channel.connect();
 
-            log.info("대화형 셸 연결 성공");
+            log.info("셸 연결 성공");
 
             // 비동기 출력 읽기 스레드 시작
             Thread outputReaderThread = startOutputReader(inputStream, outputConsumer);
@@ -133,7 +133,7 @@ public class SshInteractiveExecutor {
             return;
         }
 
-        log.info("대화형 셸 닫기");
+        log.info("셸 닫기");
 
         // 출력 읽기 중지
         context.stop();
@@ -154,7 +154,7 @@ public class SshInteractiveExecutor {
             }
         }
 
-        log.info("대화형 셸 닫기 완료");
+        log.info("셸 닫기 완료");
     }
 
     /**
@@ -258,7 +258,7 @@ public class SshInteractiveExecutor {
             throw new IllegalArgumentException("SSH 실행 컨텍스트는 필수입니다");
         }
         if (!context.isConnected()) {
-            throw new BusinessException(ErrorCode.SHELL_NOT_CONNECTED);
+            throw new BusinessException(ErrorCode.SSH_CHANNEL_NOT_CONNECTED);
         }
     }
 }

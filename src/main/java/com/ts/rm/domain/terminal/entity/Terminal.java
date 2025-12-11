@@ -1,38 +1,34 @@
-package com.ts.rm.domain.shell.entity;
+package com.ts.rm.domain.terminal.entity;
 
 import com.ts.rm.domain.common.entity.BaseEntity;
-import com.ts.rm.domain.shell.enums.ShellStatus;
+import com.ts.rm.domain.terminal.enums.TerminalStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 /**
- * 대화형 셸 세션 엔티티
+ * 터미널 엔티티
  * <p>
- * 대화형 SSH 셸 세션 정보를 저장합니다.
+ * 웹 터미널 세션 정보를 저장합니다.
  * 세션은 메모리에서 관리되지만, 감사 및 추적을 위해 DB에 기록됩니다.
  * </p>
  */
 @Entity
-@Table(name = "interactive_shell_session")
+@Table(name = "terminal")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class InteractiveShellSession extends BaseEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "session_id")
-    private Long sessionId;
+public class Terminal extends BaseEntity {
 
     /**
-     * 셸 세션 식별자 (UUID 형식)
+     * 터미널 ID (세션 단위, UUID 형식)
      */
-    @Column(name = "shell_session_identifier", nullable = false, unique = true, length = 100)
-    private String shellSessionIdentifier;
+    @Id
+    @Column(name = "terminal_id", nullable = false, length = 100)
+    private String terminalId;
 
     /**
      * 호스트 주소
@@ -53,11 +49,11 @@ public class InteractiveShellSession extends BaseEntity {
     private String username;
 
     /**
-     * 셸 상태
+     * 터미널 상태
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private ShellStatus status;
+    private TerminalStatus status;
 
     /**
      * 소유자 이메일
@@ -76,12 +72,6 @@ public class InteractiveShellSession extends BaseEntity {
      */
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
-
-    /**
-     * 실행된 명령어 수
-     */
-    @Column(name = "command_count")
-    private Integer commandCount;
 
     /**
      * 종료 시각

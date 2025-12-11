@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/projects/{projectId}/dashboard")
+@RequestMapping("/api/projects/{id}/dashboard")
 @RequiredArgsConstructor
 public class DashboardController implements DashboardControllerDocs {
 
@@ -26,11 +26,11 @@ public class DashboardController implements DashboardControllerDocs {
     @Override
     @GetMapping("/recent")
     public ResponseEntity<ApiResponse<DashboardDto.Response>> getRecentData(
-            @PathVariable String projectId,
+            @PathVariable String id,
             @RequestParam(defaultValue = "3") int versionLimit,
             @RequestParam(defaultValue = "3") int patchLimit) {
 
-        DashboardDto.Response response = dashboardService.getRecentData(projectId, versionLimit, patchLimit);
+        DashboardDto.Response response = dashboardService.getRecentData(id, versionLimit, patchLimit);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

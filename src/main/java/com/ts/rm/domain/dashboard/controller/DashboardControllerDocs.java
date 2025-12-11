@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 /**
  * DashboardController Swagger 문서화 인터페이스
  */
-@Tag(name = "대시보드", description = "대시보드 API")
+@Tag(name = "데이터 분석", description = "데이터 분석 API")
 @SwaggerResponse
 public interface DashboardControllerDocs {
 

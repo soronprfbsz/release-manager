@@ -106,29 +106,29 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
     /**
      * 표준 릴리즈 버전 트리 조회 (프로젝트별)
      *
-     * @param projectId 프로젝트 ID
+     * @param id 프로젝트 ID
      * @return 릴리즈 버전 트리 (계층 구조)
      */
     @Override
-    @GetMapping("/projects/{projectId}/standard/tree")
-    public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getStandardReleaseTree(@PathVariable String projectId) {
-        ReleaseVersionDto.TreeResponse response = treeService.getStandardReleaseTree(projectId);
+    @GetMapping("/projects/{id}/standard/tree")
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getStandardReleaseTree(@PathVariable String id) {
+        ReleaseVersionDto.TreeResponse response = treeService.getStandardReleaseTree(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
      * 커스텀 릴리즈 버전 트리 조회 (프로젝트별)
      *
-     * @param projectId    프로젝트 ID
+     * @param id           프로젝트 ID
      * @param customerCode 고객사 코드
      * @return 릴리즈 버전 트리 (계층 구조)
      */
     @Override
-    @GetMapping("/projects/{projectId}/custom/{customer-code}/tree")
+    @GetMapping("/projects/{id}/custom/{customer-code}/tree")
     public ResponseEntity<ApiResponse<ReleaseVersionDto.TreeResponse>> getCustomReleaseTree(
-            @PathVariable String projectId,
+            @PathVariable String id,
             @PathVariable("customer-code") String customerCode) {
-        ReleaseVersionDto.TreeResponse response = treeService.getCustomReleaseTree(projectId, customerCode);
+        ReleaseVersionDto.TreeResponse response = treeService.getCustomReleaseTree(id, customerCode);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

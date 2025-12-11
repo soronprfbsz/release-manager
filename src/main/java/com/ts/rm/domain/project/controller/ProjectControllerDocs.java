@@ -51,7 +51,7 @@ public interface ProjectControllerDocs {
     )
     ResponseEntity<ApiResponse<ProjectDto.DetailResponse>> getProjectById(
             @Parameter(description = "프로젝트 ID", required = true)
-            @PathVariable String projectId
+            @PathVariable String id
     );
 
     @Operation(
@@ -69,20 +69,6 @@ public interface ProjectControllerDocs {
     ResponseEntity<ApiResponse<List<ProjectDto.DetailResponse>>> getAllProjects();
 
     @Operation(
-            summary = "프로젝트 선택 목록",
-            description = "드롭다운 선택용 프로젝트 목록을 조회합니다",
-            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProjectSimpleListApiResponse.class)
-                    )
-            )
-    )
-    ResponseEntity<ApiResponse<List<ProjectDto.SimpleResponse>>> getProjectsForSelect();
-
-    @Operation(
             summary = "프로젝트 수정",
             description = "프로젝트 정보를 수정합니다 (프로젝트 ID는 변경 불가)",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -96,7 +82,7 @@ public interface ProjectControllerDocs {
     )
     ResponseEntity<ApiResponse<ProjectDto.DetailResponse>> updateProject(
             @Parameter(description = "프로젝트 ID", required = true)
-            @PathVariable String projectId,
+            @PathVariable String id,
 
             @Valid @RequestBody ProjectDto.UpdateRequest request
     );
@@ -117,13 +103,24 @@ public interface ProjectControllerDocs {
     )
     ResponseEntity<ApiResponse<Void>> deleteProject(
             @Parameter(description = "프로젝트 ID", required = true)
-            @PathVariable String projectId
+            @PathVariable String id
     );
 
     /**
      * Swagger 스키마용 wrapper 클래스 - 프로젝트 상세 응답
      */
-    @Schema(description = "프로젝트 상세 API 응답")
+    @Schema(description = "프로젝트 상세 API 응답", example = """
+            {
+              "status": "success",
+              "data": {
+                "projectId": "infraeye1",
+                "projectName": "Infraeye 1",
+                "description": "Infraeye 1.0 - 레거시 NMS 솔루션",
+                "createdAt": "2025-01-15T10:30:00",
+                "createdBy": "SYSTEM"
+              }
+            }
+            """)
     class ProjectDetailApiResponse {
         @Schema(description = "응답 상태", example = "success")
         public String status;
@@ -135,24 +132,32 @@ public interface ProjectControllerDocs {
     /**
      * Swagger 스키마용 wrapper 클래스 - 프로젝트 목록 응답
      */
-    @Schema(description = "프로젝트 목록 API 응답")
+    @Schema(description = "프로젝트 목록 API 응답", example = """
+            {
+              "status": "success",
+              "data": [
+                {
+                  "projectId": "infraeye1",
+                  "projectName": "Infraeye 1",
+                  "description": "Infraeye 1.0 - 레거시 NMS 솔루션",
+                  "createdAt": "2025-01-15T10:30:00",
+                  "createdBy": "SYSTEM"
+                },
+                {
+                  "projectId": "infraeye2",
+                  "projectName": "Infraeye 2",
+                  "description": "Infraeye 2.0 - 신규 NMS 솔루션",
+                  "createdAt": "2025-01-16T09:00:00",
+                  "createdBy": "SYSTEM"
+                }
+              ]
+            }
+            """)
     class ProjectListApiResponse {
         @Schema(description = "응답 상태", example = "success")
         public String status;
 
         @Schema(description = "프로젝트 목록")
         public List<ProjectDto.DetailResponse> data;
-    }
-
-    /**
-     * Swagger 스키마용 wrapper 클래스 - 프로젝트 간단 목록 응답
-     */
-    @Schema(description = "프로젝트 선택 목록 API 응답")
-    class ProjectSimpleListApiResponse {
-        @Schema(description = "응답 상태", example = "success")
-        public String status;
-
-        @Schema(description = "프로젝트 간단 목록")
-        public List<ProjectDto.SimpleResponse> data;
     }
 }

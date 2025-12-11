@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/projects/{projectId}/analytics")
+@RequestMapping("/api/projects/{id}/analytics")
 @RequiredArgsConstructor
 public class AnalyticsController implements AnalyticsControllerDocs {
 
@@ -28,13 +28,13 @@ public class AnalyticsController implements AnalyticsControllerDocs {
     @Override
     @GetMapping("/patches/top-customers")
     public ApiResponse<TopCustomersResponse> getTopCustomersByPatchCount(
-            @PathVariable String projectId,
+            @PathVariable String id,
             @RequestParam(defaultValue = "6") int months,
             @RequestParam(defaultValue = "5") int topN) {
 
-        log.info("프로젝트별 고객사별 패치 Top-{} 조회 요청 - projectId: {}, 최근 {}개월", topN, projectId, months);
+        log.info("프로젝트별 고객사별 패치 Top-{} 조회 요청 - projectId: {}, 최근 {}개월", topN, id, months);
 
-        TopCustomersResponse response = analyticsService.getTopCustomersByPatchCount(projectId, months, topN);
+        TopCustomersResponse response = analyticsService.getTopCustomersByPatchCount(id, months, topN);
 
         return ApiResponse.success(response);
     }
@@ -42,12 +42,12 @@ public class AnalyticsController implements AnalyticsControllerDocs {
     @Override
     @GetMapping("/patches/monthly")
     public ApiResponse<MonthlyPatchResponse> getMonthlyPatchCounts(
-            @PathVariable String projectId,
+            @PathVariable String id,
             @RequestParam(defaultValue = "6") int months) {
 
-        log.info("프로젝트별 월별+고객별 패치 통계 조회 요청 - projectId: {}, 최근 {}개월", projectId, months);
+        log.info("프로젝트별 월별+고객별 패치 통계 조회 요청 - projectId: {}, 최근 {}개월", id, months);
 
-        MonthlyPatchResponse response = analyticsService.getMonthlyPatchCounts(projectId, months);
+        MonthlyPatchResponse response = analyticsService.getMonthlyPatchCounts(id, months);
 
         return ApiResponse.success(response);
     }

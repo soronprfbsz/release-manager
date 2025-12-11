@@ -58,7 +58,7 @@ public interface AccountControllerDocs {
     )
     ResponseEntity<ApiResponse<AccountDto.DetailResponse>> updateAccount(
             @Parameter(description = "계정 ID", example = "1")
-            @PathVariable Long accountId,
+            @PathVariable Long id,
             @RequestBody AccountDto.AdminUpdateRequest request
     );
 
@@ -78,7 +78,7 @@ public interface AccountControllerDocs {
     )
     ResponseEntity<ApiResponse<Void>> deleteAccount(
             @Parameter(description = "계정 ID", example = "1")
-            @PathVariable Long accountId
+            @PathVariable Long id
     );
 
     /**

@@ -44,14 +44,14 @@ public class ReleaseFileController implements ReleaseFileControllerDocs {
     }
 
     @Override
-    @GetMapping("/versions/{versionId}/download")
-    public void downloadVersionFiles(@PathVariable("versionId") Long versionId,
+    @GetMapping("/versions/{id}/download")
+    public void downloadVersionFiles(@PathVariable Long id,
                                       HttpServletResponse response) throws IOException {
 
-        log.info("버전별 파일 스트리밍 다운로드 API 호출 - versionId: {}", versionId);
+        log.info("버전별 파일 스트리밍 다운로드 API 호출 - versionId: {}", id);
 
-        String fileName = releaseFileService.getVersionZipFileName(versionId);
-        long uncompressedSize = releaseFileService.calculateUncompressedSize(versionId);
+        String fileName = releaseFileService.getVersionZipFileName(id);
+        long uncompressedSize = releaseFileService.calculateUncompressedSize(id);
 
         // HTTP 응답 헤더 설정
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
@@ -62,9 +62,9 @@ public class ReleaseFileController implements ReleaseFileControllerDocs {
         response.setHeader("X-Uncompressed-Size", String.valueOf(uncompressedSize));
 
         // 스트리밍 방식으로 ZIP 생성 및 전송
-        releaseFileService.streamVersionFilesAsZip(versionId, response.getOutputStream());
+        releaseFileService.streamVersionFilesAsZip(id, response.getOutputStream());
 
         log.info("버전별 파일 스트리밍 다운로드 완료 - versionId: {}, fileName: {}, uncompressedSize: {} bytes",
-                versionId, fileName, uncompressedSize);
+                id, fileName, uncompressedSize);
     }
 }

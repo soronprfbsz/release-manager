@@ -317,3 +317,27 @@ CREATE TABLE menu_role (
     PRIMARY KEY (menu_id, role),
     FOREIGN KEY (menu_id) REFERENCES menu(menu_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='메뉴별 접근 권한';
+
+-- =========================================================
+-- Terminal Table
+-- =========================================================
+-- 웹 터미널 세션 정보 저장
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS terminal (
+    terminal_id VARCHAR(100) PRIMARY KEY COMMENT '터미널 ID (세션 단위, UUID 형식)',
+    host VARCHAR(255) NOT NULL COMMENT '호스트 주소',
+    port INT NOT NULL COMMENT 'SSH 포트',
+    username VARCHAR(100) NOT NULL COMMENT '사용자명',
+    status VARCHAR(20) NOT NULL COMMENT '터미널 상태 (CONNECTING, CONNECTED, DISCONNECTED, ERROR)',
+    owner_email VARCHAR(100) NOT NULL COMMENT '소유자 이메일',
+    last_activity_at DATETIME COMMENT '마지막 활동 시각',
+    expires_at DATETIME COMMENT '만료 시각',
+    disconnected_at DATETIME COMMENT '종료 시각',
+    error_message VARCHAR(2000) COMMENT '오류 메시지',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시각',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시각',
+    INDEX idx_owner_email (owner_email),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='웹 터미널';

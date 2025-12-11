@@ -1,6 +1,6 @@
-package com.ts.rm.domain.shell.dto;
+package com.ts.rm.domain.terminal.dto;
 
-import com.ts.rm.domain.shell.enums.ShellStatus;
+import com.ts.rm.domain.terminal.enums.TerminalStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -14,18 +14,18 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 대화형 SSH 셸 DTO 모음
+ * 터미널 DTO 모음
  */
-public class InteractiveShellDto {
+public class TerminalDto {
 
     /**
-     * 셸 연결 요청
+     * 터미널 연결 요청
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "셸 연결 요청")
+    @Schema(description = "터미널 연결 요청")
     public static class ConnectRequest {
         @Schema(description = "호스트 주소", example = "192.168.1.100")
         @NotBlank(message = "호스트는 필수입니다")
@@ -47,30 +47,30 @@ public class InteractiveShellDto {
     }
 
     /**
-     * 셸 연결 응답
+     * 터미널 연결 응답
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "셸 연결 응답")
+    @Schema(description = "터미널 연결 응답")
     public static class ConnectResponse {
-        @Schema(description = "셸 세션 ID", example = "shell_2025-12-09T22_00_00_abc123")
-        private String shellSessionId;
+        @Schema(description = "터미널 ID", example = "terminal_2025-12-09T22_00_00_abc123")
+        private String terminalId;
 
-        @Schema(description = "셸 상태", example = "CONNECTED")
-        private ShellStatus status;
+        @Schema(description = "터미널 상태", example = "CONNECTED")
+        private TerminalStatus status;
 
         @Schema(description = "호스트 주소", example = "192.168.1.100")
         private String host;
 
-        @Schema(description = "WebSocket 연결 URL", example = "/ws/shell")
+        @Schema(description = "WebSocket 연결 URL", example = "/ws/terminal")
         private String websocketUrl;
 
-        @Schema(description = "WebSocket 구독 URL", example = "/topic/shell/shell_2025-12-09T22_00_00_abc123")
+        @Schema(description = "WebSocket 구독 URL", example = "/topic/terminal/terminal_2025-12-09T22_00_00_abc123")
         private String subscribeUrl;
 
-        @Schema(description = "명령어 전송 URL", example = "/app/shell/shell_2025-12-09T22_00_00_abc123/command")
+        @Schema(description = "명령어 전송 URL", example = "/app/terminal/terminal_2025-12-09T22_00_00_abc123/command")
         private String commandUrl;
 
         @Schema(description = "생성 시각")
@@ -105,8 +105,8 @@ public class InteractiveShellDto {
         @Schema(description = "메시지 타입", example = "OUTPUT", allowableValues = {"STATUS", "OUTPUT", "ERROR"})
         private String type;
 
-        @Schema(description = "셸 상태 (type=STATUS인 경우)")
-        private ShellStatus status;
+        @Schema(description = "터미널 상태 (type=STATUS인 경우)")
+        private TerminalStatus status;
 
         @Schema(description = "출력 데이터 (type=OUTPUT/ERROR인 경우)")
         private String data;
@@ -119,19 +119,19 @@ public class InteractiveShellDto {
     }
 
     /**
-     * 셸 세션 정보 응답
+     * 터미널 세션 정보 응답
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "셸 세션 정보")
+    @Schema(description = "터미널 세션 정보")
     public static class ShellSessionInfo {
-        @Schema(description = "셸 세션 ID")
-        private String shellSessionId;
+        @Schema(description = "터미널 ID")
+        private String terminalId;
 
-        @Schema(description = "셸 상태")
-        private ShellStatus status;
+        @Schema(description = "터미널 상태")
+        private TerminalStatus status;
 
         @Schema(description = "호스트 주소")
         private String host;
@@ -150,8 +150,5 @@ public class InteractiveShellDto {
 
         @Schema(description = "만료 시각")
         private LocalDateTime expiresAt;
-
-        @Schema(description = "실행된 명령어 수")
-        private Integer commandCount;
     }
 }
