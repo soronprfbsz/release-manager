@@ -72,11 +72,15 @@ public final class AccountDto {
     }
 
     /**
-     * 계정 수정 요청 (ADMIN용 - 권한, 상태 수정)
+     * 계정 수정 요청 (ADMIN용 - 이름, 권한, 상태 수정)
      */
     @Builder
     @Schema(description = "계정 수정 요청 (ADMIN 전용)")
     public record AdminUpdateRequest(
+            @Schema(description = "이름 (2~50자)", example = "홍길동")
+            @Size(min = 2, max = 50, message = "이름은 2자 이상 50자 이하여야 합니다")
+            String accountName,
+
             @Schema(description = "권한 (ADMIN, USER)", example = "USER")
             String role,
 
