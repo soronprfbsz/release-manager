@@ -153,10 +153,10 @@ public class AccountService {
     }
 
     /**
-     * 계정 수정 (ADMIN 전용 - 권한, 상태 수정)
+     * 계정 수정 (ADMIN 전용 - 이름, 권한, 상태 수정)
      *
      * @param accountId 계정 ID
-     * @param request   수정 요청 (role, status)
+     * @param request   수정 요청 (accountName, role, status)
      * @return 수정된 계정 상세 정보
      */
     @Transactional
@@ -168,6 +168,14 @@ public class AccountService {
         Account account = findAccountByAccountId(accountId);
 
         // Setter를 통한 수정 (JPA Dirty Checking)
+
+        // 이름 수정
+        if (request.accountName() != null && !request.accountName().isBlank()) {
+            account.setAccountName(request.accountName());
+            log.debug("Account name updated to {} for accountId: {}", request.accountName(), accountId);
+        }
+
+        // 권한 수정
         if (request.role() != null && !request.role().isBlank()) {
             // role 유효성 검증
             try {
@@ -180,8 +188,9 @@ public class AccountService {
             }
         }
 
+        // 상태 수정
         if (request.status() != null && !request.status().isBlank()) {
-            // status 유효성 检证
+            // status 유효성 검증
             try {
                 AccountStatus.valueOf(request.status());
                 account.setStatus(request.status());
