@@ -130,7 +130,7 @@ public class BackupFileService {
      * @param fileCategory 파일 카테고리 (MARIADB 등)
      */
     private void deleteRelatedLogFiles(Long backupFileId, String fileCategory) {
-        Path logDir = Paths.get(releaseBasePath, "job/logs", fileCategory);
+        Path logDir = Paths.get(releaseBasePath, "job", fileCategory, "logs");
 
         if (!Files.exists(logDir)) {
             log.warn("로그 디렉토리 존재하지 않음: {}", logDir);

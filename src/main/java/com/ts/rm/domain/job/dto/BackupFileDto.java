@@ -29,7 +29,7 @@ public final class BackupFileDto {
             @Schema(description = "파일명", example = "backup_20251203_171500.sql")
             String fileName,
 
-            @Schema(description = "파일 경로", example = "job/backup_files/backup_20251203_171500.sql")
+            @Schema(description = "파일 경로", example = "job/MARIADB/backup_files/backup_20251203_171500.sql")
             String filePath,
 
             @Schema(description = "파일 크기 (bytes)", example = "131072000")

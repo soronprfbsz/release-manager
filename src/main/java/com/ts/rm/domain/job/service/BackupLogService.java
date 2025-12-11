@@ -101,7 +101,7 @@ public class BackupLogService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
                         "해당 백업 파일의 로그가 아니거나 존재하지 않습니다"));
 
-        // 실제 파일 경로 구성 (job/logs/{fileCategory}/{backupFileName}/{logFileName})
+        // 실제 파일 경로 구성 (job/{fileCategory}/logs/{backupFileName}/{logFileName})
         Path logFilePath = Paths.get(releaseBasePath, logEntity.getLogFilePath());
 
         if (!Files.exists(logFilePath)) {
@@ -199,15 +199,15 @@ public class BackupLogService {
     /**
      * 로그 파일 경로 생성 헬퍼 메서드
      *
-     * <p>새로운 경로 구조: job/logs/{fileCategory}/{backupFileName}/{logFileName}
+     * <p>새로운 경로 구조: job/{fileCategory}/logs/{backupFileName}/{logFileName}
      *
      * @param backupFile  백업 파일 정보
      * @param logFileName 로그 파일명
      * @return 로그 파일 상대 경로
      */
     public static String buildLogFilePath(BackupFile backupFile, String logFileName) {
-        // job/logs/MARIADB/backup_20250101_120000.sql/backup_1_20250101_120500.log
-        return String.format("job/logs/%s/%s/%s",
+        // job/MARIADB/logs/backup_20250101_120000.sql/backup_1_20250101_120500.log
+        return String.format("job/%s/logs/%s/%s",
                 backupFile.getFileCategory(),
                 backupFile.getFileName(),
                 logFileName);
@@ -222,16 +222,18 @@ public class BackupLogService {
      * @param logFileName 로그 파일명
      * @param logType     로그 타입 (BACKUP, RESTORE)
      * @param createdBy   생성자
+     * @param fileSize    로그 파일 크기 (bytes)
+     * @param checksum    로그 파일 체크섬 (SHA-256)
      * @return 생성된 로그 파일 엔티티
      */
     @Transactional
     public BackupFileLog createLogFile(BackupFile backupFile, String logFileName,
-            String logType, String createdBy) {
+            String logType, String createdBy, Long fileSize, String checksum) {
         String logFilePath = buildLogFilePath(backupFile, logFileName);
 
         // 실제 파일 디렉토리 생성
-        Path logDir = Paths.get(releaseBasePath, "job/logs",
-                backupFile.getFileCategory(), backupFile.getFileName());
+        Path logDir = Paths.get(releaseBasePath, "job", backupFile.getFileCategory(),
+                "logs", backupFile.getFileName());
         try {
             Files.createDirectories(logDir);
         } catch (IOException e) {
@@ -246,10 +248,16 @@ public class BackupLogService {
                 .logType(logType)
                 .logFileName(logFileName)
                 .logFilePath(logFilePath)
+                .fileSize(fileSize)
+                .checksum(checksum)
                 .createdBy(createdBy)
                 .build();
 
-        return backupFileLogRepository.save(logEntity);
+        BackupFileLog savedLog = backupFileLogRepository.save(logEntity);
+        log.info("로그 파일 DB 저장 완료 - backupFileId: {}, logFileName: {}, fileSize: {}",
+                backupFile.getBackupFileId(), logFileName, fileSize);
+
+        return savedLog;
     }
 
     /**

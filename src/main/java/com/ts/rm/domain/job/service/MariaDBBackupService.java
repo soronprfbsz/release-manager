@@ -36,12 +36,14 @@ public class MariaDBBackupService {
 
     private static final String FILE_CATEGORY = "MARIADB";
     private static final String FILE_TYPE = "SQL";
+    private static final String LOG_TYPE_BACKUP = "BACKUP";
 
     @Value("${app.release.base-path:/app/release_files}")
     private String releaseBasePath;
 
     private final JobStatusManager jobStatusManager;
     private final BackupFileRepository backupFileRepository;
+    private final BackupLogService backupLogService;
 
     /**
      * MariaDB 백업 비동기 실행
@@ -58,9 +60,9 @@ public class MariaDBBackupService {
             String jobId, String logFileName, String backupFileName) {
 
         String timestamp = jobId.replace("backup_", "");
-        String relativePath = "job/backup_files/" + FILE_CATEGORY + "/" + backupFileName;
+        String relativePath = "job/" + FILE_CATEGORY + "/backup_files/" + backupFileName;
         Path backupFilePath = Paths.get(releaseBasePath, relativePath);
-        Path logFilePath = Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY, logFileName);
+        Path logFilePath = Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs", logFileName);
 
         log.info("백업 시작 - jobId: {}", jobId);
 
@@ -111,6 +113,15 @@ public class MariaDBBackupService {
             Files.move(logFilePath, newLogFilePath);
             log.info("로그 파일 rename: {} -> {}", logFileName, newLogFileName);
 
+            // 로그 파일 크기 및 체크섬 계산
+            long logFileSize = Files.size(newLogFilePath);
+            String logChecksum = FileChecksumUtil.calculateChecksum(newLogFilePath);
+
+            // BackupFileLog 테이블에 로그 파일 정보 저장
+            backupLogService.createLogFile(backupFile, newLogFileName, LOG_TYPE_BACKUP,
+                    createdBy, logFileSize, logChecksum);
+            log.info("백업 로그 DB 저장 완료 - logFileName: {}", newLogFileName);
+
             // 작업 상태 업데이트 (성공) - 새 로그 파일명 반영
             jobStatusManager.saveJobStatus(jobId,
                     JobResponse.createSuccess(jobId, backupFileName, fileSize,
@@ -143,8 +154,8 @@ public class MariaDBBackupService {
      */
     private void createDirectories() {
         try {
-            Files.createDirectories(Paths.get(releaseBasePath + "/job/logs/" + FILE_CATEGORY));
-            Files.createDirectories(Paths.get(releaseBasePath + "/job/backup_files/" + FILE_CATEGORY));
+            Files.createDirectories(Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs"));
+            Files.createDirectories(Paths.get(releaseBasePath, "job", FILE_CATEGORY, "backup_files"));
         } catch (IOException e) {
             log.error("디렉토리 생성 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다.");
