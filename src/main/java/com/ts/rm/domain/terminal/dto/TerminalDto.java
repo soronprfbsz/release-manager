@@ -151,4 +151,59 @@ public class TerminalDto {
         @Schema(description = "만료 시각")
         private LocalDateTime expiresAt;
     }
+
+    /**
+     * 파일 업로드 요청
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "파일 업로드 요청")
+    public static class FileUploadRequest {
+        @Schema(description = "원격 경로 (디렉토리)", example = "/home/deploy/uploads")
+        @NotBlank(message = "원격 경로는 필수입니다")
+        private String remotePath;
+    }
+
+    /**
+     * 패치 파일 배포 요청
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "패치 파일 배포 요청")
+    public static class PatchDeploymentRequest {
+        @Schema(description = "패치 ID", example = "123")
+        @NotNull(message = "패치 ID는 필수입니다")
+        private Long patchId;
+
+        @Schema(description = "원격 경로 (디렉토리, 기본값: /release-manager/patches)",
+                example = "/release-manager/patches")
+        @Builder.Default
+        private String remotePath = "/release-manager/patches";
+    }
+
+    /**
+     * 파일 전송 응답
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "파일 전송 응답")
+    public static class FileTransferResponse {
+        @Schema(description = "파일명", example = "patch_v1.2.0.sql")
+        private String fileName;
+
+        @Schema(description = "원격 경로", example = "/release-manager/patches")
+        private String remotePath;
+
+        @Schema(description = "메시지", example = "파일이 성공적으로 전송되었습니다")
+        private String message;
+
+        @Schema(description = "전송 완료 시각")
+        private LocalDateTime transferredAt;
+    }
 }

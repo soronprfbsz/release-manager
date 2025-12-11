@@ -7,11 +7,16 @@ import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.ssh.client.SshClient;
 import com.ts.rm.global.ssh.dto.SshConnectionInfo;
 import com.ts.rm.global.ssh.dto.SshExecutionContext;
+import com.ts.rm.global.ssh.executor.SftpExecutor;
 import com.ts.rm.global.ssh.executor.SshShellExecutor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 /**
@@ -28,6 +33,7 @@ public class SshAdapter {
 
     private final SshClient sshClient;
     private final SshShellExecutor interactiveExecutor;
+    private final SftpExecutor sftpExecutor;
 
     /**
      * SSH 연결
@@ -105,6 +111,38 @@ public class SshAdapter {
      */
     public boolean isShellConnected(SshExecutionContext context) {
         return context != null && context.isConnected();
+    }
+
+    /**
+     * 파일 업로드 (MultipartFile)
+     *
+     * @param session    SSH 세션
+     * @param file       업로드할 파일
+     * @param remotePath 원격 경로 (디렉토리)
+     * @throws BusinessException 파일 업로드 실패
+     */
+    public void uploadFile(Session session, MultipartFile file, String remotePath) {
+        try (InputStream inputStream = file.getInputStream()) {
+            String fileName = file.getOriginalFilename();
+            sftpExecutor.uploadFile(session, inputStream, fileName, remotePath);
+        } catch (IOException e) {
+            String errorMessage = String.format("파일 입력 스트림 읽기 실패: %s (%s)",
+                    file.getOriginalFilename(), e.getMessage());
+            log.error(errorMessage);
+            throw new BusinessException(ErrorCode.SSH_IO_ERROR, errorMessage);
+        }
+    }
+
+    /**
+     * 로컬 파일 업로드
+     *
+     * @param session    SSH 세션
+     * @param localPath  로컬 파일 경로
+     * @param remotePath 원격 경로 (디렉토리)
+     * @throws BusinessException 파일 업로드 실패
+     */
+    public void uploadLocalFile(Session session, Path localPath, String remotePath) {
+        sftpExecutor.uploadLocalFile(session, localPath, remotePath);
     }
 
     /**
