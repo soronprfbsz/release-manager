@@ -1,48 +1,48 @@
-package com.ts.rm.domain.shell.service;
+package com.ts.rm.domain.terminal.service;
 
 import com.jcraft.jsch.Session;
-import com.ts.rm.domain.shell.adapter.ShellSshAdapter;
-import com.ts.rm.domain.shell.adapter.ShellWebSocketAdapter;
-import com.ts.rm.domain.shell.dto.InteractiveShellDto;
-import com.ts.rm.domain.shell.dto.SshConnectionDto;
-import com.ts.rm.domain.shell.enums.ShellStatus;
-import com.ts.rm.domain.shell.exception.ShellExecutionException;
-import com.ts.rm.domain.shell.exception.SshConnectionException;
+import com.ts.rm.domain.terminal.adapter.SshAdapter;
+import com.ts.rm.domain.terminal.adapter.TerminalWebSocketAdapter;
+import com.ts.rm.domain.terminal.dto.TerminalDto;
+import com.ts.rm.domain.terminal.dto.SshConnectionDto;
+import com.ts.rm.domain.terminal.enums.TerminalStatus;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.ssh.dto.SshExecutionContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * 대화형 셸 오케스트레이터
+ * 터미널 서비스
  * <p>
- * SSH 연결 → 셸 열기 → 명령어 실행 → 출력 스트리밍의 전체 흐름을 조율합니다.
+ * SSH 연결 → 터미널 열기 → 명령어 실행 → 출력 스트리밍의 전체 흐름을 조율합니다.
  * Infrastructure 모듈(SSH, WebSocket)을 Adapter를 통해 사용합니다.
  * </p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class InteractiveShellOrchestrator {
+public class TerminalService {
 
-    private final ShellSshAdapter sshAdapter;
-    private final ShellWebSocketAdapter webSocketAdapter;
-    private final InteractiveShellSessionManager sessionManager;
+    private final SshAdapter sshAdapter;
+    private final TerminalWebSocketAdapter webSocketAdapter;
+    private final TerminalSessionManager sessionManager;
 
     /**
-     * 셸 연결 시작
+     * 터미널 연결 시작
      *
      * @param request    연결 요청 정보
      * @param ownerEmail 세션 소유자 이메일
      * @return 세션 정보
      */
-    public InteractiveShellDto.ConnectResponse connect(
-            InteractiveShellDto.ConnectRequest request,
+    public TerminalDto.ConnectResponse connect(
+            TerminalDto.ConnectRequest request,
             String ownerEmail) {
 
         // 세션 생성
-        InteractiveShellDto.ConnectResponse response = sessionManager.createSession(request, ownerEmail);
-        String shellSessionId = response.getShellSessionId();
+        TerminalDto.ConnectResponse response = sessionManager.createSession(request, ownerEmail);
+        String shellSessionId = response.getTerminalId();
 
         // 비동기 연결
         connectAsync(shellSessionId, request);
@@ -51,12 +51,12 @@ public class InteractiveShellOrchestrator {
     }
 
     /**
-     * 비동기 SSH 연결 및 셸 열기
+     * 비동기 SSH 연결 및 터미널 열기
      *
-     * @param shellSessionId 셸 세션 ID
+     * @param shellSessionId 터미널 세션 ID
      * @param request        연결 요청 정보
      */
-    private void connectAsync(String shellSessionId, InteractiveShellDto.ConnectRequest request) {
+    private void connectAsync(String shellSessionId, TerminalDto.ConnectRequest request) {
         Thread connectionThread = new Thread(() -> {
             Session sshSession = null;
             SshExecutionContext executionContext = null;
@@ -64,7 +64,7 @@ public class InteractiveShellOrchestrator {
             try {
                 // 1. SSH 연결
                 log.info("[{}] SSH 연결 시작", shellSessionId);
-                webSocketAdapter.sendStatusMessage(shellSessionId, ShellStatus.CONNECTING, "SSH 연결 중...");
+                webSocketAdapter.sendStatusMessage(shellSessionId, TerminalStatus.CONNECTING, "SSH 연결 중...");
 
                 SshConnectionDto connectionInfo = SshConnectionDto.builder()
                         .host(request.getHost())
@@ -75,8 +75,8 @@ public class InteractiveShellOrchestrator {
 
                 sshSession = sshAdapter.connect(connectionInfo);
 
-                // 2. 대화형 셸 열기
-                log.info("[{}] 대화형 셸 열기", shellSessionId);
+                // 2. 대화형 터미널 열기
+                log.info("[{}] 대화형 터미널 열기", shellSessionId);
                 executionContext = sshAdapter.openShell(sshSession, output -> {
                     // 실시간 출력 스트리밍 (WebSocket Adapter 사용)
                     webSocketAdapter.sendOutputMessage(shellSessionId, output);
@@ -84,19 +84,15 @@ public class InteractiveShellOrchestrator {
 
                 // 3. 세션 연결 완료
                 sessionManager.attachShell(shellSessionId, sshSession, executionContext);
-                webSocketAdapter.sendStatusMessage(shellSessionId, ShellStatus.CONNECTED, "SSH 연결 성공");
+                webSocketAdapter.sendStatusMessage(shellSessionId, TerminalStatus.CONNECTED, "SSH 연결 성공");
 
-                log.info("[{}] 셸 연결 성공", shellSessionId);
+                log.info("[{}] 터미널 연결 성공", shellSessionId);
 
-            } catch (SshConnectionException e) {
-                log.error("[{}] SSH 연결 실패", shellSessionId, e);
-                handleConnectionError(shellSessionId, "SSH 연결 실패: " + e.getMessage());
+            } catch (BusinessException e) {
+                log.error("[{}] 터미널 연결 실패: {}", shellSessionId, e.getErrorCode(), e);
+                handleConnectionError(shellSessionId, e.getMessage());
 
-            } catch (ShellExecutionException e) {
-                log.error("[{}] 셸 열기 실패", shellSessionId, e);
-                handleConnectionError(shellSessionId, "셸 열기 실패: " + e.getMessage());
-
-                // SSH 세션은 열렸으니 닫아줌
+                // SSH 세션이 열렸을 수 있으니 닫아줌
                 if (sshSession != null) {
                     sshAdapter.disconnect(sshSession);
                 }
@@ -118,33 +114,30 @@ public class InteractiveShellOrchestrator {
     /**
      * 명령어 실행
      *
-     * @param shellSessionId 셸 세션 ID
+     * @param shellSessionId 터미널 세션 ID
      * @param command        실행할 명령어 (또는 키 입력)
      */
     public void executeCommand(String shellSessionId, String command) {
         try {
-            // 셸 컨텍스트 가져오기
+            // 터미널 컨텍스트 가져오기
             SshExecutionContext executionContext = sessionManager.getExecutionContext(shellSessionId)
-                    .orElseThrow(() -> new IllegalArgumentException("셸 세션을 찾을 수 없습니다: " + shellSessionId));
+                    .orElseThrow(() -> new IllegalArgumentException("터미널 세션을 찾을 수 없습니다: " + shellSessionId));
 
-            // 셸 연결 확인
+            // 터미널 연결 확인
             if (!sshAdapter.isShellConnected(executionContext)) {
-                throw new ShellExecutionException("셸이 연결되어 있지 않습니다");
+                throw new BusinessException(ErrorCode.TERMINAL_NOT_CONNECTED);
             }
 
-            // 모든 키 입력마다 활동 시간 업데이트
-            sessionManager.updateLastActivity(shellSessionId);
+            // 명령어 실행 시에만 활동 시간 업데이트 (Enter 키 입력 시)
+            // DB 부하 감소: 한글자 입력마다가 아닌 실제 명령어 실행 시에만 업데이트
+            if (command.contains("\r") || command.contains("\n")) {
+                sessionManager.updateLastActivity(shellSessionId);
+            }
 
             // 명령어 전송 (SSH Adapter 사용)
             log.debug("[{}] 입력 전송: {}", shellSessionId,
                     command.replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n"));
             sshAdapter.writeInput(executionContext, command);
-
-            // Enter 키 입력 시만 명령어 카운트 증가 (완성된 명령어만 카운트)
-            if (isCompletedCommand(command)) {
-                sessionManager.incrementCommandCount(shellSessionId);
-                log.info("[{}] 명령어 완료 (카운트 증가)", shellSessionId);
-            }
 
         } catch (Exception e) {
             log.error("[{}] 명령어 실행 실패: {}", shellSessionId, command, e);
@@ -153,34 +146,15 @@ public class InteractiveShellOrchestrator {
     }
 
     /**
-     * 완성된 명령어 여부 판단
-     * <p>
-     * Enter 키(\r 또는 \n)가 포함되어 있고, 공백이 아닌 경우 완성된 명령어로 간주합니다.
-     * </p>
+     * 터미널 연결 종료
      *
-     * @param command 입력 문자열
-     * @return 완성된 명령어 여부
-     */
-    private boolean isCompletedCommand(String command) {
-        // Enter 키 포함 여부 확인
-        boolean hasEnter = command.contains("\r") || command.contains("\n");
-
-        // 공백만 있는 경우 제외 (Enter만 누르는 경우)
-        boolean isNotEmpty = !command.trim().isEmpty();
-
-        return hasEnter && isNotEmpty;
-    }
-
-    /**
-     * 셸 연결 종료
-     *
-     * @param shellSessionId 셸 세션 ID
+     * @param shellSessionId 터미널 세션 ID
      */
     public void disconnect(String shellSessionId) {
-        log.info("[{}] 셸 연결 종료 요청", shellSessionId);
+        log.info("[{}] 터미널 연결 종료 요청", shellSessionId);
 
         try {
-            // 셸 컨텍스트 가져오기
+            // 터미널 컨텍스트 가져오기
             sessionManager.getExecutionContext(shellSessionId).ifPresent(executionContext -> {
                 sshAdapter.closeShell(executionContext);
             });
@@ -188,20 +162,20 @@ public class InteractiveShellOrchestrator {
             // 세션 종료
             sessionManager.closeSession(shellSessionId);
 
-            webSocketAdapter.sendStatusMessage(shellSessionId, ShellStatus.DISCONNECTED, "셸 연결이 종료되었습니다");
+            webSocketAdapter.sendStatusMessage(shellSessionId, TerminalStatus.DISCONNECTED, "터미널 연결이 종료되었습니다");
 
         } catch (Exception e) {
-            log.error("[{}] 셸 종료 중 오류", shellSessionId, e);
+            log.error("[{}] 터미널 종료 중 오류", shellSessionId, e);
         }
     }
 
     /**
      * 세션 정보 조회
      *
-     * @param shellSessionId 셸 세션 ID
+     * @param shellSessionId 터미널 세션 ID
      * @return 세션 정보
      */
-    public InteractiveShellDto.ShellSessionInfo getSessionInfo(String shellSessionId) {
+    public TerminalDto.ShellSessionInfo getSessionInfo(String shellSessionId) {
         return sessionManager.getSession(shellSessionId)
                 .orElseThrow(() -> new IllegalArgumentException("세션을 찾을 수 없습니다: " + shellSessionId));
     }
@@ -209,12 +183,12 @@ public class InteractiveShellOrchestrator {
     /**
      * 연결 오류 처리
      *
-     * @param shellSessionId 셸 세션 ID
+     * @param shellSessionId 터미널 세션 ID
      * @param errorMessage   오류 메시지
      */
     private void handleConnectionError(String shellSessionId, String errorMessage) {
         sessionManager.updateErrorMessage(shellSessionId, errorMessage);
         webSocketAdapter.sendErrorMessage(shellSessionId, errorMessage);
-        webSocketAdapter.sendStatusMessage(shellSessionId, ShellStatus.ERROR, errorMessage);
+        webSocketAdapter.sendStatusMessage(shellSessionId, TerminalStatus.ERROR, errorMessage);
     }
 }

@@ -1,7 +1,7 @@
-package com.ts.rm.domain.shell.controller;
+package com.ts.rm.domain.terminal.controller;
 
-import com.ts.rm.domain.shell.dto.InteractiveShellDto;
-import com.ts.rm.domain.shell.service.InteractiveShellOrchestrator;
+import com.ts.rm.domain.terminal.dto.TerminalDto;
+import com.ts.rm.domain.terminal.service.TerminalService;
 import com.ts.rm.global.websocket.dto.WebSocketSessionMetadata;
 import com.ts.rm.global.websocket.event.WebSocketSessionRegistry;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
 /**
- * 대화형 셸 WebSocket Controller
+ * 터미널 WebSocket Controller
  * <p>
  * 클라이언트에서 WebSocket을 통해 명령어를 전송할 수 있습니다.
  * </p>
@@ -20,25 +20,25 @@ import org.springframework.stereotype.Controller;
 @Slf4j
 @Controller
 @RequiredArgsConstructor
-public class InteractiveShellWebSocketController {
+public class TerminalWebSocketController {
 
-    private final InteractiveShellOrchestrator shellOrchestrator;
+    private final TerminalService shellOrchestrator;
     private final WebSocketSessionRegistry sessionRegistry;
 
     /**
      * 명령어 전송
      * <p>
-     * 클라이언트가 /app/shell/{shellSessionId}/command로 메시지 전송
+     * 클라이언트가 /app/terminal/{shellSessionId}/command로 메시지 전송
      * 첫 메시지 수신 시 WebSocket 세션을 등록합니다.
      * </p>
      *
-     * @param shellSessionId 셸 세션 ID
+     * @param shellSessionId 터미널 세션 ID
      * @param commandMessage 명령어 메시지
      * @param headerAccessor STOMP 헤더 접근자
      */
-    @MessageMapping("/shell/{shellSessionId}/command")
+    @MessageMapping("/terminal/{shellSessionId}/command")
     public void sendCommand(@DestinationVariable String shellSessionId,
-                            InteractiveShellDto.CommandMessage commandMessage,
+                            TerminalDto.CommandMessage commandMessage,
                             StompHeaderAccessor headerAccessor) {
 
         log.info("[{}] 명령어 수신: {}", shellSessionId, commandMessage.getCommand());
@@ -56,7 +56,7 @@ public class InteractiveShellWebSocketController {
      * 비즈니스 세션(shellSessionId)과 WebSocket 세션을 매핑합니다.
      * </p>
      *
-     * @param shellSessionId 셸 세션 ID
+     * @param shellSessionId 터미널 세션 ID
      * @param headerAccessor STOMP 헤더 접근자
      */
     private void registerWebSocketSession(String shellSessionId, StompHeaderAccessor headerAccessor) {
@@ -71,7 +71,7 @@ public class InteractiveShellWebSocketController {
         WebSocketSessionMetadata metadata = WebSocketSessionMetadata.builder()
                 .webSocketSessionId(webSocketSessionId)
                 .businessSessionId(shellSessionId)
-                .businessType("SHELL")
+                .businessType("TERMINAL")
                 .build();
 
         sessionRegistry.registerSession(metadata);

@@ -48,7 +48,7 @@ public interface CodeControllerDocs {
     )
     ResponseEntity<ApiResponse<List<CodeDto.SimpleResponse>>> getCodesByType(
             @Parameter(description = "코드 타입 ID (예: RELEASE_CATEGORY, FILE_CATEGORY, DATABASE_TYPE 등)", example = "RELEASE_CATEGORY")
-            @PathVariable String codeTypeId
+            @PathVariable String id
     );
 
     /**

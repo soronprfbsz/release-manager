@@ -1,11 +1,11 @@
-package com.ts.rm.domain.shell.service;
+package com.ts.rm.domain.terminal.service;
 
 import com.jcraft.jsch.Session;
-import com.ts.rm.domain.shell.adapter.ShellSshAdapter;
-import com.ts.rm.domain.shell.dto.InteractiveShellDto;
-import com.ts.rm.domain.shell.entity.InteractiveShellSession;
-import com.ts.rm.domain.shell.enums.ShellStatus;
-import com.ts.rm.domain.shell.repository.InteractiveShellSessionRepository;
+import com.ts.rm.domain.terminal.adapter.SshAdapter;
+import com.ts.rm.domain.terminal.dto.TerminalDto;
+import com.ts.rm.domain.terminal.entity.Terminal;
+import com.ts.rm.domain.terminal.enums.TerminalStatus;
+import com.ts.rm.domain.terminal.repository.TerminalRepository;
 import com.ts.rm.global.ssh.dto.SshExecutionContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,22 +21,22 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 대화형 셸 세션 관리 서비스
+ * 터미널 세션 관리 서비스
  * <p>
- * 메모리에서 SSH 셸 세션을 관리하고, DB에 감사 기록을 저장합니다.
+ * 메모리에서 SSH 터미널 세션을 관리하고, DB에 감사 기록을 저장합니다.
  * </p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class InteractiveShellSessionManager {
+public class TerminalSessionManager {
 
-    private final InteractiveShellSessionRepository sessionRepository;
-    private final ShellSshAdapter sshAdapter;
+    private final TerminalRepository sessionRepository;
+    private final SshAdapter sshAdapter;
 
     /**
-     * 메모리에서 관리되는 활성 셸 세션 맵
-     * Key: shellSessionIdentifier, Value: ShellSessionContext
+     * 메모리에서 관리되는 활성 터미널 세션 맵
+     * Key: shellSessionId (UUID), Value: ShellSessionContext
      */
     private final Map<String, ShellSessionContext> activeSessions = new ConcurrentHashMap<>();
 
@@ -46,31 +46,30 @@ public class InteractiveShellSessionManager {
     private static final int DEFAULT_EXPIRY_MINUTES = 60;
 
     /**
-     * 셸 세션 생성
+     * 터미널 세션 생성
      *
      * @param request    SSH 연결 정보
      * @param ownerEmail 세션 소유자 이메일
      * @return 생성된 세션 정보
      */
     @Transactional
-    public InteractiveShellDto.ConnectResponse createSession(
-            InteractiveShellDto.ConnectRequest request,
+    public TerminalDto.ConnectResponse createSession(
+            TerminalDto.ConnectRequest request,
             String ownerEmail) {
 
         // 세션 식별자 생성
         String shellSessionId = generateSessionIdentifier();
 
         // DB에 세션 기록 저장
-        InteractiveShellSession session = InteractiveShellSession.builder()
-                .shellSessionIdentifier(shellSessionId)
+        Terminal session = Terminal.builder()
+                .terminalId(shellSessionId)
                 .host(request.getHost())
                 .port(request.getPort())
                 .username(request.getUsername())
-                .status(ShellStatus.CONNECTING)
+                .status(TerminalStatus.CONNECTING)
                 .ownerEmail(ownerEmail)
                 .lastActivityAt(LocalDateTime.now())
                 .expiresAt(LocalDateTime.now().plusMinutes(DEFAULT_EXPIRY_MINUTES))
-                .commandCount(0)
                 .build();
 
         sessionRepository.save(session);
@@ -79,25 +78,25 @@ public class InteractiveShellSessionManager {
         ShellSessionContext context = new ShellSessionContext(session, null, null);
         activeSessions.put(shellSessionId, context);
 
-        log.info("셸 세션 생성: shellSessionId={}, host={}@{}:{}",
+        log.info("터미널 세션 생성: shellSessionId={}, host={}@{}:{}",
                 shellSessionId, request.getUsername(), request.getHost(), request.getPort());
 
-        return InteractiveShellDto.ConnectResponse.builder()
-                .shellSessionId(shellSessionId)
-                .status(ShellStatus.CONNECTING)
+        return TerminalDto.ConnectResponse.builder()
+                .terminalId(shellSessionId)
+                .status(TerminalStatus.CONNECTING)
                 .host(request.getHost())
-                .websocketUrl("/ws/shell")
-                .subscribeUrl("/topic/shell/" + shellSessionId)
-                .commandUrl("/app/shell/" + shellSessionId + "/command")
+                .websocketUrl("/ws/terminal")
+                .subscribeUrl("/topic/terminal/" + shellSessionId)
+                .commandUrl("/app/terminal/" + shellSessionId + "/command")
                 .createdAt(session.getCreatedAt())
                 .expiresAt(session.getExpiresAt())
                 .build();
     }
 
     /**
-     * SSH 세션 및 셸 실행 컨텍스트 연결
+     * SSH 세션 및 터미널 실행 컨텍스트 연결
      *
-     * @param shellSessionId   셸 세션 식별자
+     * @param shellSessionId   터미널 세션 식별자
      * @param sshSession       SSH 세션
      * @param executionContext SSH 실행 컨텍스트
      */
@@ -108,30 +107,30 @@ public class InteractiveShellSessionManager {
         if (context != null) {
             context.setSshSession(sshSession);
             context.setExecutionContext(executionContext);
-            updateSessionStatus(shellSessionId, ShellStatus.CONNECTED);
-            log.info("SSH 셸 연결: shellSessionId={}", shellSessionId);
+            updateSessionStatus(shellSessionId, TerminalStatus.CONNECTED);
+            log.info("SSH 터미널 연결: shellSessionId={}", shellSessionId);
         }
     }
 
     /**
      * 세션 상태 업데이트
      *
-     * @param shellSessionId 셸 세션 식별자
+     * @param shellSessionId 터미널 세션 식별자
      * @param status         새로운 상태
      */
     @Transactional
-    public void updateSessionStatus(String shellSessionId, ShellStatus status) {
-        sessionRepository.findByShellSessionIdentifier(shellSessionId)
+    public void updateSessionStatus(String shellSessionId, TerminalStatus status) {
+        sessionRepository.findByTerminalId(shellSessionId)
                 .ifPresent(session -> {
                     session.setStatus(status);
                     session.setLastActivityAt(LocalDateTime.now());
 
-                    if (status == ShellStatus.DISCONNECTED || status == ShellStatus.ERROR) {
+                    if (status == TerminalStatus.DISCONNECTED || status == TerminalStatus.ERROR) {
                         session.setDisconnectedAt(LocalDateTime.now());
                     }
 
                     sessionRepository.save(session);
-                    log.debug("셸 세션 상태 업데이트: shellSessionId={}, status={}", shellSessionId, status);
+                    log.debug("터미널 세션 상태 업데이트: shellSessionId={}, status={}", shellSessionId, status);
                 });
     }
 
@@ -141,11 +140,11 @@ public class InteractiveShellSessionManager {
      * 모든 키 입력마다 호출되어 세션 활동을 추적합니다.
      * </p>
      *
-     * @param shellSessionId 셸 세션 식별자
+     * @param shellSessionId 터미널 세션 식별자
      */
     @Transactional
     public void updateLastActivity(String shellSessionId) {
-        sessionRepository.findByShellSessionIdentifier(shellSessionId)
+        sessionRepository.findByTerminalId(shellSessionId)
                 .ifPresent(session -> {
                     session.setLastActivityAt(LocalDateTime.now());
                     sessionRepository.save(session);
@@ -153,49 +152,32 @@ public class InteractiveShellSessionManager {
     }
 
     /**
-     * 명령어 실행 카운트 증가
-     * <p>
-     * Enter 키 입력으로 완성된 명령어만 카운트합니다.
-     * </p>
-     *
-     * @param shellSessionId 셸 세션 식별자
-     */
-    @Transactional
-    public void incrementCommandCount(String shellSessionId) {
-        sessionRepository.findByShellSessionIdentifier(shellSessionId)
-                .ifPresent(session -> {
-                    session.setCommandCount(session.getCommandCount() + 1);
-                    sessionRepository.save(session);
-                });
-    }
-
-    /**
      * 오류 메시지 저장
      *
-     * @param shellSessionId 셸 세션 식별자
+     * @param shellSessionId 터미널 세션 식별자
      * @param errorMessage   오류 메시지
      */
     @Transactional
     public void updateErrorMessage(String shellSessionId, String errorMessage) {
-        sessionRepository.findByShellSessionIdentifier(shellSessionId)
+        sessionRepository.findByTerminalId(shellSessionId)
                 .ifPresent(session -> {
                     session.setErrorMessage(errorMessage);
-                    session.setStatus(ShellStatus.ERROR);
+                    session.setStatus(TerminalStatus.ERROR);
                     sessionRepository.save(session);
-                    log.warn("셸 세션 오류: shellSessionId={}, error={}", shellSessionId, errorMessage);
+                    log.warn("터미널 세션 오류: shellSessionId={}, error={}", shellSessionId, errorMessage);
                 });
     }
 
     /**
      * 세션 조회
      *
-     * @param shellSessionId 셸 세션 식별자
+     * @param shellSessionId 터미널 세션 식별자
      * @return 세션 정보
      */
-    public Optional<InteractiveShellDto.ShellSessionInfo> getSession(String shellSessionId) {
-        return sessionRepository.findByShellSessionIdentifier(shellSessionId)
-                .map(session -> InteractiveShellDto.ShellSessionInfo.builder()
-                        .shellSessionId(session.getShellSessionIdentifier())
+    public Optional<TerminalDto.ShellSessionInfo> getSession(String shellSessionId) {
+        return sessionRepository.findByTerminalId(shellSessionId)
+                .map(session -> TerminalDto.ShellSessionInfo.builder()
+                        .terminalId(session.getTerminalId())
                         .status(session.getStatus())
                         .host(session.getHost())
                         .username(session.getUsername())
@@ -203,14 +185,13 @@ public class InteractiveShellSessionManager {
                         .createdAt(session.getCreatedAt())
                         .lastActivityAt(session.getLastActivityAt())
                         .expiresAt(session.getExpiresAt())
-                        .commandCount(session.getCommandCount())
                         .build());
     }
 
     /**
      * SSH 세션 가져오기
      *
-     * @param shellSessionId 셸 세션 식별자
+     * @param shellSessionId 터미널 세션 식별자
      * @return SSH 세션
      */
     public Optional<Session> getSshSession(String shellSessionId) {
@@ -221,7 +202,7 @@ public class InteractiveShellSessionManager {
     /**
      * SSH 실행 컨텍스트 가져오기
      *
-     * @param shellSessionId 셸 세션 식별자
+     * @param shellSessionId 터미널 세션 식별자
      * @return SSH 실행 컨텍스트
      */
     public Optional<SshExecutionContext> getExecutionContext(String shellSessionId) {
@@ -232,14 +213,14 @@ public class InteractiveShellSessionManager {
     /**
      * 세션 종료 및 정리
      *
-     * @param shellSessionId 셸 세션 식별자
+     * @param shellSessionId 터미널 세션 식별자
      */
     @Transactional
     public void closeSession(String shellSessionId) {
         ShellSessionContext context = activeSessions.remove(shellSessionId);
 
         if (context != null) {
-            // 셸 실행 컨텍스트 종료
+            // 터미널 실행 컨텍스트 종료
             SshExecutionContext executionContext = context.getExecutionContext();
             if (executionContext != null) {
                 // closeShell은 Orchestrator에서 호출
@@ -251,10 +232,10 @@ public class InteractiveShellSessionManager {
                 sshAdapter.disconnect(sshSession);
             }
 
-            log.info("셸 세션 종료: shellSessionId={}", shellSessionId);
+            log.info("터미널 세션 종료: shellSessionId={}", shellSessionId);
         }
 
-        updateSessionStatus(shellSessionId, ShellStatus.DISCONNECTED);
+        updateSessionStatus(shellSessionId, TerminalStatus.DISCONNECTED);
     }
 
     /**
@@ -268,12 +249,12 @@ public class InteractiveShellSessionManager {
         activeSessions.entrySet().removeIf(entry -> {
             String sessionId = entry.getKey();
             ShellSessionContext context = entry.getValue();
-            InteractiveShellSession session = context.getSession();
+            Terminal session = context.getSession();
 
             if (session.getExpiresAt().isBefore(now)) {
-                log.info("만료된 셸 세션 정리: shellSessionId={}", sessionId);
+                log.info("만료된 터미널 세션 정리: shellSessionId={}", sessionId);
 
-                // 셸 실행 컨텍스트 종료
+                // 터미널 실행 컨텍스트 종료
                 if (context.getExecutionContext() != null) {
                     // closeShell은 Orchestrator에서 호출
                 }
@@ -284,7 +265,7 @@ public class InteractiveShellSessionManager {
                 }
 
                 // DB 상태 업데이트
-                updateSessionStatus(sessionId, ShellStatus.DISCONNECTED);
+                updateSessionStatus(sessionId, TerminalStatus.DISCONNECTED);
                 updateErrorMessage(sessionId, "세션 만료");
 
                 return true;
@@ -296,23 +277,23 @@ public class InteractiveShellSessionManager {
     /**
      * 세션 식별자 생성
      *
-     * @return 세션 식별자 (shell_{timestamp}_{uuid})
+     * @return 세션 식별자 (terminal_{timestamp}_{uuid})
      */
     private String generateSessionIdentifier() {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH_mm_ss"));
         String uuid = UUID.randomUUID().toString().substring(0, 8);
-        return String.format("shell_%s_%s", timestamp, uuid);
+        return String.format("terminal_%s_%s", timestamp, uuid);
     }
 
     /**
-     * 셸 세션 컨텍스트 (메모리에서 관리)
+     * 터미널 세션 컨텍스트 (메모리에서 관리)
      */
     private static class ShellSessionContext {
-        private final InteractiveShellSession session;
+        private final Terminal session;
         private Session sshSession;
         private SshExecutionContext executionContext;
 
-        public ShellSessionContext(InteractiveShellSession session,
+        public ShellSessionContext(Terminal session,
                                    Session sshSession,
                                    SshExecutionContext executionContext) {
             this.session = session;
@@ -320,7 +301,7 @@ public class InteractiveShellSessionManager {
             this.executionContext = executionContext;
         }
 
-        public InteractiveShellSession getSession() {
+        public Terminal getSession() {
             return session;
         }
 

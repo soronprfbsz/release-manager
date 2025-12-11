@@ -10,7 +10,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  * WebSocket 설정
  * <p>
  * STOMP over WebSocket을 사용하여 실시간 양방향 통신을 지원합니다.
- * 대화형 셸 터미널의 실시간 입출력을 위해 사용됩니다.
+ * 웹 터미널의 실시간 입출력을 위해 사용됩니다.
  * </p>
  */
 @Configuration
@@ -36,13 +36,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     /**
      * STOMP 엔드포인트 등록
      * <p>
-     * - /ws/shell: 대화형 셸 WebSocket 연결 엔드포인트
+     * - /ws/terminal: 웹 터미널 WebSocket 연결 엔드포인트
      * - SockJS fallback 지원
      * </p>
      */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws/shell")
+        registry.addEndpoint("/ws/terminal")
                 .setAllowedOriginPatterns("*") // CORS 설정 (프로덕션에서는 특정 도메인만 허용)
                 .withSockJS(); // SockJS fallback 지원 (WebSocket 미지원 브라우저 대응)
     }

@@ -84,18 +84,4 @@ public final class ProjectDto {
     ) {
 
     }
-
-    /**
-     * 프로젝트 간단 응답 (선택용)
-     */
-    @Schema(description = "프로젝트 간단 응답")
-    public record SimpleResponse(
-            @Schema(description = "프로젝트 ID", example = "infraeye1")
-            String projectId,
-
-            @Schema(description = "프로젝트명", example = "Infraeye 1")
-            String projectName
-    ) {
-
-    }
 }

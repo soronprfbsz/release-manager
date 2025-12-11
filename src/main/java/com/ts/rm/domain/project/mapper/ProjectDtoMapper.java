@@ -19,8 +19,4 @@ public interface ProjectDtoMapper {
     ProjectDto.DetailResponse toDetailResponse(Project project);
 
     List<ProjectDto.DetailResponse> toDetailResponseList(List<Project> projects);
-
-    ProjectDto.SimpleResponse toSimpleResponse(Project project);
-
-    List<ProjectDto.SimpleResponse> toSimpleResponseList(List<Project> projects);
 }

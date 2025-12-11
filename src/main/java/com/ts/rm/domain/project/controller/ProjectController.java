@@ -53,13 +53,13 @@ public class ProjectController implements ProjectControllerDocs {
     /**
      * 프로젝트 조회 (ID)
      *
-     * @param projectId 프로젝트 ID
+     * @param id 프로젝트 ID
      * @return 프로젝트 상세 정보
      */
     @Override
-    @GetMapping("/{projectId}")
-    public ResponseEntity<ApiResponse<ProjectDto.DetailResponse>> getProjectById(@PathVariable String projectId) {
-        ProjectDto.DetailResponse response = projectService.getProjectById(projectId);
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<ProjectDto.DetailResponse>> getProjectById(@PathVariable String id) {
+        ProjectDto.DetailResponse response = projectService.getProjectById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -76,46 +76,34 @@ public class ProjectController implements ProjectControllerDocs {
     }
 
     /**
-     * 프로젝트 간단 목록 조회 (선택용)
-     *
-     * @return 프로젝트 간단 목록
-     */
-    @Override
-    @GetMapping("/select")
-    public ResponseEntity<ApiResponse<List<ProjectDto.SimpleResponse>>> getProjectsForSelect() {
-        List<ProjectDto.SimpleResponse> response = projectService.getProjectsForSelect();
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
      * 프로젝트 정보 수정
      *
-     * @param projectId 프로젝트 ID
+     * @param id 프로젝트 ID
      * @param request   수정 요청
      * @return 수정된 프로젝트 정보
      */
     @Override
-    @PutMapping("/{projectId}")
+    @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ProjectDto.DetailResponse>> updateProject(
-            @PathVariable String projectId,
+            @PathVariable String id,
             @Valid @RequestBody ProjectDto.UpdateRequest request) {
 
-        log.info("프로젝트 수정 요청 - projectId: {}", projectId);
+        log.info("프로젝트 수정 요청 - projectId: {}", id);
 
-        ProjectDto.DetailResponse response = projectService.updateProject(projectId, request);
+        ProjectDto.DetailResponse response = projectService.updateProject(id, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
      * 프로젝트 삭제
      *
-     * @param projectId 프로젝트 ID
+     * @param id 프로젝트 ID
      * @return 성공 응답
      */
     @Override
-    @DeleteMapping("/{projectId}")
-    public ResponseEntity<ApiResponse<Void>> deleteProject(@PathVariable String projectId) {
-        projectService.deleteProject(projectId);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteProject(@PathVariable String id) {
+        projectService.deleteProject(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

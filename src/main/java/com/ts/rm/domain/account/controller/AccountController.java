@@ -52,32 +52,32 @@ public class AccountController implements AccountControllerDocs {
     }
 
     @Override
-    @PutMapping("/{accountId}")
+    @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<AccountDto.DetailResponse>> updateAccount(
-            @PathVariable Long accountId,
+            @PathVariable Long id,
             @Valid @RequestBody AccountDto.AdminUpdateRequest request) {
-        log.info("PUT /api/accounts/{} - request: {}", accountId, request);
+        log.info("PUT /api/accounts/{} - request: {}", id, request);
 
         // ADMIN 권한 체크
         RoleValidator.requireAdmin();
 
-        AccountDto.DetailResponse response = accountService.adminUpdateAccount(accountId, request);
+        AccountDto.DetailResponse response = accountService.adminUpdateAccount(id, request);
 
-        log.info("Account updated successfully - accountId: {}", accountId);
+        log.info("Account updated successfully - accountId: {}", id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @Override
-    @DeleteMapping("/{accountId}")
-    public ResponseEntity<ApiResponse<Void>> deleteAccount(@PathVariable Long accountId) {
-        log.info("DELETE /api/accounts/{}", accountId);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(@PathVariable Long id) {
+        log.info("DELETE /api/accounts/{}", id);
 
         // ADMIN 권한 체크
         RoleValidator.requireAdmin();
 
-        accountService.deleteAccount(accountId);
+        accountService.deleteAccount(id);
 
-        log.info("Account deleted successfully - accountId: {}", accountId);
+        log.info("Account deleted successfully - accountId: {}", id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

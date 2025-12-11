@@ -64,9 +64,9 @@ public class SwaggerConfig {
                     new Tag().name("부서").description("부서 관리 API"),
                     new Tag().name("리소스 파일").description("리소스 파일 관리 API"),
                     new Tag().name("작업").description("작업 관리 API"),
-                    new Tag().name("대시보드").description("대시보드 API"),
                     new Tag().name("프로젝트").description("프로젝트 관리 API"),
-                    new Tag().name("데이터 분석").description("데이터 분석 API")
+                    new Tag().name("데이터 분석").description("데이터 분석 API"),
+                    new Tag().name("터미널").description("SSH 터미널 API")
             );
             openApi.setTags(orderedTags);
         };

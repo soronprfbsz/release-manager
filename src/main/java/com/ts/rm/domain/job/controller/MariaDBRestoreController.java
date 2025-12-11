@@ -60,16 +60,16 @@ public class MariaDBRestoreController implements MariaDBRestoreControllerDocs {
     }
 
     @Override
-    @GetMapping("/mariadb-restore/job-status/{jobId}")
-    public ResponseEntity<ApiResponse<JobResponse>> getRestoreJobStatus(@PathVariable String jobId) {
+    @GetMapping("/mariadb-restore/job-status/{id}")
+    public ResponseEntity<ApiResponse<JobResponse>> getRestoreJobStatus(@PathVariable String id) {
 
-        log.info("복원 작업 상태 조회 요청 - jobId: {}", jobId);
+        log.info("복원 작업 상태 조회 요청 - jobId: {}", id);
 
-        JobResponse jobStatus = jobStatusManager.getJobStatus(jobId);
+        JobResponse jobStatus = jobStatusManager.getJobStatus(id);
 
         if (jobStatus == null) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "작업 정보를 찾을 수 없습니다: " + jobId);
+                    "작업 정보를 찾을 수 없습니다: " + id);
         }
 
         return ResponseEntity.ok(ApiResponse.success(jobStatus));
