@@ -52,8 +52,9 @@ public class BackupFile extends BaseEntity {
 
     /**
      * 파일 경로 (job/{fileCategory}/backup_files/ 하위 상대경로)
+     * UNIQUE 제약조건: 동일한 경로의 백업 파일 중복 방지
      */
-    @Column(name = "file_path", nullable = false, length = 500)
+    @Column(name = "file_path", nullable = false, length = 500, unique = true)
     private String filePath;
 
     /**

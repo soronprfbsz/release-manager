@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS backup_file (
     INDEX idx_bf_file_category (file_category),
     INDEX idx_bf_file_type (file_type),
     INDEX idx_bf_file_name (file_name),
-    INDEX idx_bf_file_path (file_path),
+    UNIQUE INDEX uk_bf_file_path (file_path) COMMENT '파일 경로 중복 방지',
     INDEX idx_bf_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 테이블';
 

@@ -197,20 +197,47 @@ public class BackupLogService {
     }
 
     /**
+     * 백업 파일명에서 확장자 제거
+     *
+     * @param fileName 파일명
+     * @return 확장자가 제거된 파일명
+     */
+    private static String removeFileExtension(String fileName) {
+        int lastDotIndex = fileName.lastIndexOf('.');
+        return (lastDotIndex > 0) ? fileName.substring(0, lastDotIndex) : fileName;
+    }
+
+    /**
      * 로그 파일 경로 생성 헬퍼 메서드
      *
-     * <p>새로운 경로 구조: job/{fileCategory}/logs/{backupFileName}/{logFileName}
+     * <p>새로운 경로 구조: job/{fileCategory}/logs/{backupFileName_확장자제거}/{logFileName}
      *
      * @param backupFile  백업 파일 정보
      * @param logFileName 로그 파일명
      * @return 로그 파일 상대 경로
      */
     public static String buildLogFilePath(BackupFile backupFile, String logFileName) {
-        // job/MARIADB/logs/backup_20250101_120000.sql/backup_1_20250101_120500.log
+        String baseFileName = removeFileExtension(backupFile.getFileName());
+        // job/MARIADB/logs/103_CM_DB/1_backup_20250101_120500.log
         return String.format("job/%s/logs/%s/%s",
                 backupFile.getFileCategory(),
-                backupFile.getFileName(),
+                baseFileName,
                 logFileName);
+    }
+
+    /**
+     * 복원 순번 계산 (다음 복원 순번 반환)
+     *
+     * @param backupFileId 백업 파일 ID
+     * @return 다음 복원 순번
+     */
+    public int getNextRestoreNumber(Long backupFileId) {
+        int restoreCount = (int) backupFileLogRepository
+                .findByBackupFile_BackupFileIdOrderByCreatedAtDesc(backupFileId)
+                .stream()
+                .filter(log -> LOG_TYPE_RESTORE.equals(log.getLogType()))
+                .count();
+        return restoreCount + 1;
     }
 
     /**
@@ -231,9 +258,10 @@ public class BackupLogService {
             String logType, String createdBy, Long fileSize, String checksum) {
         String logFilePath = buildLogFilePath(backupFile, logFileName);
 
-        // 실제 파일 디렉토리 생성
+        // 실제 파일 디렉토리 생성 (확장자 제거한 디렉토리명 사용)
+        String baseFileName = removeFileExtension(backupFile.getFileName());
         Path logDir = Paths.get(releaseBasePath, "job", backupFile.getFileCategory(),
-                "logs", backupFile.getFileName());
+                "logs", baseFileName);
         try {
             Files.createDirectories(logDir);
         } catch (IOException e) {
