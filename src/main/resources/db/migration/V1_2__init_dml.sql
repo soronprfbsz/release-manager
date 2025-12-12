@@ -1,74 +1,64 @@
 -- =========================================================
--- V1: Release Manager 초기 데이터 삽입
+-- V1_2: Release Manager 초기 데이터 삽입 (통합 DML)
+-- =========================================================
+-- 테이블별로 INSERT문을 그룹화하여 관리 용이성 향상
 -- =========================================================
 
 -- =========================================================
--- 코드 타입
+-- code_type 테이블 (모든 코드 타입)
 -- =========================================================
 
-INSERT INTO code_type (code_type_id, code_type_name, description) VALUES
-('ACCOUNT_ROLE', '계정 권한', '계정 권한 구분'),
-('ACCOUNT_STATUS', '계정 상태', '계정 상태 구분'),
-('RELEASE_TYPE', '릴리즈 타입', '릴리즈 타입 구분 (표준/커스텀)'),
-('RELEASE_CATEGORY', '릴리즈 카테고리', '릴리즈 카테고리 구분 (설치본/패치본)'),
-('DATABASE_TYPE', '데이터베이스 타입', '지원하는 데이터베이스 종류'),
-('FILE_TYPE', '파일 타입', '파일 확장자 타입'),
-('FILE_CATEGORY', '파일 카테고리', '파일 기능적 대분류'),
-('FILE_SUBCATEGORY_DATABASE', '데이터베이스 파일 서브 카테고리', 'DATABASE 카테고리 소분류'),
-('FILE_SUBCATEGORY_ENGINE', '엔진 파일 서브 카테고리', 'ENGINE 카테고리 소분류'),
-('RESOURCE_FILE_CATEGORY', '리소스 파일 카테고리', '리소스 파일 기능적 대분류'),
-('RESOURCE_SUBCATEGORY_SCRIPT', '스크립트 서브 카테고리', 'SCRIPT 카테고리 소분류'),
-('RESOURCE_SUBCATEGORY_DOCKER', 'Docker 서브 카테고리', 'DOCKER 카테고리 소분류'),
-('RESOURCE_SUBCATEGORY_DOCUMENT', '문서 서브 카테고리', 'DOCUMENT 카테고리 소분류'),
-('BACKUP_FILE_CATEGORY', '백업 파일 카테고리', '백업 파일 분류 (MARIADB, CRATEDB)'),
-('POSITION', '직급', '엔지니어 직급 구분');
+INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VALUES
+('ACCOUNT_ROLE', '계정 권한', '계정 권한 구분', TRUE),
+('ACCOUNT_STATUS', '계정 상태', '계정 상태 구분', TRUE),
+('RELEASE_TYPE', '릴리즈 타입', '릴리즈 타입 구분 (표준/커스텀)', TRUE),
+('RELEASE_CATEGORY', '릴리즈 카테고리', '릴리즈 카테고리 구분 (설치본/패치본)', TRUE),
+('DATABASE_TYPE', '데이터베이스 타입', '지원하는 데이터베이스 종류', TRUE),
+('FILE_TYPE', '파일 타입', '파일 확장자 타입', TRUE),
+('FILE_CATEGORY', '파일 카테고리', '파일 기능적 대분류', TRUE),
+('FILE_SUBCATEGORY_DATABASE', '데이터베이스 파일 서브 카테고리', 'DATABASE 카테고리 소분류', TRUE),
+('FILE_SUBCATEGORY_ENGINE', '엔진 파일 서브 카테고리', 'ENGINE 카테고리 소분류', TRUE),
+('RESOURCE_FILE_CATEGORY', '리소스 파일 카테고리', '리소스 파일 기능적 대분류', TRUE),
+('RESOURCE_SUBCATEGORY_SCRIPT', '스크립트 서브 카테고리', 'SCRIPT 카테고리 소분류', TRUE),
+('RESOURCE_SUBCATEGORY_DOCKER', 'Docker 서브 카테고리', 'DOCKER 카테고리 소분류', TRUE),
+('RESOURCE_SUBCATEGORY_DOCUMENT', '문서 서브 카테고리', 'DOCUMENT 카테고리 소분류', TRUE),
+('BACKUP_FILE_CATEGORY', '백업 파일 카테고리', '백업 파일 분류 (MARIADB, CRATEDB)', TRUE),
+('POSITION', '직급', '엔지니어 직급 구분', TRUE),
+('SERVICE_TYPE', '서비스 분류', '서비스 관리에서 사용하는 서비스 분류', TRUE),
+('COMPONENT_TYPE', '컴포넌트 유형', '서비스 컴포넌트(접속 정보) 유형', TRUE);
 
 -- =========================================================
--- 계정 권한 코드
+-- code 테이블 (모든 코드 데이터)
 -- =========================================================
 
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VALUES
-('ACCOUNT_ROLE', 'ADMIN', '관리자', '시스템 관리자 권한', 1),
-('ACCOUNT_ROLE', 'USER', '일반 사용자', '일반 사용자 권한', 2),
-('ACCOUNT_ROLE', 'GUEST', '게스트', '게스트 사용자 권한', 3);
+-- ACCOUNT_ROLE
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('ACCOUNT_ROLE', 'ADMIN', '관리자', '시스템 관리자 권한', 1, TRUE),
+('ACCOUNT_ROLE', 'USER', '일반 사용자', '일반 사용자 권한', 2, TRUE),
+('ACCOUNT_ROLE', 'GUEST', '게스트', '게스트 사용자 권한', 3, TRUE);
 
--- =========================================================
--- 계정 상태 코드
--- =========================================================
+-- ACCOUNT_STATUS
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('ACCOUNT_STATUS', 'ACTIVE', '활성', '활성 상태', 1, TRUE),
+('ACCOUNT_STATUS', 'INACTIVE', '비활성', '비활성 상태', 2, TRUE),
+('ACCOUNT_STATUS', 'SUSPENDED', '정지', '정지 상태', 3, TRUE);
 
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order) VALUES
-('ACCOUNT_STATUS', 'ACTIVE', '활성', '활성 상태', 1),
-('ACCOUNT_STATUS', 'INACTIVE', '비활성', '비활성 상태', 2),
-('ACCOUNT_STATUS', 'SUSPENDED', '정지', '정지 상태', 3);
-
--- =========================================================
--- 릴리즈 타입 코드
--- =========================================================
-
+-- RELEASE_TYPE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('RELEASE_TYPE', 'STANDARD', '표준 릴리즈', '모든 고객사 공통 적용 릴리즈', 1, TRUE),
 ('RELEASE_TYPE', 'CUSTOM', '커스텀 릴리즈', '특정 고객사 전용 릴리즈', 2, TRUE);
 
--- =========================================================
--- 릴리즈 카테고리 코드
--- =========================================================
-
+-- RELEASE_CATEGORY
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('RELEASE_CATEGORY', 'INSTALL', '설치본', '최초 설치용 릴리즈', 1, TRUE),
 ('RELEASE_CATEGORY', 'PATCH', '패치본', '업데이트용 패치 릴리즈', 2, TRUE);
 
--- =========================================================
--- 데이터베이스 타입 코드
--- =========================================================
-
+-- DATABASE_TYPE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('DATABASE_TYPE', 'MARIADB', 'MariaDB', 'MariaDB 데이터베이스', 1, TRUE),
 ('DATABASE_TYPE', 'CRATEDB', 'CrateDB', 'CrateDB 데이터베이스', 2, TRUE);
 
--- =========================================================
--- 파일 타입 코드 (확장자)
--- =========================================================
-
+-- FILE_TYPE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('FILE_TYPE', 'SQL', 'SQL', 'SQL 스크립트 파일', 1, TRUE),
 ('FILE_TYPE', 'MD', 'MD', '마크다운 문서 파일', 2, TRUE),
@@ -83,27 +73,20 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_TYPE', 'ZIP', 'ZIP', 'ZIP 압축 파일', 11, TRUE),
 ('FILE_TYPE', 'UNDEFINED', 'UNDEFINED', '정의되지 않은 파일 타입', 99, TRUE);
 
--- =========================================================
--- 파일 카테고리 코드 (기능적 대분류)
--- =========================================================
-
+-- FILE_CATEGORY
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('FILE_CATEGORY', 'DATABASE', 'DATABASE', '데이터베이스 관련 파일', 1, TRUE),
 ('FILE_CATEGORY', 'WEB', 'WEB', '웹 애플리케이션 파일', 2, TRUE),
 ('FILE_CATEGORY', 'ENGINE', 'ENGINE', '엔진 관련 파일', 3, TRUE),
 ('FILE_CATEGORY', 'ETC', 'ETC', '기타 파일', 4, TRUE);
 
--- =========================================================
--- 파일 서브 카테고리 코드 (카테고리별 소분류)
--- =========================================================
-
--- DATABASE 서브 카테고리
+-- FILE_SUBCATEGORY_DATABASE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('FILE_SUBCATEGORY_DATABASE', 'CRATEDB', 'CRATEDB', 'CrateDB 스크립트', 1, TRUE),
 ('FILE_SUBCATEGORY_DATABASE', 'MARIADB', 'MARIADB', 'MariaDB 스크립트', 2, TRUE),
 ('FILE_SUBCATEGORY_DATABASE', 'ETC', 'ETC', '기타 파일', 3, TRUE);
 
--- ENGINE 서브 카테고리
+-- FILE_SUBCATEGORY_ENGINE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('FILE_SUBCATEGORY_ENGINE', 'NC_AI_EVENT', 'NC_AI_EVENT', '', 1, TRUE),
 ('FILE_SUBCATEGORY_ENGINE', 'NC_AI_LEARN', 'NC_AI_LEARN', '', 2, TRUE),
@@ -171,55 +154,37 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_SUBCATEGORY_ENGINE', 'OZ_CCTV', 'OZ_CCTV', '', 64, TRUE),
 ('FILE_SUBCATEGORY_ENGINE', 'ETC', 'ETC', '기타 파일', 65, TRUE);
 
--- =========================================================
--- 리소스 파일 카테고리 코드
--- =========================================================
-
+-- RESOURCE_FILE_CATEGORY
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('RESOURCE_FILE_CATEGORY', 'SCRIPT', '스크립트', '스크립트 파일 (백업, 복원 등)', 1, TRUE),
 ('RESOURCE_FILE_CATEGORY', 'DOCKER', 'Docker', 'Docker 관련 파일 (컴포즈, Dockerfile 등)', 2, TRUE),
 ('RESOURCE_FILE_CATEGORY', 'DOCUMENT', '문서', '설치 가이드 및 기타 문서', 3, TRUE),
 ('RESOURCE_FILE_CATEGORY', 'ETC', '기타', '기타 리소스 파일', 99, TRUE);
 
--- =========================================================
--- 리소스 파일 서브카테고리 - SCRIPT
--- =========================================================
-
+-- RESOURCE_SUBCATEGORY_SCRIPT
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('RESOURCE_SUBCATEGORY_SCRIPT', 'MARIADB', 'MariaDB', 'MariaDB 관련 스크립트', 1, TRUE),
 ('RESOURCE_SUBCATEGORY_SCRIPT', 'CRATEDB', 'CrateDB', 'CrateDB 관련 스크립트', 2, TRUE),
 ('RESOURCE_SUBCATEGORY_SCRIPT', 'ETC', '기타', '기타 스크립트', 99, TRUE);
 
--- =========================================================
--- 리소스 파일 서브카테고리 - DOCKER
--- =========================================================
-
+-- RESOURCE_SUBCATEGORY_DOCKER
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('RESOURCE_SUBCATEGORY_DOCKER', 'SERVICE', '서비스 실행', 'Docker 서비스 실행 관련 파일', 1, TRUE),
 ('RESOURCE_SUBCATEGORY_DOCKER', 'DOCKERFILE', 'Dockerfile', 'Dockerfile 및 빌드 관련 파일', 2, TRUE),
 ('RESOURCE_SUBCATEGORY_DOCKER', 'ETC', '기타', '기타 Docker 파일', 99, TRUE);
 
--- =========================================================
--- 리소스 파일 서브카테고리 - DOCUMENT
--- =========================================================
-
+-- RESOURCE_SUBCATEGORY_DOCUMENT
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE1', 'Infraeye 1', 'Infraeye 1 관련 문서', 1, TRUE),
 ('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE2', 'Infraeye 2', 'Infraeye 2 관련 문서', 2, TRUE),
 ('RESOURCE_SUBCATEGORY_DOCUMENT', 'ETC', '기타', '기타 문서', 99, TRUE);
 
--- =========================================================
--- 백업 파일 카테고리 코드
--- =========================================================
-
+-- BACKUP_FILE_CATEGORY
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('BACKUP_FILE_CATEGORY', 'MARIADB', 'MariaDB', 'MariaDB 백업 파일', 1, TRUE),
 ('BACKUP_FILE_CATEGORY', 'CRATEDB', 'CrateDB', 'CrateDB 백업 파일', 2, TRUE);
 
--- =========================================================
--- 직급 코드
--- =========================================================
-
+-- POSITION
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('POSITION', 'DIRECTOR', '이사', '이사', 1, TRUE),
 ('POSITION', 'GENERAL_MANAGER', '부장', '부장', 2, TRUE),
@@ -228,8 +193,22 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('POSITION', 'ASSISTANT_MANAGER', '대리', '대리', 5, TRUE),
 ('POSITION', 'STAFF', '사원', '사원', 6, TRUE);
 
+-- SERVICE_TYPE
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('SERVICE_TYPE', 'infra', '개발/운영 인프라', '개발 및 운영 인프라 관련 서비스', 1, TRUE),
+('SERVICE_TYPE', 'infraeye1', 'Infraeye 1', 'Infraeye 1 관련 서비스', 2, TRUE),
+('SERVICE_TYPE', 'infraeye2', 'Infraeye 2', 'Infraeye 2 관련 서비스', 3, TRUE),
+('SERVICE_TYPE', 'etc', '기타', '기타 서비스', 99, TRUE);
+
+-- COMPONENT_TYPE
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('COMPONENT_TYPE', 'WEB', '웹', '웹 접속 정보', 1, TRUE),
+('COMPONENT_TYPE', 'DATABASE', '데이터베이스', '데이터베이스 접속 정보', 2, TRUE),
+('COMPONENT_TYPE', 'ENGINE', '엔진', '엔진 접속 정보', 3, TRUE),
+('COMPONENT_TYPE', 'ETC', '기타', '기타 접속 정보', 99, TRUE);
+
 -- =========================================================
--- 기본 관리자 계정
+-- account 테이블
 -- =========================================================
 
 INSERT INTO account (account_name, email, password, role, status) VALUES
@@ -237,7 +216,7 @@ INSERT INTO account (account_name, email, password, role, status) VALUES
 ('기본 사용자','m_user@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'USER', 'ACTIVE');
 
 -- =========================================================
--- 부서 기본 데이터
+-- department 테이블
 -- =========================================================
 
 INSERT INTO department (department_name, description) VALUES
@@ -246,11 +225,11 @@ INSERT INTO department (department_name, description) VALUES
 ('보안기술팀', '보안 기술 지원');
 
 -- =========================================================
--- 엔지니어 기본 데이터
+-- engineer 테이블
 -- =========================================================
 
-INSERT INTO engineer (engineer_email, position, engineer_name, department_id)
-VALUES ('shinss@tscientific.co.kr', '부장','신성수', 1),
+INSERT INTO engineer (engineer_email, position, engineer_name, department_id) VALUES
+('shinss@tscientific.co.kr', '부장','신성수', 1),
 ('yhkim0144@tscientific.co.kr', '과장','김요한', 1),
 ('skykimtw@tscientific.co.kr', '과장','김태우', 1),
 ('choi7733@tscientific.co.kr', '과장','최은빈', 1),
@@ -276,9 +255,9 @@ VALUES ('shinss@tscientific.co.kr', '부장','신성수', 1),
 ('pjh@tscientific.co.kr', '사원', '박재호', 3);
 
 -- =========================================================
--- 고객사 추가 (테스트용)
+-- customer 테이블
 -- =========================================================
--- 고객사 테스트 데이터 INSERT (A~Z)
+
 INSERT INTO customer (created_by, customer_code, customer_name, description, is_active, updated_by) VALUES
 ('m_user@tscientific.co.kr', 'customerA', 'A회사', NULL, true, 'm_user@tscientific.co.kr'),
 ('m_user@tscientific.co.kr', 'customerB', 'B회사', NULL, true, 'm_user@tscientific.co.kr'),
@@ -308,7 +287,7 @@ INSERT INTO customer (created_by, customer_code, customer_name, description, is_
 ('m_user@tscientific.co.kr', 'customerZ', 'Z회사', NULL, true, 'm_user@tscientific.co.kr');
 
 -- =========================================================
--- 프로젝트 데이터
+-- project 테이블
 -- =========================================================
 
 INSERT INTO project (project_id, project_name, description, created_by) VALUES
@@ -316,7 +295,7 @@ INSERT INTO project (project_id, project_name, description, created_by) VALUES
 ('infraeye2', 'Infraeye 2', 'Infraeye 2.0', 'SYSTEM');
 
 -- =========================================================
--- Customer-Project 매핑 초기 데이터 (모든 고객사를 infraeye2에 연결)
+-- customer_project 테이블
 -- =========================================================
 
 INSERT INTO customer_project (customer_id, project_id)
@@ -331,7 +310,7 @@ WHERE customer_code IN (
 );
 
 -- =========================================================
--- 릴리즈 버전 데이터
+-- release_version 테이블
 -- =========================================================
 
 INSERT INTO release_version (
@@ -345,7 +324,7 @@ INSERT INTO release_version (
 ('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', '2025-11-25 00:00:00');
 
 -- =========================================================
--- 릴리즈 파일 데이터
+-- release_file 테이블
 -- =========================================================
 
 INSERT INTO release_file (
@@ -415,87 +394,82 @@ INSERT INTO release_file (
     1765, '48bb04f6b3f2f4560ab42c0c37fcacbc', 1, 'SMS 로그 모니터링 정책 상세 테이블 추가');
 
 -- =========================================================
--- 계층 구조 데이터
+-- release_version_hierarchy 테이블
 -- =========================================================
 
 -- 1.0.0 (release_version_id = 1)
 INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (1, 1, 0);
 
 -- 1.1.0 (release_version_id = 2)
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (2, 2, 0);
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (1, 2, 1);
+INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
+(2, 2, 0),
+(1, 2, 1);
 
 -- 1.1.1 (release_version_id = 3)
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (3, 3, 0);
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (2, 3, 1);
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (1, 3, 2);
+INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
+(3, 3, 0),
+(2, 3, 1),
+(1, 3, 2);
 
 -- 1.1.2 (release_version_id = 4)
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (4, 4, 0);
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (3, 4, 1);
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (2, 4, 2);
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES (1, 4, 3);
+INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
+(4, 4, 0),
+(3, 4, 1),
+(2, 4, 2),
+(1, 4, 3);
 
 -- =========================================================
--- 리소스 파일 데이터
--- =========================================================
--- 분류 구조:
---   1. 스크립트 (SCRIPT): MARIADB, CRATEDB, ETC
---   2. Docker (DOCKER): SERVICE, DOCKERFILE, ETC
---   3. 문서 (DOCUMENT): INFRAEYE1, INFRAEYE2, ETC
---   4. 기타 (ETC): 없음
+-- resource_file 테이블 (sort_order 추가)
 -- =========================================================
 
--- 스크립트 - MariaDB
-INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
-('SH', 'SCRIPT', 'MARIADB', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 백업 스크립트', 'system'),
-('SH', 'SCRIPT', 'MARIADB', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 복원 스크립트', 'system');
+INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, sort_order, created_by) VALUES
+-- SCRIPT - MARIADB (sort_order: 1, 2)
+('SH', 'SCRIPT', 'MARIADB', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 백업 스크립트', 1, 'system'),
+('SH', 'SCRIPT', 'MARIADB', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 복원 스크립트', 2, 'system'),
 
--- 스크립트 - CrateDB
-INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
-('SH', 'SCRIPT', 'CRATEDB', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 백업 스크립트', 'system'),
-('SH', 'SCRIPT', 'CRATEDB', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 복원 스크립트', 'system');
+-- SCRIPT - CRATEDB (sort_order: 1, 2)
+('SH', 'SCRIPT', 'CRATEDB', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 백업 스크립트', 1, 'system'),
+('SH', 'SCRIPT', 'CRATEDB', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 복원 스크립트', 2, 'system'),
 
--- 문서 - Infraeye 2
-INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, created_by) VALUES
-('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 'system');
+-- DOCUMENT - INFRAEYE2 (sort_order: 1)
+('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 1, 'system');
 
 -- =========================================================
--- 메뉴 데이터 삽입
+-- menu 테이블
 -- =========================================================
 
--- 1depth 메뉴 (순서대로 삽입)
+-- 1depth 메뉴
 INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
 ('version_management', '버전 관리', 1),
 ('patch_management', '패치 관리', 2),
 ('operation_management', '운영 관리', 3),
 ('job_management', '작업 관리', 4),
-('resource_management', '리소스 관리', 5);
+('resource_management', '리소스 관리', 5),
+('service_management', '서비스 관리', 7);
 
--- 2depth 메뉴
--- 버전 관리 하위
+-- 2depth 메뉴 - 버전 관리
 INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
 ('version_standard', 'Standard', 1),
 ('version_custom', 'Custom', 2);
 
--- 패치 관리 하위
+-- 2depth 메뉴 - 패치 관리
 INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
 ('patch_standard', 'Standard', 1),
 ('patch_custom', 'Custom', 2);
 
--- 운영 관리 하위
+-- 2depth 메뉴 - 운영 관리
 INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
 ('operation_customer', '고객사', 1),
 ('operation_engineer', '엔지니어', 2),
 ('operation_account', '계정', 3);
 
--- 작업 관리 하위
+-- 2depth 메뉴 - 작업 관리
 INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
 ('job_mariadb', 'MariaDB', 1),
 ('job_terminal', '터미널', 2);
 
 -- =========================================================
--- 메뉴 계층 구조 데이터 삽입 (Closure Table)
+-- menu_hierarchy 테이블
 -- =========================================================
 
 -- 1depth 메뉴 (자기 자신)
@@ -504,7 +478,8 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('patch_management', 'patch_management', 0),
 ('operation_management', 'operation_management', 0),
 ('job_management', 'job_management', 0),
-('resource_management', 'resource_management', 0);
+('resource_management', 'resource_management', 0),
+('service_management', 'service_management', 0);
 
 -- 2depth 메뉴 (자기 자신)
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
@@ -518,31 +493,29 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('job_mariadb', 'job_mariadb', 0),
 ('job_terminal', 'job_terminal', 0);
 
-
--- 부모-자식 관계 (depth=1)
--- 버전 관리
+-- 부모-자식 관계 (depth=1) - 버전 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('version_management', 'version_standard', 1),
 ('version_management', 'version_custom', 1);
 
--- 패치 관리
+-- 부모-자식 관계 (depth=1) - 패치 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('patch_management', 'patch_standard', 1),
 ('patch_management', 'patch_custom', 1);
 
--- 운영 관리
+-- 부모-자식 관계 (depth=1) - 운영 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('operation_management', 'operation_customer', 1),
 ('operation_management', 'operation_engineer', 1),
 ('operation_management', 'operation_account', 1);
 
--- 작업 관리
+-- 부모-자식 관계 (depth=1) - 작업 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('job_management', 'job_mariadb', 1),
 ('job_management', 'job_terminal', 1);
 
 -- =========================================================
--- 메뉴 권한 데이터 삽입
+-- menu_role 테이블
 -- =========================================================
 
 -- ADMIN: 모든 메뉴 접근 가능
@@ -553,6 +526,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('operation_management', 'ADMIN'),
 ('job_management', 'ADMIN'),
 ('resource_management', 'ADMIN'),
+('service_management', 'ADMIN'),
 -- 2depth - 버전 관리
 ('version_standard', 'ADMIN'),
 ('version_custom', 'ADMIN'),
@@ -575,6 +549,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('operation_management', 'USER'),
 ('job_management', 'USER'),
 ('resource_management', 'USER'),
+('service_management', 'USER'),
 -- 2depth - 버전 관리
 ('version_standard', 'USER'),
 ('version_custom', 'USER'),
@@ -595,6 +570,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('patch_management', 'GUEST'),
 ('job_management', 'GUEST'),
 ('resource_management', 'GUEST'),
+('service_management', 'GUEST'),
 -- 2depth - 버전 관리
 ('version_standard', 'GUEST'),
 ('version_custom', 'GUEST'),
@@ -606,54 +582,9 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('job_terminal', 'GUEST');
 
 -- =========================================================
--- 서비스 관리 코드 데이터
+-- service 테이블
 -- =========================================================
 
--- code_type: SERVICE_TYPE (서비스 분류)
-INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VALUES
-('SERVICE_TYPE', '서비스 분류', '서비스 관리에서 사용하는 서비스 분류', TRUE);
-
--- code: SERVICE_TYPE
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('SERVICE_TYPE', 'infra', '개발/운영 인프라', '개발 및 운영 인프라 관련 서비스', 1, TRUE),
-('SERVICE_TYPE', 'infraeye1', 'Infraeye 1', 'Infraeye 1 관련 서비스', 2, TRUE),
-('SERVICE_TYPE', 'infraeye2', 'Infraeye 2', 'Infraeye 2 관련 서비스', 3, TRUE),
-('SERVICE_TYPE', 'etc', '기타', '기타 서비스', 99, TRUE);
-
--- code_type: COMPONENT_TYPE (컴포넌트 유형)
-INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VALUES
-('COMPONENT_TYPE', '컴포넌트 유형', '서비스 컴포넌트(접속 정보) 유형', TRUE);
-
--- code: COMPONENT_TYPE
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('COMPONENT_TYPE', 'WEB', '웹', '웹 접속 정보', 1, TRUE),
-('COMPONENT_TYPE', 'DATABASE', '데이터베이스', '데이터베이스 접속 정보', 2, TRUE),
-('COMPONENT_TYPE', 'ENGINE', '엔진', '엔진 접속 정보', 3, TRUE),
-('COMPONENT_TYPE', 'ETC', '기타', '기타 접속 정보', 99, TRUE);
-
--- =========================================================
--- 서비스 관리 메뉴 데이터
--- =========================================================
-
--- 1depth 메뉴 추가
-INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
-('service_management', '서비스 관리', 7);
-
--- 자기 자신에 대한 계층 구조 (depth 0)
-INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('service_management', 'service_management', 0);
-
--- 메뉴 권한: 모든 role에서 접근 가능
-INSERT INTO menu_role (menu_id, role) VALUES
-('service_management', 'ADMIN'),
-('service_management', 'USER'),
-('service_management', 'GUEST');
-
--- =========================================================
--- 서비스 관리 기본 데이터
--- =========================================================
-
--- 서비스 데이터 (SERVICE_TYPE에 따라 sort_order 설정)
 INSERT INTO service (service_name, service_type, description, sort_order, is_active, created_by) VALUES
 ('gitea', 'infra', '개발소스 git 저장소', 1, TRUE, 'admin@tscientific.co.kr'),
 ('gitlab', 'infra', 'gitlab 서비스', 1, TRUE, 'admin@tscientific.co.kr'),
@@ -663,7 +594,10 @@ INSERT INTO service (service_name, service_type, description, sort_order, is_act
 ('Release Manager', 'etc', '릴리즈 매니저', 99, TRUE, 'admin@tscientific.co.kr'),
 ('NAS', 'infra', 'NAS', 1, TRUE, 'admin@tscientific.co.kr');
 
--- 서비스 컴포넌트 데이터 (database_name 컬럼 제거됨, host/port는 필수)
+-- =========================================================
+-- service_component 테이블
+-- =========================================================
+
 -- 1. gitea (service_id = 1)
 INSERT INTO service_component (service_id, component_type, component_name, host, port, url, account_id, password, ssh_port, ssh_account_id, ssh_password, description, sort_order, is_active, created_by) VALUES
 (1, 'WEB', 'gitea - web', '10.110.1.99', 3000, 'http://10.110.1.99:3000', NULL, NULL, NULL, NULL, NULL, 'git 저장소', 1, TRUE, 'admin@tscientific.co.kr'),

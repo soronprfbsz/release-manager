@@ -67,6 +67,10 @@ public class ResourceFileService {
             throw new BusinessException(ErrorCode.DUPLICATE_RESOURCE, "이미 동일한 경로에 파일이 존재합니다: " + relativePath);
         }
 
+        // sortOrder 자동 채번: 파일 카테고리별로 최대값 + 1
+        Integer maxSortOrder = resourceFileRepository.findMaxSortOrderByFileCategory(request.fileCategory().toUpperCase());
+        Integer sortOrder = maxSortOrder + 1;
+
         try {
             // 디렉토리 생성
             Files.createDirectories(targetPath.getParent());
@@ -88,6 +92,7 @@ public class ResourceFileService {
                     .fileSize(file.getSize())
                     .checksum(checksum)
                     .description(request.description())
+                    .sortOrder(sortOrder)
                     .createdBy(request.createdBy())
                     .build();
 
@@ -171,19 +176,49 @@ public class ResourceFileService {
     }
 
     /**
-     * 전체 리소스 파일 목록 조회
+     * 전체 리소스 파일 목록 조회 (sortOrder 오름차순, 생성일시 내림차순)
      */
     public List<ResourceFile> listAllFiles() {
-        return resourceFileRepository.findAllByOrderByCreatedAtDesc();
+        return resourceFileRepository.findAllByOrderBySortOrderAscCreatedAtDesc();
     }
 
     /**
-     * 파일 카테고리별 리소스 파일 목록 조회
+     * 파일 카테고리별 리소스 파일 목록 조회 (sortOrder 오름차순, 생성일시 내림차순)
      *
      * @param fileCategory 파일 카테고리 (SCRIPT, DOCUMENT, ETC)
      */
     public List<ResourceFile> listFilesByCategory(String fileCategory) {
-        return resourceFileRepository.findByFileCategoryOrderByCreatedAtDesc(fileCategory.toUpperCase());
+        return resourceFileRepository.findByFileCategoryOrderBySortOrderAscCreatedAtDesc(fileCategory.toUpperCase());
+    }
+
+    /**
+     * 리소스 파일 순서 변경
+     *
+     * @param request 순서 변경 요청
+     */
+    @Transactional
+    public void reorderResourceFiles(ResourceFileDto.ReorderResourceFilesRequest request) {
+        log.info("리소스 파일 순서 변경 시작: {}", request.resourceFileIds());
+
+        List<Long> resourceFileIds = request.resourceFileIds();
+        if (resourceFileIds == null || resourceFileIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "리소스 파일 ID 목록은 비어있을 수 없습니다");
+        }
+
+        // 모든 리소스 파일이 존재하는지 확인
+        for (Long resourceFileId : resourceFileIds) {
+            getResourceFile(resourceFileId);
+        }
+
+        // sortOrder 업데이트 (1부터 시작)
+        int sortOrder = 1;
+        for (Long resourceFileId : resourceFileIds) {
+            ResourceFile resourceFile = getResourceFile(resourceFileId);
+            resourceFile.setSortOrder(sortOrder++);
+        }
+
+        log.info("리소스 파일 순서 변경 완료");
     }
 
     /**
