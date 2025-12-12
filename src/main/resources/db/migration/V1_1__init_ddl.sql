@@ -1,5 +1,9 @@
 -- =========================================================
--- V1: Release Manager 초기 테이블 생성
+-- V1: Release Manager 초기 테이블 생성 (통합 DDL)
+-- =========================================================
+-- 최종 스키마 반영:
+-- - service 테이블: sort_order 컬럼 추가
+-- - service_component 테이블: database_name 제거, host/port NOT NULL
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS code_type (
@@ -341,3 +345,64 @@ CREATE TABLE IF NOT EXISTS terminal (
     INDEX idx_status (status),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='웹 터미널';
+
+-- =========================================================
+-- Service Management Tables (최종 스키마)
+-- =========================================================
+-- 변경사항:
+-- - service 테이블: sort_order 컬럼 추가 및 인덱스 추가
+-- - service_component 테이블:
+--   * database_name 컬럼 제거
+--   * host, port 컬럼 NOT NULL 제약 추가
+-- =========================================================
+
+-- 서비스 테이블
+CREATE TABLE IF NOT EXISTS service (
+    service_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '서비스 ID',
+    service_name VARCHAR(255) NOT NULL COMMENT '서비스명',
+    service_type VARCHAR(50) NOT NULL COMMENT '서비스 분류 (SERVICE_TYPE 코드)',
+    description TEXT COMMENT '설명',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (SERVICE_TYPE의 sort_order 값)',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_by VARCHAR(100) COMMENT '수정자',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_service_type (service_type),
+    INDEX idx_service_name (service_name),
+    INDEX idx_sort_order (sort_order),
+    INDEX idx_is_active (is_active),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='서비스 관리';
+
+-- 서비스 컴포넌트 (접속 정보) 테이블
+CREATE TABLE IF NOT EXISTS service_component (
+    component_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '접속 정보 ID',
+    service_id BIGINT NOT NULL COMMENT '서비스 ID',
+    component_type VARCHAR(50) NOT NULL COMMENT '접속 유형 (COMPONENT_TYPE 코드)',
+    component_name VARCHAR(255) NOT NULL COMMENT '접속 정보명',
+    host VARCHAR(255) NOT NULL COMMENT '호스트 주소',
+    port INT NOT NULL COMMENT '포트 번호',
+    url VARCHAR(500) COMMENT 'URL (WEB 타입용)',
+    account_id VARCHAR(100) COMMENT '계정 ID',
+    password VARCHAR(500) COMMENT '비밀번호',
+    ssh_port INT COMMENT 'SSH 포트번호',
+    ssh_account_id VARCHAR(100) COMMENT 'SSH 계정 ID',
+    ssh_password VARCHAR(500) COMMENT 'SSH 비밀번호',
+    description TEXT COMMENT '설명',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_by VARCHAR(100) COMMENT '수정자',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_service_id (service_id),
+    INDEX idx_component_type (component_type),
+    INDEX idx_component_name (component_name),
+    INDEX idx_sort_order (sort_order),
+    INDEX idx_is_active (is_active),
+
+    CONSTRAINT fk_component_service FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='서비스 컴포넌트 (접속 정보)';

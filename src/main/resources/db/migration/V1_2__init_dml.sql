@@ -604,3 +604,96 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- 2depth - 작업 관리
 ('job_mariadb', 'GUEST'),
 ('job_terminal', 'GUEST');
+
+-- =========================================================
+-- 서비스 관리 코드 데이터
+-- =========================================================
+
+-- code_type: SERVICE_TYPE (서비스 분류)
+INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VALUES
+('SERVICE_TYPE', '서비스 분류', '서비스 관리에서 사용하는 서비스 분류', TRUE);
+
+-- code: SERVICE_TYPE
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('SERVICE_TYPE', 'infra', '개발/운영 인프라', '개발 및 운영 인프라 관련 서비스', 1, TRUE),
+('SERVICE_TYPE', 'infraeye1', 'Infraeye 1', 'Infraeye 1 관련 서비스', 2, TRUE),
+('SERVICE_TYPE', 'infraeye2', 'Infraeye 2', 'Infraeye 2 관련 서비스', 3, TRUE),
+('SERVICE_TYPE', 'etc', '기타', '기타 서비스', 99, TRUE);
+
+-- code_type: COMPONENT_TYPE (컴포넌트 유형)
+INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VALUES
+('COMPONENT_TYPE', '컴포넌트 유형', '서비스 컴포넌트(접속 정보) 유형', TRUE);
+
+-- code: COMPONENT_TYPE
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('COMPONENT_TYPE', 'WEB', '웹', '웹 접속 정보', 1, TRUE),
+('COMPONENT_TYPE', 'DATABASE', '데이터베이스', '데이터베이스 접속 정보', 2, TRUE),
+('COMPONENT_TYPE', 'ENGINE', '엔진', '엔진 접속 정보', 3, TRUE),
+('COMPONENT_TYPE', 'ETC', '기타', '기타 접속 정보', 99, TRUE);
+
+-- =========================================================
+-- 서비스 관리 메뉴 데이터
+-- =========================================================
+
+-- 1depth 메뉴 추가
+INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
+('service_management', '서비스 관리', 7);
+
+-- 자기 자신에 대한 계층 구조 (depth 0)
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('service_management', 'service_management', 0);
+
+-- 메뉴 권한: 모든 role에서 접근 가능
+INSERT INTO menu_role (menu_id, role) VALUES
+('service_management', 'ADMIN'),
+('service_management', 'USER'),
+('service_management', 'GUEST');
+
+-- =========================================================
+-- 서비스 관리 기본 데이터
+-- =========================================================
+
+-- 서비스 데이터 (SERVICE_TYPE에 따라 sort_order 설정)
+INSERT INTO service (service_name, service_type, description, sort_order, is_active, created_by) VALUES
+('gitea', 'infra', '개발소스 git 저장소', 1, TRUE, 'admin@tscientific.co.kr'),
+('gitlab', 'infra', 'gitlab 서비스', 1, TRUE, 'admin@tscientific.co.kr'),
+('infraeye 2 (dev)', 'infraeye2', 'infraeye 2 개발용 서비스', 3, TRUE, 'admin@tscientific.co.kr'),
+('infraeye 1 (dev)', 'infraeye1', 'Infraeye 1 개발용 서비스', 2, TRUE, 'admin@tscientific.co.kr'),
+('harbor', 'infra', 'docker image private registry', 1, TRUE, 'admin@tscientific.co.kr'),
+('Release Manager', 'etc', '릴리즈 매니저', 99, TRUE, 'admin@tscientific.co.kr'),
+('NAS', 'infra', 'NAS', 1, TRUE, 'admin@tscientific.co.kr');
+
+-- 서비스 컴포넌트 데이터 (database_name 컬럼 제거됨, host/port는 필수)
+-- 1. gitea (service_id = 1)
+INSERT INTO service_component (service_id, component_type, component_name, host, port, url, account_id, password, ssh_port, ssh_account_id, ssh_password, description, sort_order, is_active, created_by) VALUES
+(1, 'WEB', 'gitea - web', '10.110.1.99', 3000, 'http://10.110.1.99:3000', NULL, NULL, NULL, NULL, NULL, 'git 저장소', 1, TRUE, 'admin@tscientific.co.kr'),
+(1, 'DATABASE', 'gitea - db', '10.110.1.99', 15432, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, TRUE, 'admin@tscientific.co.kr');
+
+-- 2. gitlab (service_id = 2)
+INSERT INTO service_component (service_id, component_type, component_name, host, port, url, account_id, password, ssh_port, ssh_account_id, ssh_password, description, sort_order, is_active, created_by) VALUES
+(2, 'WEB', '10.230.1.17', '10.230.1.17', 20080, 'http://10.230.1.17:20080', NULL, NULL, 22, 'root', 'netcruz!1', 'gitlab 저장소 (release_manager 리포지토리)', 1, TRUE, 'admin@tscientific.co.kr');
+
+-- 3. infraeye 2 (dev) (service_id = 3)
+INSERT INTO service_component (service_id, component_type, component_name, host, port, url, account_id, password, ssh_port, ssh_account_id, ssh_password, description, sort_order, is_active, created_by) VALUES
+(3, 'WEB', 'infraeye2 - web', '10.110.1.103', 60000, 'http://10.110.1.103:60000', 'm_user', NULL, NULL, NULL, NULL, 'Infraeye2 공통 개발 Web', 1, TRUE, 'admin@tscientific.co.kr'),
+(3, 'DATABASE', 'infraeye2 - mariadb', '10.110.1.103', 13306, NULL, 'infraeye', NULL, NULL, NULL, NULL, 'Infraeye 2 개발 서버 Mariadb', 2, TRUE, 'admin@tscientific.co.kr');
+
+-- 4. infraeye 1 (dev) (service_id = 4)
+INSERT INTO service_component (service_id, component_type, component_name, host, port, url, account_id, password, ssh_port, ssh_account_id, ssh_password, description, sort_order, is_active, created_by) VALUES
+(4, 'WEB', 'infraeye1 - web', '10.110.1.104', 60000, 'https://10.110.1.104:60000', 'm_user', NULL, NULL, NULL, NULL, 'infraeye1 개발용 서비스 - 웹', 1, TRUE, 'admin@tscientific.co.kr'),
+(4, 'DATABASE', 'infraeye1 - mariadb', '10.110.1.103', 13306, NULL, 'infraeye', NULL, NULL, NULL, NULL, 'infraeye 1 개발용 서비스 - mariadb', 2, TRUE, 'admin@tscientific.co.kr');
+
+-- 5. harbor (service_id = 5)
+INSERT INTO service_component (service_id, component_type, component_name, host, port, url, account_id, password, ssh_port, ssh_account_id, ssh_password, description, sort_order, is_active, created_by) VALUES
+(5, 'WEB', 'harbor - web', '10.230.1.17', 20081, 'http://10.230.1.17:20081', 'admin', 'netcruz!#$134', NULL, NULL, NULL, NULL, 1, TRUE, 'admin@tscientific.co.kr');
+
+-- 6. Release Manager (service_id = 6)
+INSERT INTO service_component (service_id, component_type, component_name, host, port, url, account_id, password, ssh_port, ssh_account_id, ssh_password, description, sort_order, is_active, created_by) VALUES
+(6, 'WEB', 'release-manager - web', '10.230.1.17', 13000, 'http://10.230.1.17:13000', NULL, NULL, 22, 'root', 'netcruz!1', '릴리즈 매니저 - Web', 1, TRUE, 'admin@tscientific.co.kr'),
+(6, 'DATABASE', 'release-manager - mariadb', '10.230.1.17', 13306, NULL, 'root', 'netcruz!#$134', NULL, NULL, NULL, '릴리즈 매니저 - Mariadb', 2, TRUE, 'admin@tscientific.co.kr'),
+(6, 'WEB', 'release-manager - api', '10.230.1.17', 18080, 'http://10.230.1.17:18080/swagger', NULL, NULL, NULL, NULL, NULL, '릴리즈 매니저 - API 정보(스웨거)', 3, TRUE, 'admin@tscientific.co.kr'),
+(6, 'DATABASE', 'release-manager - redis', '10.230.1.17', 16379, NULL, NULL, 'netcruz!#$134', NULL, NULL, NULL, NULL, 4, TRUE, 'admin@tscientific.co.kr');
+
+-- 7. NAS (service_id = 7)
+INSERT INTO service_component (service_id, component_type, component_name, host, port, url, account_id, password, ssh_port, ssh_account_id, ssh_password, description, sort_order, is_active, created_by) VALUES
+(7, 'WEB', 'NAS - web', '10.110.1.99', 5000, 'http://10.110.1.99:5000', 'admin', 'netcruz!#$134', NULL, NULL, NULL, 'NMS - Web', 1, TRUE, 'admin@tscientific.co.kr');
