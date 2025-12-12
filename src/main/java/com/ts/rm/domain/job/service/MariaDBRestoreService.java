@@ -58,14 +58,24 @@ public class MariaDBRestoreService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
                         "백업 파일을 찾을 수 없습니다: " + request.getBackupFileId()));
 
-        Path backupFilePath = Paths.get(releaseBasePath, backupFile.getFilePath());
-        Path logFilePath = Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs", logFileName);
+        // 복원 순번 계산
+        String timestamp = jobId.replace("restore_", "");
+        int restoreNumber = backupLogService.getNextRestoreNumber(request.getBackupFileId());
+        String newLogFileName = String.format("%d_restore_%s.log", restoreNumber, timestamp);
 
-        log.info("복원 시작 - jobId: {}, backupFileId: {}", jobId, request.getBackupFileId());
+        Path backupFilePath = Paths.get(releaseBasePath, backupFile.getFilePath());
+
+        // 백업 파일명에서 확장자 제거하여 로그 디렉토리명 생성
+        String baseFileName = removeFileExtension(backupFile.getFileName());
+        Path logDir = Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs", baseFileName);
+        Path logFilePath = logDir.resolve(newLogFileName);
+
+        log.info("복원 시작 - jobId: {}, backupFileId: {}, restoreNumber: {}",
+                jobId, request.getBackupFileId(), restoreNumber);
 
         try {
             // 디렉토리 생성
-            createDirectories();
+            createDirectories(backupFile.getFileName());
 
             // 백업 파일 존재 확인
             if (!Files.exists(backupFilePath)) {
@@ -94,14 +104,14 @@ public class MariaDBRestoreService {
             String logChecksum = com.ts.rm.global.file.FileChecksumUtil.calculateChecksum(logFilePath);
 
             // BackupFileLog 테이블에 로그 파일 정보 저장
-            backupLogService.createLogFile(backupFile, logFileName, LOG_TYPE_RESTORE,
+            backupLogService.createLogFile(backupFile, newLogFileName, LOG_TYPE_RESTORE,
                     request.getUsername(), logFileSize, logChecksum);
-            log.info("복원 로그 DB 저장 완료 - logFileName: {}", logFileName);
+            log.info("복원 로그 DB 저장 완료 - logFileName: {}", newLogFileName);
 
             // 작업 상태 업데이트 (성공)
             jobStatusManager.saveJobStatus(jobId,
                     JobResponse.createSuccess(jobId, backupFile.getFileName(),
-                            Files.size(backupFilePath), "logs/" + logFileName));
+                            Files.size(backupFilePath), "logs/" + baseFileName + "/" + newLogFileName));
 
         } catch (Exception e) {
             log.error("복원 실패 - jobId: {}, backupFileId: {}, error: {}",
@@ -119,20 +129,34 @@ public class MariaDBRestoreService {
             // 작업 상태 업데이트 (실패)
             jobStatusManager.saveJobStatus(jobId,
                     JobResponse.createFailed(jobId, backupFile.getFileName(),
-                            "logs/" + logFileName, e.getMessage()));
+                            "logs/" + baseFileName + "/" + newLogFileName, e.getMessage()));
         }
     }
 
     /**
      * 디렉토리 생성
+     *
+     * @param backupFileName 백업 파일명
      */
-    private void createDirectories() {
+    private void createDirectories(String backupFileName) {
+        String baseFileName = removeFileExtension(backupFileName);
         try {
-            Files.createDirectories(Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs"));
+            Files.createDirectories(Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs", baseFileName));
         } catch (IOException e) {
             log.error("디렉토리 생성 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다.");
         }
+    }
+
+    /**
+     * 백업 파일명에서 확장자 제거
+     *
+     * @param fileName 파일명
+     * @return 확장자가 제거된 파일명
+     */
+    private String removeFileExtension(String fileName) {
+        int lastDotIndex = fileName.lastIndexOf('.');
+        return (lastDotIndex > 0) ? fileName.substring(0, lastDotIndex) : fileName;
     }
 
     /**

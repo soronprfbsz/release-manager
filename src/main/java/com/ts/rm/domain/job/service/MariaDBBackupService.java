@@ -62,13 +62,24 @@ public class MariaDBBackupService {
         String timestamp = jobId.replace("backup_", "");
         String relativePath = "job/" + FILE_CATEGORY + "/backup_files/" + backupFileName;
         Path backupFilePath = Paths.get(releaseBasePath, relativePath);
-        Path logFilePath = Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs", logFileName);
+
+        // 백업 파일명에서 확장자 제거하여 로그 디렉토리명 생성
+        String baseFileName = removeFileExtension(backupFileName);
+        Path logDir = Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs", baseFileName);
+        Path logFilePath = logDir.resolve(logFileName);
 
         log.info("백업 시작 - jobId: {}", jobId);
 
         try {
+            // 중복 파일 경로 체크 (DB에 이미 존재하는지 확인)
+            if (backupFileRepository.existsByFilePath(relativePath)) {
+                String errorMessage = String.format("동일한 경로의 백업 파일이 이미 존재합니다: %s", backupFileName);
+                log.error("백업 파일 중복 - filePath: {}", relativePath);
+                throw new BusinessException(ErrorCode.DATA_CONFLICT, errorMessage);
+            }
+
             // 디렉토리 생성
-            createDirectories();
+            createDirectories(backupFileName);
 
             // 로그 파일 초기화
             initializeLogFile(logFilePath, request);
@@ -106,8 +117,8 @@ public class MariaDBBackupService {
             appendToLogFile(logFilePath, "파일 크기: " + fileSize + " bytes");
             appendToLogFile(logFilePath, "========================================");
 
-            // 로그 파일명에 backupFileId 포함하여 rename
-            String newLogFileName = String.format("backup_%d_%s.log",
+            // 로그 파일명에 backupFileId 포함하여 rename (형식: {순번}_backup_{timestamp}.log)
+            String newLogFileName = String.format("%d_backup_%s.log",
                     backupFile.getBackupFileId(), timestamp);
             Path newLogFilePath = logFilePath.getParent().resolve(newLogFileName);
             Files.move(logFilePath, newLogFilePath);
@@ -151,15 +162,29 @@ public class MariaDBBackupService {
 
     /**
      * 디렉토리 생성
+     *
+     * @param backupFileName 백업 파일명
      */
-    private void createDirectories() {
+    private void createDirectories(String backupFileName) {
+        String baseFileName = removeFileExtension(backupFileName);
         try {
-            Files.createDirectories(Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs"));
+            Files.createDirectories(Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs", baseFileName));
             Files.createDirectories(Paths.get(releaseBasePath, "job", FILE_CATEGORY, "backup_files"));
         } catch (IOException e) {
             log.error("디렉토리 생성 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다.");
         }
+    }
+
+    /**
+     * 백업 파일명에서 확장자 제거
+     *
+     * @param fileName 파일명
+     * @return 확장자가 제거된 파일명
+     */
+    private String removeFileExtension(String fileName) {
+        int lastDotIndex = fileName.lastIndexOf('.');
+        return (lastDotIndex > 0) ? fileName.substring(0, lastDotIndex) : fileName;
     }
 
     /**
