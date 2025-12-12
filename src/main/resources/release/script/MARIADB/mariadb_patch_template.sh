@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # 로그 디렉토리 및 파일 설정
-LOG_DIR="$SCRIPT_DIR/mariadb/logs"
+LOG_DIR="$SCRIPT_DIR/logs/mariadb"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 LOG_FILE="$LOG_DIR/patch_{{FROM_VERSION}}_to_{{TO_VERSION}}_${TIMESTAMP}.log"
 
