@@ -2,7 +2,9 @@ package com.ts.rm.domain.resourcefile.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * ResourceFile DTO
@@ -146,6 +148,17 @@ public final class ResourceFileDto {
 
             @Schema(description = "하위 카테고리 설명", example = "MariaDB 관련 스크립트")
             String description
+    ) {
+    }
+
+    /**
+     * 리소스 파일 순서 변경 요청
+     */
+    @Schema(description = "리소스 파일 순서 변경 요청")
+    public record ReorderResourceFilesRequest(
+            @Schema(description = "정렬할 리소스 파일 ID 목록 (순서대로)", example = "[1, 3, 2, 4]")
+            @NotEmpty(message = "리소스 파일 ID 목록은 비어있을 수 없습니다")
+            List<Long> resourceFileIds
     ) {
     }
 }

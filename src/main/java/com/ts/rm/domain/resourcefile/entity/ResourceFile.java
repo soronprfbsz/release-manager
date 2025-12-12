@@ -81,8 +81,24 @@ public class ResourceFile extends BaseEntity {
     private String description;
 
     /**
+     * 정렬 순서 (file_category 내에서 정렬)
+     */
+    @Column(name = "sort_order", nullable = false)
+    @Builder.Default
+    private Integer sortOrder = 0;
+
+    /**
      * 생성자
      */
     @Column(name = "created_by", nullable = false, length = 100)
     private String createdBy;
+
+    /**
+     * sortOrder 설정
+     *
+     * @param sortOrder 정렬 순서
+     */
+    public void setSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
+    }
 }

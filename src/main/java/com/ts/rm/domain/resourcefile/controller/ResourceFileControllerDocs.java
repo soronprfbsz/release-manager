@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -142,6 +143,36 @@ public interface ResourceFileControllerDocs {
             )
     )
     ApiResponse<Void> deleteResourceFile(@PathVariable Long id);
+
+    @Operation(
+            summary = "리소스 파일 순서 변경",
+            description = "리소스 파일의 정렬 순서를 변경합니다.\n\n"
+                    + "**동작 방식**:\n"
+                    + "- 요청받은 리소스 파일 ID 순서대로 sortOrder를 1부터 재부여합니다.\n\n"
+                    + "**요청 예시**:\n"
+                    + "```json\n"
+                    + "{\n"
+                    + "  \"resourceFileIds\": [3, 1, 2, 4]\n"
+                    + "}\n"
+                    + "```\n\n"
+                    + "**주의사항**:\n"
+                    + "- 모든 리소스 파일 ID가 존재해야 합니다.\n"
+                    + "- 빈 목록은 허용되지 않습니다.",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    example = "{\"status\": \"success\", \"data\": null}"
+                            )
+                    )
+            )
+    )
+    ApiResponse<Void> reorderResourceFiles(
+            @Parameter(description = "순서 변경 요청", required = true)
+            @RequestBody ResourceFileDto.ReorderResourceFilesRequest request
+    );
 
     /**
      * Swagger 스키마용 wrapper 클래스 - 리소스 파일 상세 응답
