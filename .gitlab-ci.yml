@@ -31,11 +31,13 @@ build-job:
   image: gradle:8.5-jdk17-alpine
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-      tags:
-        - main-runner
+      variables:
+        RUNNER_TAG: "main-runner"
     - if: '$CI_COMMIT_BRANCH == "dev"'
-      tags:
-        - dev-runner
+      variables:
+        RUNNER_TAG: "dev-runner"
+  tags:
+    - "$RUNNER_TAG"
   cache:
     # 브랜치별 캐시 사용
     key: gradle-${CI_COMMIT_REF_SLUG}
@@ -66,11 +68,13 @@ test-job:
   image: gradle:8.5-jdk17-alpine
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-      tags:
-        - main-runner
+      variables:
+        RUNNER_TAG: "main-runner"
     - if: '$CI_COMMIT_BRANCH == "dev"'
-      tags:
-        - dev-runner
+      variables:
+        RUNNER_TAG: "dev-runner"
+  tags:
+    - "$RUNNER_TAG"
   cache:
     key: gradle-${CI_COMMIT_REF_SLUG}
     paths:
@@ -99,11 +103,13 @@ docker-build-job:
   stage: docker-build
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-      tags:
-        - main-runner
+      variables:
+        RUNNER_TAG: "main-runner"
     - if: '$CI_COMMIT_BRANCH == "dev"'
-      tags:
-        - dev-runner
+      variables:
+        RUNNER_TAG: "dev-runner"
+  tags:
+    - "$RUNNER_TAG"
   dependencies:
     - build-job
   variables:
@@ -142,11 +148,13 @@ harbor-push-job:
   stage: deploy
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-      tags:
-        - main-runner
+      variables:
+        RUNNER_TAG: "main-runner"
     - if: '$CI_COMMIT_BRANCH == "dev"'
-      tags:
-        - dev-runner
+      variables:
+        RUNNER_TAG: "dev-runner"
+  tags:
+    - "$RUNNER_TAG"
   dependencies:
     - docker-build-job
   before_script:
@@ -192,11 +200,13 @@ deploy-job:
   stage: deploy
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-      tags:
-        - main-runner
+      variables:
+        RUNNER_TAG: "main-runner"
     - if: '$CI_COMMIT_BRANCH == "dev"'
-      tags:
-        - dev-runner
+      variables:
+        RUNNER_TAG: "dev-runner"
+  tags:
+    - "$RUNNER_TAG"
   dependencies:
     - build-job
     - docker-build-job
