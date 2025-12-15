@@ -113,3 +113,7 @@ app:
     expiration: ${JWT_EXPIRATION:900000}  # 15분 (밀리초)
     refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7일 (밀리초)
     issuer: ${JWT_ISSUER:release-manager}
+
+# Encryption Configuration
+encryption:
+  secret-key: ${ENCRYPTION_SECRET_KEY:release-manager-aes256-key-32c!*}

@@ -47,28 +47,60 @@ public class SwaggerConfig {
 
     /**
      * 태그 순서를 정의하는 커스터마이저
+     * 컨트롤러에서 정의한 태그 정보를 유지하면서 순서만 재정렬합니다.
      */
     @Bean
     public OpenApiCustomizer openApiCustomizer() {
         return openApi -> {
-            // 원하는 순서대로 태그 재정렬
-            List<Tag> orderedTags = List.of(
-                    new Tag().name("인증").description("회원가입, 로그인, 토큰 갱신 API"),
-                    new Tag().name("계정").description("계정 관리 API"),
-                    new Tag().name("기본").description("공통 코드, 메뉴 등 솔루션 기본 API"),
-                    new Tag().name("릴리즈 버전").description("릴리즈 버전 관리 API"),
-                    new Tag().name("릴리즈 파일").description("릴리즈 파일 관리 API"),
-                    new Tag().name("패치").description("패치 생성 및 조회 API"),
-                    new Tag().name("고객사").description("고객사 관리 API"),
-                    new Tag().name("엔지니어").description("엔지니어 관리 API"),
-                    new Tag().name("부서").description("부서 관리 API"),
-                    new Tag().name("리소스 파일").description("리소스 파일 관리 API"),
-                    new Tag().name("작업").description("작업 관리 API"),
-                    new Tag().name("프로젝트").description("프로젝트 관리 API"),
-                    new Tag().name("데이터 분석").description("데이터 분석 API"),
-                    new Tag().name("터미널").description("SSH 터미널 API")
+            // 원하는 태그 순서 정의
+            List<String> tagOrder = List.of(
+                    "인증",
+                    "계정",
+                    "기본",
+                    "릴리즈 버전",
+                    "릴리즈 파일",
+                    "패치",
+                    "고객사",
+                    "엔지니어",
+                    "부서",
+                    "리소스 파일",
+                    "작업",
+                    "프로젝트",
+                    "데이터 분석",
+                    "터미널",
+                    "서비스 관리"
             );
-            openApi.setTags(orderedTags);
+
+            // 기존 태그 가져오기 (컨트롤러에서 정의된 태그들)
+            List<Tag> existingTags = openApi.getTags();
+            if (existingTags == null || existingTags.isEmpty()) {
+                return;
+            }
+
+            // 태그를 Map으로 변환 (이름 -> Tag)
+            java.util.Map<String, Tag> tagMap = existingTags.stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            Tag::getName,
+                            tag -> tag,
+                            (existing, replacement) -> existing // 중복 시 기존 태그 유지
+                    ));
+
+            // 정의된 순서대로 태그 재정렬
+            List<Tag> sortedTags = new java.util.ArrayList<>();
+            for (String tagName : tagOrder) {
+                Tag tag = tagMap.get(tagName);
+                if (tag != null) {
+                    sortedTags.add(tag);
+                    tagMap.remove(tagName); // 처리된 태그 제거
+                }
+            }
+
+            // 순서에 없는 나머지 태그들 추가 (알파벳 순)
+            tagMap.values().stream()
+                    .sorted(java.util.Comparator.comparing(Tag::getName))
+                    .forEach(sortedTags::add);
+
+            openApi.setTags(sortedTags);
         };
     }
 

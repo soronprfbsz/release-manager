@@ -198,7 +198,8 @@ public class ResourceFileService {
      */
     @Transactional
     public void reorderResourceFiles(ResourceFileDto.ReorderResourceFilesRequest request) {
-        log.info("리소스 파일 순서 변경 시작: {}", request.resourceFileIds());
+        log.info("리소스 파일 순서 변경 시작 - fileCategory: {}, resourceFileIds: {}",
+                request.fileCategory(), request.resourceFileIds());
 
         List<Long> resourceFileIds = request.resourceFileIds();
         if (resourceFileIds == null || resourceFileIds.isEmpty()) {
@@ -206,9 +207,13 @@ public class ResourceFileService {
                     "리소스 파일 ID 목록은 비어있을 수 없습니다");
         }
 
-        // 모든 리소스 파일이 존재하는지 확인
+        // 모든 리소스 파일이 존재하고 동일한 fileCategory인지 확인
         for (Long resourceFileId : resourceFileIds) {
-            getResourceFile(resourceFileId);
+            ResourceFile resourceFile = getResourceFile(resourceFileId);
+            if (!request.fileCategory().equalsIgnoreCase(resourceFile.getFileCategory())) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "리소스 파일 " + resourceFileId + "는 " + request.fileCategory() + " 카테고리에 속하지 않습니다");
+            }
         }
 
         // sortOrder 업데이트 (1부터 시작)
@@ -218,7 +223,7 @@ public class ResourceFileService {
             resourceFile.setSortOrder(sortOrder++);
         }
 
-        log.info("리소스 파일 순서 변경 완료");
+        log.info("리소스 파일 순서 변경 완료 - fileCategory: {}", request.fileCategory());
     }
 
     /**

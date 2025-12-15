@@ -41,9 +41,9 @@ public class ServiceService {
     public ServiceDto.DetailResponse createService(ServiceDto.CreateRequest request, String createdBy) {
         log.info("Creating service: {}", request.serviceName());
 
-        // 서비스 타입 검증 및 sortOrder 조회
+        // 서비스 타입 검증 및 다음 sortOrder 계산
         validateServiceType(request.serviceType());
-        Integer sortOrder = getServiceTypeSortOrder(request.serviceType());
+        Integer sortOrder = getNextSortOrderForServiceType(request.serviceType());
 
         // 서비스 생성
         Service service = Service.builder()
@@ -120,9 +120,9 @@ public class ServiceService {
         // 서비스 타입 검증 및 sortOrder 업데이트
         if (request.serviceType() != null && !request.serviceType().isBlank()) {
             validateServiceType(request.serviceType());
-            // 서비스 타입이 변경되면 sortOrder도 업데이트
+            // 서비스 타입이 변경되면 새 타입의 다음 sortOrder로 업데이트
             if (!request.serviceType().equals(service.getServiceType())) {
-                Integer sortOrder = getServiceTypeSortOrder(request.serviceType());
+                Integer sortOrder = getNextSortOrderForServiceType(request.serviceType());
                 service.setSortOrder(sortOrder);
             }
         }
@@ -227,7 +227,11 @@ public class ServiceService {
      */
     @Transactional
     public void reorderServices(ServiceDto.ReorderServicesRequest request) {
-        log.info("Reordering services: {}", request.serviceIds());
+        log.info("Reordering services - serviceType: {}, serviceIds: {}",
+                request.serviceType(), request.serviceIds());
+
+        // 서비스 타입 검증
+        validateServiceType(request.serviceType());
 
         List<Long> serviceIds = request.serviceIds();
         if (serviceIds == null || serviceIds.isEmpty()) {
@@ -235,9 +239,13 @@ public class ServiceService {
                     "서비스 ID 목록은 비어있을 수 없습니다");
         }
 
-        // 모든 서비스가 존재하는지 확인
+        // 모든 서비스가 존재하고 동일한 serviceType인지 확인
         for (Long serviceId : serviceIds) {
-            findServiceById(serviceId);
+            Service service = findServiceById(serviceId);
+            if (!request.serviceType().equals(service.getServiceType())) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "서비스 " + serviceId + "는 " + request.serviceType() + " 분류에 속하지 않습니다");
+            }
         }
 
         // sortOrder 업데이트 (1부터 시작)
@@ -247,7 +255,7 @@ public class ServiceService {
             service.setSortOrder(sortOrder++);
         }
 
-        log.info("Services reordered successfully");
+        log.info("Services reordered successfully for serviceType: {}", request.serviceType());
     }
 
     /**
@@ -308,10 +316,16 @@ public class ServiceService {
         }
     }
 
-    private Integer getServiceTypeSortOrder(String serviceType) {
-        return codeRepository.findByCodeTypeIdAndCodeId("SERVICE_TYPE", serviceType)
-                .map(Code::getSortOrder)
-                .orElse(0);
+    /**
+     * 서비스 타입별 다음 sortOrder 계산
+     * 해당 타입의 기존 서비스 중 최대 sortOrder + 1 반환
+     *
+     * @param serviceType 서비스 타입
+     * @return 다음 sortOrder (기존 데이터가 없으면 1)
+     */
+    private Integer getNextSortOrderForServiceType(String serviceType) {
+        Integer maxSortOrder = serviceRepository.findMaxSortOrderByServiceType(serviceType);
+        return (maxSortOrder == null) ? 1 : maxSortOrder + 1;
     }
 
     private void validateComponentType(String componentType) {
