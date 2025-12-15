@@ -1,7 +1,9 @@
 package com.ts.rm.domain.service.entity;
 
 import com.ts.rm.domain.service.enums.ComponentType;
+import com.ts.rm.global.security.PasswordAttributeConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -64,7 +66,8 @@ public class ServiceComponent {
     @Column(name = "account_id", length = 100)
     private String accountId;
 
-    @Column(length = 500)
+    @Convert(converter = PasswordAttributeConverter.class)
+    @Column(length = 1000)
     private String password;
 
     @Column(name = "ssh_port")
@@ -73,7 +76,8 @@ public class ServiceComponent {
     @Column(name = "ssh_account_id", length = 100)
     private String sshAccountId;
 
-    @Column(name = "ssh_password", length = 500)
+    @Convert(converter = PasswordAttributeConverter.class)
+    @Column(name = "ssh_password", length = 1000)
     private String sshPassword;
 
     @Column(columnDefinition = "TEXT")

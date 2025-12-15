@@ -146,18 +146,21 @@ public interface ResourceFileControllerDocs {
 
     @Operation(
             summary = "리소스 파일 순서 변경",
-            description = "리소스 파일의 정렬 순서를 변경합니다.\n\n"
+            description = "특정 파일 카테고리(fileCategory) 내에서 리소스 파일의 정렬 순서를 변경합니다.\n\n"
                     + "**동작 방식**:\n"
-                    + "- 요청받은 리소스 파일 ID 순서대로 sortOrder를 1부터 재부여합니다.\n\n"
+                    + "- 동일한 fileCategory에 속한 리소스 파일들의 순서만 변경 가능\n"
+                    + "- 요청받은 리소스 파일 ID 순서대로 sortOrder를 1부터 재부여\n\n"
                     + "**요청 예시**:\n"
                     + "```json\n"
                     + "{\n"
+                    + "  \"fileCategory\": \"SCRIPT\",\n"
                     + "  \"resourceFileIds\": [3, 1, 2, 4]\n"
                     + "}\n"
                     + "```\n\n"
                     + "**주의사항**:\n"
-                    + "- 모든 리소스 파일 ID가 존재해야 합니다.\n"
-                    + "- 빈 목록은 허용되지 않습니다.",
+                    + "- 모든 리소스 파일 ID가 존재해야 합니다\n"
+                    + "- 모든 리소스 파일이 지정한 fileCategory에 속해야 합니다\n"
+                    + "- 빈 목록은 허용되지 않습니다",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",

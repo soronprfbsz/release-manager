@@ -29,8 +29,13 @@ stages:
 build-job:
   stage: build
   image: gradle:8.5-jdk17-alpine
-  tags:
-    - 17-runner
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      tags:
+        - main-runner
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      tags:
+        - dev-runner
   only:
     - main
   cache:
@@ -61,8 +66,13 @@ build-job:
 test-job:
   stage: test
   image: gradle:8.5-jdk17-alpine
-  tags:
-    - 17-runner
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      tags:
+        - main-runner
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      tags:
+        - dev-runner
   only:
     - main
   cache:
@@ -91,8 +101,13 @@ test-job:
 # ========================================
 docker-build-job:
   stage: docker-build
-  tags:
-    - 17-runner
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      tags:
+        - main-runner
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      tags:
+        - dev-runner
   only:
     - main
   dependencies:
@@ -131,8 +146,13 @@ docker-build-job:
 # ========================================
 harbor-push-job:
   stage: deploy
-  tags:
-    - 17-runner
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      tags:
+        - main-runner
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      tags:
+        - dev-runner
   only:
     - main
   dependencies:
@@ -178,8 +198,13 @@ harbor-push-job:
 # ========================================
 deploy-job:
   stage: deploy
-  tags:
-    - 17-runner
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      tags:
+        - main-runner
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      tags:
+        - dev-runner
   only:
     - main
   dependencies:

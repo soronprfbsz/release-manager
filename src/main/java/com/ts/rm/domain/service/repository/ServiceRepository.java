@@ -67,4 +67,13 @@ public interface ServiceRepository extends JpaRepository<Service, Long> {
      * @return 서비스 개수
      */
     long countByServiceType(String serviceType);
+
+    /**
+     * 서비스 타입별 최대 sortOrder 조회
+     *
+     * @param serviceType 서비스 타입
+     * @return 최대 sortOrder (데이터가 없으면 null)
+     */
+    @Query("SELECT MAX(s.sortOrder) FROM Service s WHERE s.serviceType = :serviceType")
+    Integer findMaxSortOrderByServiceType(@Param("serviceType") String serviceType);
 }

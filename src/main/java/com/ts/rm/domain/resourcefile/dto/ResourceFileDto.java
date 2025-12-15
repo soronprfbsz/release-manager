@@ -156,6 +156,12 @@ public final class ResourceFileDto {
      */
     @Schema(description = "리소스 파일 순서 변경 요청")
     public record ReorderResourceFilesRequest(
+            @Schema(description = "파일 카테고리",
+                    example = "SCRIPT",
+                    allowableValues = {"SCRIPT", "DOCKER", "DOCUMENT", "ETC"})
+            @NotBlank(message = "파일 카테고리는 필수입니다")
+            String fileCategory,
+
             @Schema(description = "정렬할 리소스 파일 ID 목록 (순서대로)", example = "[1, 3, 2, 4]")
             @NotEmpty(message = "리소스 파일 ID 목록은 비어있을 수 없습니다")
             List<Long> resourceFileIds

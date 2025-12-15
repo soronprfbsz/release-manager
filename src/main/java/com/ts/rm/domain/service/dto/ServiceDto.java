@@ -127,6 +127,10 @@ public final class ServiceDto {
     @Builder
     @Schema(description = "서비스 순서 변경 요청")
     public record ReorderServicesRequest(
+            @Schema(description = "서비스 분류 (SERVICE_TYPE 코드)", example = "infraeye1", allowableValues = {"infraeye1", "infraeye2", "infra", "etc"})
+            @NotBlank(message = "서비스 분류는 필수입니다")
+            String serviceType,
+
             @Schema(description = "정렬할 서비스 ID 목록 (순서대로)", example = "[1, 3, 2, 5, 4]")
             @NotNull(message = "서비스 ID 목록은 필수입니다")
             List<Long> serviceIds

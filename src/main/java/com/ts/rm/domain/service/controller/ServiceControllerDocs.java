@@ -388,7 +388,29 @@ public interface ServiceControllerDocs {
             @Parameter(description = "서비스 ID", example = "1") @PathVariable Long id,
             @Parameter(description = "컴포넌트 ID", example = "1") @PathVariable Long componentId);
 
-    @Operation(summary = "서비스 순서 변경", description = "서비스 목록의 표시 순서를 변경합니다")
+    @Operation(
+            summary = "서비스 순서 변경",
+            description = """
+                    특정 서비스 분류(serviceType) 내에서 서비스 목록의 표시 순서를 변경합니다.
+
+                    **동작 방식**:
+                    - 동일한 serviceType에 속한 서비스들의 순서만 변경 가능
+                    - 요청받은 서비스 ID 순서대로 sortOrder를 1부터 재부여
+
+                    **요청 예시**:
+                    ```json
+                    {
+                      "serviceType": "infraeye1",
+                      "serviceIds": [3, 1, 2, 5, 4]
+                    }
+                    ```
+
+                    **주의사항**:
+                    - 모든 서비스 ID가 존재해야 함
+                    - 모든 서비스가 지정한 serviceType에 속해야 함
+                    - 빈 목록은 허용되지 않음
+                    """
+    )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "순서 변경 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "유효하지 않은 입력"),
