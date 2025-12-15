@@ -21,7 +21,8 @@ public class TomcatConfig implements WebServerFactoryCustomizer<TomcatServletWeb
 
             // 요청 본문의 최대 크기 제한 해제 (-1 = unlimited)
             // ABORTED 요청 처리 시 버퍼에 저장할 최대 바이트 수
-            connector.setMaxSwallowSize(-1);
+            // Connector API에 직접 노출되지 않은 속성은 setProperty로 설정
+            connector.setProperty("maxSwallowSize", "-1");
 
             log.info("Tomcat Connector configured: maxPostSize=-1 (unlimited), maxSwallowSize=-1 (unlimited)");
         });
