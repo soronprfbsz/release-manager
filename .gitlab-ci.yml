@@ -1,5 +1,5 @@
 # ========================================
-# GitLab CI/CD Pipeline Configuration (Optimized)
+# GitLab CI/CD Pipeline Configuration (Template-based)
 # ========================================
 
 default:
@@ -24,20 +24,13 @@ stages:
   - deploy
 
 # ========================================
-# 빌드 단계 (최적화)
+# 공통 템플릿 정의
 # ========================================
-build-job:
+
+# 빌드 공통 템플릿
+.build-template:
   stage: build
   image: gradle:8.5-jdk17-alpine
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      variables:
-        RUNNER_TAG: "main-runner"
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-      variables:
-        RUNNER_TAG: "dev-runner"
-  tags:
-    - "$RUNNER_TAG"
   cache:
     # 브랜치별 캐시 사용
     key: gradle-${CI_COMMIT_REF_SLUG}
@@ -60,21 +53,10 @@ build-job:
       - build/libs/*.jar
     expire_in: 1 hour
 
-# ========================================
-# 테스트 단계
-# ========================================
-test-job:
+# 테스트 공통 템플릿
+.test-template:
   stage: test
   image: gradle:8.5-jdk17-alpine
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      variables:
-        RUNNER_TAG: "main-runner"
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-      variables:
-        RUNNER_TAG: "dev-runner"
-  tags:
-    - "$RUNNER_TAG"
   cache:
     key: gradle-${CI_COMMIT_REF_SLUG}
     paths:
@@ -96,22 +78,9 @@ test-job:
   coverage: '/Total.*?([0-9]{1,3})%/'
   when: manual
 
-# ========================================
-# Docker 이미지 빌드 단계 (BuildKit 캐시 활용)
-# ========================================
-docker-build-job:
+# Docker 빌드 공통 템플릿
+.docker-build-template:
   stage: docker-build
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      variables:
-        RUNNER_TAG: "main-runner"
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-      variables:
-        RUNNER_TAG: "dev-runner"
-  tags:
-    - "$RUNNER_TAG"
-  dependencies:
-    - build-job
   variables:
     DOCKER_BUILDKIT: "1"
     BUILDKIT_PROGRESS: "plain"
@@ -141,22 +110,9 @@ docker-build-job:
     - 'echo "✅ 이미지 빌드 완료: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"'
     - docker images | grep ${DOCKER_IMAGE_NAME}
 
-# ========================================
-# Harbor Push 단계 (deploy와 동시 실행)
-# ========================================
-harbor-push-job:
+# Harbor Push 공통 템플릿
+.harbor-push-template:
   stage: deploy
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      variables:
-        RUNNER_TAG: "main-runner"
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-      variables:
-        RUNNER_TAG: "dev-runner"
-  tags:
-    - "$RUNNER_TAG"
-  dependencies:
-    - docker-build-job
   before_script:
     - echo "🔑 Harbor 로그인 중..."
     - echo "$HARBOR_PASSWORD" | docker login http://$HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin
@@ -193,23 +149,9 @@ harbor-push-job:
   after_script:
     - docker logout $HARBOR_REGISTRY || true
 
-# ========================================
-# 배포 단계
-# ========================================
-deploy-job:
+# 배포 공통 템플릿
+.deploy-template:
   stage: deploy
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      variables:
-        RUNNER_TAG: "main-runner"
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-      variables:
-        RUNNER_TAG: "dev-runner"
-  tags:
-    - "$RUNNER_TAG"
-  dependencies:
-    - build-job
-    - docker-build-job
   before_script:
     - |
       echo "=== 필수 도구 설치 중 ==="
@@ -392,6 +334,116 @@ deploy-job:
     - docker ps --filter "name=${SERVER_NAME}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
     - docker images --filter "reference=${DOCKER_IMAGE_NAME}" --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}"
 
+# ========================================
+# Main 브랜치 전용 Job들
+# ========================================
+
+build-main:
+  extends: .build-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  tags:
+    - main-runner
   environment:
     name: production
+
+test-main:
+  extends: .test-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  tags:
+    - main-runner
+  environment:
+    name: production
+
+docker-build-main:
+  extends: .docker-build-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  tags:
+    - main-runner
+  dependencies:
+    - build-main
+  environment:
+    name: production
+
+harbor-push-main:
+  extends: .harbor-push-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  tags:
+    - main-runner
+  dependencies:
+    - docker-build-main
+  environment:
+    name: production
+
+deploy-main:
+  extends: .deploy-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  tags:
+    - main-runner
+  dependencies:
+    - build-main
+    - docker-build-main
+  environment:
+    name: production
+    url: http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}
+
+# ========================================
+# Dev 브랜치 전용 Job들
+# ========================================
+
+build-dev:
+  extends: .build-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  tags:
+    - dev-runner
+  environment:
+    name: development
+
+test-dev:
+  extends: .test-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  tags:
+    - dev-runner
+  environment:
+    name: development
+
+docker-build-dev:
+  extends: .docker-build-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  tags:
+    - dev-runner
+  dependencies:
+    - build-dev
+  environment:
+    name: development
+
+harbor-push-dev:
+  extends: .harbor-push-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  tags:
+    - dev-runner
+  dependencies:
+    - docker-build-dev
+  environment:
+    name: development
+
+deploy-dev:
+  extends: .deploy-template
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  tags:
+    - dev-runner
+  dependencies:
+    - build-dev
+    - docker-build-dev
+  environment:
+    name: development
     url: http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}
