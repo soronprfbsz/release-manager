@@ -36,8 +36,6 @@ build-job:
     - if: '$CI_COMMIT_BRANCH == "dev"'
       tags:
         - dev-runner
-  only:
-    - main
   cache:
     # 브랜치별 캐시 사용
     key: gradle-${CI_COMMIT_REF_SLUG}
@@ -73,8 +71,6 @@ test-job:
     - if: '$CI_COMMIT_BRANCH == "dev"'
       tags:
         - dev-runner
-  only:
-    - main
   cache:
     key: gradle-${CI_COMMIT_REF_SLUG}
     paths:
@@ -108,8 +104,6 @@ docker-build-job:
     - if: '$CI_COMMIT_BRANCH == "dev"'
       tags:
         - dev-runner
-  only:
-    - main
   dependencies:
     - build-job
   variables:
@@ -153,8 +147,6 @@ harbor-push-job:
     - if: '$CI_COMMIT_BRANCH == "dev"'
       tags:
         - dev-runner
-  only:
-    - main
   dependencies:
     - docker-build-job
   before_script:
@@ -205,8 +197,6 @@ deploy-job:
     - if: '$CI_COMMIT_BRANCH == "dev"'
       tags:
         - dev-runner
-  only:
-    - main
   dependencies:
     - build-job
     - docker-build-job
