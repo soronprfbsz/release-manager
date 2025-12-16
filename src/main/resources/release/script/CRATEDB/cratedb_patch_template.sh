@@ -65,6 +65,7 @@ log_success() {
 # 기본값
 DEFAULT_CRATEDB_HOST="localhost"
 DEFAULT_CRATEDB_PORT="4200"
+DEFAULT_CRATEDB_USER="crate"
 
 # 버전 메타데이터 배열
 declare -a VERSION_METADATA=(
@@ -96,6 +97,10 @@ echo "=========================================="
 echo "CrateDB 접속 정보 입력:"
 echo "=========================================="
 echo ""
+echo "  CrateDB HTTP API를 통해 SQL을 실행합니다."
+echo "  기본 포트: 4200 (HTTP API)"
+echo "  기본 사용자: crate (비밀번호 없음)"
+echo ""
 
 read -p "CrateDB 호스트 주소 (예: localhost, 192.168.1.100) [$DEFAULT_CRATEDB_HOST]: " CRATEDB_HOST
 CRATEDB_HOST=${CRATEDB_HOST:-$DEFAULT_CRATEDB_HOST}
@@ -103,41 +108,87 @@ CRATEDB_HOST=${CRATEDB_HOST:-$DEFAULT_CRATEDB_HOST}
 read -p "CrateDB HTTP 포트 [$DEFAULT_CRATEDB_PORT]: " CRATEDB_PORT
 CRATEDB_PORT=${CRATEDB_PORT:-$DEFAULT_CRATEDB_PORT}
 
+read -p "CrateDB 사용자명 [$DEFAULT_CRATEDB_USER]: " CRATEDB_USER
+CRATEDB_USER=${CRATEDB_USER:-$DEFAULT_CRATEDB_USER}
+
+read -sp "CrateDB 비밀번호 (없으면 Enter): " CRATEDB_PASSWORD
+echo ""
+
 echo ""
 log_info "CrateDB 호스트: $CRATEDB_HOST:$CRATEDB_PORT"
-log_to_file "접속 정보 - 호스트: $CRATEDB_HOST:$CRATEDB_PORT"
+log_info "사용자: $CRATEDB_USER"
+log_to_file "접속 정보 - 호스트: $CRATEDB_HOST:$CRATEDB_PORT, 사용자: $CRATEDB_USER"
 log_info "HTTP API를 통해 CrateDB 연결 테스트 중..."
 
-# CrateDB 연결 테스트 (HTTP API 사용)
-curl -s -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-    -H "Content-Type: application/json" \
-    -d '{"stmt": "SELECT 1"}' > /dev/null 2>&1
+# CrateDB 연결 테스트 (HTTP API 사용, Basic Auth 추가)
+if [ -z "$CRATEDB_PASSWORD" ]; then
+    # 비밀번호 없음 (사용자명만)
+    HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
+        -H "Content-Type: application/json" \
+        -d '{"stmt": "SELECT 1"}' 2>&1)
+else
+    # 비밀번호 있음
+    HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:$CRATEDB_PASSWORD" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
+        -H "Content-Type: application/json" \
+        -d '{"stmt": "SELECT 1"}' 2>&1)
+fi
 
-if [ $? -ne 0 ]; then
-    log_error "CrateDB 접속에 실패했습니다. 접속 정보를 확인해주세요."
-    log_warning "curl이 설치되어 있는지 확인하세요."
-    log_warning "CrateDB HTTP API 엔드포인트가 활성화되어 있는지 확인하세요."
-    log_warning "방화벽 설정 및 포트가 열려있는지 확인하세요."
+HTTP_CODE=$(echo "$HTTP_RESPONSE" | tail -n1)
+RESPONSE_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+
+log_to_file "연결 테스트 HTTP 응답 코드: $HTTP_CODE"
+log_to_file "연결 테스트 응답 내용: $RESPONSE_BODY"
+
+if [ "$HTTP_CODE" != "200" ]; then
+    log_error "CrateDB 접속에 실패했습니다. HTTP 응답 코드: $HTTP_CODE"
+
+    if [ "$HTTP_CODE" = "401" ]; then
+        log_error "인증 실패 (401 Unauthorized): 사용자명/비밀번호를 확인해주세요."
+    elif [ "$HTTP_CODE" = "000" ]; then
+        log_error "연결 실패: 호스트 주소와 포트를 확인해주세요."
+        log_warning "curl이 설치되어 있는지 확인하세요."
+        log_warning "방화벽 설정 및 포트가 열려있는지 확인하세요."
+    else
+        log_error "응답 내용: $RESPONSE_BODY"
+    fi
+
     exit 1
 fi
 
 log_success "CrateDB 접속 성공!"
 
 # SQL 실행 함수
-execute_sql_file() {
+execute_sql() {
     local sql_file=$1
     log_step "SQL 파일 실행: $sql_file"
     log_to_file "--- SQL 파일 실행 시작: $sql_file ---"
 
-    # SQL 파일 읽기
+    # SQL 파일 내용 읽기
+    if [ ! -f "$sql_file" ]; then
+        log_error "SQL 파일을 찾을 수 없습니다: $sql_file"
+        log_to_file "--- SQL 파일을 찾을 수 없음: $sql_file ---"
+        return 1
+    fi
+
     local sql_content=$(cat "$sql_file")
-    log_to_file "SQL 내용:"
+    log_to_file "SQL 파일 내용:"
     log_to_file "$sql_content"
 
+    # SQL을 JSON으로 이스케이프 (jq 사용)
+    local sql_json=$(echo "$sql_content" | jq -Rs .)
+
     # CrateDB HTTP API로 실행
-    local response=$(curl -s -w "\n%{http_code}" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-        -H "Content-Type: application/json" \
-        -d "{\"stmt\": $(echo "$sql_content" | jq -Rs .)}")
+    if [ -z "$CRATEDB_PASSWORD" ]; then
+        # 비밀번호 없음
+        local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
+            -H "Content-Type: application/json" \
+            -d "{\"stmt\": $sql_json}" 2>&1)
+    else
+        # 비밀번호 있음
+        local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:$CRATEDB_PASSWORD" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
+            -H "Content-Type: application/json" \
+            -d "{\"stmt\": $sql_json}" 2>&1)
+    fi
 
     local http_code=$(echo "$response" | tail -n1)
     local body=$(echo "$response" | sed '$d')
@@ -145,13 +196,26 @@ execute_sql_file() {
     log_to_file "HTTP 응답 코드: $http_code"
     log_to_file "응답 내용: $body"
 
-    if [ "$http_code" -ne 200 ]; then
+    # 응답 확인
+    if [ "$http_code" != "200" ]; then
         log_error "SQL 실행 실패: $sql_file (HTTP $http_code)"
+        log_error "응답: $body"
         log_to_file "--- SQL 파일 실행 실패: $sql_file (HTTP $http_code) ---"
-        exit 1
+        return 1
     fi
 
+    # 에러 응답 확인 (200이지만 error 필드가 있는 경우)
+    if echo "$body" | grep -q '"error"'; then
+        log_error "SQL 실행 중 에러 발생: $sql_file"
+        log_error "에러 내용: $body"
+        log_to_file "--- SQL 실행 에러: $sql_file ---"
+        log_to_file "$body"
+        return 1
+    fi
+
+    log_success "SQL 파일 실행 성공: $sql_file"
     log_to_file "--- SQL 파일 실행 성공: $sql_file ---"
+    return 0
 }
 
 execute_sql_string() {
@@ -159,9 +223,21 @@ execute_sql_string() {
     log_to_file "--- SQL 문자열 실행 시작 ---"
     log_to_file "$sql_string"
 
-    local response=$(curl -s -w "\n%{http_code}" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-        -H "Content-Type: application/json" \
-        -d "{\"stmt\": $(echo "$sql_string" | jq -Rs .)}")
+    # SQL을 JSON으로 이스케이프
+    local sql_json=$(echo "$sql_string" | jq -Rs .)
+
+    # CrateDB HTTP API로 실행
+    if [ -z "$CRATEDB_PASSWORD" ]; then
+        # 비밀번호 없음
+        local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
+            -H "Content-Type: application/json" \
+            -d "{\"stmt\": $sql_json}" 2>&1)
+    else
+        # 비밀번호 있음
+        local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:$CRATEDB_PASSWORD" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
+            -H "Content-Type: application/json" \
+            -d "{\"stmt\": $sql_json}" 2>&1)
+    fi
 
     local http_code=$(echo "$response" | tail -n1)
     local body=$(echo "$response" | sed '$d')
@@ -169,9 +245,19 @@ execute_sql_string() {
     log_to_file "HTTP 응답 코드: $http_code"
     log_to_file "응답 내용: $body"
 
-    if [ "$http_code" -ne 200 ]; then
+    if [ "$http_code" != "200" ]; then
         log_error "SQL 문자열 실행 실패 (HTTP $http_code)"
+        log_error "응답: $body"
         log_to_file "--- SQL 문자열 실행 실패 (HTTP $http_code) ---"
+        return 1
+    fi
+
+    # 에러 응답 확인
+    if echo "$body" | grep -q '"error"'; then
+        log_error "SQL 실행 중 에러 발생"
+        log_error "에러 내용: $body"
+        log_to_file "--- SQL 실행 에러 ---"
+        log_to_file "$body"
         return 1
     fi
 
