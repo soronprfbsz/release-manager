@@ -7,8 +7,13 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 2GB
-      max-request-size: 2GB
+      max-file-size: 10GB
+      max-request-size: 10GB
+
+  # MVC Configuration
+  mvc:
+    async:
+      request-timeout: 7200000  # 2시간 (밀리초) - 대용량 파일 업로드/다운로드
 
   # MariaDB Database Configuration
   datasource:
@@ -53,6 +58,8 @@ server:
   name: ${SERVER_NAME}
   host: ${SERVER_HOST:localhost}
   port: ${SERVER_PORT:8080}
+  tomcat:
+    connection-timeout: 7200000  # 2시간 (밀리초) - 대용량 파일 처리
 
 # Swagger/OpenAPI Configuration
 springdoc:
