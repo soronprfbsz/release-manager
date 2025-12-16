@@ -71,6 +71,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_TYPE', 'TAR', 'TAR', 'TAR 압축 파일', 9, TRUE),
 ('FILE_TYPE', 'GZ', 'GZ', 'GZIP 압축 파일', 10, TRUE),
 ('FILE_TYPE', 'ZIP', 'ZIP', 'ZIP 압축 파일', 11, TRUE),
+('FILE_TYPE', 'JSON', 'JSON', 'JSON 데이터 파일', 12, TRUE),
 ('FILE_TYPE', 'UNDEFINED', 'UNDEFINED', '정의되지 않은 파일 타입', 99, TRUE);
 
 -- FILE_CATEGORY
@@ -339,10 +340,11 @@ INSERT INTO release_file (release_version_id,file_type,file_category,sub_categor
 (4,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.2/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',1765,'48bb04f6b3f2f4560ab42c0c37fcacbc',1,'SMS 로그 모니터링 정책 상세 테이블 추가'),
 (5,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',784,'84b4866515120b4516284d028443ee8b',1,'ZIP 파일 업로드로 생성된 데이터베이스 파일'),
 (5,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',172,'cedcae240caa7d88d54cd409be8f7287',1,'ZIP 파일 업로드로 생성된 데이터베이스 파일'),
-(5,'SQL','DATABASE','MARIADB','2.patch_mariadb_데이터코드.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/2.patch_mariadb_데이터코드.sql','/database/MARIADB/2.patch_mariadb_데이터코드.sql',137305,'52d39d2111040938280342c4b97415e6',2,'ZIP 파일 업로드로 생성된 데이터베이스 파일'),
-(5,'SQL','DATABASE','MARIADB','3.patch_mariadb_이벤트코드.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/3.patch_mariadb_이벤트코드.sql','/database/MARIADB/3.patch_mariadb_이벤트코드.sql',38939,'80a864ff2c832c139472fa14578f1d9d',3,'ZIP 파일 업로드로 생성된 데이터베이스 파일'),
-(5,'SQL','DATABASE','MARIADB','4.patch_mariadb_메뉴코드.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/4.patch_mariadb_메뉴코드.sql','/database/MARIADB/4.patch_mariadb_메뉴코드.sql',25508,'82d57659d07b229d674cf29371a12759',4,'ZIP 파일 업로드로 생성된 데이터베이스 파일'),
-(5,'SQL','DATABASE','MARIADB','5.patch_mariadb_성능지표.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/5.patch_mariadb_성능지표.sql','/database/MARIADB/5.patch_mariadb_성능지표.sql',118068,'60aae64e6481ce5f9edb49b7c1e5ae83',5,'ZIP 파일 업로드로 생성된 데이터베이스 파일');
+(5,'SQL','DATABASE','MARIADB','2.patch_mariadb_데이터코드.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/2.patch_mariadb_데이터코드.sql','/database/MARIADB/2.patch_mariadb_데이터코드.sql',137161,'56e4688326cf1ad0b67647521d259b8e',2,'데이터 코드 추가'),
+(5,'SQL','DATABASE','MARIADB','3.patch_mariadb_이벤트코드.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/3.patch_mariadb_이벤트코드.sql','/database/MARIADB/3.patch_mariadb_이벤트코드.sql',38804,'6d06d29b77f127e616a3a743f9d6c59c',3,'이벤트 코드 추가'),
+(5,'SQL','DATABASE','MARIADB','4.patch_mariadb_메뉴코드.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/4.patch_mariadb_메뉴코드.sql','/database/MARIADB/4.patch_mariadb_메뉴코드.sql',25358,'ef0664d41d3de342c5ad915baea6b487',4,'메뉴 코드 추가'),
+(5,'SQL','DATABASE','MARIADB','5.patch_mariadb_성능지표.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/5.patch_mariadb_성능지표.sql','/database/MARIADB/5.patch_mariadb_성능지표.sql',118114,'c156eeda96e93f807c3cbde00f7f50e7',5,'성능지표 추가'),
+(5,'SQL','DATABASE','MARIADB','6.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/6.patch_mariadb_dml.sql','/database/MARIADB/6.patch_mariadb_dml.sql',1557,'113afe7849b95588774ebfd04acb2d43',6,'SMS 엔진 기본값 및 스케줄 추가');
 
 -- =========================================================
 -- release_version_hierarchy 테이블
