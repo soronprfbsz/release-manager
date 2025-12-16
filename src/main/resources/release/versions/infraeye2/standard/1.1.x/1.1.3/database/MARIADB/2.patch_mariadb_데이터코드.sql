@@ -1,14 +1,10 @@
 /*
- * 
- * 대상 설치본 버전: InfraEye-2.0.0.241127-STD.tar.gz,  infra2_img_2.0.0_250204.tar.gz
- * 패치본 생성일: 2025-10-27
  * 주요 내용: SMS 관련 데이터코드 추가
- * 
- * */ 
+ * */
 
 USE CM_DB;
 
--- 저장용 임시 테이블 생성 
+-- 저장용 임시 테이블 생성
 CREATE TEMPORARY TABLE IF NOT EXISTS TMP_CD_GROUP_INFO
 SELECT *
 FROM CD_GROUP_INFO;
@@ -20,7 +16,7 @@ FROM CD_INFO;
 TRUNCATE TABLE TMP_CD_GROUP_INFO;
 TRUNCATE TABLE TMP_CD_INFO;
 
--- 코드 그룹 정보 
+-- 코드 그룹 정보
 INSERT INTO TMP_CD_GROUP_INFO (CD_GROUP_ID, CD_GROUP_NM, CD_GROUP_DESC,CD_GROUP_NM_EN, CD_GROUP_DESC_EN) VALUES('1001','로그인구분','로그인/로그아웃','Login classification','Login / Logout')
 ,('1002','게시판분류','게시판분류','Bulletin Board Classification','Bulletin Board Classification')
 ,('1003','요일명','요일 분류','Day name','Day Classification')
@@ -227,7 +223,7 @@ INSERT INTO TMP_CD_GROUP_INFO (CD_GROUP_ID, CD_GROUP_NM, CD_GROUP_DESC,CD_GROUP_
 ,('2215','SMS 에이전트 JOB 수행 결과 상태','SMS 에이전트 JOB 수행 결과 상태','SMS Agent Job Execution Response Type','SMS Agent Job Execution History Type');
 
 
--- 코드 정보 
+-- 코드 정보
 INSERT INTO TMP_CD_INFO (CD_GROUP_ID, CD_ID, CD_NM, CD_NM_EN, CD_DESC, CD_DESC_EN, CD_ORDER, USE_YN) VALUES('1001','1','로그인','Login','','',1,'Y')
 ,('1001','2','로그아웃','Logout','','',2,'Y')
 ,('1001','4','로그인실패','Login fail','','',4,'Y')
@@ -1552,7 +1548,7 @@ WHERE B.CD_ID IS NULL;
 
 -- 모델 제조사 코드 순서 재배열(제조사 코드 기준으로 다시 순서를 부여한다.)
 SET @ROW_NUM = 0;
-UPDATE CD_INFO A JOIN 
+UPDATE CD_INFO A JOIN
 (SELECT @ROW_NUM:=@ROW_NUM+1 AS CD_NUM,CD_ID FROM CD_INFO WHERE CD_GROUP_ID = '2031' AND CD_ORDER > 0 ORDER BY CD_ID ASC) B ON A.CD_ID = B.CD_ID
 SET A.CD_ORDER = B.CD_NUM
 WHERE A.CD_GROUP_ID = '2031' AND A.CD_ORDER > 0;
