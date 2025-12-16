@@ -225,7 +225,7 @@ echo "=========================================="
 echo ""
 
 # SQL 파일 디렉토리로 이동
-SQL_DIR="$SCRIPT_DIR/database/cratedb/source_files"
+SQL_DIR="$SCRIPT_DIR/database/cratedb"
 if [ -d "$SQL_DIR" ]; then
     cd "$SQL_DIR"
 fi
