@@ -101,7 +101,7 @@ if [ -n "$DEFAULT_PATCHED_BY" ]; then
     read -p "패치 적용 담당자 [$DEFAULT_PATCHED_BY]: " APPLIED_BY
     APPLIED_BY=${APPLIED_BY:-$DEFAULT_PATCHED_BY}
 else
-    read -p "패치 적용 담당자 (예: jhlee@company.com): " APPLIED_BY
+    read -p "패치 적용 담당자 (예: your_name@tscientific.co.kr): " APPLIED_BY
 fi
 if [ -z "$APPLIED_BY" ]; then
     log_error "패치 적용 담당자는 필수 입력값입니다."
