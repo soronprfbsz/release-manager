@@ -245,7 +245,7 @@ INSERT INTO TMP_MENU_INFO (MENU_ID,MENU_NM,MENU_NM_EN,UPPER_MENU_ID,MENU_ORDER,O
 ,('STD312','프로세스','Process','STD304',4,'Y','',3,'/sms/list/process','N')
 ,('STD313','네트워크','Network','STD304',5,'Y','',3,'/sms/list/network','N')
 ,('STD314','서비스','Service','STD304',6,'Y','',3,'/sms/list/service','N')
-,('STD324','로그','log','STD304',7,'Y','',,'/sms/list/log','N')
+,('STD324','로그','log','STD304',7,'Y','',3,'/sms/list/log','N')
 ,('STD315','에이전트','Agent','STD306',0,'Y','',3,'/sms/operation/agent','N')
 ,('STD316','파일','File','STD306',1,'Y','',3,'/sms/operation/file','N')
 ,('STD317','프로세스','Process','STD306',2,'Y','',3,'/sms/operation/process','N')
@@ -254,7 +254,7 @@ INSERT INTO TMP_MENU_INFO (MENU_ID,MENU_NM,MENU_NM_EN,UPPER_MENU_ID,MENU_ORDER,O
 ,('STD320','이벤트','Event','STD307',1,'Y','',3,'/sms/policy/event/tmpl','N')
 ,('STD321','프로세스','Process','STD307',2,'Y','',3,'/sms/policy/process','N')
 ,('STD322','이벤트 예외시간','Event Exclusion Time','STD307',3,'Y','',3,'/sms/policy/eventExclusion','N')
-,('STD323','로그수집','log','STD307',4,'Y','',3,'/sms/policy/log','N')
+,('STD323','로그수집','log','STD307',4,'Y','',3,'/sms/policy/log','N');
 
 -- 역할별메뉴관리 tab(기본값)
 INSERT INTO TMP_ROLE_MENU_BASE (MENU_ID, ROLE_ID, VIEW_PRIV, ADD_PRIV, EDIT_PRIV, DEL_PRIV) VALUES
