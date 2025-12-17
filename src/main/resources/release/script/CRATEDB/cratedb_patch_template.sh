@@ -174,46 +174,96 @@ execute_sql() {
     log_to_file "SQL 파일 내용:"
     log_to_file "$sql_content"
 
-    # SQL을 JSON으로 이스케이프 (jq 사용)
-    local sql_json=$(echo "$sql_content" | jq -Rs .)
+    # 주석 제거 및 SQL 문장 분리
+    # 1. /* */ 블록 주석 제거
+    # 2. -- 라인 주석 제거
+    # 3. 빈 줄 제거
+    local cleaned_sql=$(echo "$sql_content" | \
+        sed 's|/\*.*\*/||g' | \
+        sed 's/--.*$//' | \
+        grep -v '^[[:space:]]*$')
 
-    # CrateDB HTTP API로 실행
-    if [ -z "$CRATEDB_PASSWORD" ]; then
-        # 비밀번호 없음
-        local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-            -H "Content-Type: application/json" \
-            -d "{\"stmt\": $sql_json}" 2>&1)
-    else
-        # 비밀번호 있음
-        local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:$CRATEDB_PASSWORD" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-            -H "Content-Type: application/json" \
-            -d "{\"stmt\": $sql_json}" 2>&1)
+    # 세미콜론으로 SQL 문장 분리 (임시 파일 사용)
+    local temp_file=$(mktemp)
+    echo "$cleaned_sql" > "$temp_file"
+
+    # 파일을 읽어서 세미콜론 기준으로 분리하여 배열에 저장
+    local sql_statements=()
+    local current_stmt=""
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        current_stmt="$current_stmt$line"$'\n'
+        # 세미콜론이 있으면 문장 완성
+        if echo "$line" | grep -q ';'; then
+            # 세미콜론 제거 및 trim
+            current_stmt=$(echo "$current_stmt" | sed 's/;[[:space:]]*$//')
+            # 빈 문장이 아니면 배열에 추가
+            if [ -n "$(echo "$current_stmt" | tr -d '[:space:]')" ]; then
+                sql_statements+=("$current_stmt")
+            fi
+            current_stmt=""
+        fi
+    done < "$temp_file"
+
+    # 마지막 문장 처리 (세미콜론 없이 끝나는 경우)
+    if [ -n "$(echo "$current_stmt" | tr -d '[:space:]')" ]; then
+        sql_statements+=("$current_stmt")
     fi
 
-    local http_code=$(echo "$response" | tail -n1)
-    local body=$(echo "$response" | sed '$d')
+    rm -f "$temp_file"
 
-    log_to_file "HTTP 응답 코드: $http_code"
-    log_to_file "응답 내용: $body"
+    log_to_file "총 ${#sql_statements[@]}개의 SQL 문장을 실행합니다."
 
-    # 응답 확인
-    if [ "$http_code" != "200" ]; then
-        log_error "SQL 실행 실패: $sql_file (HTTP $http_code)"
-        log_error "응답: $body"
-        log_to_file "--- SQL 파일 실행 실패: $sql_file (HTTP $http_code) ---"
-        return 1
-    fi
+    # 각 SQL 문장을 개별적으로 실행
+    local stmt_count=0
+    for stmt in "${sql_statements[@]}"; do
+        stmt_count=$((stmt_count + 1))
+        log_to_file "[$stmt_count/${#sql_statements[@]}] SQL 문장 실행 중..."
+        log_to_file "$stmt"
 
-    # 에러 응답 확인 (200이지만 error 필드가 있는 경우)
-    if echo "$body" | grep -q '"error"'; then
-        log_error "SQL 실행 중 에러 발생: $sql_file"
-        log_error "에러 내용: $body"
-        log_to_file "--- SQL 실행 에러: $sql_file ---"
-        log_to_file "$body"
-        return 1
-    fi
+        # SQL을 JSON으로 이스케이프
+        local sql_json=$(echo "$stmt" | jq -Rs .)
 
-    log_success "SQL 파일 실행 성공: $sql_file"
+        # CrateDB HTTP API로 실행
+        if [ -z "$CRATEDB_PASSWORD" ]; then
+            # 비밀번호 없음
+            local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
+                -H "Content-Type: application/json" \
+                -d "{\"stmt\": $sql_json}" 2>&1)
+        else
+            # 비밀번호 있음
+            local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:$CRATEDB_PASSWORD" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
+                -H "Content-Type: application/json" \
+                -d "{\"stmt\": $sql_json}" 2>&1)
+        fi
+
+        local http_code=$(echo "$response" | tail -n1)
+        local body=$(echo "$response" | sed '$d')
+
+        log_to_file "HTTP 응답 코드: $http_code"
+        log_to_file "응답 내용: $body"
+
+        # 응답 확인
+        if [ "$http_code" != "200" ]; then
+            log_error "SQL 문장 실행 실패 [$stmt_count/${#sql_statements[@]}]: (HTTP $http_code)"
+            log_error "응답: $body"
+            log_to_file "--- SQL 문장 실행 실패 [$stmt_count/${#sql_statements[@]}] ---"
+            return 1
+        fi
+
+        # 에러 응답 확인 (200이지만 error 필드가 있는 경우)
+        if echo "$body" | grep -q '"error"'; then
+            log_error "SQL 실행 중 에러 발생 [$stmt_count/${#sql_statements[@]}]"
+            log_error "에러 내용: $body"
+            log_to_file "--- SQL 실행 에러 [$stmt_count/${#sql_statements[@]}] ---"
+            log_to_file "$body"
+            return 1
+        fi
+
+        log_to_file "[$stmt_count/${#sql_statements[@]}] SQL 문장 실행 성공"
+    done
+
+    log_success "SQL 파일 실행 성공: $sql_file (${#sql_statements[@]}개 문장)"
     log_to_file "--- SQL 파일 실행 성공: $sql_file ---"
     return 0
 }
