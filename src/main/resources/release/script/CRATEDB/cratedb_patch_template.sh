@@ -67,6 +67,9 @@ DEFAULT_CRATEDB_HOST="localhost"
 DEFAULT_CRATEDB_PORT="4200"
 DEFAULT_CRATEDB_USER="crate"
 
+# Crash CLI 경로 (필요시 수정)
+CRASH_CMD="crash"
+
 # 버전 메타데이터 배열
 declare -a VERSION_METADATA=(
 {{VERSION_METADATA}}
@@ -97,9 +100,12 @@ echo "=========================================="
 echo "CrateDB 접속 정보 입력:"
 echo "=========================================="
 echo ""
-echo "  CrateDB HTTP API를 통해 SQL을 실행합니다."
-echo "  기본 포트: 4200 (HTTP API)"
+echo "  crash CLI를 통해 SQL을 실행합니다."
+echo "  기본 포트: 4200"
 echo "  기본 사용자: crate (비밀번호 없음)"
+echo ""
+echo "  crash CLI가 설치되어 있어야 합니다."
+echo "  설치 방법: pip install crash"
 echo ""
 
 read -p "CrateDB 호스트 주소 (예: localhost, 192.168.1.100) [$DEFAULT_CRATEDB_HOST]: " CRATEDB_HOST
@@ -118,195 +124,105 @@ echo ""
 log_info "CrateDB 호스트: $CRATEDB_HOST:$CRATEDB_PORT"
 log_info "사용자: $CRATEDB_USER"
 log_to_file "접속 정보 - 호스트: $CRATEDB_HOST:$CRATEDB_PORT, 사용자: $CRATEDB_USER"
-log_info "HTTP API를 통해 CrateDB 연결 테스트 중..."
+log_info "crash CLI를 통해 CrateDB 연결 테스트 중..."
 
-# CrateDB 연결 테스트 (HTTP API 사용, Basic Auth 추가)
-if [ -z "$CRATEDB_PASSWORD" ]; then
-    # 비밀번호 없음 (사용자명만)
-    HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-        -H "Content-Type: application/json" \
-        -d '{"stmt": "SELECT 1"}' 2>&1)
-else
-    # 비밀번호 있음
-    HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:$CRATEDB_PASSWORD" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-        -H "Content-Type: application/json" \
-        -d '{"stmt": "SELECT 1"}' 2>&1)
+# crash 명령어 존재 확인
+if ! command -v $CRASH_CMD &> /dev/null; then
+    log_error "crash CLI를 찾을 수 없습니다."
+    log_error "crash를 설치하거나 CRASH_CMD 변수를 올바른 경로로 설정하세요."
+    log_error "설치 방법: pip install crash"
+    exit 1
 fi
 
-HTTP_CODE=$(echo "$HTTP_RESPONSE" | tail -n1)
-RESPONSE_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+# CrateDB 연결 테스트 (crash CLI 사용)
+TEST_SQL="SELECT 1;"
 
-log_to_file "연결 테스트 HTTP 응답 코드: $HTTP_CODE"
-log_to_file "연결 테스트 응답 내용: $RESPONSE_BODY"
+if [ -z "$CRATEDB_PASSWORD" ]; then
+    # 비밀번호 없음
+    TEST_RESULT=$($CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" --command "$TEST_SQL" 2>&1)
+else
+    # 비밀번호 있음
+    TEST_RESULT=$(CRATEPW="$CRATEDB_PASSWORD" $CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" --command "$TEST_SQL" 2>&1)
+fi
 
-if [ "$HTTP_CODE" != "200" ]; then
-    log_error "CrateDB 접속에 실패했습니다. HTTP 응답 코드: $HTTP_CODE"
+log_to_file "연결 테스트 결과:"
+log_to_file "$TEST_RESULT"
 
-    if [ "$HTTP_CODE" = "401" ]; then
-        log_error "인증 실패 (401 Unauthorized): 사용자명/비밀번호를 확인해주세요."
-    elif [ "$HTTP_CODE" = "000" ]; then
-        log_error "연결 실패: 호스트 주소와 포트를 확인해주세요."
-        log_warning "curl이 설치되어 있는지 확인하세요."
-        log_warning "방화벽 설정 및 포트가 열려있는지 확인하세요."
-    else
-        log_error "응답 내용: $RESPONSE_BODY"
-    fi
-
+# 에러 확인 (crash는 오류 시 stderr에 메시지 출력)
+if echo "$TEST_RESULT" | grep -qi "error\|failed\|exception\|unable to connect"; then
+    log_error "CrateDB 접속에 실패했습니다."
+    log_error "연결 테스트 출력:"
+    log_error "$TEST_RESULT"
+    log_warning "호스트 주소, 포트, 사용자명, 비밀번호를 확인해주세요."
+    log_warning "CrateDB 서버가 실행 중인지 확인하세요."
     exit 1
 fi
 
 log_success "CrateDB 접속 성공!"
 
-# SQL 실행 함수
+# SQL 실행 함수 (crash CLI 사용)
 execute_sql() {
     local sql_file=$1
     log_step "SQL 파일 실행: $sql_file"
     log_to_file "--- SQL 파일 실행 시작: $sql_file ---"
 
-    # SQL 파일 절대 경로 확인
-    local abs_sql_file="$(pwd)/$sql_file"
-    log_to_file "현재 디렉토리: $(pwd)"
-    log_to_file "SQL 파일 경로: $abs_sql_file"
-
     # SQL 파일 존재 여부 확인
     if [ ! -f "$sql_file" ]; then
         log_error "SQL 파일을 찾을 수 없습니다: $sql_file"
         log_to_file "--- SQL 파일을 찾을 수 없음: $sql_file ---"
+        log_to_file "현재 디렉토리: $(pwd)"
         log_to_file "디렉토리 내용:"
         log_to_file "$(ls -la)"
         return 1
     fi
 
-    # SQL 파일 내용 읽기
-    local sql_content=$(cat "$sql_file")
-
-    # SQL 파일이 비어있는지 확인
-    if [ -z "$sql_content" ]; then
-        log_error "SQL 파일이 비어있습니다: $sql_file"
+    # SQL 파일 크기 확인
+    local file_size=$(wc -c < "$sql_file")
+    if [ "$file_size" -eq 0 ]; then
+        log_warning "SQL 파일이 비어있습니다: $sql_file"
         log_to_file "--- SQL 파일이 비어있음: $sql_file ---"
-        return 1
-    fi
-
-    log_to_file "SQL 파일 내용 (처음 500자):"
-    log_to_file "$(echo "$sql_content" | head -c 500)"
-    log_to_file "..."
-
-    # 세미콜론으로 SQL 문장 분리
-    local sql_statements=()
-    local current_stmt=""
-
-    # 파일 내용을 한 줄씩 읽기
-    while IFS= read -r line || [ -n "$line" ]; do
-        # 빈 줄은 개행만 추가
-        if [ -z "$line" ]; then
-            current_stmt="$current_stmt"$'\n'
-            continue
-        fi
-
-        # 라인 추가
-        current_stmt="$current_stmt$line"$'\n'
-
-        # 세미콜론이 있으면 문장 완성
-        if echo "$line" | grep -q ';'; then
-            # 세미콜론 제거 및 양쪽 공백 제거
-            current_stmt=$(echo "$current_stmt" | sed -e 's/;[[:space:]]*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-
-            # 공백 제거 후에도 내용이 있는지 확인
-            local trimmed=$(echo "$current_stmt" | tr -d '[:space:]')
-            if [ -n "$trimmed" ]; then
-                sql_statements+=("$current_stmt")
-                log_to_file "SQL 문장 추가됨 (길이: ${#current_stmt}자)"
-            else
-                log_to_file "빈 문장 스킵됨"
-            fi
-            current_stmt=""
-        fi
-    done <<< "$sql_content"
-
-    # 마지막 문장 처리 (세미콜론 없이 끝나는 경우)
-    if [ -n "$current_stmt" ]; then
-        current_stmt=$(echo "$current_stmt" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-        local trimmed=$(echo "$current_stmt" | tr -d '[:space:]')
-        if [ -n "$trimmed" ]; then
-            sql_statements+=("$current_stmt")
-            log_to_file "마지막 SQL 문장 추가됨 (길이: ${#current_stmt}자)"
-        fi
-    fi
-
-    log_to_file "총 ${#sql_statements[@]}개의 SQL 문장을 실행합니다."
-
-    # SQL 문장이 없으면 경고
-    if [ ${#sql_statements[@]} -eq 0 ]; then
-        log_warning "실행할 SQL 문장이 없습니다: $sql_file"
-        log_to_file "--- SQL 문장 없음: $sql_file ---"
         return 0
     fi
 
-    # 각 SQL 문장을 개별적으로 실행
-    local stmt_count=0
-    for stmt in "${sql_statements[@]}"; do
-        stmt_count=$((stmt_count + 1))
+    log_to_file "SQL 파일 크기: $file_size bytes"
+    log_to_file "SQL 파일 내용 미리보기 (처음 500자):"
+    log_to_file "$(head -c 500 "$sql_file")"
+    log_to_file "..."
 
-        # 빈 문장 재확인
-        local trimmed=$(echo "$stmt" | tr -d '[:space:]')
-        if [ -z "$trimmed" ]; then
-            log_warning "[$stmt_count/${#sql_statements[@]}] 빈 문장 스킵"
-            continue
-        fi
+    # crash CLI로 SQL 파일 실행
+    if [ -z "$CRATEDB_PASSWORD" ]; then
+        # 비밀번호 없음
+        SQL_RESULT=$($CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" < "$sql_file" 2>&1)
+        EXIT_CODE=$?
+    else
+        # 비밀번호 있음 (환경변수 CRATEPW 사용)
+        SQL_RESULT=$(CRATEPW="$CRATEDB_PASSWORD" $CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" < "$sql_file" 2>&1)
+        EXIT_CODE=$?
+    fi
 
-        log_to_file "[$stmt_count/${#sql_statements[@]}] SQL 문장 실행 중... (길이: ${#stmt}자)"
-        log_to_file "문장 미리보기: $(echo "$stmt" | head -c 200)..."
+    log_to_file "crash CLI 종료 코드: $EXIT_CODE"
+    log_to_file "crash CLI 출력:"
+    log_to_file "$SQL_RESULT"
 
-        # SQL을 JSON으로 이스케이프
-        local sql_json=$(echo "$stmt" | jq -Rs .)
+    # 에러 확인
+    if [ $EXIT_CODE -ne 0 ]; then
+        log_error "SQL 파일 실행 실패: $sql_file (종료 코드: $EXIT_CODE)"
+        log_error "crash CLI 출력:"
+        log_error "$SQL_RESULT"
+        log_to_file "--- SQL 파일 실행 실패: $sql_file ---"
+        return 1
+    fi
 
-        # JSON 이스케이프 결과 확인
-        if [ -z "$sql_json" ] || [ "$sql_json" = '""' ]; then
-            log_error "[$stmt_count/${#sql_statements[@]}] SQL 문장이 JSON으로 변환되지 않음"
-            log_to_file "원본 문장: $stmt"
-            return 1
-        fi
+    # 출력 내용에서 에러 메시지 확인
+    if echo "$SQL_RESULT" | grep -qi "error\|exception\|failed"; then
+        log_error "SQL 실행 중 에러 발생: $sql_file"
+        log_error "에러 내용:"
+        log_error "$SQL_RESULT"
+        log_to_file "--- SQL 실행 에러: $sql_file ---"
+        return 1
+    fi
 
-        # CrateDB HTTP API로 실행
-        if [ -z "$CRATEDB_PASSWORD" ]; then
-            # 비밀번호 없음
-            local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-                -H "Content-Type: application/json" \
-                -d "{\"stmt\": $sql_json}" 2>&1)
-        else
-            # 비밀번호 있음
-            local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:$CRATEDB_PASSWORD" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-                -H "Content-Type: application/json" \
-                -d "{\"stmt\": $sql_json}" 2>&1)
-        fi
-
-        local http_code=$(echo "$response" | tail -n1)
-        local body=$(echo "$response" | sed '$d')
-
-        log_to_file "HTTP 응답 코드: $http_code"
-        log_to_file "응답 내용: $body"
-
-        # 응답 확인
-        if [ "$http_code" != "200" ]; then
-            log_error "SQL 문장 실행 실패 [$stmt_count/${#sql_statements[@]}]: (HTTP $http_code)"
-            log_error "응답: $body"
-            log_to_file "--- SQL 문장 실행 실패 [$stmt_count/${#sql_statements[@]}] ---"
-            return 1
-        fi
-
-        # 에러 응답 확인 (200이지만 error 필드가 있는 경우)
-        if echo "$body" | grep -q '"error"'; then
-            log_error "SQL 실행 중 에러 발생 [$stmt_count/${#sql_statements[@]}]"
-            log_error "에러 내용: $body"
-            log_to_file "--- SQL 실행 에러 [$stmt_count/${#sql_statements[@]}] ---"
-            log_to_file "$body"
-            return 1
-        fi
-
-        log_to_file "[$stmt_count/${#sql_statements[@]}] SQL 문장 실행 성공"
-    done
-
-    log_success "SQL 파일 실행 성공: $sql_file (${#sql_statements[@]}개 문장)"
+    log_success "SQL 파일 실행 성공: $sql_file"
     log_to_file "--- SQL 파일 실행 성공: $sql_file ---"
     return 0
 }
@@ -316,41 +232,36 @@ execute_sql_string() {
     log_to_file "--- SQL 문자열 실행 시작 ---"
     log_to_file "$sql_string"
 
-    # SQL을 JSON으로 이스케이프
-    local sql_json=$(echo "$sql_string" | jq -Rs .)
-
-    # CrateDB HTTP API로 실행
+    # crash CLI로 SQL 문자열 실행
     if [ -z "$CRATEDB_PASSWORD" ]; then
         # 비밀번호 없음
-        local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-            -H "Content-Type: application/json" \
-            -d "{\"stmt\": $sql_json}" 2>&1)
+        SQL_RESULT=$(echo "$sql_string" | $CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" 2>&1)
+        EXIT_CODE=$?
     else
         # 비밀번호 있음
-        local response=$(curl -s -w "\n%{http_code}" -u "$CRATEDB_USER:$CRATEDB_PASSWORD" -X POST "http://$CRATEDB_HOST:$CRATEDB_PORT/_sql" \
-            -H "Content-Type: application/json" \
-            -d "{\"stmt\": $sql_json}" 2>&1)
+        SQL_RESULT=$(echo "$sql_string" | CRATEPW="$CRATEDB_PASSWORD" $CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" 2>&1)
+        EXIT_CODE=$?
     fi
 
-    local http_code=$(echo "$response" | tail -n1)
-    local body=$(echo "$response" | sed '$d')
+    log_to_file "crash CLI 종료 코드: $EXIT_CODE"
+    log_to_file "crash CLI 출력:"
+    log_to_file "$SQL_RESULT"
 
-    log_to_file "HTTP 응답 코드: $http_code"
-    log_to_file "응답 내용: $body"
-
-    if [ "$http_code" != "200" ]; then
-        log_error "SQL 문자열 실행 실패 (HTTP $http_code)"
-        log_error "응답: $body"
-        log_to_file "--- SQL 문자열 실행 실패 (HTTP $http_code) ---"
+    # 에러 확인
+    if [ $EXIT_CODE -ne 0 ]; then
+        log_error "SQL 문자열 실행 실패 (종료 코드: $EXIT_CODE)"
+        log_error "crash CLI 출력:"
+        log_error "$SQL_RESULT"
+        log_to_file "--- SQL 문자열 실행 실패 ---"
         return 1
     fi
 
-    # 에러 응답 확인
-    if echo "$body" | grep -q '"error"'; then
+    # 출력 내용에서 에러 메시지 확인
+    if echo "$SQL_RESULT" | grep -qi "error\|exception\|failed"; then
         log_error "SQL 실행 중 에러 발생"
-        log_error "에러 내용: $body"
+        log_error "에러 내용:"
+        log_error "$SQL_RESULT"
         log_to_file "--- SQL 실행 에러 ---"
-        log_to_file "$body"
         return 1
     fi
 
