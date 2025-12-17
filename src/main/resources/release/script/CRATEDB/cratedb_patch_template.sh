@@ -174,18 +174,10 @@ execute_sql() {
     log_to_file "SQL 파일 내용:"
     log_to_file "$sql_content"
 
-    # 주석 제거 및 SQL 문장 분리
-    # 1. /* */ 블록 주석 제거
-    # 2. -- 라인 주석 제거
-    # 3. 빈 줄 제거
-    local cleaned_sql=$(echo "$sql_content" | \
-        sed 's|/\*.*\*/||g' | \
-        sed 's/--.*$//' | \
-        grep -v '^[[:space:]]*$')
-
     # 세미콜론으로 SQL 문장 분리 (임시 파일 사용)
+    # 주석은 제거하지 않고 그대로 전송 (CrateDB 파서가 처리)
     local temp_file=$(mktemp)
-    echo "$cleaned_sql" > "$temp_file"
+    echo "$sql_content" > "$temp_file"
 
     # 파일을 읽어서 세미콜론 기준으로 분리하여 배열에 저장
     local sql_statements=()
