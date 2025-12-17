@@ -163,58 +163,109 @@ execute_sql() {
     log_step "SQL 파일 실행: $sql_file"
     log_to_file "--- SQL 파일 실행 시작: $sql_file ---"
 
-    # SQL 파일 내용 읽기
+    # SQL 파일 절대 경로 확인
+    local abs_sql_file="$(pwd)/$sql_file"
+    log_to_file "현재 디렉토리: $(pwd)"
+    log_to_file "SQL 파일 경로: $abs_sql_file"
+
+    # SQL 파일 존재 여부 확인
     if [ ! -f "$sql_file" ]; then
         log_error "SQL 파일을 찾을 수 없습니다: $sql_file"
         log_to_file "--- SQL 파일을 찾을 수 없음: $sql_file ---"
+        log_to_file "디렉토리 내용:"
+        log_to_file "$(ls -la)"
         return 1
     fi
 
+    # SQL 파일 내용 읽기
     local sql_content=$(cat "$sql_file")
-    log_to_file "SQL 파일 내용:"
-    log_to_file "$sql_content"
 
-    # 세미콜론으로 SQL 문장 분리 (임시 파일 사용)
-    # 주석은 제거하지 않고 그대로 전송 (CrateDB 파서가 처리)
-    local temp_file=$(mktemp)
-    echo "$sql_content" > "$temp_file"
+    # SQL 파일이 비어있는지 확인
+    if [ -z "$sql_content" ]; then
+        log_error "SQL 파일이 비어있습니다: $sql_file"
+        log_to_file "--- SQL 파일이 비어있음: $sql_file ---"
+        return 1
+    fi
 
-    # 파일을 읽어서 세미콜론 기준으로 분리하여 배열에 저장
+    log_to_file "SQL 파일 내용 (처음 500자):"
+    log_to_file "$(echo "$sql_content" | head -c 500)"
+    log_to_file "..."
+
+    # 세미콜론으로 SQL 문장 분리
     local sql_statements=()
     local current_stmt=""
 
+    # 파일 내용을 한 줄씩 읽기
     while IFS= read -r line || [ -n "$line" ]; do
+        # 빈 줄은 개행만 추가
+        if [ -z "$line" ]; then
+            current_stmt="$current_stmt"$'\n'
+            continue
+        fi
+
+        # 라인 추가
         current_stmt="$current_stmt$line"$'\n'
+
         # 세미콜론이 있으면 문장 완성
         if echo "$line" | grep -q ';'; then
-            # 세미콜론 제거 및 trim
-            current_stmt=$(echo "$current_stmt" | sed 's/;[[:space:]]*$//')
-            # 빈 문장이 아니면 배열에 추가
-            if [ -n "$(echo "$current_stmt" | tr -d '[:space:]')" ]; then
+            # 세미콜론 제거 및 양쪽 공백 제거
+            current_stmt=$(echo "$current_stmt" | sed -e 's/;[[:space:]]*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+            # 공백 제거 후에도 내용이 있는지 확인
+            local trimmed=$(echo "$current_stmt" | tr -d '[:space:]')
+            if [ -n "$trimmed" ]; then
                 sql_statements+=("$current_stmt")
+                log_to_file "SQL 문장 추가됨 (길이: ${#current_stmt}자)"
+            else
+                log_to_file "빈 문장 스킵됨"
             fi
             current_stmt=""
         fi
-    done < "$temp_file"
+    done <<< "$sql_content"
 
     # 마지막 문장 처리 (세미콜론 없이 끝나는 경우)
-    if [ -n "$(echo "$current_stmt" | tr -d '[:space:]')" ]; then
-        sql_statements+=("$current_stmt")
+    if [ -n "$current_stmt" ]; then
+        current_stmt=$(echo "$current_stmt" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        local trimmed=$(echo "$current_stmt" | tr -d '[:space:]')
+        if [ -n "$trimmed" ]; then
+            sql_statements+=("$current_stmt")
+            log_to_file "마지막 SQL 문장 추가됨 (길이: ${#current_stmt}자)"
+        fi
     fi
 
-    rm -f "$temp_file"
-
     log_to_file "총 ${#sql_statements[@]}개의 SQL 문장을 실행합니다."
+
+    # SQL 문장이 없으면 경고
+    if [ ${#sql_statements[@]} -eq 0 ]; then
+        log_warning "실행할 SQL 문장이 없습니다: $sql_file"
+        log_to_file "--- SQL 문장 없음: $sql_file ---"
+        return 0
+    fi
 
     # 각 SQL 문장을 개별적으로 실행
     local stmt_count=0
     for stmt in "${sql_statements[@]}"; do
         stmt_count=$((stmt_count + 1))
-        log_to_file "[$stmt_count/${#sql_statements[@]}] SQL 문장 실행 중..."
-        log_to_file "$stmt"
+
+        # 빈 문장 재확인
+        local trimmed=$(echo "$stmt" | tr -d '[:space:]')
+        if [ -z "$trimmed" ]; then
+            log_warning "[$stmt_count/${#sql_statements[@]}] 빈 문장 스킵"
+            continue
+        fi
+
+        log_to_file "[$stmt_count/${#sql_statements[@]}] SQL 문장 실행 중... (길이: ${#stmt}자)"
+        log_to_file "문장 미리보기: $(echo "$stmt" | head -c 200)..."
 
         # SQL을 JSON으로 이스케이프
         local sql_json=$(echo "$stmt" | jq -Rs .)
+
+        # JSON 이스케이프 결과 확인
+        if [ -z "$sql_json" ] || [ "$sql_json" = '""' ]; then
+            log_error "[$stmt_count/${#sql_statements[@]}] SQL 문장이 JSON으로 변환되지 않음"
+            log_to_file "원본 문장: $stmt"
+            return 1
+        fi
 
         # CrateDB HTTP API로 실행
         if [ -z "$CRATEDB_PASSWORD" ]; then
