@@ -58,10 +58,9 @@ public class MariaDBRestoreService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
                         "백업 파일을 찾을 수 없습니다: " + request.getBackupFileId()));
 
-        // 복원 순번 계산
+        // 로그 파일명 생성 (넘버링 prefix 제거)
         String timestamp = jobId.replace("restore_", "");
-        int restoreNumber = backupLogService.getNextRestoreNumber(request.getBackupFileId());
-        String newLogFileName = String.format("%d_restore_%s.log", restoreNumber, timestamp);
+        String newLogFileName = String.format("restore_%s.log", timestamp);
 
         Path backupFilePath = Paths.get(releaseBasePath, backupFile.getFilePath());
 
@@ -70,8 +69,8 @@ public class MariaDBRestoreService {
         Path logDir = Paths.get(releaseBasePath, "job", FILE_CATEGORY, "logs", baseFileName);
         Path logFilePath = logDir.resolve(newLogFileName);
 
-        log.info("복원 시작 - jobId: {}, backupFileId: {}, restoreNumber: {}",
-                jobId, request.getBackupFileId(), restoreNumber);
+        log.info("복원 시작 - jobId: {}, backupFileId: {}",
+                jobId, request.getBackupFileId());
 
         try {
             // 디렉토리 생성
@@ -122,8 +121,18 @@ public class MariaDBRestoreService {
                 appendToLogFile(logFilePath, "========================================");
                 appendToLogFile(logFilePath, "복원 실패: " + e.getMessage());
                 appendToLogFile(logFilePath, "========================================");
+
+                // 로그 파일이 생성되었으면 DB에 저장
+                if (Files.exists(logFilePath)) {
+                    long logFileSize = Files.size(logFilePath);
+                    String logChecksum = com.ts.rm.global.file.FileChecksumUtil.calculateChecksum(logFilePath);
+
+                    backupLogService.createLogFile(backupFile, newLogFileName, LOG_TYPE_RESTORE,
+                            request.getUsername(), logFileSize, logChecksum);
+                    log.info("복원 실패 로그 DB 저장 완료 - logFileName: {}", newLogFileName);
+                }
             } catch (IOException logError) {
-                log.error("로그 파일 기록 실패", logError);
+                log.error("로그 파일 기록 또는 DB 저장 실패", logError);
             }
 
             // 작업 상태 업데이트 (실패)
