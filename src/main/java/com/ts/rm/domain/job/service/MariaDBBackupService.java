@@ -117,9 +117,8 @@ public class MariaDBBackupService {
             appendToLogFile(logFilePath, "파일 크기: " + fileSize + " bytes");
             appendToLogFile(logFilePath, "========================================");
 
-            // 로그 파일명에 backupFileId 포함하여 rename (형식: {순번}_backup_{timestamp}.log)
-            String newLogFileName = String.format("%d_backup_%s.log",
-                    backupFile.getBackupFileId(), timestamp);
+            // 로그 파일명 rename (넘버링 prefix 제거)
+            String newLogFileName = String.format("backup_%s.log", timestamp);
             Path newLogFilePath = logFilePath.getParent().resolve(newLogFileName);
             Files.move(logFilePath, newLogFilePath);
             log.info("로그 파일 rename: {} -> {}", logFileName, newLogFileName);
@@ -141,22 +140,34 @@ public class MariaDBBackupService {
         } catch (Exception e) {
             log.error("백업 실패 - jobId: {}, error: {}", jobId, e.getMessage(), e);
 
-            // 실패 시 생성된 파일 삭제
+            // 실패 시 생성된 백업 파일 삭제
             deleteFileIfExists(backupFilePath);
 
             // 실패 로그 기록
+            String failedLogFileName = logFileName;
             try {
                 appendToLogFile(logFilePath, "========================================");
                 appendToLogFile(logFilePath, "백업 실패: " + e.getMessage());
                 appendToLogFile(logFilePath, "========================================");
+
+                // 로그 파일명 rename (넘버링 prefix 제거)
+                String newLogFileName = String.format("backup_%s.log", timestamp);
+                Path newLogFilePath = logFilePath.getParent().resolve(newLogFileName);
+                Files.move(logFilePath, newLogFilePath);
+                log.info("실패 로그 파일 rename: {} -> {}", logFileName, newLogFileName);
+                failedLogFileName = newLogFileName;
+
+                // 백업 실패 시 BackupFile이 생성되지 않아 DB 저장 불가
+                log.warn("백업 실패로 인해 로그 파일 DB 저장 생략 - logFileName: {}", newLogFileName);
+
             } catch (IOException logError) {
                 log.error("로그 파일 기록 실패", logError);
             }
 
-            // 작업 상태 업데이트 (실패)
+            // 작업 상태 업데이트 (실패) - rename된 로그 파일명 사용
             jobStatusManager.saveJobStatus(jobId,
                     JobResponse.createFailed(jobId, backupFileName,
-                            "logs/" + logFileName, e.getMessage()));
+                            "logs/" + removeFileExtension(backupFileName) + "/" + failedLogFileName, e.getMessage()));
         }
     }
 
