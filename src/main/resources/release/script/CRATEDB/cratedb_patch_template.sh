@@ -63,12 +63,9 @@ log_success() {
 }
 
 # 기본값
-DEFAULT_CRATEDB_HOST="localhost"
-DEFAULT_CRATEDB_PORT="4200"
+DEFAULT_DOCKER_CONTAINER_NAME="cratedb"
 DEFAULT_CRATEDB_USER="crate"
-
-# Crash CLI 경로 (필요시 수정)
-CRASH_CMD="crash"
+DEFAULT_CRATEDB_PORT="4200"
 
 # 버전 메타데이터 배열
 declare -a VERSION_METADATA=(
@@ -95,179 +92,341 @@ echo "포함된 버전 개수: {{VERSION_COUNT}}"
 echo "로그 파일: $LOG_FILE"
 echo ""
 
-# CrateDB 접속 정보 입력
+# 실행 방식 선택
 echo "=========================================="
-echo "CrateDB 접속 정보 입력:"
+echo "CrateDB 접속 방식을 선택하세요:"
+echo ""
+echo "  1) Docker 컨테이너 방식"
+echo "     → Docker 컨테이너 내부의 CrateDB에 접속"
+echo "     → 'docker exec' 명령으로 컨테이너 내부에서 crash CLI 실행"
+echo ""
+echo "  2) 네트워크 직접 연결 방식"
+echo "     → 호스트:포트로 CrateDB에 직접 연결"
+echo "     → 로컬/원격 서버 모두 지원 (IP 또는 localhost)"
+echo "     → crash CLI가 호스트 시스템에 설치되어 있어야 함"
 echo "=========================================="
 echo ""
-echo "  crash CLI를 통해 SQL을 실행합니다."
-echo "  기본 포트: 4200"
-echo "  기본 사용자: crate (비밀번호 없음)"
-echo ""
-echo "  crash CLI가 설치되어 있어야 합니다."
-echo "  설치 방법: pip install crash"
-echo ""
+read -p "선택 (1 또는 2) [1]: " EXECUTION_MODE
 
-read -p "CrateDB 호스트 주소 (예: localhost, 192.168.1.100) [$DEFAULT_CRATEDB_HOST]: " CRATEDB_HOST
-CRATEDB_HOST=${CRATEDB_HOST:-$DEFAULT_CRATEDB_HOST}
+EXECUTION_MODE=$(echo "${EXECUTION_MODE:-1}" | tr -d '[:space:]')
 
-read -p "CrateDB HTTP 포트 [$DEFAULT_CRATEDB_PORT]: " CRATEDB_PORT
-CRATEDB_PORT=${CRATEDB_PORT:-$DEFAULT_CRATEDB_PORT}
-
-read -p "CrateDB 사용자명 [$DEFAULT_CRATEDB_USER]: " CRATEDB_USER
-CRATEDB_USER=${CRATEDB_USER:-$DEFAULT_CRATEDB_USER}
-
-read -sp "CrateDB 비밀번호 (없으면 Enter): " CRATEDB_PASSWORD
-echo ""
-
-echo ""
-log_info "CrateDB 호스트: $CRATEDB_HOST:$CRATEDB_PORT"
-log_info "사용자: $CRATEDB_USER"
-log_to_file "접속 정보 - 호스트: $CRATEDB_HOST:$CRATEDB_PORT, 사용자: $CRATEDB_USER"
-log_info "crash CLI를 통해 CrateDB 연결 테스트 중..."
-
-# crash 명령어 존재 확인
-if ! command -v $CRASH_CMD &> /dev/null; then
-    log_error "crash CLI를 찾을 수 없습니다."
-    log_error "crash를 설치하거나 CRASH_CMD 변수를 올바른 경로로 설정하세요."
-    log_error "설치 방법: pip install crash"
+if [ "$EXECUTION_MODE" != "1" ] && [ "$EXECUTION_MODE" != "2" ]; then
+    log_error "잘못된 선택입니다. 1 또는 2를 입력하세요."
     exit 1
 fi
 
-# CrateDB 연결 테스트 (crash CLI 사용)
-TEST_SQL="SELECT 1;"
+echo ""
 
-if [ -z "$CRATEDB_PASSWORD" ]; then
-    # 비밀번호 없음
-    TEST_RESULT=$($CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" --command "$TEST_SQL" 2>&1)
-else
-    # 비밀번호 있음
-    TEST_RESULT=$(CRATEPW="$CRATEDB_PASSWORD" $CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" --command "$TEST_SQL" 2>&1)
-fi
+# 실행 방식에 따른 설정
+if [ "$EXECUTION_MODE" = "1" ]; then
+    log_info "선택된 방식: Docker 컨테이너 방식"
+    echo ""
 
-log_to_file "연결 테스트 결과:"
-log_to_file "$TEST_RESULT"
+    read -p "Docker 컨테이너 이름 [$DEFAULT_DOCKER_CONTAINER_NAME]: " DOCKER_CONTAINER_NAME
+    DOCKER_CONTAINER_NAME=${DOCKER_CONTAINER_NAME:-$DEFAULT_DOCKER_CONTAINER_NAME}
 
-# 에러 확인 (crash는 오류 시 stderr에 메시지 출력)
-if echo "$TEST_RESULT" | grep -qi "error\|failed\|exception\|unable to connect"; then
-    log_error "CrateDB 접속에 실패했습니다."
-    log_error "연결 테스트 출력:"
-    log_error "$TEST_RESULT"
-    log_warning "호스트 주소, 포트, 사용자명, 비밀번호를 확인해주세요."
-    log_warning "CrateDB 서버가 실행 중인지 확인하세요."
-    exit 1
-fi
+    read -p "CrateDB 사용자명 [$DEFAULT_CRATEDB_USER]: " CRATEDB_USER
+    CRATEDB_USER=${CRATEDB_USER:-$DEFAULT_CRATEDB_USER}
 
-log_success "CrateDB 접속 성공!"
+    read -sp "CrateDB 비밀번호 (없으면 Enter): " CRATEDB_PASSWORD
+    echo ""
 
-# SQL 실행 함수 (crash CLI 사용)
-execute_sql() {
-    local sql_file=$1
-    log_step "SQL 파일 실행: $sql_file"
-    log_to_file "--- SQL 파일 실행 시작: $sql_file ---"
+    echo ""
+    log_info "Docker 컨테이너: $DOCKER_CONTAINER_NAME"
+    log_info "사용자: $CRATEDB_USER"
+    log_info "컨테이너 확인 중..."
 
-    # SQL 파일 존재 여부 확인
-    if [ ! -f "$sql_file" ]; then
-        log_error "SQL 파일을 찾을 수 없습니다: $sql_file"
-        log_to_file "--- SQL 파일을 찾을 수 없음: $sql_file ---"
-        log_to_file "현재 디렉토리: $(pwd)"
-        log_to_file "디렉토리 내용:"
-        log_to_file "$(ls -la)"
-        return 1
+    if ! docker ps --format "{{.Names}}" | grep -q "^${DOCKER_CONTAINER_NAME}$"; then
+        log_error "Docker 컨테이너 '$DOCKER_CONTAINER_NAME'를 찾을 수 없거나 실행 중이 아닙니다."
+        exit 1
     fi
 
-    # SQL 파일 크기 확인
-    local file_size=$(wc -c < "$sql_file")
-    if [ "$file_size" -eq 0 ]; then
-        log_warning "SQL 파일이 비어있습니다: $sql_file"
-        log_to_file "--- SQL 파일이 비어있음: $sql_file ---"
-        return 0
-    fi
+    log_info "컨테이너 확인 완료!"
 
-    log_to_file "SQL 파일 크기: $file_size bytes"
-    log_to_file "SQL 파일 내용 미리보기 (처음 500자):"
-    log_to_file "$(head -c 500 "$sql_file")"
-    log_to_file "..."
+    log_info "CrateDB 연결 테스트 중..."
+    TEST_SQL="SELECT 1;"
 
-    # crash CLI로 SQL 파일 실행
     if [ -z "$CRATEDB_PASSWORD" ]; then
         # 비밀번호 없음
-        SQL_RESULT=$($CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" < "$sql_file" 2>&1)
-        EXIT_CODE=$?
-    else
-        # 비밀번호 있음 (환경변수 CRATEPW 사용)
-        SQL_RESULT=$(CRATEPW="$CRATEDB_PASSWORD" $CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" < "$sql_file" 2>&1)
-        EXIT_CODE=$?
-    fi
-
-    log_to_file "crash CLI 종료 코드: $EXIT_CODE"
-    log_to_file "crash CLI 출력:"
-    log_to_file "$SQL_RESULT"
-
-    # 에러 확인
-    if [ $EXIT_CODE -ne 0 ]; then
-        log_error "SQL 파일 실행 실패: $sql_file (종료 코드: $EXIT_CODE)"
-        log_error "crash CLI 출력:"
-        log_error "$SQL_RESULT"
-        log_to_file "--- SQL 파일 실행 실패: $sql_file ---"
-        return 1
-    fi
-
-    # 출력 내용에서 에러 메시지 확인
-    if echo "$SQL_RESULT" | grep -qi "error\|exception\|failed"; then
-        log_error "SQL 실행 중 에러 발생: $sql_file"
-        log_error "에러 내용:"
-        log_error "$SQL_RESULT"
-        log_to_file "--- SQL 실행 에러: $sql_file ---"
-        return 1
-    fi
-
-    log_success "SQL 파일 실행 성공: $sql_file"
-    log_to_file "--- SQL 파일 실행 성공: $sql_file ---"
-    return 0
-}
-
-execute_sql_string() {
-    local sql_string=$1
-    log_to_file "--- SQL 문자열 실행 시작 ---"
-    log_to_file "$sql_string"
-
-    # crash CLI로 SQL 문자열 실행
-    if [ -z "$CRATEDB_PASSWORD" ]; then
-        # 비밀번호 없음
-        SQL_RESULT=$(echo "$sql_string" | $CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" 2>&1)
-        EXIT_CODE=$?
+        TEST_RESULT=$(docker exec "$DOCKER_CONTAINER_NAME" crash --username "$CRATEDB_USER" --command "$TEST_SQL" 2>&1)
     else
         # 비밀번호 있음
-        SQL_RESULT=$(echo "$sql_string" | CRATEPW="$CRATEDB_PASSWORD" $CRASH_CMD --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" 2>&1)
-        EXIT_CODE=$?
+        TEST_RESULT=$(docker exec -e CRATEPW="$CRATEDB_PASSWORD" "$DOCKER_CONTAINER_NAME" crash --username "$CRATEDB_USER" --command "$TEST_SQL" 2>&1)
     fi
 
-    log_to_file "crash CLI 종료 코드: $EXIT_CODE"
-    log_to_file "crash CLI 출력:"
-    log_to_file "$SQL_RESULT"
+    log_to_file "연결 테스트 결과:"
+    log_to_file "$TEST_RESULT"
+
+    if echo "$TEST_RESULT" | grep -qi "error\|failed\|exception\|unable to connect"; then
+        log_error "CrateDB 접속에 실패했습니다."
+        log_error "연결 테스트 출력:"
+        log_error "$TEST_RESULT"
+        log_warning "사용자명/비밀번호를 확인해주세요."
+        exit 1
+    fi
+
+    log_success "CrateDB 접속 성공!"
+
+    # SQL 실행 함수 (Docker 방식)
+    execute_sql() {
+        local sql_file=$1
+        log_step "SQL 파일 실행: $sql_file"
+        log_to_file "--- SQL 파일 실행 시작: $sql_file ---"
+
+        # SQL 파일 존재 여부 확인
+        if [ ! -f "$sql_file" ]; then
+            log_error "SQL 파일을 찾을 수 없습니다: $sql_file"
+            log_to_file "--- SQL 파일을 찾을 수 없음: $sql_file ---"
+            return 1
+        fi
+
+        # SQL 파일 크기 확인
+        local file_size=$(wc -c < "$sql_file")
+        if [ "$file_size" -eq 0 ]; then
+            log_warning "SQL 파일이 비어있습니다: $sql_file"
+            log_to_file "--- SQL 파일이 비어있음: $sql_file ---"
+            return 0
+        fi
+
+        log_to_file "SQL 파일 크기: $file_size bytes"
+
+        # Docker 컨테이너 내부에서 crash CLI로 SQL 파일 실행
+        if [ -z "$CRATEDB_PASSWORD" ]; then
+            # 비밀번호 없음
+            SQL_RESULT=$(docker exec -i "$DOCKER_CONTAINER_NAME" crash --username "$CRATEDB_USER" < "$sql_file" 2>&1)
+            EXIT_CODE=$?
+        else
+            # 비밀번호 있음
+            SQL_RESULT=$(docker exec -i -e CRATEPW="$CRATEDB_PASSWORD" "$DOCKER_CONTAINER_NAME" crash --username "$CRATEDB_USER" < "$sql_file" 2>&1)
+            EXIT_CODE=$?
+        fi
+
+        log_to_file "crash CLI 종료 코드: $EXIT_CODE"
+        log_to_file "crash CLI 출력:"
+        log_to_file "$SQL_RESULT"
+
+        # 에러 확인
+        if [ $EXIT_CODE -ne 0 ]; then
+            log_error "SQL 파일 실행 실패: $sql_file (종료 코드: $EXIT_CODE)"
+            log_error "crash CLI 출력:"
+            log_error "$SQL_RESULT"
+            log_to_file "--- SQL 파일 실행 실패: $sql_file ---"
+            return 1
+        fi
+
+        if echo "$SQL_RESULT" | grep -qi "error\|exception\|failed"; then
+            log_error "SQL 실행 중 에러 발생: $sql_file"
+            log_error "에러 내용:"
+            log_error "$SQL_RESULT"
+            log_to_file "--- SQL 실행 에러: $sql_file ---"
+            return 1
+        fi
+
+        log_success "SQL 파일 실행 성공: $sql_file"
+        log_to_file "--- SQL 파일 실행 성공: $sql_file ---"
+        return 0
+    }
+
+    execute_sql_string() {
+        local sql_string=$1
+        log_to_file "--- SQL 문자열 실행 시작 ---"
+        log_to_file "$sql_string"
+
+        # Docker 컨테이너 내부에서 crash CLI로 SQL 문자열 실행
+        if [ -z "$CRATEDB_PASSWORD" ]; then
+            # 비밀번호 없음
+            SQL_RESULT=$(echo "$sql_string" | docker exec -i "$DOCKER_CONTAINER_NAME" crash --username "$CRATEDB_USER" 2>&1)
+            EXIT_CODE=$?
+        else
+            # 비밀번호 있음
+            SQL_RESULT=$(echo "$sql_string" | docker exec -i -e CRATEPW="$CRATEDB_PASSWORD" "$DOCKER_CONTAINER_NAME" crash --username "$CRATEDB_USER" 2>&1)
+            EXIT_CODE=$?
+        fi
+
+        log_to_file "crash CLI 종료 코드: $EXIT_CODE"
+        log_to_file "crash CLI 출력:"
+        log_to_file "$SQL_RESULT"
+
+        # 에러 확인
+        if [ $EXIT_CODE -ne 0 ]; then
+            log_error "SQL 문자열 실행 실패 (종료 코드: $EXIT_CODE)"
+            log_error "crash CLI 출력:"
+            log_error "$SQL_RESULT"
+            log_to_file "--- SQL 문자열 실행 실패 ---"
+            return 1
+        fi
+
+        if echo "$SQL_RESULT" | grep -qi "error\|exception\|failed"; then
+            log_error "SQL 실행 중 에러 발생"
+            log_error "에러 내용:"
+            log_error "$SQL_RESULT"
+            log_to_file "--- SQL 실행 에러 ---"
+            return 1
+        fi
+
+        log_to_file "--- SQL 문자열 실행 성공 ---"
+        return 0
+    }
+
+else
+    log_info "선택된 방식: 네트워크 직접 연결 방식"
+    echo ""
+
+    read -p "CrateDB 호스트 주소 (예: localhost, 192.168.1.100) [localhost]: " CRATEDB_HOST
+    CRATEDB_HOST=${CRATEDB_HOST:-localhost}
+
+    read -p "CrateDB 포트 [$DEFAULT_CRATEDB_PORT]: " CRATEDB_PORT
+    CRATEDB_PORT=${CRATEDB_PORT:-$DEFAULT_CRATEDB_PORT}
+
+    read -p "CrateDB 사용자명 [$DEFAULT_CRATEDB_USER]: " CRATEDB_USER
+    CRATEDB_USER=${CRATEDB_USER:-$DEFAULT_CRATEDB_USER}
+
+    read -sp "CrateDB 비밀번호 (없으면 Enter): " CRATEDB_PASSWORD
+    echo ""
+
+    echo ""
+    log_info "CrateDB 호스트: $CRATEDB_HOST:$CRATEDB_PORT"
+    log_info "사용자: $CRATEDB_USER"
+    log_to_file "접속 정보 - 호스트: $CRATEDB_HOST:$CRATEDB_PORT, 사용자: $CRATEDB_USER"
+
+    # crash 명령어 존재 확인
+    if ! command -v crash &> /dev/null; then
+        log_error "crash CLI를 찾을 수 없습니다."
+        log_error "crash를 설치하세요."
+        log_error "설치 방법: pip install crash"
+        exit 1
+    fi
+
+    log_info "crash CLI를 통해 CrateDB 연결 테스트 중..."
+
+    # CrateDB 연결 테스트 (crash CLI 사용)
+    TEST_SQL="SELECT 1;"
+
+    if [ -z "$CRATEDB_PASSWORD" ]; then
+        # 비밀번호 없음
+        TEST_RESULT=$(crash --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" --command "$TEST_SQL" 2>&1)
+    else
+        # 비밀번호 있음
+        TEST_RESULT=$(CRATEPW="$CRATEDB_PASSWORD" crash --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" --command "$TEST_SQL" 2>&1)
+    fi
+
+    log_to_file "연결 테스트 결과:"
+    log_to_file "$TEST_RESULT"
 
     # 에러 확인
-    if [ $EXIT_CODE -ne 0 ]; then
-        log_error "SQL 문자열 실행 실패 (종료 코드: $EXIT_CODE)"
-        log_error "crash CLI 출력:"
-        log_error "$SQL_RESULT"
-        log_to_file "--- SQL 문자열 실행 실패 ---"
-        return 1
+    if echo "$TEST_RESULT" | grep -qi "error\|failed\|exception\|unable to connect"; then
+        log_error "CrateDB 접속에 실패했습니다."
+        log_error "연결 테스트 출력:"
+        log_error "$TEST_RESULT"
+        log_warning "호스트 주소, 포트, 사용자명, 비밀번호를 확인해주세요."
+        log_warning "CrateDB 서버가 실행 중인지 확인하세요."
+        log_warning "방화벽 설정 및 포트가 열려있는지 확인하세요."
+        exit 1
     fi
 
-    # 출력 내용에서 에러 메시지 확인
-    if echo "$SQL_RESULT" | grep -qi "error\|exception\|failed"; then
-        log_error "SQL 실행 중 에러 발생"
-        log_error "에러 내용:"
-        log_error "$SQL_RESULT"
-        log_to_file "--- SQL 실행 에러 ---"
-        return 1
-    fi
+    log_success "CrateDB 접속 성공!"
 
-    log_to_file "--- SQL 문자열 실행 성공 ---"
-    return 0
-}
+    # SQL 실행 함수 (네트워크 방식)
+    execute_sql() {
+        local sql_file=$1
+        log_step "SQL 파일 실행: $sql_file"
+        log_to_file "--- SQL 파일 실행 시작: $sql_file ---"
+
+        # SQL 파일 존재 여부 확인
+        if [ ! -f "$sql_file" ]; then
+            log_error "SQL 파일을 찾을 수 없습니다: $sql_file"
+            log_to_file "--- SQL 파일을 찾을 수 없음: $sql_file ---"
+            return 1
+        fi
+
+        # SQL 파일 크기 확인
+        local file_size=$(wc -c < "$sql_file")
+        if [ "$file_size" -eq 0 ]; then
+            log_warning "SQL 파일이 비어있습니다: $sql_file"
+            log_to_file "--- SQL 파일이 비어있음: $sql_file ---"
+            return 0
+        fi
+
+        log_to_file "SQL 파일 크기: $file_size bytes"
+
+        # crash CLI로 SQL 파일 실행
+        if [ -z "$CRATEDB_PASSWORD" ]; then
+            # 비밀번호 없음
+            SQL_RESULT=$(crash --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" < "$sql_file" 2>&1)
+            EXIT_CODE=$?
+        else
+            # 비밀번호 있음
+            SQL_RESULT=$(CRATEPW="$CRATEDB_PASSWORD" crash --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" < "$sql_file" 2>&1)
+            EXIT_CODE=$?
+        fi
+
+        log_to_file "crash CLI 종료 코드: $EXIT_CODE"
+        log_to_file "crash CLI 출력:"
+        log_to_file "$SQL_RESULT"
+
+        # 에러 확인
+        if [ $EXIT_CODE -ne 0 ]; then
+            log_error "SQL 파일 실행 실패: $sql_file (종료 코드: $EXIT_CODE)"
+            log_error "crash CLI 출력:"
+            log_error "$SQL_RESULT"
+            log_to_file "--- SQL 파일 실행 실패: $sql_file ---"
+            return 1
+        fi
+
+        if echo "$SQL_RESULT" | grep -qi "error\|exception\|failed"; then
+            log_error "SQL 실행 중 에러 발생: $sql_file"
+            log_error "에러 내용:"
+            log_error "$SQL_RESULT"
+            log_to_file "--- SQL 실행 에러: $sql_file ---"
+            return 1
+        fi
+
+        log_success "SQL 파일 실행 성공: $sql_file"
+        log_to_file "--- SQL 파일 실행 성공: $sql_file ---"
+        return 0
+    }
+
+    execute_sql_string() {
+        local sql_string=$1
+        log_to_file "--- SQL 문자열 실행 시작 ---"
+        log_to_file "$sql_string"
+
+        # crash CLI로 SQL 문자열 실행
+        if [ -z "$CRATEDB_PASSWORD" ]; then
+            # 비밀번호 없음
+            SQL_RESULT=$(echo "$sql_string" | crash --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" 2>&1)
+            EXIT_CODE=$?
+        else
+            # 비밀번호 있음
+            SQL_RESULT=$(echo "$sql_string" | CRATEPW="$CRATEDB_PASSWORD" crash --hosts "$CRATEDB_HOST:$CRATEDB_PORT" --username "$CRATEDB_USER" 2>&1)
+            EXIT_CODE=$?
+        fi
+
+        log_to_file "crash CLI 종료 코드: $EXIT_CODE"
+        log_to_file "crash CLI 출력:"
+        log_to_file "$SQL_RESULT"
+
+        # 에러 확인
+        if [ $EXIT_CODE -ne 0 ]; then
+            log_error "SQL 문자열 실행 실패 (종료 코드: $EXIT_CODE)"
+            log_error "crash CLI 출력:"
+            log_error "$SQL_RESULT"
+            log_to_file "--- SQL 문자열 실행 실패 ---"
+            return 1
+        fi
+
+        if echo "$SQL_RESULT" | grep -qi "error\|exception\|failed"; then
+            log_error "SQL 실행 중 에러 발생"
+            log_error "에러 내용:"
+            log_error "$SQL_RESULT"
+            log_to_file "--- SQL 실행 에러 ---"
+            return 1
+        fi
+
+        log_to_file "--- SQL 문자열 실행 성공 ---"
+        return 0
+    }
+fi
 
 # 에러 핸들러 함수
 error_handler() {
