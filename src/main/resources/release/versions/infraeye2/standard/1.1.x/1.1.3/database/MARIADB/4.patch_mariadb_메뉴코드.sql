@@ -24,7 +24,6 @@ TRUNCATE TABLE TMP_MENU_MNG;
 
 -- 메뉴코드
 INSERT INTO TMP_MENU_INFO (MENU_ID,MENU_NM,MENU_NM_EN,UPPER_MENU_ID,MENU_ORDER,OFFER_YN,MENU_DESC,MENU_TYPE,MENU_LC,SITE_MAP_YN) VALUES('STD050','장비추가','Device Add','',0,'Y','',0,'/common/device/add','Y')
-INSERT INTO TMP_MENU_INFO (MENU_ID,MENU_NM,MENU_NM_EN,UPPER_MENU_ID,MENU_ORDER,OFFER_YN,MENU_DESC,MENU_TYPE,MENU_LC,SITE_MAP_YN) VALUES('STD050','장비추가','Device Add','',0,'Y','',0,'/common/device/add','Y')
 ,('STD000','대시보드','Dashboard','',1,'Y','',0,'/dashboard','Y')
 ,('STD001','운영현황','Operation','',2,'Y','',0,'/operation','Y')
 ,('STD189','서비스관리','Service','',3,'N','',0,'/service','N')
