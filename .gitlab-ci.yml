@@ -426,6 +426,7 @@ harbor-push-dev:
   extends: .harbor-push-template
   rules:
     - if: '$CI_COMMIT_BRANCH == "dev"'
+      when: never  # dev 브랜치는 Harbor push 비활성화
   tags:
     - dev-runner
   dependencies:
