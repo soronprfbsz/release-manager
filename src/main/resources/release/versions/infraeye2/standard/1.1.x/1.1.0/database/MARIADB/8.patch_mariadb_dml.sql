@@ -2,6 +2,7 @@
  * 대상 설치본 버전: InfraEye-2.0.0.241127-STD.tar.gz,  infra2_img_2.0.0_250204.tar.gz
  * 주요 내용: SMS 추가에 따른 DML 작업
  * */
+USE NMS_DB;
 
 DELIMITER //
 DROP PROCEDURE IF EXISTS NMS_DB.p_patch_dml;
