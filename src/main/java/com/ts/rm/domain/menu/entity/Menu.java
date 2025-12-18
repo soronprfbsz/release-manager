@@ -30,6 +30,18 @@ public class Menu {
     @Column(name = "menu_name", nullable = false, length = 100)
     private String menuName;
 
+    @Column(name = "menu_url", length = 200)
+    private String menuUrl;
+
+    @Column(name = "description", length = 500)
+    private String description;
+
+    @Column(name = "is_description_visible", nullable = false)
+    private Boolean isDescriptionVisible;
+
+    @Column(name = "is_line_break", nullable = false)
+    private Boolean isLineBreak;
+
     @Column(name = "menu_order", nullable = false)
     private Integer menuOrder;
 

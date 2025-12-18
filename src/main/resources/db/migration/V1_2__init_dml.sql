@@ -368,34 +368,42 @@ INSERT INTO resource_file (file_type, file_category, sub_category, file_name, fi
 -- =========================================================
 
 -- 1depth 메뉴
-INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
-('version_management', '버전 관리', 1),
-('patch_management', '패치 관리', 2),
-('operation_management', '운영 관리', 3),
-('job_management', '작업 관리', 4),
-('resource_management', '리소스 관리', 5),
-('service_management', '서비스 관리', 7);
+INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
+('version_management', '버전 관리', NULL, '릴리즈 버전 관리', TRUE, FALSE, 1),
+('patch_management', '패치 관리', NULL, '패치 파일 관리', TRUE, FALSE, 2),
+('operation_management', '운영 관리', NULL, '릴리즈 매니저 운영에 필요한 데이터를 관리합니다.', TRUE, FALSE, 3),
+('development_support', '개발 지원', NULL, '인프라 서비스 및 원격 작업 등의 편의 기능을 제공합니다.', TRUE, FALSE, 4);
 
 -- 2depth 메뉴 - 버전 관리
-INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
-('version_standard', 'Standard', 1),
-('version_custom', 'Custom', 2);
+INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
+('version_standard', 'Standard', 'releases/standard', '표준 버전을 관리합니다.', FALSE, TRUE, 1),
+('version_custom', 'Custom', 'releases/custom', '커스텀 사이트 버전을 관리합니다.', FALSE, TRUE, 2);
 
 -- 2depth 메뉴 - 패치 관리
-INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
-('patch_standard', 'Standard', 1),
-('patch_custom', 'Custom', 2);
+INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
+('patch_standard', 'Standard', 'patches/standard', '표준 패치를 관리합니다.', FALSE, TRUE, 1),
+('patch_custom', 'Custom', 'patches/custom', '커스텀 사이트 패치를 관리합니다.', FALSE, TRUE, 2);
 
 -- 2depth 메뉴 - 운영 관리
-INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
-('operation_customer', '고객사', 1),
-('operation_engineer', '엔지니어', 2),
-('operation_account', '계정', 3);
+INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
+('operation_customers', '고객사', 'operations/customers', '고객사 정보를 관리합니다.', FALSE, TRUE, 1),
+('operation_engineers', '엔지니어', 'operations/engineers', '엔지니어 정보를 관리합니다.', FALSE, TRUE, 2),
+('operation_accounts', '계정', 'operations/accounts', '계정 정보를 관리합니다.', FALSE, TRUE, 3);
 
--- 2depth 메뉴 - 작업 관리
-INSERT INTO menu (menu_id, menu_name, menu_order) VALUES
-('job_mariadb', 'MariaDB', 1),
-('job_terminal', '터미널', 2);
+-- 2depth 메뉴 - 개발 지원
+INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
+('remote_jobs', '원격 작업', NULL, '원격 작업 서비스를 제공합니다.', TRUE, FALSE, 1),
+('infrastructure', '인프라', NULL, '개발 인프라 관련 정보를 관리 및 제공합니다.', TRUE, FALSE, 2);
+
+-- 3depth 메뉴 - 원격 작업
+INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
+('remote_mariadb', 'MariaDB', 'development-support/remote-jobs/mariadb', 'MariaDB 백업 및 복원 기능을 제공합니다.', TRUE, FALSE, 1),
+('remote_terminal', '터미널', 'development-support/remote-jobs/terminal', 'SSH, SFTP 기능이 있는 웹 터미널을 제공합니다.', TRUE, FALSE, 2);
+
+-- 3depth 메뉴 - 인프라
+INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
+('infrastructure_resources', '리소스', 'development-support/infrastructure/resources', '리소스 파일을 관리 및 제공합니다.', TRUE, FALSE, 1),
+('infrastructure_services', '서비스', 'development-support/infrastructure/service', '서비스 정보를 관리 및 제공합니다.', TRUE, FALSE, 2);
 
 -- =========================================================
 -- menu_hierarchy 테이블
@@ -406,9 +414,7 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('version_management', 'version_management', 0),
 ('patch_management', 'patch_management', 0),
 ('operation_management', 'operation_management', 0),
-('job_management', 'job_management', 0),
-('resource_management', 'resource_management', 0),
-('service_management', 'service_management', 0);
+('development_support', 'development_support', 0);
 
 -- 2depth 메뉴 (자기 자신)
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
@@ -416,11 +422,18 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('version_custom', 'version_custom', 0),
 ('patch_standard', 'patch_standard', 0),
 ('patch_custom', 'patch_custom', 0),
-('operation_customer', 'operation_customer', 0),
-('operation_engineer', 'operation_engineer', 0),
-('operation_account', 'operation_account', 0),
-('job_mariadb', 'job_mariadb', 0),
-('job_terminal', 'job_terminal', 0);
+('operation_customers', 'operation_customers', 0),
+('operation_engineers', 'operation_engineers', 0),
+('operation_accounts', 'operation_accounts', 0),
+('remote_jobs', 'remote_jobs', 0),
+('infrastructure', 'infrastructure', 0);
+
+-- 3depth 메뉴 (자기 자신)
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('remote_mariadb', 'remote_mariadb', 0),
+('remote_terminal', 'remote_terminal', 0),
+('infrastructure_resources', 'infrastructure_resources', 0),
+('infrastructure_services', 'infrastructure_services', 0);
 
 -- 부모-자식 관계 (depth=1) - 버전 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
@@ -434,14 +447,34 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 
 -- 부모-자식 관계 (depth=1) - 운영 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('operation_management', 'operation_customer', 1),
-('operation_management', 'operation_engineer', 1),
-('operation_management', 'operation_account', 1);
+('operation_management', 'operation_customers', 1),
+('operation_management', 'operation_engineers', 1),
+('operation_management', 'operation_accounts', 1);
 
--- 부모-자식 관계 (depth=1) - 작업 관리
+-- 부모-자식 관계 (depth=1) - 개발 지원
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('job_management', 'job_mariadb', 1),
-('job_management', 'job_terminal', 1);
+('development_support', 'remote_jobs', 1),
+('development_support', 'infrastructure', 1);
+
+-- 부모-자식 관계 (depth=1) - 원격 작업
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('remote_jobs', 'remote_mariadb', 1),
+('remote_jobs', 'remote_terminal', 1);
+
+-- 부모-자식 관계 (depth=1) - 인프라
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('infrastructure', 'infrastructure_resources', 1),
+('infrastructure', 'infrastructure_services', 1);
+
+-- 조상-손자 관계 (depth=2) - 개발 지원 > 원격 작업 > MariaDB/터미널
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('development_support', 'remote_mariadb', 2),
+('development_support', 'remote_terminal', 2);
+
+-- 조상-손자 관계 (depth=2) - 개발 지원 > 인프라 > 리소스/서비스
+INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
+('development_support', 'infrastructure_resources', 2),
+('development_support', 'infrastructure_services', 2);
 
 -- =========================================================
 -- menu_role 테이블
@@ -453,9 +486,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('version_management', 'ADMIN'),
 ('patch_management', 'ADMIN'),
 ('operation_management', 'ADMIN'),
-('job_management', 'ADMIN'),
-('resource_management', 'ADMIN'),
-('service_management', 'ADMIN'),
+('development_support', 'ADMIN'),
 -- 2depth - 버전 관리
 ('version_standard', 'ADMIN'),
 ('version_custom', 'ADMIN'),
@@ -463,12 +494,18 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('patch_standard', 'ADMIN'),
 ('patch_custom', 'ADMIN'),
 -- 2depth - 운영 관리
-('operation_customer', 'ADMIN'),
-('operation_engineer', 'ADMIN'),
-('operation_account', 'ADMIN'),
--- 2depth - 작업 관리
-('job_mariadb', 'ADMIN'),
-('job_terminal', 'ADMIN');
+('operation_customers', 'ADMIN'),
+('operation_engineers', 'ADMIN'),
+('operation_accounts', 'ADMIN'),
+-- 2depth - 개발 지원
+('remote_jobs', 'ADMIN'),
+('infrastructure', 'ADMIN'),
+-- 3depth - 원격 작업
+('remote_mariadb', 'ADMIN'),
+('remote_terminal', 'ADMIN'),
+-- 3depth - 인프라
+('infrastructure_resources', 'ADMIN'),
+('infrastructure_services', 'ADMIN');
 
 -- USER: 계정 메뉴 제외
 INSERT INTO menu_role (menu_id, role) VALUES
@@ -476,9 +513,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('version_management', 'USER'),
 ('patch_management', 'USER'),
 ('operation_management', 'USER'),
-('job_management', 'USER'),
-('resource_management', 'USER'),
-('service_management', 'USER'),
+('development_support', 'USER'),
 -- 2depth - 버전 관리
 ('version_standard', 'USER'),
 ('version_custom', 'USER'),
@@ -486,29 +521,39 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('patch_standard', 'USER'),
 ('patch_custom', 'USER'),
 -- 2depth - 운영 관리 (계정 제외)
-('operation_customer', 'USER'),
-('operation_engineer', 'USER'),
--- 2depth - 작업 관리
-('job_mariadb', 'USER'),
-('job_terminal', 'USER');
+('operation_customers', 'USER'),
+('operation_engineers', 'USER'),
+-- 2depth - 개발 지원
+('remote_jobs', 'USER'),
+('infrastructure', 'USER'),
+-- 3depth - 원격 작업
+('remote_mariadb', 'USER'),
+('remote_terminal', 'USER'),
+-- 3depth - 인프라
+('infrastructure_resources', 'USER'),
+('infrastructure_services', 'USER');
 
 -- GUEST: 운영 관리 전체 제외
 INSERT INTO menu_role (menu_id, role) VALUES
 -- 1depth (운영 관리 제외)
 ('version_management', 'GUEST'),
 ('patch_management', 'GUEST'),
-('job_management', 'GUEST'),
-('resource_management', 'GUEST'),
-('service_management', 'GUEST'),
+('development_support', 'GUEST'),
 -- 2depth - 버전 관리
 ('version_standard', 'GUEST'),
 ('version_custom', 'GUEST'),
 -- 2depth - 패치 관리
 ('patch_standard', 'GUEST'),
 ('patch_custom', 'GUEST'),
--- 2depth - 작업 관리
-('job_mariadb', 'GUEST'),
-('job_terminal', 'GUEST');
+-- 2depth - 개발 지원
+('remote_jobs', 'GUEST'),
+('infrastructure', 'GUEST'),
+-- 3depth - 원격 작업
+('remote_mariadb', 'GUEST'),
+('remote_terminal', 'GUEST'),
+-- 3depth - 인프라
+('infrastructure_resources', 'GUEST'),
+('infrastructure_services', 'GUEST');
 
 -- =========================================================
 -- service 테이블

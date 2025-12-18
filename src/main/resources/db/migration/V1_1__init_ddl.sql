@@ -306,6 +306,10 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
 CREATE TABLE menu (
     menu_id VARCHAR(50) PRIMARY KEY COMMENT '메뉴 ID',
     menu_name VARCHAR(100) NOT NULL COMMENT '메뉴명',
+    menu_url VARCHAR(200) COMMENT '메뉴 URL',
+    description VARCHAR(500) COMMENT '메뉴 설명',
+    is_description_visible BOOLEAN DEFAULT TRUE COMMENT '설명 표시 여부',
+    is_line_break BOOLEAN DEFAULT FALSE COMMENT '줄바꿈 여부 (가로 배치 시 강제 줄바꿈)',
     menu_order INT NOT NULL COMMENT '메뉴 순서',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='메뉴';
