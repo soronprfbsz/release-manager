@@ -57,7 +57,14 @@ public class MenuService {
 
         // 하위 메뉴가 없으면 leaf 노드
         if (childMenus.isEmpty()) {
-            return MenuResponse.of(menu.getMenuId(), menu.getMenuName());
+            return MenuResponse.of(
+                    menu.getMenuId(),
+                    menu.getMenuName(),
+                    menu.getMenuUrl(),
+                    menu.getDescription(),
+                    menu.getIsDescriptionVisible(),
+                    menu.getIsLineBreak()
+            );
         }
 
         // 하위 메뉴가 있으면 재귀적으로 구조 생성
@@ -67,6 +74,14 @@ public class MenuService {
             children.add(childResponse);
         }
 
-        return MenuResponse.of(menu.getMenuId(), menu.getMenuName(), children);
+        return MenuResponse.of(
+                menu.getMenuId(),
+                menu.getMenuName(),
+                menu.getMenuUrl(),
+                menu.getDescription(),
+                menu.getIsDescriptionVisible(),
+                menu.getIsLineBreak(),
+                children
+        );
     }
 }
