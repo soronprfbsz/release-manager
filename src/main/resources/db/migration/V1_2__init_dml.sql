@@ -331,7 +331,7 @@ INSERT INTO release_file (release_version_id,file_type,file_category,sub_categor
 (2,'SQL','DATABASE','MARIADB','5.patch_mariadb_이벤트코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/5.patch_mariadb_이벤트코드.sql','/database/MARIADB/5.patch_mariadb_이벤트코드.sql',39258,'33abaa8ff3dae4c66ecf7294642c25be',5,'이벤트 코드 추가'),
 (2,'SQL','DATABASE','MARIADB','6.patch_mariadb_성능지표.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/6.patch_mariadb_성능지표.sql','/database/MARIADB/6.patch_mariadb_성능지표.sql',118114,'c156eeda96e93f807c3cbde00f7f50e7',6,'성능지표 추가'),
 (2,'SQL','DATABASE','MARIADB','7.patch_mariadb_procedure.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/7.patch_mariadb_procedure.sql','/database/MARIADB/7.patch_mariadb_procedure.sql',22151,'5412bf8d51b126bb082daf41a3455efa',7,'Procedure 변경'),
-(2,'SQL','DATABASE','MARIADB','8.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/8.patch_mariadb_dml.sql','/database/MARIADB/8.patch_mariadb_dml.sql',42378,'71ccc215453aae79e46d4bbed0516f34',8,'DML 변경'),
+(2,'SQL','DATABASE','MARIADB','8.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/8.patch_mariadb_dml.sql','/database/MARIADB/8.patch_mariadb_dml.sql',42391,'bf24e1e0944bdd014d653a273aebfba0',8,'DML 변경'),
 (2,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',20304,'b28a28e34a7cf12fcf562494009c3c94',1,'CrateDB DDL 변경');
 
 -- =========================================================

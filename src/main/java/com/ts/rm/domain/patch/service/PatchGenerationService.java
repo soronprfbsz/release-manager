@@ -166,8 +166,8 @@ public class PatchGenerationService {
             copySqlFiles(betweenVersions, outputPath);
 
             // 7. 패치 스크립트 생성
-            String engineerName = engineer != null ? engineer.getEngineerName() : null;
-            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, engineerName);
+            String engineerEmail = engineer != null ? engineer.getEngineerEmail() : null;
+            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, engineerEmail);
 
             // 8. README 생성
             generateReadme(fromVersion, toVersion, betweenVersions, outputPath);
