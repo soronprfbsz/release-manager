@@ -168,4 +168,30 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    /**
+     * 릴리즈 버전 승인
+     *
+     * @param id            버전 ID
+     * @param authorization JWT 토큰 (Bearer {token})
+     * @return 승인된 버전 상세 정보
+     */
+    @Override
+    @org.springframework.web.bind.annotation.PatchMapping("/versions/{id}/approve")
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.DetailResponse>> approveVersion(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authorization) {
+
+        log.info("릴리즈 버전 승인 요청 - ID: {}", id);
+
+        // JWT 토큰에서 이메일 추출
+        String token = extractToken(authorization);
+        String approvedBy = jwtTokenProvider.getEmail(token);
+
+        log.info("승인자: {}", approvedBy);
+
+        ReleaseVersionDto.DetailResponse response = releaseVersionService.approveReleaseVersion(id, approvedBy);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }

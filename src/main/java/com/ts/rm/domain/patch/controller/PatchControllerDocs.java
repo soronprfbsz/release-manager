@@ -226,7 +226,7 @@ public interface PatchControllerDocs {
     ApiResponse<PatchDto.FileContentResponse> getFileContent(
             @PathVariable Long id,
 
-            @Parameter(description = "파일 상대 경로", example = "mariadb/source_files/1.1.1/1.patch_mariadb_ddl.sql", required = true)
+            @Parameter(description = "파일 상대 경로", example = "mariadb/source_files/1.1.0/1.patch_mariadb_ddl.sql", required = true)
             @RequestParam String path
     );
 

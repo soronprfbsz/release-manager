@@ -355,6 +355,28 @@ public interface ReleaseVersionControllerDocs {
             @PathVariable Long id
     );
 
+    @Operation(
+            summary = "릴리즈 버전 승인",
+            description = "릴리즈 버전을 승인합니다.\n\n"
+                    + "**권한**: ADMIN, USER\n\n"
+                    + "**처리 내용**:\n"
+                    + "- is_approved 필드를 true로 변경",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = DetailApiResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<ReleaseVersionDto.DetailResponse>> approveVersion(
+            @Parameter(description = "버전 ID", required = true)
+            @PathVariable Long id,
+            @Parameter(description = "JWT 인증 토큰", required = true, example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+            @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization
+    );
+
     /**
      * Swagger 스키마용 wrapper 클래스 - 버전 생성 응답
      */

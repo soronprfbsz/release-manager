@@ -44,6 +44,9 @@ public final class ReleaseVersionDto {
             @Schema(description = "버전 코멘트", example = "새로운 기능 추가")
             String comment,
 
+            @Schema(description = "승인 여부", example = "false", defaultValue = "false")
+            Boolean isApproved,
+
             @Schema(description = "고객사 ID (커스텀 릴리즈인 경우)", example = "1")
             Long customerId,
 
@@ -113,6 +116,15 @@ public final class ReleaseVersionDto {
             @Schema(description = "코멘트", example = "새로운 기능 추가")
             String comment,
 
+            @Schema(description = "승인 여부", example = "false")
+            Boolean isApproved,
+
+            @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
+            String approvedBy,
+
+            @Schema(description = "승인일시")
+            LocalDateTime approvedAt,
+
             @Schema(description = "커스텀 버전", example = "1.0.0-custom")
             String customVersion,
 
@@ -153,6 +165,15 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "코멘트", example = "새로운 기능 추가")
             String comment,
+
+            @Schema(description = "승인 여부", example = "false")
+            Boolean isApproved,
+
+            @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
+            String approvedBy,
+
+            @Schema(description = "승인일시")
+            LocalDateTime approvedAt,
 
             @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\", \"ENGINE\", \"ETC\"]")
             List<String> fileCategories,
@@ -216,6 +237,15 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "코멘트", example = "새로운 기능 추가")
             String comment,
+
+            @Schema(description = "승인 여부", example = "false")
+            Boolean isApproved,
+
+            @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
+            String approvedBy,
+
+            @Schema(description = "승인일시")
+            String approvedAt,
 
             @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\", \"ENGINE\", \"ETC\"]")
             List<String> fileCategories
