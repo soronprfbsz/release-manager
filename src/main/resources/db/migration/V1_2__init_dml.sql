@@ -315,8 +315,8 @@ WHERE customer_code IN (
 -- =========================================================
 
 INSERT INTO release_version (project_id, release_type, release_category, customer_id, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_at, created_by, comment, created_at) VALUES
-('infraeye2', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, TRUE, 'TS', '2025-01-01 00:00:00', 'TS', '최초 설치본', '2025-01-01 00:00:00'),
-('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, TRUE, 'jhlee@tscientific', '2025-12-18 00:00:00', 'jhlee@tscientific', 'SMS 추가 및 그에 따른 기존 DB 변경', '2025-12-18 00:00:00');
+('infraeye2', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, TRUE, 'jhlee@tscientific.co.kr', '2025-01-01 00:00:00', 'jhlee@tscientific.co.kr', '최초 설치본', '2025-01-01 00:00:00'),
+('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, TRUE, 'jhlee@tscientific.co.kr', '2025-12-18 00:00:00', 'jhlee@tscientific.co.kr', 'SMS 추가 및 그에 따른 기존 DB 변경', '2025-12-18 00:00:00');
 
 -- =========================================================
 -- release_file 테이블
