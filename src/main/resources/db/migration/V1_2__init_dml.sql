@@ -392,8 +392,8 @@ INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visi
 
 -- 2depth 메뉴 - 개발 지원
 INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('remote_jobs', '원격 작업', NULL, '원격 작업 서비스를 제공합니다.', TRUE, FALSE, 1),
-('infrastructure', '인프라', NULL, '개발 인프라 관련 정보를 관리 및 제공합니다.', TRUE, FALSE, 2);
+('remote_jobs', '원격 작업', NULL, '원격 작업 서비스를 제공합니다.', FALSE, FALSE, 1),
+('infrastructure', '인프라', NULL, '개발 인프라 관련 정보를 관리 및 제공합니다.', FALSE, FALSE, 2);
 
 -- 3depth 메뉴 - 원격 작업
 INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
