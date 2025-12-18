@@ -82,6 +82,16 @@ public class ReleaseVersion {
     @Column(columnDefinition = "TEXT")
     private String comment;
 
+    @Column(name = "is_approved", nullable = false)
+    @Builder.Default
+    private Boolean isApproved = false;
+
+    @Column(name = "approved_by", length = 100)
+    private String approvedBy;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
     @Column(name = "custom_version", length = 50)
     private String customVersion;
 

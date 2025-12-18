@@ -154,12 +154,20 @@ public class ReleaseVersionTreeService {
                 .map(FileCategory::getCode)
                 .toList();
 
+        // approvedAt 포매팅
+        String approvedAt = version.getApprovedAt() != null
+                ? version.getApprovedAt().toLocalDate().toString()
+                : null;
+
         return new ReleaseVersionDto.VersionNode(
                 version.getReleaseVersionId(),
                 version.getVersion(),
                 createdAt,
                 version.getCreatedBy(),
                 version.getComment(),
+                version.getIsApproved(),
+                version.getApprovedBy(),
+                approvedAt,
                 fileCategories
         );
     }

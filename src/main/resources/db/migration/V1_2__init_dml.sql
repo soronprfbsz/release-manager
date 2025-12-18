@@ -314,12 +314,9 @@ WHERE customer_code IN (
 -- release_version 테이블
 -- =========================================================
 
-INSERT INTO release_version (project_id, release_type, release_category, customer_id, version, major_version, minor_version, patch_version, created_by, comment, created_at) VALUES
-('infraeye2', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, 'TS', '최초 설치본', '2025-01-01 00:00:00'),
-('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, 'jhlee@tscientific', '데이터코드, 이벤트코드, 메뉴코드 추가 / SMS 기능 추가 / VERSION_HISTORY 테이블 추가 / V_INFO_MCH 관련 뷰 변경', '2025-10-31 00:00:00'),
-('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.1', 1, 1, 1, 'jhlee@tscientific', 'SMS - 운영관리 - 파일 기능 관련 테이블 추가', '2025-11-05 00:00:00'),
-('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.2', 1, 1, 2, 'jhlee@tscientific', 'SMS - 로그관리 - 로그 모니터 정책 상세 테이블 추가', '2025-11-25 00:00:00'),
-('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.3', 1, 1, 3, 'jhlee@tscientific' ,'SMS 파일, 로그, 서비스 개발 기능 추가에 따른 패치본', '2025-12-16 12:16:49');
+INSERT INTO release_version (project_id, release_type, release_category, customer_id, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_at, created_by, comment, created_at) VALUES
+('infraeye2', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, TRUE, 'TS', '2025-01-01 00:00:00', 'TS', '최초 설치본', '2025-01-01 00:00:00'),
+('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, TRUE, 'jhlee@tscientific', '2025-12-18 00:00:00', 'jhlee@tscientific', 'SMS 추가 및 그에 따른 기존 DB 변경', '2025-12-18 00:00:00');
 
 -- =========================================================
 -- release_file 테이블
@@ -327,24 +324,15 @@ INSERT INTO release_version (project_id, release_type, release_category, custome
 INSERT INTO release_file (release_version_id,file_type,file_category,sub_category,file_name,file_path,relative_path,file_size,checksum,execution_order,description) VALUES
 (1,'PDF','ETC',NULL,'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','versions/infraeye2/standard/1.0.x/1.0.0/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',2727778,'4e641f7d25bbaa0061f553b92ef3d9e9',1,'설치 가이드 문서'),
 (1,'MD','ETC',NULL,'설치본정보.md','versions/infraeye2/standard/1.0.x/1.0.0/install/설치본정보.md','/install/설치본정보.md',778,'8e5adf2b877090de4f3ec5739f71216c',2,'설치본 정보'),
-(2,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',34879,'f8b9f64345555c9a4a9c9101aaa8b701',1,'DDL 변경'),
+(2,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',39719,'59bddf3da2e7776921dbf867ab172683',1,'DDL 변경'),
 (2,'SQL','DATABASE','MARIADB','2.patch_mariadb_view.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/2.patch_mariadb_view.sql','/database/MARIADB/2.patch_mariadb_view.sql',10742,'6735c7267bedc684f155ce05eaa5b7df',2,'View 변경'),
-(2,'SQL','DATABASE','MARIADB','3.patch_mariadb_데이터코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/3.patch_mariadb_데이터코드.sql','/database/MARIADB/3.patch_mariadb_데이터코드.sql',134540,'faec479bf1582dfb20199fdd468676f7',3,'데이터 코드 추가'),
-(2,'SQL','DATABASE','MARIADB','4.patch_mariadb_이벤트코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/4.patch_mariadb_이벤트코드.sql','/database/MARIADB/4.patch_mariadb_이벤트코드.sql',36847,'e2e818dfa626c93894b5774badee0219',4,'이벤트 코드 추가'),
-(2,'SQL','DATABASE','MARIADB','5.patch_mariadb_메뉴코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/5.patch_mariadb_메뉴코드.sql','/database/MARIADB/5.patch_mariadb_메뉴코드.sql',25144,'3eb290c91cf66dacbc02a746bec2bef0',5,'메뉴 코드 추가'),
-(2,'SQL','DATABASE','MARIADB','6.patch_mariadb_procedure.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/6.patch_mariadb_procedure.sql','/database/MARIADB/6.patch_mariadb_procedure.sql',22183,'25942f2c2201629efcc333278f8eac38',6,'Procedure 변경'),
-(2,'SQL','DATABASE','MARIADB','7.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/7.patch_mariadb_dml.sql','/database/MARIADB/7.patch_mariadb_dml.sql',37330,'3fa1ec88b5a638fb6d67a41119d61854',7,'DML 변경'),
-(2,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',19363,'1b68614d70c52cade269e5accca724d5',1,'CrateDB DDL 변경'),
-(3,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.1/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',4867,'848ecec66ce257e0fcec4088294c816d',1,'파일 기능 관련 DDL 추가'),
-(3,'SQL','DATABASE','MARIADB','2.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.1/database/MARIADB/2.patch_mariadb_dml.sql','/database/MARIADB/2.patch_mariadb_dml.sql',660,'63fe833edd62599db2ce8c758eae0240',2,'파일 기능 관련 DML 추가'),
-(4,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.2/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',1765,'48bb04f6b3f2f4560ab42c0c37fcacbc',1,'SMS 로그 모니터링 정책 상세 테이블 추가'),
-(5,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',784,'84b4866515120b4516284d028443ee8b',1,'ZIP 파일 업로드로 생성된 데이터베이스 파일'),
-(5,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',172,'cedcae240caa7d88d54cd409be8f7287',1,'ZIP 파일 업로드로 생성된 데이터베이스 파일'),
-(5,'SQL','DATABASE','MARIADB','2.patch_mariadb_데이터코드.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/2.patch_mariadb_데이터코드.sql','/database/MARIADB/2.patch_mariadb_데이터코드.sql',137161,'56e4688326cf1ad0b67647521d259b8e',2,'데이터 코드 추가'),
-(5,'SQL','DATABASE','MARIADB','3.patch_mariadb_이벤트코드.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/3.patch_mariadb_이벤트코드.sql','/database/MARIADB/3.patch_mariadb_이벤트코드.sql',38804,'6d06d29b77f127e616a3a743f9d6c59c',3,'이벤트 코드 추가'),
-(5,'SQL','DATABASE','MARIADB','4.patch_mariadb_메뉴코드.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/4.patch_mariadb_메뉴코드.sql','/database/MARIADB/4.patch_mariadb_메뉴코드.sql',25146,'f5214766ea4845f9c37b67e332766394',4,'메뉴 코드 추가'),
-(5,'SQL','DATABASE','MARIADB','5.patch_mariadb_성능지표.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/5.patch_mariadb_성능지표.sql','/database/MARIADB/5.patch_mariadb_성능지표.sql',118114,'c156eeda96e93f807c3cbde00f7f50e7',5,'성능지표 추가'),
-(5,'SQL','DATABASE','MARIADB','6.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.3/database/MARIADB/6.patch_mariadb_dml.sql','/database/MARIADB/6.patch_mariadb_dml.sql',1557,'113afe7849b95588774ebfd04acb2d43',6,'SMS 엔진 기본값 및 스케줄 추가');
+(2,'SQL','DATABASE','MARIADB','3.patch_mariadb_데이터코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/3.patch_mariadb_데이터코드.sql','/database/MARIADB/3.patch_mariadb_데이터코드.sql',137161,'56e4688326cf1ad0b67647521d259b8e',3,'데이터 코드 추가'),
+(2,'SQL','DATABASE','MARIADB','4.patch_mariadb_메뉴코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/4.patch_mariadb_메뉴코드.sql','/database/MARIADB/4.patch_mariadb_메뉴코드.sql',25146,'f5214766ea4845f9c37b67e332766394',4,'메뉴 코드 추가'),
+(2,'SQL','DATABASE','MARIADB','5.patch_mariadb_이벤트코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/5.patch_mariadb_이벤트코드.sql','/database/MARIADB/5.patch_mariadb_이벤트코드.sql',39258,'33abaa8ff3dae4c66ecf7294642c25be',5,'이벤트 코드 추가'),
+(2,'SQL','DATABASE','MARIADB','6.patch_mariadb_성능지표.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/6.patch_mariadb_성능지표.sql','/database/MARIADB/6.patch_mariadb_성능지표.sql',118114,'c156eeda96e93f807c3cbde00f7f50e7',6,'성능지표 추가'),
+(2,'SQL','DATABASE','MARIADB','7.patch_mariadb_procedure.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/7.patch_mariadb_procedure.sql','/database/MARIADB/7.patch_mariadb_procedure.sql',22151,'5412bf8d51b126bb082daf41a3455efa',7,'Procedure 변경'),
+(2,'SQL','DATABASE','MARIADB','8.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/8.patch_mariadb_dml.sql','/database/MARIADB/8.patch_mariadb_dml.sql',42378,'71ccc215453aae79e46d4bbed0516f34',8,'DML 변경'),
+(2,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',20304,'b28a28e34a7cf12fcf562494009c3c94',1,'CrateDB DDL 변경');
 
 -- =========================================================
 -- release_version_hierarchy 테이블
@@ -358,27 +346,6 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 (2, 2, 0),
 (1, 2, 1);
-
--- 1.1.1 (release_version_id = 3)
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
-(3, 3, 0),
-(2, 3, 1),
-(1, 3, 2);
-
--- 1.1.2 (release_version_id = 4)
-INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
-(4, 4, 0),
-(3, 4, 1),
-(2, 4, 2),
-(1, 4, 3);
-
--- 1.1.3 (release_version_id = 5)
-INSERT INTO release_version_hierarchy (ancestor_id,descendant_id,`depth`) VALUES
-(1, 5, 4),
-(2, 5, 3),
-(3, 5, 2),
-(4, 5, 1),
-(5, 5, 0);
 
 -- =========================================================
 -- resource_file 테이블 (sort_order 추가)

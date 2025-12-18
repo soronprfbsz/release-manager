@@ -17,6 +17,7 @@ import com.ts.rm.domain.releaseversion.util.VersionParser;
 import com.ts.rm.domain.releaseversion.util.VersionParser.VersionInfo;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -237,6 +238,7 @@ public class ReleaseVersionService {
                 .patchVersion(versionInfo.getPatchVersion())
                 .createdBy(request.createdBy())
                 .comment(request.comment())
+                .isApproved(request.isApproved() != null ? request.isApproved() : false)
                 .customVersion(request.customVersion())
                 .build();
 
@@ -295,9 +297,37 @@ public class ReleaseVersionService {
                 response.majorMinor(),
                 response.createdBy(),
                 response.comment(),
+                response.isApproved(),  // isApproved
+                response.approvedBy(),  // approvedBy
+                response.approvedAt(),  // approvedAt
                 fileCategories,  // fileCategories
                 response.createdAt(),
                 response.patchFileCount()
         );
+    }
+
+    /**
+     * 릴리즈 버전 승인
+     *
+     * @param versionId  버전 ID
+     * @param approvedBy 승인자 이메일
+     * @return 승인된 버전 상세 정보
+     */
+    @Transactional
+    public ReleaseVersionDto.DetailResponse approveReleaseVersion(Long versionId, String approvedBy) {
+        log.info("릴리즈 버전 승인 요청 - versionId: {}, approvedBy: {}", versionId, approvedBy);
+
+        // 엔티티 조회
+        ReleaseVersion releaseVersion = findVersionById(versionId);
+
+        // 승인 처리
+        releaseVersion.setIsApproved(true);
+        releaseVersion.setApprovedBy(approvedBy);
+        releaseVersion.setApprovedAt(LocalDateTime.now());
+
+        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
+        log.info("릴리즈 버전 승인 완료 - versionId: {}, approvedBy: {}, approvedAt: {}",
+                versionId, approvedBy, releaseVersion.getApprovedAt());
+        return mapper.toDetailResponse(releaseVersion);
     }
 }

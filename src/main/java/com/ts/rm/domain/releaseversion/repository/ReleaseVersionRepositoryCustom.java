@@ -62,4 +62,14 @@ public interface ReleaseVersionRepositoryCustom {
      * @return 최근 버전 목록
      */
     List<ReleaseVersion> findRecentByProjectIdAndReleaseTypeAndCategory(String projectId, String releaseType, ReleaseCategory releaseCategory, int limit);
+
+    /**
+     * 버전 범위 내 미승인 버전 조회 (from ~ to)
+     *
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @param fromVersion 시작 버전
+     * @param toVersion   종료 버전
+     * @return 미승인 버전 목록 (isApproved = false)
+     */
+    List<ReleaseVersion> findUnapprovedVersionsBetween(String releaseType, String fromVersion, String toVersion);
 }

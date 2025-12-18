@@ -1,14 +1,10 @@
 /*
- * 
- * 대상 설치본 버전: InfraEye-2.0.0.241127-STD.tar.gz,  infra2_img_2.0.0_250204.tar.gz
- * 패치본 생성일: 2025-10-27
  * 주요 내용: SMS 관련 데이터코드 추가
- * 
- * */ 
+ * */
 
 USE CM_DB;
 
--- 저장용 임시 테이블 생성 
+-- 저장용 임시 테이블 생성
 CREATE TEMPORARY TABLE IF NOT EXISTS TMP_CD_GROUP_INFO
 SELECT *
 FROM CD_GROUP_INFO;
@@ -20,7 +16,7 @@ FROM CD_INFO;
 TRUNCATE TABLE TMP_CD_GROUP_INFO;
 TRUNCATE TABLE TMP_CD_INFO;
 
--- 코드 그룹 정보 
+-- 코드 그룹 정보
 INSERT INTO TMP_CD_GROUP_INFO (CD_GROUP_ID, CD_GROUP_NM, CD_GROUP_DESC,CD_GROUP_NM_EN, CD_GROUP_DESC_EN) VALUES('1001','로그인구분','로그인/로그아웃','Login classification','Login / Logout')
 ,('1002','게시판분류','게시판분류','Bulletin Board Classification','Bulletin Board Classification')
 ,('1003','요일명','요일 분류','Day name','Day Classification')
@@ -227,7 +223,7 @@ INSERT INTO TMP_CD_GROUP_INFO (CD_GROUP_ID, CD_GROUP_NM, CD_GROUP_DESC,CD_GROUP_
 ,('2215','SMS 에이전트 JOB 수행 결과 상태','SMS 에이전트 JOB 수행 결과 상태','SMS Agent Job Execution Response Type','SMS Agent Job Execution History Type');
 
 
--- 코드 정보 
+-- 코드 정보
 INSERT INTO TMP_CD_INFO (CD_GROUP_ID, CD_ID, CD_NM, CD_NM_EN, CD_DESC, CD_DESC_EN, CD_ORDER, USE_YN) VALUES('1001','1','로그인','Login','','',1,'Y')
 ,('1001','2','로그아웃','Logout','','',2,'Y')
 ,('1001','4','로그인실패','Login fail','','',4,'Y')
@@ -392,6 +388,7 @@ INSERT INTO TMP_CD_INFO (CD_GROUP_ID, CD_ID, CD_NM, CD_NM_EN, CD_DESC, CD_DESC_E
 ,('2017','A','TraceRT','TraceRT','TraceRoute(cli로 수집)','TraceRoute(collect for cli)',17,'Y')
 ,('2017','M','L7','L7','','',18,'N')
 ,('2017','N','L4LB','L4LB','','',19,'N')
+,('2017','B','Innotube 게이트웨이','Innotube Gate','Innotube 게이트웨이','Innotube Gate',20,'Y')
 ,('2018','U','사용자 정의(장비)','Custom (Device)','사용자 정의(장비) 템플릿','Custom (device) template',0,'Y')
 ,('2018','O','사용자 정의(인터페이스)','Custom (Interface)','사용자 정의(인터페이스) 템플릿','Custom (interface) template',1,'Y')
 ,('2018','M','장비','Device','장비 템플릿','Device template',2,'Y')
@@ -1515,11 +1512,24 @@ INSERT INTO TMP_CD_INFO (CD_GROUP_ID, CD_ID, CD_NM, CD_NM_EN, CD_DESC, CD_DESC_E
 ,('2214','agent_terminal_start','터미널 시작','agent_terminal_start','SMS 에이전트 JOB 수행 이력 타입 - 터미널 시작','SMS Agent Job Execution History Type - Terminal Start',5,'Y')
 ,('2214','agent_terminal_command','터미널 명령어 실행','agent_terminal_command','SMS 에이전트 JOB 수행 이력 타입 - 터미널 명령어 실행','SMS Agent Job Execution History Type - Terminal Command',6,'Y')
 ,('2214','agent_terminal_exit','터미널 종료','agent_terminal_exit','SMS 에이전트 JOB 수행 이력 타입 - 터미널 종료','SMS Agent Job Execution History Type - Terminal Exit',7,'Y')
+,('2214','agent_file_monitoring_start','파일 모니터링 시작','agent_file_monitoring_start','SMS 파일 JOB 수행 이력 타입 - 파일 모니터링 시작','SMS File Job Execution History Type - File Monitoring Start',8,'Y')
+,('2214','agent_file_monitoring_stop','파일 모니터링 정지','agent_file_monitoring_stop','SMS 파일 JOB 수행 이력 타입 - 파일 모니터링 정지','SMS File Job Execution History Type - File Monitoring Stop',9,'Y')
+,('2214','agent_file_event_start','파일 변경 이벤트 감시 시작','agent_file_event_start','SMS 파일 JOB 수행 이력 타입 - 파일 변경 이벤트 감시 시작','SMS File Job Execution History Type - File Event Start',10,'Y')
+,('2214','agent_file_event_stop','파일 변경 이벤트 감시 정지','agent_file_event_stop','SMS 파일  JOB 수행 이력 타입 - 파일 변경 이벤트 감시 정지','SMS File Job Execution History Type - File Event Stop',11,'Y')
 ,('2215','success','성공','success','SMS 에이전트 JOB 수행 결과 상태 - 성공','SMS Agent Job Execution Response Status - Success',1,'Y')
 ,('2215','partial','일부 성공','partial','SMS 에이전트 JOB 수행 결과 상태 - 일부 성공','SMS Agent Job Execution Response Status - Partial Success',2,'Y')
 ,('2215','fail','실패','fail','SMS 에이전트 JOB 수행 결과 상태 - 실패','SMS Agent Job Execution Response Status - Fail',3,'Y')
-,('2215','unspecified','알수없음','unspecified','SMS 에이전트 JOB 수행 결과 상태 - 알수 없음','SMS Agent Job Execution Response Status - Unspecified',4,'Y');
-
+,('2215','unspecified','알수없음','unspecified','SMS 에이전트 JOB 수행 결과 상태 - 알수 없음','SMS Agent Job Execution Response Status - Unspecified',4,'Y')
+,('2216','VT100','VT100','VT100','CONFIBACK 터미널 유형 - vt100','CONFIBACK Terminal Term - vt100',1,'Y')
+,('2216','XTERM','XTERM','XTERM','CONFIBACK 터미널 유형 - xterm','CONFIBACK Terminal Term - xterm',2,'Y')
+,('2217','agent_directory_monitoring_start','디렉토리 모니터링 시작','Start Directory Monitoring','SMS 디렉토리 모니터링 - 시작','SMS Directory Monitoring – Start',1,'Y')
+,('2217','agent_directory_monitoring_stop','디렉토리 모니터링 중지','Stop Directory Monitoring','SMS 디렉토리 모니터링 - 중지','SMS Directory Monitoring – Stop',2,'Y')
+,('2217','agent_directory_event_start','디렉토리 이벤트 감지 시작','Start Directory Event Detection','SMS 디렉토리 이벤트 감지 - 시작','SMS Directory Event Detection – Start',3,'Y')
+,('2217','agent_directory_event_stop','디렉토리 이벤트 감지 중지','Stop Directory Event Detection','SMS 디렉토리 이벤트 감지 - 중지','SMS Directory Event Detection – Stop',4,'Y')
+,('2217','agent_file_monitoring_start','파일 모니터링 시작','Start File Monitoring','SMS 파일 모니터링 - 시작','SMS File Monitoring – Start',5,'Y')
+,('2217','agent_file_monitoring_stop','파일 모니터링 중지','Stop File Monitoring','SMS 파일 모니터링 - 중지','SMS File Monitoring – Stop',6,'Y')
+,('2217','agent_file_event_start','파일 이벤트 감지 시작','Start File Event Detection','SMS 파일 이벤트 감지 - 시작','SMS File Event Detection – Start',7,'Y')
+,('2217','agent_file_event_stop','파일 이벤트 감지 중지','Stop File Event Detection','SMS 파일 이벤트 감지 - 중지','SMS File Event Detection – Stop',8,'Y');
 
 
 -- 없는 데이터만 추가.
@@ -1538,7 +1548,7 @@ WHERE B.CD_ID IS NULL;
 
 -- 모델 제조사 코드 순서 재배열(제조사 코드 기준으로 다시 순서를 부여한다.)
 SET @ROW_NUM = 0;
-UPDATE CD_INFO A JOIN 
+UPDATE CD_INFO A JOIN
 (SELECT @ROW_NUM:=@ROW_NUM+1 AS CD_NUM,CD_ID FROM CD_INFO WHERE CD_GROUP_ID = '2031' AND CD_ORDER > 0 ORDER BY CD_ID ASC) B ON A.CD_ID = B.CD_ID
 SET A.CD_ORDER = B.CD_NUM
 WHERE A.CD_GROUP_ID = '2031' AND A.CD_ORDER > 0;

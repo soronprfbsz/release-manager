@@ -1,9 +1,8 @@
 /*
- * 
+ *
  * 대상 설치본 버전: InfraEye-2.0.0.241127-STD.tar.gz,  infra2_img_2.0.0_250204.tar.gz
- * 패치본 생성일: 2025-10-27
- * 주요 내용: SMS 성능 수집 테이블 추가
- * 
+ * 주요 내용: SMS 기능 추가에 따른 테이블 추가
+ *
  */
 
 CREATE TABLE IF NOT EXISTS "infraeye"."server_metric" (
@@ -141,7 +140,7 @@ CREATE TABLE IF NOT EXISTS "infraeye"."server_metric" (
       "process_info" ARRAY(OBJECT(DYNAMIC) AS (
          "uid" TEXT,
          "name" TEXT,
-         "pid" INTEGER,               
+         "pid" INTEGER,
          "start_time" TIMESTAMP WITH TIME ZONE,
          "run_time" DOUBLE PRECISION,
          "nice" BIGINT,
@@ -315,7 +314,7 @@ CREATE TABLE IF NOT EXISTS "infraeye"."server_metric_1h" (
       "process_info" ARRAY(OBJECT(DYNAMIC) AS (
          "uid" TEXT,
          "name" TEXT,
-         "pid" INTEGER,                
+         "pid" INTEGER,
          "start_time" TIMESTAMP WITH TIME ZONE,
          "run_time" DOUBLE PRECISION,
          "nice" BIGINT,
@@ -414,7 +413,7 @@ CREATE TABLE IF NOT EXISTS "infraeye"."server_metric_1d" (
          "write_bytes" BIGINT,
          "read_count" BIGINT,
          "write_count" BIGINT,
-         "busy_rate_percent" DOUBLE PRECISION,      
+         "busy_rate_percent" DOUBLE PRECISION,
          "disk_total_bytes" BIGINT,
          "disk_used_bytes" BIGINT,
          "disk_free_bytes" BIGINT,
@@ -488,7 +487,7 @@ CREATE TABLE IF NOT EXISTS "infraeye"."server_metric_1d" (
       "process_info" ARRAY(OBJECT(DYNAMIC) AS (
          "uid" TEXT,
          "name" TEXT,
-         "pid" INTEGER,            
+         "pid" INTEGER,
          "start_time" TIMESTAMP WITH TIME ZONE,
          "run_time" DOUBLE PRECISION,
          "nice" BIGINT,
@@ -557,5 +556,31 @@ WITH (
     number_of_replicas = '1-2',                   -- 자동 복제 (가용성 향상)
     column_policy = 'strict',                     -- 예기치 않은 컬럼 추가 방지
     refresh_interval = '1s'                       -- 거의 실시간으로 검색 가능
+);
+CREATE TABLE IF NOT EXISTS infraeye.server_metric_log (
+    log_id TEXT,
+    partition_day TEXT NOT NULL,
+    collected_at TIMESTAMPTZ NOT NULL,
+    policy_id INTEGER,
+    detail_id INTEGER,
+    mch_id INTEGER,
+    agent_id INTEGER,
+    host_name TEXT NOT NULL,
+    host_ip TEXT NOT NULL,
+    os_type TEXT NOT NULL,
+    log_type TEXT NOT NULL,
+    log_metadata TEXT INDEX USING FULLTEXT WITH (analyzer = 'standard'),
+    log_contents TEXT INDEX USING FULLTEXT WITH (analyzer = 'standard'),
+    log_written_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (log_id, partition_day)
+)
+PARTITIONED BY (partition_day)
+CLUSTERED INTO 3 SHARDS
+WITH (
+    number_of_replicas = '1-2',
+    column_policy = 'strict',
+    refresh_interval = '1s'
 );
 SELECT 'DDL 패치 완료' AS RESULT;

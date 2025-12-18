@@ -240,6 +240,24 @@ public class PatchGenerationService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
                     "From 버전과 To 버전의 릴리즈 타입이 일치하지 않습니다.");
         }
+
+        // 임시버전(미승인 버전) 검증
+        List<ReleaseVersion> unapprovedVersions = releaseVersionRepository.findUnapprovedVersionsBetween(
+                fromVersion.getReleaseType(),
+                fromVersion.getVersion(),
+                toVersion.getVersion()
+        );
+
+        if (!unapprovedVersions.isEmpty()) {
+            String unapprovedVersionList = unapprovedVersions.stream()
+                    .map(ReleaseVersion::getVersion)
+                    .reduce((v1, v2) -> v1 + ", " + v2)
+                    .orElse("");
+
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    String.format("버전 범위 내에 미승인 버전이 존재합니다. 패치를 생성할 수 없습니다. (미승인 버전: %s)",
+                            unapprovedVersionList));
+        }
     }
 
     /**

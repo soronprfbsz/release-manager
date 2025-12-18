@@ -106,6 +106,9 @@ CREATE TABLE IF NOT EXISTS release_version (
     patch_version INT NOT NULL COMMENT '패치 버전',
     custom_version VARCHAR(100) COMMENT '커스텀 버전',
     comment TEXT COMMENT '버전 설명',
+    is_approved BOOLEAN NOT NULL DEFAULT FALSE COMMENT '승인 여부',
+    approved_by VARCHAR(100) COMMENT '승인자 이메일',
+    approved_at DATETIME COMMENT '승인일시',
     created_by VARCHAR(100) NOT NULL COMMENT '생성자',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
 
@@ -115,6 +118,7 @@ CREATE TABLE IF NOT EXISTS release_version (
     INDEX idx_customer_id (customer_id),
     INDEX idx_version (version),
     INDEX idx_major_minor (major_version, minor_version),
+    INDEX idx_is_approved (is_approved),
     INDEX idx_created_at (created_at),
 
     UNIQUE KEY uk_project_version (project_id, version),

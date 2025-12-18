@@ -136,4 +136,52 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                 .limit(limit)
                 .fetch();
     }
+
+    @Override
+    public List<ReleaseVersion> findUnapprovedVersionsBetween(String releaseType, String fromVersion,
+            String toVersion) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        // From 버전 파싱
+        String[] fromParts = fromVersion.split("\\.");
+        int fromMajor = Integer.parseInt(fromParts[0]);
+        int fromMinor = Integer.parseInt(fromParts[1]);
+        int fromPatch = Integer.parseInt(fromParts[2]);
+
+        // To 버전 파싱
+        String[] toParts = toVersion.split("\\.");
+        int toMajor = Integer.parseInt(toParts[0]);
+        int toMinor = Integer.parseInt(toParts[1]);
+        int toPatch = Integer.parseInt(toParts[2]);
+
+        return queryFactory
+                .selectFrom(rv)
+                .where(rv.releaseType.eq(releaseType)
+                        .and(rv.isApproved.isFalse())  // 미승인 버전만 조회
+                        .and(
+                                // fromVersion < version <= toVersion
+                                rv.majorVersion.gt(fromMajor)
+                                        .or(rv.majorVersion.eq(fromMajor)
+                                                .and(rv.minorVersion.gt(fromMinor)))
+                                        .or(rv.majorVersion.eq(fromMajor)
+                                                .and(rv.minorVersion.eq(fromMinor))
+                                                .and(rv.patchVersion.gt(fromPatch)))
+                        )
+                        .and(
+                                // version <= toVersion
+                                rv.majorVersion.lt(toMajor)
+                                        .or(rv.majorVersion.eq(toMajor)
+                                                .and(rv.minorVersion.lt(toMinor)))
+                                        .or(rv.majorVersion.eq(toMajor)
+                                                .and(rv.minorVersion.eq(toMinor))
+                                                .and(rv.patchVersion.loe(toPatch)))
+                        )
+                )
+                .orderBy(
+                        rv.majorVersion.asc(),
+                        rv.minorVersion.asc(),
+                        rv.patchVersion.asc()
+                )
+                .fetch();
+    }
 }
