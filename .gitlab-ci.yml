@@ -189,7 +189,7 @@ stages:
 
       echo "✓ 로컬 이미지 확인: ${LOCAL_IMAGE}"
 
-    # JAR에서 리소스 파일 추출 및 복사 (기존 파일 보존, 없는 파일만 복사)
+    # JAR에서 리소스 파일 추출 및 복사 (최신 파일로 업데이트)
     - |
       echo "=== 리소스 파일 동기화 ==="
       RELEASE_DIR="/data/release_manager/release_files"
@@ -204,21 +204,19 @@ stages:
         unzip -q -o "$JAR_FILE" "BOOT-INF/classes/release/*" -d ${TEMP_EXTRACT_DIR} 2>/dev/null || true
 
         if [ -d "${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release" ]; then
-          echo "📂 리소스 파일 동기화 중 (기존 파일 보존)..."
+          echo "📂 리소스 파일 동기화 중 (최신 파일로 업데이트)..."
 
-          # rsync로 없는 파일만 복사 (--ignore-existing: 기존 파일 덮어쓰지 않음)
+          # rsync로 파일 동기화 (항상 소스로 덮어쓰기)
           if command -v rsync > /dev/null 2>&1; then
-            rsync -av --ignore-existing ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release/ ${RELEASE_DIR}/
+            rsync -av ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release/ ${RELEASE_DIR}/
           else
-            # rsync 없으면 cp로 대체 (디렉토리 구조 유지하며 복사)
+            # rsync 없으면 cp로 대체 (디렉토리 구조 유지하며 복사, 항상 덮어쓰기)
             cd ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release
             find . -type f | while read file; do
               dest="${RELEASE_DIR}/${file}"
-              if [ ! -f "$dest" ]; then
-                mkdir -p "$(dirname "$dest")"
-                cp "$file" "$dest"
-                echo "  복사: $file"
-              fi
+              mkdir -p "$(dirname "$dest")"
+              cp -f "$file" "$dest"
+              echo "  복사: $file"
             done
             cd - > /dev/null
           fi
