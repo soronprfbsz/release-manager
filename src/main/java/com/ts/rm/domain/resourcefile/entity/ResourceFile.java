@@ -51,6 +51,12 @@ public class ResourceFile extends BaseEntity {
     private String subCategory;
 
     /**
+     * 리소스 파일 관리용 이름
+     */
+    @Column(name = "resource_file_name", nullable = false, length = 255)
+    private String resourceFileName;
+
+    /**
      * 파일명
      */
     @Column(name = "file_name", nullable = false, length = 255)

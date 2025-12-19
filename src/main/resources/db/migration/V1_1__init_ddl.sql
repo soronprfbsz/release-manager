@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS resource_file (
     file_type VARCHAR(20) NOT NULL COMMENT '파일 타입 (확장자 대문자, 예: SH, PDF, MD)',
     file_category VARCHAR(50) NOT NULL COMMENT '파일 카테고리 (SCRIPT, DOCUMENT, ETC)',
     sub_category VARCHAR(50) COMMENT '하위 카테고리',
+    resource_file_name VARCHAR(255) NOT NULL COMMENT '리소스 파일 관리용 이름',
     file_name VARCHAR(255) NOT NULL COMMENT '파일명',
     file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (resource/ 하위 상대경로)',
     file_size BIGINT COMMENT '파일 크기 (bytes)',
@@ -192,11 +193,31 @@ CREATE TABLE IF NOT EXISTS resource_file (
     INDEX idx_rf_file_type (file_type),
     INDEX idx_rf_file_category (file_category),
     INDEX idx_rf_sub_category (sub_category),
+    INDEX idx_rf_resource_file_name (resource_file_name),
     INDEX idx_rf_file_name (file_name),
     INDEX idx_rf_file_path (file_path),
     INDEX idx_rf_sort_order (sort_order),
     INDEX idx_rf_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='리소스 파일 테이블';
+
+CREATE TABLE IF NOT EXISTS resource_link (
+    resource_link_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '리소스 링크 ID',
+    link_category VARCHAR(50) NOT NULL COMMENT '링크 카테고리',
+    sub_category VARCHAR(50) COMMENT '하위 카테고리',
+    link_name VARCHAR(255) NOT NULL COMMENT '링크 이름',
+    link_url VARCHAR(1000) NOT NULL COMMENT '링크 주소',
+    description TEXT COMMENT '링크 설명',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (link_category 내에서 정렬)',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_rl_link_category (link_category),
+    INDEX idx_rl_sub_category (sub_category),
+    INDEX idx_rl_link_name (link_name),
+    INDEX idx_rl_sort_order (sort_order),
+    INDEX idx_rl_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='리소스 링크 테이블';
 
 CREATE TABLE IF NOT EXISTS backup_file (
     backup_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '백업 파일 ID',
