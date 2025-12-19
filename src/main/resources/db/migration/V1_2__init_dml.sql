@@ -559,22 +559,36 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- service 테이블
 -- =========================================================
 INSERT INTO service (service_name,service_type,description,sort_order,is_active,created_by) VALUES
- ('infraeye 1 (dev)','infraeye1','infraeye 1 개발',1,1,'admin@tscientific.co.kr'),
- ('infraeye 2 (dev)','infraeye2','infraeye 2 개발',1,1,'admin@tscientific.co.kr'),
- ('infraeye 2 (test)','infraeye2','infraeye 2 테스트',2,1,'admin@tscientific.co.kr'),
+ ('infraeye 1 (common)','infraeye1','infraeye 1 공용 서비스',1,1,'admin@tscientific.co.kr'),
+ ('infraeye 2 (dev)','infraeye2','infraeye 2 개발',2,1,'admin@tscientific.co.kr'),
+ ('infraeye 2 (test)','infraeye2','infraeye 2 테스트',3,1,'admin@tscientific.co.kr'),
  ('gitea','infra','git 저장소',1,1,'admin@tscientific.co.kr'),
  ('jenkins','infra','gitea 연동 CI/CD',2,1,'admin@tscientific.co.kr'),
- ('NAS','infra','NAS 서버',3,1,'admin@tscientific.co.kr');
+ ('NAS','infra','NAS 서버',3,1,'admin@tscientific.co.kr'),
+ ('gitlab','infra','git 저장소 (release_manager)',4,1,'admin@tscientific.co.kr'),
+ ('harbor','infra','도커 이미지 저장소 (private registry)',5,1,'admin@tscientific.co.kr'),
+ ('infraeye 2 (common)','infraeye2','infraeye 2 공용 서비스',4,1,'admin@tscientific.co.kr'),
+ ('release-manager','infra','제품 관리 솔루션',6,1,'admin@tscientific.co.kr');
 
 INSERT INTO service_component (service_id,component_type,component_name,host,port,url,account_id,password,ssh_port,ssh_account_id,ssh_password,description,sort_order,is_active,created_by) VALUES
  (6,'WEB','nas - web','10.110.1.99',5000,'http://10.110.1.99','admin','VFzudy/OvPjp4GT91ZkHjciyj7/EVDo9mZWtQKCZxHM=',NULL,NULL,NULL,'NAS 서버',1,1,'admin@tscientific.co.kr'),
  (5,'WEB','jenkins - web','10.110.1.105',38080,'http://10.110.1.105:38080','admin','L7Ol4qrBfB1PyVceZMBo1Vhd7ORIMsAqkuLZZdnIATI=',NULL,NULL,NULL,'Jenkins - web',1,1,'admin@tscientific.co.kr'),
  (4,'WEB','gitea - web','10.110.1.99',3000,'http://10.110.1.99:3000',NULL,NULL,NULL,NULL,NULL,'gitea - web',1,1,'admin@tscientific.co.kr'),
  (1,'WEB','infraeye1 - web','10.110.1.104',60000,'https://10.110.1.104:60000','m_user','wByhfewFrYAgEXpTejpd5ZXGJ13zq+bh+c44IupMvuM=',20022,'root','+5j99UFl89RKCXLI7umAH2Vh4BnPLBW+FdArBBST2aM=','infraeye 1 개발',1,1,'admin@tscientific.co.kr'),
- (2,'WEB','infraeye2 - web','10.110.1.103',13306,'http://10.110.1.103','m_user','0HbpMLwxX6SDVmTrvFTB7pso4w403s3fZQRdQloZ8Vo=',20022,'root','BHCx/hLfW4uoSiaGqgMtb4QegWd0ZWgN2XVmE/Bo4ws=','infraeye2 개발 서버',1,1,'admin@tscientific.co.kr'),
+ (2,'WEB','infraeye2 - web','10.110.1.103',60000,'http://10.110.1.103:60000','m_user','cgxjQSEv4hPgFtqvYNZF57RuCtRawRmop1eQ+TfR7/I=',20022,'root','3Q/XUhl1UozSKVaFc0KS5on+VkZjsrXzBBE57zkkFEo=','infraeye2 개발 서버',1,1,'admin@tscientific.co.kr'),
  (2,'DATABASE','infraeye2 - mariadb','10.110.1.103',13306,NULL,'infraeye','87QvTx21kwVeBWtsku5TNvkttDm3JonQYkjlHO0Klu4=',NULL,NULL,NULL,'infraeye 2 개발서버 MariaDB',2,1,'admin@tscientific.co.kr'),
  (1,'DATABASE','infraeye1 - mariadb','10.110.1.104',3306,NULL,'infraeye','QzLtMAyM1yRUVTdlCLHKv7fylOy/h6IDwvRQTrtrY7k=',NULL,NULL,NULL,'infraeye 1 개발 서버 MariaDB',2,1,'admin@tscientific.co.kr'),
- (3,'WEB','infraeye 2 (test) - web','10.140.1.21',60000,'http://10.140.1.21:60000/','m_user','8dbhhxMIN3oqn3ZCMJm13EIvu0ONoARUzxmi+xncn9s=',22,'root','WguoSHHQFVNd8n3dDUgk43oxbYjF5A6GxqZH/NDQf1o=','infraeye 2 Test서버 - Web',1,1,'admin@tscientific.co.kr'),
+ (3,'WEB','infraeye 2 (test) - web','10.140.1.21',60000,'http://10.140.1.21:60000','m_user','1YnrpmbOXtT4PvEVeLzvDhBD3oEz/e+o7vfrZ622oNk=',22,'root','N4gIE1Px1zeEIrkbrhNXQBNR5xvChWo7A3DAFVbIkfg=','infraeye 2 Test서버 - Web',1,1,'admin@tscientific.co.kr'),
  (3,'DATABASE','infraeye2 (test) - mariadb','10.140.1.21',13306,NULL,'infraeye','BcGHIhwqkFThHAfnEgIq5yRIsaW0f23VIj5WxLLBg4Q=',NULL,NULL,NULL,'infraeye2 Test서버 - MariaDB',2,1,'admin@tscientific.co.kr'),
  (3,'DATABASE','infraeye2 - cratedb','10.140.1.21',15432,NULL,'infraeye','m8yxGP/rPFgb1egZqo/c8AmHkGx7nf4zufA9TdA8xd0=',NULL,NULL,NULL,'infraeye2 Test서버 - cratedb',3,1,'admin@tscientific.co.kr'),
- (3,'DATABASE','infraeye2 (test) - redis','10.230.1.17',55501,NULL,NULL,'cl96nziMiSjC7nZo5Srdp8SWY9YuUiDpjs2qlMtumq0=',NULL,NULL,NULL,'infraeye 2 Test서버 - redis',4,1,'admin@tscientific.co.kr');
+ (3,'DATABASE','infraeye2 (test) - redis','10.140.1.21',55501,NULL,NULL,'zR4bpiQj7ghRbNn7kzQ0J11YloMHaXpZ2MG9lDt3jpQ=',NULL,NULL,NULL,'infraeye 2 Test서버 - redis',4,1,'admin@tscientific.co.kr'),
+ (7,'WEB','gitlab - web','10.230.1.17',20080,'http://10.230.1.17:20080',NULL,NULL,22,'root','Ve/yxenrSnPJ8j4NLVPHOc9nDe3c91nYQSDCVyNAfG0=',NULL,1,1,'jhlee@tscientific.co.kr'),
+ (8,'WEB','harbor - web','10.230.1.17',20081,'http://10.230.1.17:20081','admin','XQRR0NaRA/IYNk2Ai+V+VjCu5X6IGKpSSid42DuxicY=',22,'root','x9UJCXsALcpiDcbl47GWcrPZvISPF9jiFcOZNcMb92w=',NULL,1,1,'jhlee@tscientific.co.kr'),
+ (9,'WEB','infraeye2 - web','10.110.1.101',60000,'http://10.110.1.101:60000','m_user','owkdX5IAr8h2QOKls8j+Cv/rL8lr2iRf56A03FioHOE=',20022,'infraeye','9oDVPDpA6S+lKmcF37g6iv4OvWCqQRPpboQFuBDzFgI=',NULL,1,1,'jhlee@tscientific.co.kr'),
+ (9,'DATABASE','infraeye2 - mariadb','10.110.1.101',3306,NULL,'netcruz','GPHCilpH8Z2Ef4Al433voTro3387wa029atp5MidOe8=',NULL,NULL,NULL,NULL,2,1,'jhlee@tscientific.co.kr'),
+ (9,'DATABASE','infraeye2 - cratedb','10.110.1.101',5432,NULL,'crate',NULL,NULL,NULL,NULL,NULL,3,1,'jhlee@tscientific.co.kr'),
+ (2,'DATABASE','infraeye2 - cratedb','10.110.1.103',15432,NULL,'infraeye','2aCMw++VjUCDoHswe9oklMl8ixzOkgGd+MRhftU0wQE=',NULL,NULL,NULL,NULL,3,1,'jhlee@tscientific.co.kr'),
+ (2,'DATABASE','infraeye2 - redis','10.110.1.103',55501,NULL,NULL,'aWbBM3V4Ck0gwHB4DEvM3u33JkcfxC719WSYHnzjuC8=',NULL,NULL,NULL,NULL,4,1,'jhlee@tscientific.co.kr'),
+ (10,'WEB','10.110.1.106','10.110.1.106',13000,'http://10.110.1.106:13000','m_user@tscientific.co.kr','uxeIfWdySB+PDcViriSbqQ23yv3aXoIoi+WH15cR+gQ=',20022,'infraeye','RoH+FgnT/Z74anKLtK0mQV6YLvOfqbreBlL+Tmp3eag=','release-manager - web',1,1,'jhlee@tscientific.co.kr'),
+ (10,'DATABASE','release-manager - mariadb','10.110.1.106',13306,NULL,'root','3exvWPAkRx6FNwpupjQmP4bSafqe3fAj9ny11kueQ24=',NULL,NULL,NULL,'release-manager - mariadb',2,1,'jhlee@tscientific.co.kr'),
+ (10,'DATABASE','release-manager - redis','10.110.1.106',16379,NULL,NULL,'JLiOIBYP9Wc1zie8Bcvfjq/2Q0YvpUhjR/wYxE1rFvg=',NULL,NULL,NULL,'release-manager - redis',3,1,'jhlee@tscientific.co.kr');
