@@ -8,11 +8,17 @@ DELIMITER //
 DROP PROCEDURE IF EXISTS NMS_DB.p_patch_dml;
 CREATE PROCEDURE p_patch_dml()
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    DECLARE v_error_code VARCHAR(10) DEFAULT NULL;
+    DECLARE v_error_msg TEXT DEFAULT NULL;
+
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
     BEGIN
+        GET DIAGNOSTICS CONDITION 1
+            v_error_code = RETURNED_SQLSTATE,
+            v_error_msg = MESSAGE_TEXT;
         ROLLBACK;
-        SELECT '오류 발생: 모든 DML 작업을 롤백했습니다.' AS RESULT;
     END;
+
     START TRANSACTION;
     /*****************************   패치 내용 시작   *****************************/
     -- 서버#Agent 장비 구분 추가
@@ -783,11 +789,25 @@ BEGIN
     );
 
     /*****************************   패치 내용 종료   *****************************/
+
+    -- 에러 발생 여부 확인
+    IF v_error_code IS NOT NULL THEN
+        SELECT 'DML 패치 중 오류 발생!' AS STATUS,
+               v_error_code AS ERROR_CODE,
+               v_error_msg AS ERROR_MESSAGE;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = CONCAT('DML 패치 실패! [', v_error_code, '] ', v_error_msg);
+    END IF;
+
+    COMMIT;
+
+    SELECT 'DML 패치 완료!' AS STATUS,
+           'SUCCESS' AS RESULT,
+           '모든 DML 작업이 성공적으로 완료되었습니다.' AS MESSAGE;
 END //
 DELIMITER ;
 
--- 실행 및 패치용 임시 프로시저 삭제
+-- 패치 프로시저 실행
 CALL p_patch_dml();
-DROP PROCEDURE p_patch_dml;
 
-SELECT 'DML 패치 완료' AS RESULT;
+-- 임시 프로시저 삭제
+DROP PROCEDURE IF EXISTS p_patch_dml;

@@ -174,7 +174,7 @@ if [ "$EXECUTION_MODE" = "1" ]; then
         log_to_file "--- SQL 파일 실행 시작: $sql_file ---"
 
         if docker exec -i "$DOCKER_CONTAINER_NAME" mariadb -u"$DB_USER" -p"$DB_PASSWORD" \
-            --verbose --show-warnings < "$sql_file" 2>&1 | tee -a "$LOG_FILE"; then
+            --show-warnings < "$sql_file" 2>&1 | tee -a "$LOG_FILE"; then
             log_to_file "--- SQL 파일 실행 성공: $sql_file ---"
             return 0
         else
@@ -191,7 +191,7 @@ if [ "$EXECUTION_MODE" = "1" ]; then
         log_to_file "$sql_string"
 
         if echo "$sql_string" | docker exec -i "$DOCKER_CONTAINER_NAME" mariadb -u"$DB_USER" -p"$DB_PASSWORD" \
-            --verbose --show-warnings 2>&1 | tee -a "$LOG_FILE"; then
+            --show-warnings 2>&1 | tee -a "$LOG_FILE"; then
             log_to_file "--- SQL 문자열 실행 성공 ---"
             return 0
         else
@@ -239,7 +239,7 @@ else
         log_to_file "--- SQL 파일 실행 시작: $sql_file ---"
 
         if mariadb -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" \
-            --verbose --show-warnings < "$sql_file" 2>&1 | tee -a "$LOG_FILE"; then
+            --show-warnings < "$sql_file" 2>&1 | tee -a "$LOG_FILE"; then
             log_to_file "--- SQL 파일 실행 성공: $sql_file ---"
             return 0
         else
@@ -256,7 +256,7 @@ else
         log_to_file "$sql_string"
 
         if echo "$sql_string" | mariadb -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" \
-            --verbose --show-warnings 2>&1 | tee -a "$LOG_FILE"; then
+            --show-warnings 2>&1 | tee -a "$LOG_FILE"; then
             log_to_file "--- SQL 문자열 실행 성공 ---"
             return 0
         else
