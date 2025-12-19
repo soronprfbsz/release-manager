@@ -138,6 +138,29 @@ public class ResourceFileService {
     }
 
     /**
+     * 리소스 파일 수정
+     *
+     * @param id      리소스 파일 ID
+     * @param request 수정 요청 정보
+     * @return 수정된 리소스 파일 엔티티
+     */
+    @Transactional
+    public ResourceFile updateFile(Long id, ResourceFileDto.UpdateRequest request) {
+        log.info("리소스 파일 수정 시작 - ID: {}, 파일명: {}", id, request.resourceFileName());
+
+        ResourceFile resourceFile = getResourceFile(id);
+
+        // 엔티티 업데이트 (파일은 수정하지 않고 메타데이터만 수정)
+        resourceFile.setFileCategory(request.fileCategory().toUpperCase());
+        resourceFile.setSubCategory(request.subCategory() != null ? request.subCategory().toUpperCase() : null);
+        resourceFile.setResourceFileName(request.resourceFileName());
+        resourceFile.setDescription(request.description());
+
+        log.info("리소스 파일 수정 완료 - ID: {}", id);
+        return resourceFile;
+    }
+
+    /**
      * 리소스 파일 삭제
      *
      * @param id 리소스 파일 ID

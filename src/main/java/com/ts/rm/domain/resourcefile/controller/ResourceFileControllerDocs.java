@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -81,6 +82,34 @@ public interface ResourceFileControllerDocs {
     )
     ApiResponse<ResourceFileDto.DetailResponse> getResourceFile(
             @PathVariable Long id
+    );
+
+    @Operation(
+            summary = "리소스 파일 수정",
+            description = "기존 리소스 파일의 메타데이터 정보를 수정합니다.\n\n"
+                    + "**수정 가능 항목**:\n"
+                    + "- 파일 카테고리 (SCRIPT/DOCKER/DOCUMENT/ETC)\n"
+                    + "- 하위 카테고리\n"
+                    + "- 리소스 파일 관리용 이름\n"
+                    + "- 파일 설명\n\n"
+                    + "**주의사항**:\n"
+                    + "- 실제 파일 자체는 수정되지 않으며, 메타데이터만 수정됩니다\n"
+                    + "- 파일명, 파일 경로 등은 수정할 수 없습니다",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ResourceFileDetailApiResponse.class)
+                    )
+            )
+    )
+    ApiResponse<ResourceFileDto.DetailResponse> updateFile(
+            @Parameter(description = "리소스 파일 ID", required = true, example = "1")
+            @PathVariable Long id,
+
+            @Parameter(description = "리소스 파일 수정 요청", required = true)
+            @RequestBody @Valid ResourceFileDto.UpdateRequest request
     );
 
     @Operation(
