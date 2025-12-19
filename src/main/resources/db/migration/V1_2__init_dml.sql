@@ -370,15 +370,15 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 
 INSERT INTO resource_file (file_type, file_category, sub_category, resource_file_name, file_name, file_path, file_size, description, sort_order, created_by) VALUES
 -- SCRIPT - MARIADB (sort_order: 1, 2)
-('SH', 'SCRIPT', 'MARIADB', 'MariaDB 백업', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 데이터베이스 백업을 수행하는 셸 스크립트', 1, 'system'),
-('SH', 'SCRIPT', 'MARIADB', 'MariaDB 복원', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 백업 파일로부터 데이터베이스를 복원하는 셸 스크립트', 2, 'system'),
+('SH', 'SCRIPT', 'MARIADB', 'MariaDB 백업', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 데이터베이스 백업 수행 셸 스크립트', 1, 'system'),
+('SH', 'SCRIPT', 'MARIADB', 'MariaDB 복원', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 데이터베이스 복원 수행 셸 스크립트', 2, 'system'),
 
 -- SCRIPT - CRATEDB (sort_order: 1, 2)
-('SH', 'SCRIPT', 'CRATEDB', 'CrateDB 백업', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 데이터베이스 스냅샷을 수행하는 셸 스크립트', 1, 'system'),
-('SH', 'SCRIPT', 'CRATEDB', 'CrateDB 복원', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 스냅샷으로부터 데이터베이스를 복원하는 셸 스크립트', 2, 'system'),
+('SH', 'SCRIPT', 'CRATEDB', 'CrateDB 백업', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 데이터베이스 스냅샷 생성 셸 스크립트', 1, 'system'),
+('SH', 'SCRIPT', 'CRATEDB', 'CrateDB 복원', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 데이터베이스 복원 셸 스크립트', 2, 'system'),
 
 -- DOCUMENT - INFRAEYE2 (sort_order: 1)
-('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치 가이드 문서', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'OracleLinux 8.6 환경에서 Infraeye2 시스템을 설치하는 상세 가이드 문서 (PDF)', 1, 'system');
+('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치 가이드 문서', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 상세 가이드 문서', 1, 'system');
 
 -- =========================================================
 -- resource_link 테이블
@@ -619,5 +619,6 @@ INSERT INTO service_component (service_id,component_type,component_name,host,por
  (2,'DATABASE','infraeye2 - cratedb','10.110.1.103',15432,NULL,'infraeye','2aCMw++VjUCDoHswe9oklMl8ixzOkgGd+MRhftU0wQE=',NULL,NULL,NULL,NULL,3,1,'admin@tscientific.co.kr'),
  (2,'DATABASE','infraeye2 - redis','10.110.1.103',55501,NULL,NULL,'aWbBM3V4Ck0gwHB4DEvM3u33JkcfxC719WSYHnzjuC8=',NULL,NULL,NULL,NULL,4,1,'admin@tscientific.co.kr'),
  (10,'WEB','10.110.1.106','10.110.1.106',13000,'http://10.110.1.106:13000','m_user@tscientific.co.kr','uxeIfWdySB+PDcViriSbqQ23yv3aXoIoi+WH15cR+gQ=',20022,'infraeye','RoH+FgnT/Z74anKLtK0mQV6YLvOfqbreBlL+Tmp3eag=','release-manager - web',1,1,'admin@tscientific.co.kr'),
- (10,'DATABASE','release-manager - mariadb','10.110.1.106',13306,NULL,'root','3exvWPAkRx6FNwpupjQmP4bSafqe3fAj9ny11kueQ24=',NULL,NULL,NULL,'release-manager - mariadb',2,1,'admin@tscientific.co.kr'),
- (10,'DATABASE','release-manager - redis','10.110.1.106',16379,NULL,NULL,'JLiOIBYP9Wc1zie8Bcvfjq/2Q0YvpUhjR/wYxE1rFvg=',NULL,NULL,NULL,'release-manager - redis',3,1,'admin@tscientific.co.kr');
+ (10,'WEB','release-manager - api','10.110.1.106',18080,'http://10.110.1.106:13000','m_user@tscientific.co.kr','uxeIfWdySB+PDcViriSbqQ23yv3aXoIoi+WH15cR+gQ=',NULL,NULL,NULL,'release-manager - api',2,1,'admin@tscientific.co.kr'),
+ (10,'DATABASE','release-manager - mariadb','10.110.1.106',13306,NULL,'root','3exvWPAkRx6FNwpupjQmP4bSafqe3fAj9ny11kueQ24=',NULL,NULL,NULL,'release-manager - mariadb',3,1,'admin@tscientific.co.kr'),
+ (10,'DATABASE','release-manager - redis','10.110.1.106',16379,NULL,NULL,'JLiOIBYP9Wc1zie8Bcvfjq/2Q0YvpUhjR/wYxE1rFvg=',NULL,NULL,NULL,'release-manager - redis',4,1,'admin@tscientific.co.kr');

@@ -8,6 +8,7 @@ import com.ts.rm.global.file.HttpFileDownloadUtil;
 import com.ts.rm.global.response.ApiResponse;
 import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -81,6 +83,23 @@ public class ResourceFileController implements ResourceFileControllerDocs {
         log.info("리소스 파일 조회 요청 - ID: {}", id);
 
         ResourceFile resourceFile = resourceFileService.getResourceFile(id);
+        ResourceFileDto.DetailResponse response = resourceFileDtoMapper.toDetailResponse(resourceFile);
+
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 리소스 파일 수정
+     */
+    @Override
+    @PutMapping("/{id}")
+    public ApiResponse<ResourceFileDto.DetailResponse> updateFile(
+            @PathVariable Long id,
+            @RequestBody @Valid ResourceFileDto.UpdateRequest request) {
+
+        log.info("리소스 파일 수정 요청 - ID: {}, 파일명: {}", id, request.resourceFileName());
+
+        ResourceFile resourceFile = resourceFileService.updateFile(id, request);
         ResourceFileDto.DetailResponse response = resourceFileDtoMapper.toDetailResponse(resourceFile);
 
         return ApiResponse.success(response);

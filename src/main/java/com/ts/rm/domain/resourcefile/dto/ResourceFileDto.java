@@ -47,6 +47,34 @@ public final class ResourceFileDto {
     }
 
     /**
+     * 리소스 파일 수정 요청
+     */
+    @Schema(description = "리소스 파일 수정 요청")
+    public record UpdateRequest(
+            @Schema(description = "파일 카테고리",
+                    example = "SCRIPT",
+                    allowableValues = {"SCRIPT", "DOCKER", "DOCUMENT", "ETC"})
+            @NotBlank(message = "파일 카테고리는 필수입니다")
+            String fileCategory,
+
+            @Schema(description = "하위 카테고리\n" +
+                    "- SCRIPT: MARIADB, CRATEDB, ETC\n" +
+                    "- DOCKER: SERVICE, DOCKERFILE, ETC\n" +
+                    "- DOCUMENT: INFRAEYE1, INFRAEYE2, ETC\n" +
+                    "- ETC: ETC",
+                    example = "MARIADB")
+            String subCategory,
+
+            @Schema(description = "리소스 파일 관리용 이름", example = "MariaDB 백업 스크립트 v2.0")
+            @NotBlank(message = "리소스 파일 이름은 필수입니다")
+            String resourceFileName,
+
+            @Schema(description = "파일 설명", example = "MariaDB 백업 스크립트 (개선 버전)")
+            String description
+    ) {
+    }
+
+    /**
      * 리소스 파일 상세 응답
      */
     @Schema(description = "리소스 파일 상세 응답")
