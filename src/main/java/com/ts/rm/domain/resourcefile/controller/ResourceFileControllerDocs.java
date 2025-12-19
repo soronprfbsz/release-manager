@@ -60,6 +60,9 @@ public interface ResourceFileControllerDocs {
             @Parameter(description = "하위 카테고리 (예: MARIADB, INFRAEYE2)", example = "MARIADB")
             @RequestParam(required = false) String subCategory,
 
+            @Parameter(description = "리소스 파일 관리용 이름", required = true, example = "MariaDB 백업 스크립트 v1.0")
+            @RequestParam String resourceFileName,
+
             @Parameter(description = "파일 설명", example = "MariaDB 백업 스크립트")
             @RequestParam(required = false) String description
     );

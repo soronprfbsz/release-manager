@@ -87,6 +87,7 @@ public class ResourceFileService {
                     .fileType(fileType)
                     .fileCategory(request.fileCategory().toUpperCase())
                     .subCategory(request.subCategory() != null ? request.subCategory().toUpperCase() : null)
+                    .resourceFileName(request.resourceFileName())
                     .fileName(originalFileName)
                     .filePath(relativePath)
                     .fileSize(file.getSize())

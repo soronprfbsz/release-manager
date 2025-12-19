@@ -52,16 +52,17 @@ public class ResourceFileController implements ResourceFileControllerDocs {
             @RequestPart("file") MultipartFile file,
             @RequestParam String fileCategory,
             @RequestParam(required = false) String subCategory,
+            @RequestParam String resourceFileName,
             @RequestParam(required = false) String description) {
 
-        log.info("리소스 파일 업로드 요청 - 파일명: {}, 파일카테고리: {}, 서브카테고리: {}",
-                file.getOriginalFilename(), fileCategory, subCategory);
+        log.info("리소스 파일 업로드 요청 - 파일명: {}, 파일카테고리: {}, 서브카테고리: {}, 리소스파일명: {}",
+                file.getOriginalFilename(), fileCategory, subCategory, resourceFileName);
 
         String token = authorizationHeader.substring(7);
         String createdBy = jwtTokenProvider.getEmail(token);
 
         ResourceFileDto.UploadRequest request = new ResourceFileDto.UploadRequest(
-                fileCategory, subCategory, description, createdBy
+                fileCategory, subCategory, resourceFileName, description, createdBy
         );
 
         ResourceFile resourceFile = resourceFileService.uploadFile(file, request);

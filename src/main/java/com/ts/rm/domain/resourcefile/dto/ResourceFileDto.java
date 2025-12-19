@@ -33,6 +33,10 @@ public final class ResourceFileDto {
                     example = "MARIADB")
             String subCategory,
 
+            @Schema(description = "리소스 파일 관리용 이름", example = "MariaDB 백업 스크립트 v1.0")
+            @NotBlank(message = "리소스 파일 이름은 필수입니다")
+            String resourceFileName,
+
             @Schema(description = "파일 설명", example = "MariaDB 백업 스크립트")
             String description,
 
@@ -58,6 +62,9 @@ public final class ResourceFileDto {
 
             @Schema(description = "서브 카테고리", example = "MARIADB_BACKUP")
             String subCategory,
+
+            @Schema(description = "리소스 파일 관리용 이름", example = "MariaDB 백업 스크립트 v1.0")
+            String resourceFileName,
 
             @Schema(description = "파일명", example = "mariadb_backup.sh")
             String fileName,
@@ -98,6 +105,9 @@ public final class ResourceFileDto {
 
             @Schema(description = "서브 카테고리", example = "MARIADB_BACKUP")
             String subCategory,
+
+            @Schema(description = "리소스 파일 관리용 이름", example = "MariaDB 백업 스크립트 v1.0")
+            String resourceFileName,
 
             @Schema(description = "파일명", example = "mariadb_backup.sh")
             String fileName,

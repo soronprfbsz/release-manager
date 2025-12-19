@@ -25,7 +25,9 @@ INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VA
 ('BACKUP_FILE_CATEGORY', '백업 파일 카테고리', '백업 파일 분류 (MARIADB, CRATEDB)', TRUE),
 ('POSITION', '직급', '엔지니어 직급 구분', TRUE),
 ('SERVICE_TYPE', '서비스 분류', '서비스 관리에서 사용하는 서비스 분류', TRUE),
-('COMPONENT_TYPE', '컴포넌트 유형', '서비스 컴포넌트(접속 정보) 유형', TRUE);
+('COMPONENT_TYPE', '컴포넌트 유형', '서비스 컴포넌트(접속 정보) 유형', TRUE),
+('LINK_CATEGORY', '링크 카테고리', '리소스 링크 카테고리 분류', TRUE),
+('LINK_SUBCATEGORY', '링크 서브 카테고리', '리소스 링크 서브 카테고리', TRUE);
 
 -- =========================================================
 -- code 테이블 (모든 코드 데이터)
@@ -208,6 +210,21 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('COMPONENT_TYPE', 'ENGINE', '엔진', '엔진 접속 정보', 3, TRUE),
 ('COMPONENT_TYPE', 'ETC', '기타', '기타 접속 정보', 99, TRUE);
 
+-- LINK_CATEGORY
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('LINK_CATEGORY', 'INFRAEYE', 'Infraeye(공통)', 'Infraeye(공통) 관련 링크', 1, TRUE),
+('LINK_CATEGORY', 'INFRAEYE1', 'Infraeye 1', 'Infraeye 1 관련 링크', 2, TRUE),
+('LINK_CATEGORY', 'INFRAEYE2', 'Infraeye 2', 'Infraeye 2 관련 링크', 3, TRUE),
+('LINK_CATEGORY', 'INFRASTRUCTURE', '인프라', '인프라 관련 링크', 4, TRUE),
+('LINK_CATEGORY', 'TEAM-MANAGEMENT', '팀 관리 및 운영', '팀 내 공유 정보 링크', 5, TRUE),
+('LINK_CATEGORY', 'ETC', '기타', '기타 링크', 99, TRUE);
+
+-- LINK_SUBCATEGORY
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('LINK_SUBCATEGORY', 'NOTION', '노션', '노션 문서 링크', 1, TRUE),
+('LINK_SUBCATEGORY', 'SHARED-EXCEL', '공유 엑셀', '공유 엑셀 문서 링크', 2, TRUE),
+('LINK_SUBCATEGORY', 'ETC', '기타', '기타 링크', 99, TRUE);
+
 -- =========================================================
 -- account 테이블
 -- =========================================================
@@ -348,20 +365,32 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 (1, 2, 1);
 
 -- =========================================================
--- resource_file 테이블 (sort_order 추가)
+-- resource_file 테이블 (resource_file_name 추가)
 -- =========================================================
 
-INSERT INTO resource_file (file_type, file_category, sub_category, file_name, file_path, file_size, description, sort_order, created_by) VALUES
+INSERT INTO resource_file (file_type, file_category, sub_category, resource_file_name, file_name, file_path, file_size, description, sort_order, created_by) VALUES
 -- SCRIPT - MARIADB (sort_order: 1, 2)
-('SH', 'SCRIPT', 'MARIADB', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 백업 스크립트', 1, 'system'),
-('SH', 'SCRIPT', 'MARIADB', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 복원 스크립트', 2, 'system'),
+('SH', 'SCRIPT', 'MARIADB', 'MariaDB 백업', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 데이터베이스 백업을 수행하는 셸 스크립트', 1, 'system'),
+('SH', 'SCRIPT', 'MARIADB', 'MariaDB 복원', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 백업 파일로부터 데이터베이스를 복원하는 셸 스크립트', 2, 'system'),
 
 -- SCRIPT - CRATEDB (sort_order: 1, 2)
-('SH', 'SCRIPT', 'CRATEDB', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 백업 스크립트', 1, 'system'),
-('SH', 'SCRIPT', 'CRATEDB', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 복원 스크립트', 2, 'system'),
+('SH', 'SCRIPT', 'CRATEDB', 'CrateDB 백업', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 데이터베이스 스냅샷을 수행하는 셸 스크립트', 1, 'system'),
+('SH', 'SCRIPT', 'CRATEDB', 'CrateDB 복원', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 스냅샷으로부터 데이터베이스를 복원하는 셸 스크립트', 2, 'system'),
 
 -- DOCUMENT - INFRAEYE2 (sort_order: 1)
-('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 가이드 문서', 1, 'system');
+('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치 가이드 문서', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'OracleLinux 8.6 환경에서 Infraeye2 시스템을 설치하는 상세 가이드 문서 (PDF)', 1, 'system');
+
+-- =========================================================
+-- resource_link 테이블
+-- =========================================================
+
+INSERT INTO resource_link (link_category,sub_category,link_name,link_url,description,sort_order,created_by) VALUES
+('TEAM-MANAGEMENT','NOTION','개발 2팀 페이지','https://www.notion.so/tscientific/2-c32cc14be7904787a6acb88e8106edaf?source=copy_link','개발 2팀 노션 페이지',1,'admin@tscientific.co.kr'),
+('INFRAEYE2','SHARED-EXCEL','Infraeye 2 메뉴관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7B205c004f-cbe4-4296-8a32-3c39bf08e8af%7D&wdOrigin=TEAMS-MAGLEV.undefined_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1748848209807&web=1','관리대상: 메뉴, 역할별메뉴, 메뉴기능 기초데이터',1,'admin@tscientific.co.kr'),
+('INFRAEYE2','SHARED-EXCEL','Infraeye 2 이벤트코드 관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7B11a03087-ecbc-4ae0-8b3e-4352edbdfc55%7D&wdOrigin=TEAMS-MAGLEV.teamsSdk_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1754539574091&web=1','관리대상: 이벤트코드종류, 이벤트코드, 성능지표, 성능지표(SMS)',2,'admin@tscientific.co.kr'),
+('INFRAEYE2','SHARED-EXCEL','Infraeye 2 데이터코드 관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7Be486a6da-e310-41a8-8df4-5ac94669f595%7D&wdOrigin=TEAMS-MAGLEV.teamsSdk_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1754539517973&web=1','관리대상: 데이터코드분류, 데이터코드',3,'admin@tscientific.co.kr'),
+('INFRAEYE2','NOTION','SMS 개발 공유 문서','https://www.notion.so/tscientific/RnD-InfraEye-SMS-PJT-17e23133945280bf887dc363f43851b9','',4,'admin@tscientific.co.kr');
+
 
 -- =========================================================
 -- menu 테이블
@@ -402,7 +431,7 @@ INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visi
 
 -- 3depth 메뉴 - 인프라
 INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('infrastructure_resources', '리소스', 'development-support/infrastructure/resources', '리소스 파일을 관리 및 제공합니다.', TRUE, FALSE, 1),
+('infrastructure_resources', '리소스', 'development-support/infrastructure/resources', '리소스 정보를 관리 및 제공합니다.', TRUE, FALSE, 1),
 ('infrastructure_services', '서비스', 'development-support/infrastructure/service', '서비스 정보를 관리 및 제공합니다.', TRUE, FALSE, 2);
 
 -- =========================================================
