@@ -1,0 +1,161 @@
+package com.ts.rm.domain.resourcefile.filesync;
+
+import com.ts.rm.domain.resourcefile.entity.ResourceFile;
+import com.ts.rm.domain.resourcefile.repository.ResourceFileRepository;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.domain.filesync.adapter.FileSyncAdapter;
+import com.ts.rm.domain.filesync.dto.FileSyncMetadata;
+import com.ts.rm.domain.filesync.enums.FileSyncTarget;
+import java.util.List;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 리소스 파일 동기화 어댑터
+ *
+ * <p>ResourceFile 도메인의 파일 동기화를 담당합니다.
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class ResourceFileSyncAdapter implements FileSyncAdapter {
+
+    private final ResourceFileRepository resourceFileRepository;
+
+    @Override
+    public FileSyncTarget getTarget() {
+        return FileSyncTarget.RESOURCE_FILE;
+    }
+
+    @Override
+    public String getBaseScanPath() {
+        return "resource";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FileSyncMetadata> getRegisteredFiles(@Nullable String subPath) {
+        List<ResourceFile> files;
+
+        if (subPath != null && !subPath.isEmpty()) {
+            files = resourceFileRepository.findByFilePathStartingWithOrderByCreatedAtDesc(subPath);
+        } else {
+            files = resourceFileRepository.findAllByOrderByCreatedAtDesc();
+        }
+
+        return files.stream()
+                .map(this::toMetadata)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public Long registerFile(FileSyncMetadata metadata, @Nullable Map<String, Object> additionalData) {
+        // 파일 확장자에서 fileType 추출
+        String fileType = extractFileType(metadata.getFileName());
+
+        // 경로에서 카테고리/서브카테고리 추출 (resource/{category}/{subCategory}/...)
+        String[] pathParts = metadata.getFilePath().split("/");
+        String fileCategory = pathParts.length > 1 ? pathParts[1].toUpperCase() : "ETC";
+        String subCategory = pathParts.length > 2 ? pathParts[2].toUpperCase() : null;
+
+        // additionalData에서 오버라이드 가능
+        fileCategory = extractStringOrDefault(additionalData, "fileCategory", fileCategory);
+        subCategory = extractStringOrDefault(additionalData, "subCategory", subCategory);
+        String resourceFileName = extractStringOrDefault(additionalData, "resourceFileName", metadata.getFileName());
+        String description = extractString(additionalData, "description");
+        String createdBy = extractStringOrDefault(additionalData, "createdBy", "SYSTEM_SYNC");
+
+        // sortOrder 자동 채번
+        Integer sortOrder = resourceFileRepository.findMaxSortOrderByFileCategory(fileCategory) + 1;
+
+        ResourceFile resourceFile = ResourceFile.builder()
+                .fileType(fileType)
+                .fileCategory(fileCategory)
+                .subCategory(subCategory)
+                .resourceFileName(resourceFileName)
+                .fileName(metadata.getFileName())
+                .filePath(metadata.getFilePath())
+                .fileSize(metadata.getFileSize())
+                .checksum(metadata.getChecksum())
+                .sortOrder(sortOrder)
+                .description(description)
+                .createdBy(createdBy)
+                .build();
+
+        ResourceFile saved = resourceFileRepository.save(resourceFile);
+        log.info("리소스 파일 동기화 등록: {} (ID: {})", metadata.getFilePath(), saved.getResourceFileId());
+
+        return saved.getResourceFileId();
+    }
+
+    @Override
+    @Transactional
+    public void updateMetadata(Long id, FileSyncMetadata newMetadata) {
+        ResourceFile resourceFile = resourceFileRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND,
+                        "리소스 파일을 찾을 수 없습니다: " + id));
+
+        resourceFile.setFileSize(newMetadata.getFileSize());
+        resourceFile.setChecksum(newMetadata.getChecksum());
+
+        resourceFileRepository.save(resourceFile);
+        log.info("리소스 파일 메타데이터 갱신: {} (ID: {})", newMetadata.getFilePath(), id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteMetadata(Long id) {
+        if (!resourceFileRepository.existsById(id)) {
+            throw new BusinessException(ErrorCode.FILE_NOT_FOUND,
+                    "리소스 파일을 찾을 수 없습니다: " + id);
+        }
+
+        resourceFileRepository.deleteById(id);
+        log.info("리소스 파일 메타데이터 삭제: ID {}", id);
+    }
+
+    /**
+     * ResourceFile 엔티티를 FileSyncMetadata로 변환
+     */
+    private FileSyncMetadata toMetadata(ResourceFile file) {
+        return FileSyncMetadata.builder()
+                .id(file.getResourceFileId())
+                .filePath(file.getFilePath())
+                .fileName(file.getFileName())
+                .fileSize(file.getFileSize())
+                .checksum(file.getChecksum())
+                .registeredAt(file.getCreatedAt())
+                .target(FileSyncTarget.RESOURCE_FILE)
+                .build();
+    }
+
+    /**
+     * 파일명에서 확장자 추출 (대문자)
+     */
+    private String extractFileType(String fileName) {
+        if (fileName == null || !fileName.contains(".")) {
+            return "UNKNOWN";
+        }
+        int lastDot = fileName.lastIndexOf(".");
+        return fileName.substring(lastDot + 1).toUpperCase();
+    }
+
+    private String extractString(Map<String, Object> data, String key) {
+        if (data == null || !data.containsKey(key)) {
+            return null;
+        }
+        Object value = data.get(key);
+        return value != null ? value.toString() : null;
+    }
+
+    private String extractStringOrDefault(Map<String, Object> data, String key, String defaultValue) {
+        String value = extractString(data, key);
+        return value != null ? value : defaultValue;
+    }
+}

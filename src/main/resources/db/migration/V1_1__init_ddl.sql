@@ -293,7 +293,7 @@ CREATE TABLE IF NOT EXISTS engineer (
         REFERENCES department(department_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='엔지니어 테이블';
 
-CREATE TABLE IF NOT EXISTS cumulative_patch (
+CREATE TABLE IF NOT EXISTS patch_file (
     patch_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '패치 ID',
     project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
     release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
@@ -308,21 +308,21 @@ CREATE TABLE IF NOT EXISTS cumulative_patch (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
-    INDEX idx_cp_project_id (project_id),
-    INDEX idx_cp_release_type (release_type),
-    INDEX idx_cp_customer_id (customer_id),
-    INDEX idx_cp_from_version (from_version),
-    INDEX idx_cp_to_version (to_version),
-    INDEX idx_cp_engineer_id (engineer_id),
-    INDEX idx_cp_created_at (created_at),
+    INDEX idx_pf_project_id (project_id),
+    INDEX idx_pf_release_type (release_type),
+    INDEX idx_pf_customer_id (customer_id),
+    INDEX idx_pf_from_version (from_version),
+    INDEX idx_pf_to_version (to_version),
+    INDEX idx_pf_engineer_id (engineer_id),
+    INDEX idx_pf_created_at (created_at),
 
-    CONSTRAINT fk_cumulative_patch_project FOREIGN KEY (project_id)
+    CONSTRAINT fk_patch_file_project FOREIGN KEY (project_id)
         REFERENCES project(project_id) ON DELETE RESTRICT,
-    CONSTRAINT fk_cumulative_patch_customer FOREIGN KEY (customer_id)
+    CONSTRAINT fk_patch_file_customer FOREIGN KEY (customer_id)
         REFERENCES customer(customer_id) ON DELETE SET NULL,
-    CONSTRAINT fk_cumulative_patch_engineer FOREIGN KEY (engineer_id)
+    CONSTRAINT fk_patch_file_engineer FOREIGN KEY (engineer_id)
         REFERENCES engineer(engineer_id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='누적 패치 테이블';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='패치 파일 테이블';
 
 CREATE TABLE menu (
     menu_id VARCHAR(50) PRIMARY KEY COMMENT '메뉴 ID',
@@ -437,3 +437,22 @@ CREATE TABLE IF NOT EXISTS service_component (
 
     CONSTRAINT fk_component_service FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='서비스 컴포넌트 (접속 정보)';
+
+-- =========================================================
+-- 파일 동기화 무시 목록 테이블
+-- =========================================================
+-- 파일 동기화 분석 시 제외할 파일 경로를 관리합니다.
+-- IGNORE 액션 적용 시 이 테이블에 등록되며, 이후 분석에서 제외됩니다.
+
+CREATE TABLE IF NOT EXISTS file_sync_ignore (
+    ignore_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '무시 항목 ID',
+    file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (상대 경로)',
+    target_type VARCHAR(50) NOT NULL COMMENT '대상 유형 (RELEASE_FILE, RESOURCE_FILE, BACKUP_FILE)',
+    status VARCHAR(50) NOT NULL COMMENT '무시 당시 상태 (UNREGISTERED, FILE_MISSING, SIZE_MISMATCH, CHECKSUM_MISMATCH)',
+    ignored_by VARCHAR(100) NOT NULL COMMENT '무시 처리자 (이메일)',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+
+    UNIQUE KEY uk_file_sync_ignore_path_target (file_path, target_type),
+    INDEX idx_file_sync_ignore_target_type (target_type),
+    INDEX idx_file_sync_ignore_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='파일 동기화 무시 목록';

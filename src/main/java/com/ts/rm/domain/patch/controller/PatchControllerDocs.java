@@ -234,7 +234,7 @@ public interface PatchControllerDocs {
             summary = "패치 삭제",
             description = "패치를 삭제합니다.\n\n"
                     + "**삭제 범위**:\n"
-                    + "- DB 레코드 (cumulative_patch 테이블)\n"
+                    + "- DB 레코드 (patch_file 테이블)\n"
                     + "- 실제 파일 디렉토리 (patches/{patchName}/ 전체)\n\n"
                     + "**주의사항**:\n"
                     + "- 삭제된 데이터는 복구할 수 없습니다.\n"

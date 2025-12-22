@@ -27,6 +27,9 @@ import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -101,8 +104,12 @@ class AccountControllerTest {
     @DisplayName("계정 목록 조회 - 성공")
     void getAccounts_Success() throws Exception {
         // given
-        List<AccountDto.SimpleResponse> accounts = List.of(simpleResponse);
-        given(accountService.getAccounts(null, null)).willReturn(accounts);
+        AccountDto.ListResponse listResponse = new AccountDto.ListResponse(
+                1L, 1L, "test@example.com", "테스트계정", "USER", "ACTIVE",
+                LocalDateTime.now(), LocalDateTime.now()
+        );
+        Page<AccountDto.ListResponse> accountPage = new PageImpl<>(List.of(listResponse));
+        given(accountService.getAccounts(any(), any(), any(Pageable.class))).willReturn(accountPage);
 
         // when & then
         mockMvc.perform(get("/api/accounts")
@@ -110,17 +117,20 @@ class AccountControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].accountId").value(1))
-                .andExpect(jsonPath("$.data[0].email").value("test@example.com"));
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].accountId").value(1));
     }
 
     @Test
     @DisplayName("계정 목록 조회 - 상태 필터링")
     void getAccounts_WithStatusFilter_Success() throws Exception {
         // given
-        List<AccountDto.SimpleResponse> accounts = List.of(simpleResponse);
-        given(accountService.getAccounts(eq(AccountStatus.ACTIVE), eq(null))).willReturn(accounts);
+        AccountDto.ListResponse listResponse = new AccountDto.ListResponse(
+                1L, 1L, "test@example.com", "테스트계정", "USER", "ACTIVE",
+                LocalDateTime.now(), LocalDateTime.now()
+        );
+        Page<AccountDto.ListResponse> accountPage = new PageImpl<>(List.of(listResponse));
+        given(accountService.getAccounts(eq(AccountStatus.ACTIVE), any(), any(Pageable.class))).willReturn(accountPage);
 
         // when & then
         mockMvc.perform(get("/api/accounts")
@@ -129,15 +139,19 @@ class AccountControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data.content").isArray());
     }
 
     @Test
     @DisplayName("계정 목록 조회 - 키워드 검색")
     void getAccounts_WithKeyword_Success() throws Exception {
         // given
-        List<AccountDto.SimpleResponse> accounts = List.of(simpleResponse);
-        given(accountService.getAccounts(null, "테스트")).willReturn(accounts);
+        AccountDto.ListResponse listResponse = new AccountDto.ListResponse(
+                1L, 1L, "test@example.com", "테스트계정", "USER", "ACTIVE",
+                LocalDateTime.now(), LocalDateTime.now()
+        );
+        Page<AccountDto.ListResponse> accountPage = new PageImpl<>(List.of(listResponse));
+        given(accountService.getAccounts(any(), eq("테스트"), any(Pageable.class))).willReturn(accountPage);
 
         // when & then
         mockMvc.perform(get("/api/accounts")
@@ -146,7 +160,7 @@ class AccountControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data.content").isArray());
     }
 
     // ========================================
@@ -158,7 +172,7 @@ class AccountControllerTest {
     void updateAccount_Success_WithAdminRole() throws Exception {
         // given
         AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
-                .password("newPassword123")
+                .accountName("새로운이름")
                 .role("ADMIN")
                 .status("INACTIVE")
                 .build();
@@ -187,7 +201,7 @@ class AccountControllerTest {
     void updateAccount_Fail_WithoutAdminRole() throws Exception {
         // given
         AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
-                .password("newPassword123")
+                .accountName("새로운이름")
                 .build();
 
         // RoleValidator.requireAdmin() mock - FORBIDDEN 예외 발생
@@ -209,7 +223,7 @@ class AccountControllerTest {
     void updateAccount_Fail_AccountNotFound() throws Exception {
         // given
         AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
-                .password("newPassword123")
+                .accountName("새로운이름")
                 .build();
 
         given(accountService.adminUpdateAccount(anyLong(), any(AccountDto.AdminUpdateRequest.class)))
@@ -231,9 +245,9 @@ class AccountControllerTest {
     @Test
     @DisplayName("계정 수정 - 실패 (잘못된 입력값)")
     void updateAccount_Fail_InvalidInput() throws Exception {
-        // given: 비밀번호가 8자 미만 (validation 실패)
+        // given: 이름이 1자 (validation 실패 - 2자 이상 필요)
         AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
-                .password("short")
+                .accountName("a")
                 .build();
 
         // RoleValidator.requireAdmin() mock

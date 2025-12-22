@@ -22,6 +22,10 @@ import com.ts.rm.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -153,41 +157,37 @@ class AccountServiceTest {
     @DisplayName("전체 계정 조회 - 성공")
     void getAllAccounts_Success() {
         // given
+        Pageable pageable = PageRequest.of(0, 10);
         List<Account> accounts = List.of(testAccount);
-        List<AccountDto.SimpleResponse> simpleResponses = List.of(
-                new AccountDto.SimpleResponse(1L, "test@example.com", "테스트계정", "ACTIVE")
-        );
+        Page<Account> accountPage = new PageImpl<>(accounts, pageable, 1);
 
-        given(accountRepository.findAll()).willReturn(accounts);
-        given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
+        given(accountRepository.findAll(any(Pageable.class))).willReturn(accountPage);
 
         // when
-        List<AccountDto.SimpleResponse> result = accountService.getAccounts(null, null);
+        Page<AccountDto.ListResponse> result = accountService.getAccounts(null, null, pageable);
 
         // then
-        assertThat(result).hasSize(1);
-        then(accountRepository).should(times(1)).findAll();
+        assertThat(result.getContent()).hasSize(1);
+        then(accountRepository).should(times(1)).findAll(pageable);
     }
 
     @Test
     @DisplayName("상태별 계정 조회 - 성공")
     void getAccountsByStatus_Success() {
         // given
+        Pageable pageable = PageRequest.of(0, 10);
         List<Account> accounts = List.of(testAccount);
-        List<AccountDto.SimpleResponse> simpleResponses = List.of(
-                new AccountDto.SimpleResponse(1L, "test@example.com", "테스트계정", "ACTIVE")
-        );
+        Page<Account> accountPage = new PageImpl<>(accounts, pageable, 1);
 
-        given(accountRepository.findAllByStatus(anyString())).willReturn(accounts);
-        given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
+        given(accountRepository.findAllByStatus(anyString(), any(Pageable.class))).willReturn(accountPage);
 
         // when
-        List<AccountDto.SimpleResponse> result = accountService.getAccounts(
-                AccountStatus.ACTIVE, null);
+        Page<AccountDto.ListResponse> result = accountService.getAccounts(
+                AccountStatus.ACTIVE, null, pageable);
 
         // then
-        assertThat(result).hasSize(1);
-        then(accountRepository).should(times(1)).findAllByStatus("ACTIVE");
+        assertThat(result.getContent()).hasSize(1);
+        then(accountRepository).should(times(1)).findAllByStatus("ACTIVE", pageable);
     }
 
     @Test
@@ -265,20 +265,18 @@ class AccountServiceTest {
     @DisplayName("이름으로 계정 검색 - 성공")
     void searchAccountsByName_Success() {
         // given
+        Pageable pageable = PageRequest.of(0, 10);
         List<Account> accounts = List.of(testAccount);
-        List<AccountDto.SimpleResponse> simpleResponses = List.of(
-                new AccountDto.SimpleResponse(1L, "test@example.com", "테스트계정", "ACTIVE")
-        );
+        Page<Account> accountPage = new PageImpl<>(accounts, pageable, 1);
 
-        given(accountRepository.findByAccountNameContaining(anyString())).willReturn(accounts);
-        given(mapper.toSimpleResponseList(any())).willReturn(simpleResponses);
+        given(accountRepository.findByAccountNameContaining(anyString(), any(Pageable.class))).willReturn(accountPage);
 
         // when
-        List<AccountDto.SimpleResponse> result = accountService.getAccounts(null, "테스트");
+        Page<AccountDto.ListResponse> result = accountService.getAccounts(null, "테스트", pageable);
 
         // then
-        assertThat(result).hasSize(1);
-        then(accountRepository).should(times(1)).findByAccountNameContaining("테스트");
+        assertThat(result.getContent()).hasSize(1);
+        then(accountRepository).should(times(1)).findByAccountNameContaining("테스트", pageable);
     }
 
     // ========================================
@@ -286,11 +284,11 @@ class AccountServiceTest {
     // ========================================
 
     @Test
-    @DisplayName("관리자 계정 수정 - 비밀번호만 수정")
-    void adminUpdateAccount_UpdatePasswordOnly_Success() {
+    @DisplayName("관리자 계정 수정 - 이름만 수정")
+    void adminUpdateAccount_UpdateNameOnly_Success() {
         // given
         AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
-                .password("newPassword123")
+                .accountName("새로운이름")
                 .build();
 
         AccountDto.DetailResponse expectedResponse = new AccountDto.DetailResponse(
@@ -365,7 +363,7 @@ class AccountServiceTest {
     void adminUpdateAccount_UpdateAllFields_Success() {
         // given
         AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
-                .password("newPassword123")
+                .accountName("새로운이름")
                 .role("ADMIN")
                 .status("INACTIVE")
                 .build();
@@ -425,7 +423,7 @@ class AccountServiceTest {
     void adminUpdateAccount_AccountNotFound_Fail() {
         // given
         AccountDto.AdminUpdateRequest request = AccountDto.AdminUpdateRequest.builder()
-                .password("newPassword123")
+                .accountName("새로운이름")
                 .build();
 
         given(accountRepository.findByAccountId(anyLong())).willReturn(Optional.empty());

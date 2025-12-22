@@ -116,6 +116,9 @@ class ReleaseVersionServiceTest {
                 "1.1.x",
                 "jhlee@tscientific",
                 "새로운 기능",
+                false,
+                null,
+                null,
                 null,
                 LocalDateTime.now(),
                 new ArrayList<>()
@@ -271,8 +274,8 @@ class ReleaseVersionServiceTest {
         List<ReleaseVersionDto.SimpleResponse> simpleResponses = List.of(
                 new ReleaseVersionDto.SimpleResponse(
                         1L, "infraeye2", "STANDARD", null, "1.1.0", "1.1.x",
-                        "jhlee@tscientific", "새로운 기능", new ArrayList<>(),
-                        LocalDateTime.now(), 0
+                        "jhlee@tscientific", "새로운 기능", false, null, null,
+                        new ArrayList<>(), LocalDateTime.now(), 0
                 )
         );
 
@@ -332,8 +335,8 @@ class ReleaseVersionServiceTest {
         List<ReleaseVersionDto.SimpleResponse> simpleResponses = List.of(
                 new ReleaseVersionDto.SimpleResponse(
                         1L, "infraeye2", "STANDARD", null, "1.1.0", "1.1.x",
-                        "jhlee@tscientific", "새로운 기능", new ArrayList<>(),
-                        LocalDateTime.now(), 0
+                        "jhlee@tscientific", "새로운 기능", false, null, null,
+                        new ArrayList<>(), LocalDateTime.now(), 0
                 )
         );
 
