@@ -107,7 +107,7 @@ services:
       # JVM 설정 (heap메모리 1GB)
       JAVA_OPTS: "-Xms1024m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
     volumes:
-      - ${DOCKER_MOUNT_PATH_RESOURCES}:/app/resources
+      - ${RELEASE_DIR}:/app/resources
     ports:
       # 호스트:컨테이너 포트 매핑
       - "${SERVER_EXTERNAL_PORT:-18080}:${SERVER_PORT:-8081}"

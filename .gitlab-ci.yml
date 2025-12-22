@@ -178,8 +178,7 @@ stages:
       echo "$HARBOR_PASSWORD" | docker login http://$HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin || echo "⚠️  Harbor 로그인 실패"
   script:
     - |
-      # 1. 환경 변수 선언 (gitlab-ci -> docker-compose)
-      export DOCKER_MOUNT_PATH_RESOURCES=${DOCKER_MOUNT_PATH_RESOURCES}
+      # 1. 환경 변수 선언 (gitlab-ci variables -> docker-compose)
       export RELEASE_DIR=${RELEASE_DIR}
     - |
       # JAR에서 리소스 파일 추출 및 복사 (최신 파일로 업데이트)
@@ -371,7 +370,6 @@ deploy-main:
   extends: .deploy-template
   variables:
     RELEASE_DIR: "/mnt/release-manager/resources"
-    DOCKER_MOUNT_PATH_RESOURCES: "/mnt/release-manager/resources"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   tags:
