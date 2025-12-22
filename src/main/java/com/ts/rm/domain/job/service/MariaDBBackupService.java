@@ -38,7 +38,7 @@ public class MariaDBBackupService {
     private static final String FILE_TYPE = "SQL";
     private static final String LOG_TYPE_BACKUP = "BACKUP";
 
-    @Value("${app.release.base-path:/app/release_files}")
+    @Value("${app.release.base-path}")
     private String releaseBasePath;
 
     private final JobStatusManager jobStatusManager;

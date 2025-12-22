@@ -43,7 +43,7 @@ public class BackupLogService {
     private final BackupFileRepository backupFileRepository;
     private final BackupFileLogRepository backupFileLogRepository;
 
-    @Value("${app.release.base-path:/app/release_files}")
+    @Value("${app.release.base-path}")
     private String releaseBasePath;
 
     /**

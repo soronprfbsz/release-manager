@@ -35,7 +35,7 @@ public class MariaDBRestoreService {
     private static final String FILE_CATEGORY = "MARIADB";
     private static final String LOG_TYPE_RESTORE = "RESTORE";
 
-    @Value("${app.release.base-path:/app/release_files}")
+    @Value("${app.release.base-path}")
     private String releaseBasePath;
 
     private final JobStatusManager jobStatusManager;

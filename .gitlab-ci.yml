@@ -166,7 +166,7 @@ stages:
 
       # Docker 환경 설정 추가
       echo "DOCKER_IMAGE=${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" >> .env
-      echo "RELEASE_BASE_PATH=/app/release_files" >> .env
+      echo "RELEASE_BASE_PATH=/app/resources" >> .env
 
       echo "✅ .env 파일 생성 완료:"
       cat .env
@@ -178,21 +178,9 @@ stages:
       echo "$HARBOR_PASSWORD" | docker login http://$HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin || echo "⚠️  Harbor 로그인 실패"
   script:
     - |
-      echo "=== App 이미지 확인 ==="
-      LOCAL_IMAGE="ts/${SERVER_NAME}:latest"
-
-      if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${LOCAL_IMAGE}$"; then
-        echo "❌ 로컬 이미지가 존재하지 않습니다: ${LOCAL_IMAGE}"
-        echo "   docker-build-job이 실패했습니다"
-        exit 1
-      fi
-
-      echo "✓ 로컬 이미지 확인: ${LOCAL_IMAGE}"
-
     # JAR에서 리소스 파일 추출 및 복사 (최신 파일로 업데이트)
     - |
       echo "=== 리소스 파일 동기화 ==="
-      RELEASE_DIR="/data/release_manager/release_files"
       JAR_FILE=$(ls build/libs/*.jar | head -1)
       TEMP_EXTRACT_DIR="/tmp/release_extract_$$"
 
@@ -378,6 +366,9 @@ harbor-push-main:
 
 deploy-main:
   extends: .deploy-template
+  variables:
+    RELEASE_DIR: "/mnt/release-manager/resources"
+    DOCKER_MOUNT_PATH_RESOURCES: "/mnt/release-manager/resources"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   tags:
@@ -436,6 +427,8 @@ harbor-push-dev:
 
 deploy-dev:
   extends: .deploy-template
+  variables:
+    RELEASE_DIR: "/data/release-manager/resources"
   rules:
     - if: '$CI_COMMIT_BRANCH == "dev"'
   tags:

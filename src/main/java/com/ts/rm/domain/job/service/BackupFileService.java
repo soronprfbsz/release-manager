@@ -37,7 +37,7 @@ public class BackupFileService {
     private final BackupFileRepository backupFileRepository;
     private final BackupFileDtoMapper backupFileDtoMapper;
 
-    @Value("${app.release.base-path:/app/release_files}")
+    @Value("${app.release.base-path}")
     private String releaseBasePath;
 
     /**
