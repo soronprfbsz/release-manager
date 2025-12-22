@@ -53,7 +53,10 @@ public final class ProjectDto {
             String projectName,
 
             @Schema(description = "설명", example = "Infraeye 1.0 - 레거시 NMS 솔루션")
-            String description
+            String description,
+
+            @Schema(description = "활성 여부", example = "true")
+            Boolean isEnabled
     ) {
 
     }
@@ -75,6 +78,9 @@ public final class ProjectDto {
 
             @Schema(description = "설명", example = "Infraeye 1.0 - 레거시 NMS 솔루션")
             String description,
+
+            @Schema(description = "활성 여부", example = "true")
+            Boolean isEnabled,
 
             @Schema(description = "생성일시")
             LocalDateTime createdAt,

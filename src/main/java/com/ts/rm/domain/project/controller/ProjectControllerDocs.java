@@ -56,7 +56,7 @@ public interface ProjectControllerDocs {
 
     @Operation(
             summary = "프로젝트 목록 조회",
-            description = "전체 프로젝트 목록을 조회합니다",
+            description = "전체 프로젝트 목록을 조회합니다. isEnabled 파라미터로 활성/비활성 필터링 가능",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",
@@ -66,7 +66,10 @@ public interface ProjectControllerDocs {
                     )
             )
     )
-    ResponseEntity<ApiResponse<List<ProjectDto.DetailResponse>>> getAllProjects();
+    ResponseEntity<ApiResponse<List<ProjectDto.DetailResponse>>> getAllProjects(
+            @Parameter(description = "활성 여부 필터 (null이면 전체 조회)")
+            Boolean isEnabled
+    );
 
     @Operation(
             summary = "프로젝트 수정",

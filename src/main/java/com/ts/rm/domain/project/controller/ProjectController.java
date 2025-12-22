@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -66,12 +67,14 @@ public class ProjectController implements ProjectControllerDocs {
     /**
      * 프로젝트 목록 조회
      *
+     * @param isEnabled 활성 여부 필터 (null이면 전체 조회)
      * @return 프로젝트 목록
      */
     @Override
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ProjectDto.DetailResponse>>> getAllProjects() {
-        List<ProjectDto.DetailResponse> response = projectService.getAllProjects();
+    public ResponseEntity<ApiResponse<List<ProjectDto.DetailResponse>>> getAllProjects(
+            @RequestParam(required = false) Boolean isEnabled) {
+        List<ProjectDto.DetailResponse> response = projectService.getAllProjects(isEnabled);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

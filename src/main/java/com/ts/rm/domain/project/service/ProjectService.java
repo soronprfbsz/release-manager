@@ -62,10 +62,16 @@ public class ProjectService {
     /**
      * 프로젝트 목록 조회
      *
+     * @param isEnabled 활성 여부 필터 (null이면 전체 조회)
      * @return 프로젝트 목록
      */
-    public List<ProjectDto.DetailResponse> getAllProjects() {
-        List<Project> projects = projectRepository.findAllByOrderByProjectNameAsc();
+    public List<ProjectDto.DetailResponse> getAllProjects(Boolean isEnabled) {
+        List<Project> projects;
+        if (isEnabled != null) {
+            projects = projectRepository.findAllByIsEnabledOrderByProjectNameAsc(isEnabled);
+        } else {
+            projects = projectRepository.findAllByOrderByProjectNameAsc();
+        }
         return mapper.toDetailResponseList(projects);
     }
 
@@ -90,6 +96,9 @@ public class ProjectService {
         }
         if (request.description() != null) {
             project.setDescription(request.description());
+        }
+        if (request.isEnabled() != null) {
+            project.setIsEnabled(request.isEnabled());
         }
 
         // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
