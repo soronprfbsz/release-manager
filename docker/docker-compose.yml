@@ -14,8 +14,8 @@ services:
       - --long-query-time=5
       - --slow-query-log-file=/var/log/mysql/slow-query.log
     volumes:
-      - /data/release_manager/mariadb/lib:/var/lib/mysql
-      - /data/release_manager/mariadb/log:/var/log/mysql
+      - /data/release-manager/mariadb/lib:/var/lib/mysql
+      - /data/release-manager/mariadb/log:/var/log/mysql
       - ./init-mariadb.sql:/docker-entrypoint-initdb.d/init.sql
     restart: always
     networks:
@@ -50,7 +50,7 @@ services:
       - --dir
       - /data
     volumes:
-      - /data/release_manager/redis/data:/data
+      - /data/release-manager/redis/data:/data
     networks:
       - network-ts
     restart: always
