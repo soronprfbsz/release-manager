@@ -33,4 +33,12 @@ public interface ProjectRepository extends JpaRepository<Project, String> {
      * @return 프로젝트 목록
      */
     List<Project> findAllByOrderByProjectNameAsc();
+
+    /**
+     * 활성 상태별 프로젝트 목록 조회 (프로젝트명 오름차순)
+     *
+     * @param isEnabled 활성 여부
+     * @return 프로젝트 목록
+     */
+    List<Project> findAllByIsEnabledOrderByProjectNameAsc(Boolean isEnabled);
 }
