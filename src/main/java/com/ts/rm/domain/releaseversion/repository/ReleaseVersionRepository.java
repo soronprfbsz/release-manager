@@ -104,4 +104,27 @@ public interface ReleaseVersionRepository extends JpaRepository<ReleaseVersion, 
      * @return 존재 여부
      */
     boolean existsByProject_ProjectIdAndVersion(String projectId, String version);
+
+    /**
+     * 프로젝트, 릴리즈 타입, 버전으로 존재 여부 확인
+     *
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (standard/custom)
+     * @param version     버전
+     * @return 존재 여부
+     */
+    boolean existsByProject_ProjectIdAndReleaseTypeAndVersion(
+            String projectId, String releaseType, String version);
+
+    /**
+     * 프로젝트, 릴리즈 타입, 고객사, 버전으로 존재 여부 확인
+     *
+     * @param projectId    프로젝트 ID
+     * @param releaseType  릴리즈 타입 (standard/custom)
+     * @param customerCode 고객사 코드
+     * @param version      버전
+     * @return 존재 여부
+     */
+    boolean existsByProject_ProjectIdAndReleaseTypeAndCustomer_CustomerCodeAndVersion(
+            String projectId, String releaseType, String customerCode, String version);
 }

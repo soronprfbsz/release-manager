@@ -27,7 +27,10 @@ INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VA
 ('SERVICE_TYPE', '서비스 분류', '서비스 관리에서 사용하는 서비스 분류', TRUE),
 ('COMPONENT_TYPE', '컴포넌트 유형', '서비스 컴포넌트(접속 정보) 유형', TRUE),
 ('LINK_CATEGORY', '링크 카테고리', '리소스 링크 카테고리 분류', TRUE),
-('LINK_SUBCATEGORY', '링크 서브 카테고리', '리소스 링크 서브 카테고리', TRUE);
+('LINK_SUBCATEGORY', '링크 서브 카테고리', '리소스 링크 서브 카테고리', TRUE),
+('FILE_SYNC_STATUS', '파일 동기화 상태', '파일시스템과 DB 메타데이터 간의 동기화 상태', TRUE),
+('FILE_SYNC_TARGET', '파일 동기화 대상', '동기화 가능한 파일 유형', TRUE),
+('FILE_SYNC_ACTION', '파일 동기화 액션', '불일치 항목에 대해 수행할 수 있는 액션', TRUE);
 
 -- =========================================================
 -- code 테이블 (모든 코드 데이터)
@@ -225,6 +228,28 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('LINK_SUBCATEGORY', 'SHARED-EXCEL', '공유 엑셀', '공유 엑셀 문서 링크', 2, TRUE),
 ('LINK_SUBCATEGORY', 'ETC', '기타', '기타 링크', 99, TRUE);
 
+-- FILE_SYNC_STATUS
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('FILE_SYNC_STATUS', 'SYNCED', '동기화됨', '파일과 메타데이터가 일치합니다', 1, TRUE),
+('FILE_SYNC_STATUS', 'UNREGISTERED', '미등록', '파일시스템에만 존재 (DB 메타데이터 없음)', 2, TRUE),
+('FILE_SYNC_STATUS', 'FILE_MISSING', '파일 없음', 'DB에만 존재 (실제 파일 없음)', 3, TRUE),
+('FILE_SYNC_STATUS', 'SIZE_MISMATCH', '크기 불일치', '파일 크기가 DB 메타데이터와 다릅니다', 4, TRUE),
+('FILE_SYNC_STATUS', 'CHECKSUM_MISMATCH', '체크섬 불일치', '파일 체크섬이 DB 메타데이터와 다릅니다', 5, TRUE);
+
+-- FILE_SYNC_TARGET
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('FILE_SYNC_TARGET', 'RELEASE_FILE', '릴리즈 파일', '버전별 릴리즈 파일 (versions 경로)', 1, TRUE),
+('FILE_SYNC_TARGET', 'RESOURCE_FILE', '리소스 파일', '공용 리소스 파일 (resource 경로)', 2, TRUE),
+('FILE_SYNC_TARGET', 'BACKUP_FILE', '백업 파일', '백업 파일 (job 경로)', 3, TRUE);
+
+-- FILE_SYNC_ACTION
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('FILE_SYNC_ACTION', 'REGISTER', '등록', '미등록 파일을 DB에 등록합니다', 1, TRUE),
+('FILE_SYNC_ACTION', 'UPDATE_METADATA', '메타데이터 갱신', '실제 파일 정보로 DB 메타데이터를 갱신합니다', 2, TRUE),
+('FILE_SYNC_ACTION', 'DELETE_METADATA', '메타데이터 삭제', 'DB에서 메타데이터 레코드를 삭제합니다', 3, TRUE),
+('FILE_SYNC_ACTION', 'DELETE_FILE', '파일 삭제', '파일시스템에서 파일을 삭제합니다', 4, TRUE),
+('FILE_SYNC_ACTION', 'IGNORE', '무시', '이 항목을 무시 목록에 추가합니다', 5, TRUE);
+
 -- =========================================================
 -- account 테이블
 -- =========================================================
@@ -417,7 +442,10 @@ INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visi
 INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
 ('operation_customers', '고객사', 'operations/customers', '고객사 정보를 관리합니다.', FALSE, TRUE, 1),
 ('operation_engineers', '엔지니어', 'operations/engineers', '엔지니어 정보를 관리합니다.', FALSE, TRUE, 2),
-('operation_accounts', '계정', 'operations/accounts', '계정 정보를 관리합니다.', FALSE, TRUE, 3);
+('operation_filesync', '파일 동기화', 'operations/file-sync', '실제 파일과 DB 메타데이터 간 불일치를 분석하고 동기화합니다.', FALSE, TRUE, 3),
+('operation_project', '프로젝트', 'operations/project', '프로젝트 정보를 관리합니다.', FALSE, TRUE, 4),
+('operation_accounts', '계정', 'operations/accounts', '계정 정보를 관리합니다.', FALSE, TRUE, 5);
+
 
 -- 2depth 메뉴 - 개발 지원
 INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
@@ -453,9 +481,11 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('patch_custom', 'patch_custom', 0),
 ('operation_customers', 'operation_customers', 0),
 ('operation_engineers', 'operation_engineers', 0),
+('operation_filesync', 'operation_filesync', 0),
+('operation_project', 'operation_project', 0),
 ('operation_accounts', 'operation_accounts', 0),
 ('remote_jobs', 'remote_jobs', 0),
-('infrastructure', 'infrastructure', 0);
+('infrastructure', 'infrastructure', 0);;
 
 -- 3depth 메뉴 (자기 자신)
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
@@ -478,6 +508,8 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('operation_management', 'operation_customers', 1),
 ('operation_management', 'operation_engineers', 1),
+('operation_management', 'operation_filesync', 1),
+('operation_management', 'operation_project', 1),
 ('operation_management', 'operation_accounts', 1);
 
 -- 부모-자식 관계 (depth=1) - 개발 지원
@@ -525,6 +557,8 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- 2depth - 운영 관리
 ('operation_customers', 'ADMIN'),
 ('operation_engineers', 'ADMIN'),
+('operation_filesync', 'ADMIN'),
+('operation_project', 'ADMIN'),
 ('operation_accounts', 'ADMIN'),
 -- 2depth - 개발 지원
 ('remote_jobs', 'ADMIN'),
@@ -552,6 +586,8 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- 2depth - 운영 관리 (계정 제외)
 ('operation_customers', 'USER'),
 ('operation_engineers', 'USER'),
+('operation_filesync', 'USER'),
+('operation_project', 'USER'),
 -- 2depth - 개발 지원
 ('remote_jobs', 'USER'),
 ('infrastructure', 'USER'),

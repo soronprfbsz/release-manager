@@ -6,6 +6,8 @@ import com.ts.rm.domain.account.entity.Account;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,11 +110,11 @@ class AccountRepositoryTest {
         accountRepository.save(inactiveAccount);
 
         // when
-        List<Account> activeAccounts = accountRepository.findAllByStatus("ACTIVE");
+        Page<Account> activeAccountsPage = accountRepository.findAllByStatus("ACTIVE", PageRequest.of(0, 10));
 
         // then
-        assertThat(activeAccounts).hasSize(1);
-        assertThat(activeAccounts.get(0).getEmail()).isEqualTo("test@example.com");
+        assertThat(activeAccountsPage.getContent()).hasSize(1);
+        assertThat(activeAccountsPage.getContent().get(0).getEmail()).isEqualTo("test@example.com");
     }
 
     @Test
@@ -154,11 +156,11 @@ class AccountRepositoryTest {
         accountRepository.save(anotherAccount);
 
         // when
-        List<Account> results = accountRepository.findByAccountNameContaining("테스트");
+        Page<Account> resultsPage = accountRepository.findByAccountNameContaining("테스트", PageRequest.of(0, 10));
 
         // then
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).getAccountName()).contains("테스트");
+        assertThat(resultsPage.getContent()).hasSize(1);
+        assertThat(resultsPage.getContent().get(0).getAccountName()).contains("테스트");
     }
 
     /**

@@ -21,12 +21,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Patch Entity (Cumulative Patch)
+ * Patch Entity
  *
- * <p>누적 패치 테이블 - 누적 패치 생성 기록 관리
+ * <p>패치 파일 테이블 - 패치 생성 기록 관리
  */
 @Entity
-@Table(name = "cumulative_patch")
+@Table(name = "patch_file")
 @Getter
 @Setter
 @NoArgsConstructor
