@@ -443,7 +443,7 @@ INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visi
 ('operation_customers', '고객사', 'operations/customers', '고객사 정보를 관리합니다.', FALSE, TRUE, 1),
 ('operation_engineers', '엔지니어', 'operations/engineers', '엔지니어 정보를 관리합니다.', FALSE, TRUE, 2),
 ('operation_filesync', '파일 동기화', 'operations/file-sync', '실제 파일과 DB 메타데이터 간 불일치를 분석하고 동기화합니다.', FALSE, TRUE, 3),
-('operation_project', '프로젝트', 'operations/project', '프로젝트 정보를 관리합니다.', FALSE, TRUE, 4),
+('operation_projects', '프로젝트', 'operations/projects', '프로젝트 정보를 관리합니다.', FALSE, TRUE, 4),
 ('operation_accounts', '계정', 'operations/accounts', '계정 정보를 관리합니다.', FALSE, TRUE, 5);
 
 
@@ -482,7 +482,7 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('operation_customers', 'operation_customers', 0),
 ('operation_engineers', 'operation_engineers', 0),
 ('operation_filesync', 'operation_filesync', 0),
-('operation_project', 'operation_project', 0),
+('operation_projects', 'operation_projects', 0),
 ('operation_accounts', 'operation_accounts', 0),
 ('remote_jobs', 'remote_jobs', 0),
 ('infrastructure', 'infrastructure', 0);;
@@ -509,7 +509,7 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('operation_management', 'operation_customers', 1),
 ('operation_management', 'operation_engineers', 1),
 ('operation_management', 'operation_filesync', 1),
-('operation_management', 'operation_project', 1),
+('operation_management', 'operation_projects', 1),
 ('operation_management', 'operation_accounts', 1);
 
 -- 부모-자식 관계 (depth=1) - 개발 지원
@@ -558,7 +558,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('operation_customers', 'ADMIN'),
 ('operation_engineers', 'ADMIN'),
 ('operation_filesync', 'ADMIN'),
-('operation_project', 'ADMIN'),
+('operation_projects', 'ADMIN'),
 ('operation_accounts', 'ADMIN'),
 -- 2depth - 개발 지원
 ('remote_jobs', 'ADMIN'),
@@ -587,7 +587,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('operation_customers', 'USER'),
 ('operation_engineers', 'USER'),
 ('operation_filesync', 'USER'),
-('operation_project', 'USER'),
+('operation_projects', 'USER'),
 -- 2depth - 개발 지원
 ('remote_jobs', 'USER'),
 ('infrastructure', 'USER'),
