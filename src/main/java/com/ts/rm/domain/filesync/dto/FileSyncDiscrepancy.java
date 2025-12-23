@@ -26,6 +26,9 @@ public class FileSyncDiscrepancy {
     /** 파일 유형 */
     private FileSyncTarget target;
 
+    /** 파일 유형 이름 */
+    private String targetName;
+
     /** 파일 경로 (상대 경로) */
     private String filePath;
 

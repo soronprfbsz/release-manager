@@ -1,5 +1,6 @@
 package com.ts.rm.domain.filesync.service;
 
+import com.ts.rm.domain.common.service.CodeService;
 import com.ts.rm.domain.common.service.FileStorageService;
 import com.ts.rm.domain.filesync.entity.FileSyncIgnore;
 import com.ts.rm.domain.filesync.repository.FileSyncIgnoreRepository;
@@ -49,12 +50,15 @@ public class FileSyncService {
 
     private final FileStorageService fileStorageService;
     private final FileSyncIgnoreRepository fileSyncIgnoreRepository;
+    private final CodeService codeService;
     private final List<FileSyncAdapter> adapters;
 
     /** 분석 결과 캐시 (apply 시 참조용) */
     private final Map<String, FileSyncDiscrepancy> discrepancyCache = new ConcurrentHashMap<>();
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final String CODE_TYPE_FILE_SYNC_STATUS = "FILE_SYNC_STATUS";
+    private static final String CODE_TYPE_FILE_SYNC_TARGET = "FILE_SYNC_TARGET";
 
     /**
      * 파일 동기화 분석
@@ -69,6 +73,10 @@ public class FileSyncService {
 
         // 캐시 초기화
         discrepancyCache.clear();
+
+        // 코드 테이블에서 동적 메시지 조회
+        Map<String, String> statusDescriptions = codeService.getCodeDescriptionMap(CODE_TYPE_FILE_SYNC_STATUS);
+        Map<String, String> targetNames = codeService.getCodeNameMap(CODE_TYPE_FILE_SYNC_TARGET);
 
         List<FileSyncAdapter> targetAdapters = getTargetAdapters(request.getTargets());
         List<FileSyncDiscrepancy> allDiscrepancies = new ArrayList<>();
@@ -106,7 +114,7 @@ public class FileSyncService {
 
             // 3. 비교 및 불일치 추출
             List<FileSyncDiscrepancy> discrepancies = compareFiles(
-                    adapter, dbFileMap, fsFileMap);
+                    adapter, dbFileMap, fsFileMap, statusDescriptions, targetNames);
 
             // 4. 무시 목록에 있는 항목 필터링
             int beforeFilter = discrepancies.size();
@@ -291,9 +299,12 @@ public class FileSyncService {
     private List<FileSyncDiscrepancy> compareFiles(
             FileSyncAdapter adapter,
             Map<String, FileSyncMetadata> dbFileMap,
-            Map<String, FileSyncMetadata> fsFileMap) {
+            Map<String, FileSyncMetadata> fsFileMap,
+            Map<String, String> statusDescriptions,
+            Map<String, String> targetNames) {
 
         FileSyncTarget target = adapter.getTarget();
+        String targetName = targetNames.getOrDefault(target.name(), target.name());
         List<FileSyncDiscrepancy> discrepancies = new ArrayList<>();
 
         // 1. DB에만 있는 파일 (FILE_MISSING)
@@ -302,9 +313,10 @@ public class FileSyncService {
             if (!fsFileMap.containsKey(path)) {
                 FileSyncMetadata dbMeta = entry.getValue();
                 discrepancies.add(createDiscrepancy(
-                        target, path, dbMeta.getFileName(),
+                        target, targetName, path, dbMeta.getFileName(),
                         FileSyncStatus.FILE_MISSING,
-                        "DB에만 존재 (실제 파일 없음)",
+                        statusDescriptions.getOrDefault(FileSyncStatus.FILE_MISSING.name(),
+                                FileSyncStatus.FILE_MISSING.getDescription()),
                         null, dbMeta,
                         List.of(FileSyncAction.DELETE_METADATA, FileSyncAction.IGNORE)));
             }
@@ -322,9 +334,10 @@ public class FileSyncService {
                 }
                 FileSyncMetadata fsMeta = entry.getValue();
                 discrepancies.add(createDiscrepancy(
-                        target, path, fsMeta.getFileName(),
+                        target, targetName, path, fsMeta.getFileName(),
                         FileSyncStatus.UNREGISTERED,
-                        "파일시스템에만 존재 (DB 메타데이터 없음)",
+                        statusDescriptions.getOrDefault(FileSyncStatus.UNREGISTERED.name(),
+                                FileSyncStatus.UNREGISTERED.getDescription()),
                         fsMeta, null,
                         List.of(FileSyncAction.REGISTER, FileSyncAction.DELETE_FILE, FileSyncAction.IGNORE)));
             }
@@ -340,10 +353,10 @@ public class FileSyncService {
                 // 크기 비교
                 if (!Objects.equals(dbMeta.getFileSize(), fsMeta.getFileSize())) {
                     discrepancies.add(createDiscrepancy(
-                            target, path, dbMeta.getFileName(),
+                            target, targetName, path, dbMeta.getFileName(),
                             FileSyncStatus.SIZE_MISMATCH,
-                            String.format("파일 크기 불일치 (DB: %d, 실제: %d)",
-                                    dbMeta.getFileSize(), fsMeta.getFileSize()),
+                            statusDescriptions.getOrDefault(FileSyncStatus.SIZE_MISMATCH.name(),
+                                    FileSyncStatus.SIZE_MISMATCH.getDescription()),
                             fsMeta, dbMeta,
                             List.of(FileSyncAction.UPDATE_METADATA, FileSyncAction.IGNORE)));
                 }
@@ -351,9 +364,10 @@ public class FileSyncService {
                 else if (dbMeta.getChecksum() != null && fsMeta.getChecksum() != null
                         && !dbMeta.getChecksum().equals(fsMeta.getChecksum())) {
                     discrepancies.add(createDiscrepancy(
-                            target, path, dbMeta.getFileName(),
+                            target, targetName, path, dbMeta.getFileName(),
                             FileSyncStatus.CHECKSUM_MISMATCH,
-                            "파일 체크섬 불일치",
+                            statusDescriptions.getOrDefault(FileSyncStatus.CHECKSUM_MISMATCH.name(),
+                                    FileSyncStatus.CHECKSUM_MISMATCH.getDescription()),
                             fsMeta, dbMeta,
                             List.of(FileSyncAction.UPDATE_METADATA, FileSyncAction.IGNORE)));
                 }
@@ -368,6 +382,7 @@ public class FileSyncService {
      */
     private FileSyncDiscrepancy createDiscrepancy(
             FileSyncTarget target,
+            String targetName,
             String filePath,
             String fileName,
             FileSyncStatus status,
@@ -400,6 +415,7 @@ public class FileSyncService {
         return FileSyncDiscrepancy.builder()
                 .id(UUID.randomUUID().toString())
                 .target(target)
+                .targetName(targetName)
                 .filePath(filePath)
                 .fileName(fileName)
                 .status(status)

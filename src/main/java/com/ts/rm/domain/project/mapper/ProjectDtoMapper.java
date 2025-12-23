@@ -13,7 +13,6 @@ import org.mapstruct.Mapping;
 public interface ProjectDtoMapper {
 
     @Mapping(target = "isEnabled", constant = "true")
-    @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", constant = "SYSTEM")
     Project toEntity(ProjectDto.CreateRequest request);
 
