@@ -106,7 +106,10 @@ public interface ResourceLinkControllerDocs {
     )
     ApiResponse<List<ResourceLinkDto.SimpleResponse>> listResourceLinks(
             @Parameter(description = "링크 카테고리 필터 (DOCUMENT/TOOL/ETC)")
-            @RequestParam(required = false) String linkCategory
+            @RequestParam(required = false) String linkCategory,
+
+            @Parameter(description = "검색 키워드 (링크명, 링크URL, 설명 통합 검색)")
+            @RequestParam(required = false) String keyword
     );
 
     @Operation(
