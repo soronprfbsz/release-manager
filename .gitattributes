@@ -1,3 +1,9 @@
 /gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
+
+# 텍스트 파일 LF 통일
+*.sql text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+
