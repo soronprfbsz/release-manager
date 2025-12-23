@@ -1,9 +1,15 @@
 /gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
+# 모든 텍스트 파일 LF로 정규화 (저장소 기준)
+  * text=auto eol=lf
 
-# 텍스트 파일 LF 통일
-*.sql text eol=lf
-*.sh text eol=lf
-*.md text eol=lf
+  # 특정 파일 명시
+  *.java text eol=lf
+  *.sql text eol=lf
+  *.sh text eol=lf
+  *.md text eol=lf
+  *.xml text eol=lf
+  *.yml text eol=lf
+  *.json text eol=lf
 
