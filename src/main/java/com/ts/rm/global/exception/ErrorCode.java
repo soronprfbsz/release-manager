@@ -21,6 +21,7 @@ public enum ErrorCode {
   METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "C003", "error.common.method_not_allowed"),
   DATA_NOT_FOUND(HttpStatus.NOT_FOUND, "C004", "error.common.data_not_found"),
   DATA_CONFLICT(HttpStatus.CONFLICT, "C005", "error.common.data_conflict"),
+  REFERENCED_DATA_EXISTS(HttpStatus.CONFLICT, "C006", "error.common.referenced_data_exists"),
 
   // Account - 계정
   ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "A001", "error.account.not_found"),

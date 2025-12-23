@@ -162,4 +162,49 @@ public class BackupFileSyncAdapter implements FileSyncAdapter {
         String value = extractString(data, key);
         return value != null ? value : defaultValue;
     }
+
+    /**
+     * 유효한 동기화 경로인지 확인
+     *
+     * <p>백업 파일은 job/{category}/backup_files/{fileName} 형식이어야 합니다.
+     * 올바른 경로가 아니면 DB 메타데이터를 생성할 수 없으므로 동기화 대상에서 제외합니다.
+     *
+     * @param filePath 파일 경로
+     * @return true면 동기화 대상, false면 무시
+     */
+    @Override
+    public boolean isValidSyncPath(String filePath) {
+        if (filePath == null || filePath.isEmpty()) {
+            return false;
+        }
+
+        // 경로 형식: job/{category}/backup_files/{fileName}
+        // 최소 4개의 경로 부분이 필요: [job, category, backup_files, fileName]
+        String[] pathParts = filePath.split("/");
+        if (pathParts.length < 4) {
+            log.debug("백업 파일 경로 형식 불일치 (최소 4단계 필요): {}", filePath);
+            return false;
+        }
+
+        // 첫 번째 부분이 "job"인지 확인
+        if (!"job".equalsIgnoreCase(pathParts[0])) {
+            log.debug("백업 파일 경로는 'job/'으로 시작해야 합니다: {}", filePath);
+            return false;
+        }
+
+        // category가 비어있지 않은지 확인
+        String category = pathParts[1];
+        if (category.isBlank()) {
+            log.debug("백업 파일 경로의 category가 비어있습니다: {}", filePath);
+            return false;
+        }
+
+        // 세 번째 부분이 "backup_files"인지 확인
+        if (!"backup_files".equalsIgnoreCase(pathParts[2])) {
+            log.debug("백업 파일 경로는 'job/{category}/backup_files/' 형식이어야 합니다: {}", filePath);
+            return false;
+        }
+
+        return true;
+    }
 }

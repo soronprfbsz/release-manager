@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @Slf4j
@@ -124,6 +125,28 @@ public class GlobalExceptionHandler {
         messageSource.getMessage(ErrorCode.INVALID_INPUT_VALUE.getMessageKey(), null, locale);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(ApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE.getCode(), message));
+  }
+
+  // 데이터 무결성 위반
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<ApiResponse<?>> handleDataIntegrityViolation(
+      DataIntegrityViolationException e, Locale locale) {
+    String rootCauseMessage = e.getMostSpecificCause().getMessage();
+    log.warn("Data integrity violation: {}", rootCauseMessage);
+
+    // FK 제약조건 위반 (삭제 시 참조 데이터 존재)
+    if (rootCauseMessage != null && rootCauseMessage.contains("foreign key constraint fails")) {
+      String message =
+          messageSource.getMessage(ErrorCode.REFERENCED_DATA_EXISTS.getMessageKey(), null, locale);
+      return ResponseEntity.status(HttpStatus.CONFLICT)
+          .body(ApiResponse.fail(ErrorCode.REFERENCED_DATA_EXISTS.getCode(), message));
+    }
+
+    // 그 외 무결성 위반은 일반 서버 오류로 처리
+    String message =
+        messageSource.getMessage(ErrorCode.INTERNAL_SERVER_ERROR.getMessageKey(), null, locale);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getCode(), message));
   }
 
   // Path Variable 또는 Request Parameter 타입 불일치 (클라이언트 에러)

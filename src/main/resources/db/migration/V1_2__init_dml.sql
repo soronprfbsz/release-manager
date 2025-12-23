@@ -230,11 +230,11 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 
 -- FILE_SYNC_STATUS
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('FILE_SYNC_STATUS', 'SYNCED', '동기화됨', '파일과 메타데이터가 일치합니다', 1, TRUE),
-('FILE_SYNC_STATUS', 'UNREGISTERED', '미등록', '파일시스템에만 존재 (DB 메타데이터 없음)', 2, TRUE),
-('FILE_SYNC_STATUS', 'FILE_MISSING', '파일 없음', 'DB에만 존재 (실제 파일 없음)', 3, TRUE),
-('FILE_SYNC_STATUS', 'SIZE_MISMATCH', '크기 불일치', '파일 크기가 DB 메타데이터와 다릅니다', 4, TRUE),
-('FILE_SYNC_STATUS', 'CHECKSUM_MISMATCH', '체크섬 불일치', '파일 체크섬이 DB 메타데이터와 다릅니다', 5, TRUE);
+('FILE_SYNC_STATUS', 'SYNCED', '동기화됨', '파일과 DB 데이터가 일치합니다', 1, TRUE),
+('FILE_SYNC_STATUS', 'UNREGISTERED', '미등록', '파일 정보가 DB에 존재하지 않습니다)', 2, TRUE),
+('FILE_SYNC_STATUS', 'FILE_MISSING', '파일 없음', 'DB에는 데이터가 존재하지만 실제 파일이 없습니다', 3, TRUE),
+('FILE_SYNC_STATUS', 'SIZE_MISMATCH', '크기 불일치', '실제 파일 크기가 DB 데이터와 다릅니다', 4, TRUE),
+('FILE_SYNC_STATUS', 'CHECKSUM_MISMATCH', '체크섬 불일치', '파일 체크섬이 DB 데이터와 다릅니다', 5, TRUE);
 
 -- FILE_SYNC_TARGET
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -244,11 +244,11 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 
 -- FILE_SYNC_ACTION
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('FILE_SYNC_ACTION', 'REGISTER', '등록', '미등록 파일을 DB에 등록합니다', 1, TRUE),
-('FILE_SYNC_ACTION', 'UPDATE_METADATA', '메타데이터 갱신', '실제 파일 정보로 DB 메타데이터를 갱신합니다', 2, TRUE),
-('FILE_SYNC_ACTION', 'DELETE_METADATA', '메타데이터 삭제', 'DB에서 메타데이터 레코드를 삭제합니다', 3, TRUE),
+('FILE_SYNC_ACTION', 'REGISTER', '파일 정보 등록', '미등록 파일을 DB에 등록합니다', 1, TRUE),
+('FILE_SYNC_ACTION', 'UPDATE_METADATA', '파일 정보 갱신', '실제 파일 정보로 DB 메타데이터를 갱신합니다', 2, TRUE),
+('FILE_SYNC_ACTION', 'DELETE_METADATA', '파일 정보 삭제', 'DB에서 메타데이터 레코드를 삭제합니다', 3, TRUE),
 ('FILE_SYNC_ACTION', 'DELETE_FILE', '파일 삭제', '파일시스템에서 파일을 삭제합니다', 4, TRUE),
-('FILE_SYNC_ACTION', 'IGNORE', '무시', '이 항목을 무시 목록에 추가합니다', 5, TRUE);
+('FILE_SYNC_ACTION', 'IGNORE', '분석 제외', '이 항목을 분석 제외 목록에 추가합니다', 5, TRUE);
 
 -- =========================================================
 -- account 테이블
@@ -364,17 +364,17 @@ INSERT INTO release_version (project_id, release_type, release_category, custome
 -- release_file 테이블
 -- =========================================================
 INSERT INTO release_file (release_version_id,file_type,file_category,sub_category,file_name,file_path,relative_path,file_size,checksum,execution_order,description) VALUES
-(1,'PDF','ETC',NULL,'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','versions/infraeye2/standard/1.0.x/1.0.0/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',2727778,'4e641f7d25bbaa0061f553b92ef3d9e9',1,'설치 가이드 문서'),
-(1,'MD','ETC',NULL,'설치본정보.md','versions/infraeye2/standard/1.0.x/1.0.0/install/설치본정보.md','/install/설치본정보.md',778,'8e5adf2b877090de4f3ec5739f71216c',2,'설치본 정보'),
-(2,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',39719,'59bddf3da2e7776921dbf867ab172683',1,'DDL 변경'),
-(2,'SQL','DATABASE','MARIADB','2.patch_mariadb_view.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/2.patch_mariadb_view.sql','/database/MARIADB/2.patch_mariadb_view.sql',10742,'6735c7267bedc684f155ce05eaa5b7df',2,'View 변경'),
-(2,'SQL','DATABASE','MARIADB','3.patch_mariadb_데이터코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/3.patch_mariadb_데이터코드.sql','/database/MARIADB/3.patch_mariadb_데이터코드.sql',137161,'56e4688326cf1ad0b67647521d259b8e',3,'데이터 코드 추가'),
-(2,'SQL','DATABASE','MARIADB','4.patch_mariadb_메뉴코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/4.patch_mariadb_메뉴코드.sql','/database/MARIADB/4.patch_mariadb_메뉴코드.sql',25146,'f5214766ea4845f9c37b67e332766394',4,'메뉴 코드 추가'),
-(2,'SQL','DATABASE','MARIADB','5.patch_mariadb_이벤트코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/5.patch_mariadb_이벤트코드.sql','/database/MARIADB/5.patch_mariadb_이벤트코드.sql',39258,'33abaa8ff3dae4c66ecf7294642c25be',5,'이벤트 코드 추가'),
-(2,'SQL','DATABASE','MARIADB','6.patch_mariadb_성능지표.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/6.patch_mariadb_성능지표.sql','/database/MARIADB/6.patch_mariadb_성능지표.sql',118114,'c156eeda96e93f807c3cbde00f7f50e7',6,'성능지표 추가'),
-(2,'SQL','DATABASE','MARIADB','7.patch_mariadb_procedure.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/7.patch_mariadb_procedure.sql','/database/MARIADB/7.patch_mariadb_procedure.sql',22151,'5412bf8d51b126bb082daf41a3455efa',7,'Procedure 변경'),
-(2,'SQL','DATABASE','MARIADB','8.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/8.patch_mariadb_dml.sql','/database/MARIADB/8.patch_mariadb_dml.sql',43051,'f8cd6610ac634ffc0386ae8decb64ce7',8,'DML 변경'),
-(2,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',20304,'b28a28e34a7cf12fcf562494009c3c94',1,'CrateDB DDL 변경');
+(1,'PDF','ETC',NULL,'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','versions/infraeye2/standard/1.0.x/1.0.0/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',2727778,'b281accec63e4126ca6d76aa918397387e3a5247b45788d63608b9357be3cca8',1,'설치 가이드 문서'),
+(1,'MD','ETC',NULL,'설치본정보.md','versions/infraeye2/standard/1.0.x/1.0.0/install/설치본정보.md','/install/설치본정보.md',778,'f612d4751c84808fada280f2d3a28dc55c7718c270198a402f5811d729765cc2',2,'설치본 정보'),
+(2,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',39719,'7e10050f87c62234a6441b575b5c2b30feb97dabeeed3ae80c9e58b42f0b2704',1,'DDL 변경'),
+(2,'SQL','DATABASE','MARIADB','2.patch_mariadb_view.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/2.patch_mariadb_view.sql','/database/MARIADB/2.patch_mariadb_view.sql',10742,'9da2999d53f76aa208e7d96453e4120034f792165a5ad8292571f79bcee21527',2,'View 변경'),
+(2,'SQL','DATABASE','MARIADB','3.patch_mariadb_데이터코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/3.patch_mariadb_데이터코드.sql','/database/MARIADB/3.patch_mariadb_데이터코드.sql',137161,'3d4e9d14c85f717ea8597bb3c61184a92f99146f5be057f9eb83ded98b831245',3,'데이터 코드 추가'),
+(2,'SQL','DATABASE','MARIADB','4.patch_mariadb_메뉴코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/4.patch_mariadb_메뉴코드.sql','/database/MARIADB/4.patch_mariadb_메뉴코드.sql',25146,'d18a6e82b53041185c8599a13d8ef238423f125ad61a00b63792dc801b190b8d',4,'메뉴 코드 추가'),
+(2,'SQL','DATABASE','MARIADB','5.patch_mariadb_이벤트코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/5.patch_mariadb_이벤트코드.sql','/database/MARIADB/5.patch_mariadb_이벤트코드.sql',39258,'4a00780673f805ad3b31eb1a561bc497b5fe2776d4cf5e3e7f1385c9569a49a3',5,'이벤트 코드 추가'),
+(2,'SQL','DATABASE','MARIADB','6.patch_mariadb_성능지표.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/6.patch_mariadb_성능지표.sql','/database/MARIADB/6.patch_mariadb_성능지표.sql',118114,'f83ce4b01bda32d9e17e5d07194edb8c8b18a71313f8a97d3a5ff7f3e3954ec4',6,'성능지표 추가'),
+(2,'SQL','DATABASE','MARIADB','7.patch_mariadb_procedure.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/7.patch_mariadb_procedure.sql','/database/MARIADB/7.patch_mariadb_procedure.sql',22151,'555c94d614e8062493d0cd19610f5721ddbdb4e611acad8be523c821d7ab7005',7,'Procedure 변경'),
+(2,'SQL','DATABASE','MARIADB','8.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/8.patch_mariadb_dml.sql','/database/MARIADB/8.patch_mariadb_dml.sql',43051,'e1aa0be0c40c0ebdcb82715c20e8d23908f98365aecf8556c318f723785faa8b',8,'DML 변경'),
+(2,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',20304,'b5018d9d274d0a3b330b12bdb57eb9b7a7490f038ed0ac90ac53d59a98193252',1,'CrateDB DDL 변경');
 
 -- =========================================================
 -- release_version_hierarchy 테이블

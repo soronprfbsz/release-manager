@@ -61,4 +61,49 @@ public class CodeService {
                 ))
                 .toList();
     }
+
+    /**
+     * 특정 코드의 description 조회
+     *
+     * @param codeTypeId 코드 타입 ID
+     * @param codeId     코드 ID
+     * @return description (없으면 codeId 반환)
+     */
+    public String getCodeDescription(String codeTypeId, String codeId) {
+        return codeRepository.findByCodeTypeIdAndCodeId(codeTypeId, codeId)
+                .map(Code::getDescription)
+                .orElse(codeId);
+    }
+
+    /**
+     * 특정 코드 타입의 모든 코드 description을 Map으로 조회
+     *
+     * @param codeTypeId 코드 타입 ID
+     * @return codeId → description Map
+     */
+    public java.util.Map<String, String> getCodeDescriptionMap(String codeTypeId) {
+        List<Code> codes = codeRepository.findByCodeTypeIdAndIsEnabledTrueOrderBySortOrderAsc(codeTypeId);
+
+        return codes.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Code::getCodeId,
+                        code -> code.getDescription() != null ? code.getDescription() : code.getCodeName()
+                ));
+    }
+
+    /**
+     * 특정 코드 타입의 모든 코드 이름(codeName)을 Map으로 조회
+     *
+     * @param codeTypeId 코드 타입 ID
+     * @return codeId → codeName Map
+     */
+    public java.util.Map<String, String> getCodeNameMap(String codeTypeId) {
+        List<Code> codes = codeRepository.findByCodeTypeIdAndIsEnabledTrueOrderBySortOrderAsc(codeTypeId);
+
+        return codes.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Code::getCodeId,
+                        Code::getCodeName
+                ));
+    }
 }

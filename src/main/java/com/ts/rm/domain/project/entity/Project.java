@@ -1,16 +1,15 @@
 package com.ts.rm.domain.project.entity;
 
+import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
 
 /**
  * Project Entity
@@ -25,7 +24,7 @@ import org.springframework.data.annotation.CreatedDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Project {
+public class Project extends BaseEntity {
 
     @Id
     @Column(name = "project_id", length = 50)
@@ -40,10 +39,6 @@ public class Project {
     @Column(name = "is_enabled", nullable = false)
     @Builder.Default
     private Boolean isEnabled = true;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     @Column(name = "created_by", nullable = false, length = 100)
     @Builder.Default
