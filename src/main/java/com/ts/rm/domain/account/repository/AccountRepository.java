@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * <p>Spring Data JPA 메서드 네이밍으로 CRUD 처리
  * <p>업데이트는 JPA Dirty Checking 사용 (Service에서 엔티티 조회 후 setter 호출)
  */
-public interface AccountRepository extends JpaRepository<Account, Long> {
+public interface AccountRepository extends JpaRepository<Account, Long>, AccountRepositoryCustom {
 
     /**
      * 이메일로 계정 조회
