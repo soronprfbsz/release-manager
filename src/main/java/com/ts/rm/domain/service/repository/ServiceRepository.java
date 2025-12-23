@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
  * <p>서비스 관리 Repository - Spring Data JPA 기반
  */
 @Repository
-public interface ServiceRepository extends JpaRepository<Service, Long> {
+public interface ServiceRepository extends JpaRepository<Service, Long>, ServiceRepositoryCustom {
 
     /**
      * 서비스 ID로 서비스 조회 (컴포넌트 포함 fetch join)

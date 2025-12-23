@@ -88,20 +88,17 @@ public class ServiceService {
 
     /**
      * 서비스 목록 조회 (컴포넌트 포함)
+     * QueryDSL을 사용한 다중 필드 키워드 검색 (서비스명, 서비스타입, 설명)
+     *
+     * @param serviceType 서비스 타입 필터 (null이면 전체)
+     * @param keyword 검색 키워드 - 서비스명, 서비스타입, 설명 통합 검색 (null이면 전체)
+     * @param isActive 활성 여부 필터 (null이면 전체)
+     * @return 서비스 목록
      */
     public List<ServiceDto.DetailResponse> getServices(
-            String serviceType, String serviceName, Boolean isActive) {
-        List<Service> services;
-
-        if (serviceName != null && !serviceName.isBlank()) {
-            services = serviceRepository.findByServiceNameContainingWithComponents(serviceName);
-        } else if (serviceType != null && !serviceType.isBlank()) {
-            services = serviceRepository.findByServiceTypeWithComponents(serviceType);
-        } else if (isActive != null) {
-            services = serviceRepository.findByIsActiveWithComponents(isActive);
-        } else {
-            services = serviceRepository.findAllWithComponents();
-        }
+            String serviceType, String keyword, Boolean isActive) {
+        // QueryDSL 기반 다중 필드 검색
+        List<Service> services = serviceRepository.findAllWithFilters(serviceType, keyword, isActive);
 
         return services.stream()
                 .map(this::toDetailResponseWithNames)

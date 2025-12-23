@@ -135,6 +135,18 @@ public class ResourceLinkService {
     }
 
     /**
+     * 리소스 링크 목록 조회 (카테고리 필터링 + 키워드 검색)
+     * QueryDSL을 사용한 다중 필드 키워드 검색 (링크명, 링크URL, 설명)
+     *
+     * @param linkCategory 링크 카테고리 (null이면 전체)
+     * @param keyword 검색 키워드 - 링크명, 링크URL, 설명 통합 검색 (null이면 전체)
+     * @return 리소스 링크 목록
+     */
+    public List<ResourceLink> listLinksWithFilters(String linkCategory, String keyword) {
+        return resourceLinkRepository.findAllWithFilters(linkCategory, keyword);
+    }
+
+    /**
      * 리소스 링크 순서 변경
      *
      * @param request 순서 변경 요청

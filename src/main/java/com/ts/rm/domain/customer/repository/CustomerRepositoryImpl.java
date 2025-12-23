@@ -88,11 +88,15 @@ public class CustomerRepositoryImpl implements CustomerRepositoryCustom {
     }
 
     /**
-     * 키워드 검색 조건
+     * 키워드 검색 조건 (고객사코드, 고객사명, 설명 통합 검색)
      */
     private BooleanExpression keywordCondition(String keyword) {
-        return (keyword != null && !keyword.trim().isEmpty())
-                ? customer.customerName.containsIgnoreCase(keyword.trim())
-                : null;
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return null;
+        }
+        String trimmedKeyword = keyword.trim();
+        return customer.customerCode.containsIgnoreCase(trimmedKeyword)
+                .or(customer.customerName.containsIgnoreCase(trimmedKeyword))
+                .or(customer.description.containsIgnoreCase(trimmedKeyword));
     }
 }

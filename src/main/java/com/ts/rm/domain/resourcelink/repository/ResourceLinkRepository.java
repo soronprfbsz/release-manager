@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 /**
  * ResourceLink Repository
  */
-public interface ResourceLinkRepository extends JpaRepository<ResourceLink, Long> {
+public interface ResourceLinkRepository extends JpaRepository<ResourceLink, Long>, ResourceLinkRepositoryCustom {
 
     /**
      * 전체 리소스 링크 목록 조회 (정렬: sortOrder 오름차순, 생성일시 내림차순)

@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
  * ResourceFile Repository
  */
 @Repository
-public interface ResourceFileRepository extends JpaRepository<ResourceFile, Long> {
+public interface ResourceFileRepository extends JpaRepository<ResourceFile, Long>, ResourceFileRepositoryCustom {
 
     /**
      * 파일 경로로 조회

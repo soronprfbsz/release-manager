@@ -52,28 +52,19 @@ public class AccountService {
 
     /**
      * 계정 목록 조회 (필터링 및 검색, 페이징)
+     * QueryDSL을 사용한 다중 필드 키워드 검색 (계정명, 이메일)
      *
      * @param status   계정 상태 필터 (ACTIVE, INACTIVE 등, null이면 전체)
-     * @param keyword  계정명 검색 키워드
+     * @param keyword  검색 키워드 - 계정명, 이메일 통합 검색
      * @param pageable 페이징 정보
      * @return 계정 페이지
      */
     public org.springframework.data.domain.Page<AccountDto.ListResponse> getAccounts(
             AccountStatus status, String keyword, org.springframework.data.domain.Pageable pageable) {
-        org.springframework.data.domain.Page<Account> accountPage;
-
-        // 키워드 검색이 있는 경우
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            accountPage = accountRepository.findByAccountNameContaining(keyword.trim(), pageable);
-        }
-        // 상태 필터링
-        else if (status != null) {
-            accountPage = accountRepository.findAllByStatus(status.name(), pageable);
-        }
-        // 전체 조회
-        else {
-            accountPage = accountRepository.findAll(pageable);
-        }
+        // QueryDSL 기반 다중 필드 검색
+        String statusName = status != null ? status.name() : null;
+        org.springframework.data.domain.Page<Account> accountPage =
+                accountRepository.findAllWithFilters(statusName, keyword, pageable);
 
         // rowNumber 계산 (공통 유틸리티 사용)
         return PageRowNumberUtil.mapWithRowNumber(accountPage, (account, rowNumber) ->

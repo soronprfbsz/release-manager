@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
  *
  * <p>Spring Data JPA 메서드 네이밍으로 CRUD 처리
  */
-public interface EngineerRepository extends JpaRepository<Engineer, Long> {
+public interface EngineerRepository extends JpaRepository<Engineer, Long>, EngineerRepositoryCustom {
 
     /**
      * 이메일로 엔지니어 조회

@@ -78,28 +78,16 @@ public class EngineerService {
 
     /**
      * 엔지니어 목록 조회 (페이징)
+     * QueryDSL을 사용한 다중 필드 키워드 검색 (이름, 이메일, 직급, 설명)
      *
      * @param departmentId 부서 ID 필터 (null이면 전체)
-     * @param keyword 이름 검색 키워드 (null이면 전체)
+     * @param keyword 검색 키워드 - 이름, 이메일, 직급, 설명 통합 검색 (null이면 전체)
      * @param pageable 페이징 정보
      * @return 엔지니어 페이지
      */
     public Page<EngineerDto.ListResponse> getEngineers(Long departmentId, String keyword, Pageable pageable) {
-        Page<Engineer> engineers;
-
-        boolean hasDepartment = departmentId != null;
-        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
-
-        if (hasDepartment && hasKeyword) {
-            engineers = engineerRepository.findByDepartmentDepartmentIdAndEngineerNameContaining(
-                    departmentId, keyword.trim(), pageable);
-        } else if (hasDepartment) {
-            engineers = engineerRepository.findByDepartmentDepartmentId(departmentId, pageable);
-        } else if (hasKeyword) {
-            engineers = engineerRepository.findByEngineerNameContaining(keyword.trim(), pageable);
-        } else {
-            engineers = engineerRepository.findAll(pageable);
-        }
+        // QueryDSL 기반 다중 필드 검색
+        Page<Engineer> engineers = engineerRepository.findAllWithFilters(departmentId, keyword, pageable);
 
         // rowNumber 계산 (공통 유틸리티 사용)
         return PageRowNumberUtil.mapWithRowNumber(engineers, (engineer, rowNumber) -> {
