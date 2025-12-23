@@ -89,17 +89,12 @@ public class ResourceLinkController implements ResourceLinkControllerDocs {
     @Override
     @GetMapping
     public ApiResponse<List<ResourceLinkDto.SimpleResponse>> listResourceLinks(
-            @RequestParam(required = false) String linkCategory) {
+            @RequestParam(required = false) String linkCategory,
+            @RequestParam(required = false) String keyword) {
 
-        log.info("리소스 링크 목록 조회 요청 - 링크카테고리: {}", linkCategory);
+        log.info("리소스 링크 목록 조회 요청 - 링크카테고리: {}, 키워드: {}", linkCategory, keyword);
 
-        List<ResourceLink> resourceLinks;
-        if (linkCategory != null && !linkCategory.isBlank()) {
-            resourceLinks = resourceLinkService.listLinksByCategory(linkCategory);
-        } else {
-            resourceLinks = resourceLinkService.listAllLinks();
-        }
-
+        List<ResourceLink> resourceLinks = resourceLinkService.listLinksWithFilters(linkCategory, keyword);
         List<ResourceLinkDto.SimpleResponse> response = resourceLinkDtoMapper.toSimpleResponseList(resourceLinks);
 
         return ApiResponse.success(response);

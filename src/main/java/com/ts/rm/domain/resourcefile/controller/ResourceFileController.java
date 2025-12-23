@@ -111,17 +111,12 @@ public class ResourceFileController implements ResourceFileControllerDocs {
     @Override
     @GetMapping
     public ApiResponse<List<ResourceFileDto.SimpleResponse>> listResourceFiles(
-            @RequestParam(required = false) String fileCategory) {
+            @RequestParam(required = false) String fileCategory,
+            @RequestParam(required = false) String keyword) {
 
-        log.info("리소스 파일 목록 조회 요청 - 파일카테고리: {}", fileCategory);
+        log.info("리소스 파일 목록 조회 요청 - 파일카테고리: {}, 키워드: {}", fileCategory, keyword);
 
-        List<ResourceFile> resourceFiles;
-        if (fileCategory != null && !fileCategory.isBlank()) {
-            resourceFiles = resourceFileService.listFilesByCategory(fileCategory);
-        } else {
-            resourceFiles = resourceFileService.listAllFiles();
-        }
-
+        List<ResourceFile> resourceFiles = resourceFileService.listFilesWithFilters(fileCategory, keyword);
         List<ResourceFileDto.SimpleResponse> response = resourceFileDtoMapper.toSimpleResponseList(resourceFiles);
 
         return ApiResponse.success(response);

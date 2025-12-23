@@ -71,14 +71,14 @@ public class ServiceController implements ServiceControllerDocs {
     @GetMapping
     public ResponseEntity<ApiResponse<List<ServiceDto.DetailResponse>>> getServices(
             @RequestParam(required = false) String serviceType,
-            @RequestParam(required = false) String serviceName,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Boolean isActive) {
 
-        log.info("서비스 목록 조회 - serviceType: {}, serviceName: {}, isActive: {}",
-                serviceType, serviceName, isActive);
+        log.info("서비스 목록 조회 - serviceType: {}, keyword: {}, isActive: {}",
+                serviceType, keyword, isActive);
 
         List<ServiceDto.DetailResponse> response = serviceService.getServices(
-                serviceType, serviceName, isActive);
+                serviceType, keyword, isActive);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

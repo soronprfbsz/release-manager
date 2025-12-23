@@ -215,8 +215,8 @@ public interface ServiceControllerDocs {
             @Parameter(description = "서비스 분류 필터", example = "infraeye1")
             @RequestParam(required = false) String serviceType,
 
-            @Parameter(description = "서비스명 검색 키워드", example = "운영")
-            @RequestParam(required = false) String serviceName,
+            @Parameter(description = "검색 키워드 (서비스명, 서비스타입, 설명 통합 검색)", example = "운영")
+            @RequestParam(required = false) String keyword,
 
             @Parameter(description = "활성 상태 필터", example = "true")
             @RequestParam(required = false) Boolean isActive);

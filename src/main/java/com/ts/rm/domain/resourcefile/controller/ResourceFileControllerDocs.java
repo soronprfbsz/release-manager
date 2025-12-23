@@ -129,7 +129,10 @@ public interface ResourceFileControllerDocs {
     )
     ApiResponse<List<ResourceFileDto.SimpleResponse>> listResourceFiles(
             @Parameter(description = "파일 카테고리 필터 (SCRIPT/DOCKER/DOCUMENT/ETC)")
-            @RequestParam(required = false) String fileCategory
+            @RequestParam(required = false) String fileCategory,
+
+            @Parameter(description = "검색 키워드 (리소스파일명, 파일명, 설명 통합 검색)")
+            @RequestParam(required = false) String keyword
     );
 
     @Operation(
