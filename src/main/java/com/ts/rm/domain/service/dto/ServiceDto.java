@@ -94,24 +94,8 @@ public final class ServiceDto {
             @Size(max = 500, message = "URL은 500자 이하여야 합니다")
             String url,
 
-            @Schema(description = "계정 ID", example = "admin")
-            @Size(max = 100, message = "계정 ID는 100자 이하여야 합니다")
-            String accountId,
-
-            @Schema(description = "비밀번호", example = "password123")
-            @Size(max = 500, message = "비밀번호는 500자 이하여야 합니다")
-            String password,
-
             @Schema(description = "SSH 포트번호", example = "22")
             Integer sshPort,
-
-            @Schema(description = "SSH 계정 ID", example = "sshuser")
-            @Size(max = 100, message = "SSH 계정 ID는 100자 이하여야 합니다")
-            String sshAccountId,
-
-            @Schema(description = "SSH 비밀번호", example = "sshpassword")
-            @Size(max = 500, message = "SSH 비밀번호는 500자 이하여야 합니다")
-            String sshPassword,
 
             @Schema(description = "설명", example = "운영 데이터베이스 접속 정보")
             String description,
@@ -247,20 +231,8 @@ public final class ServiceDto {
             @Schema(description = "URL", example = "https://example.com")
             String url,
 
-            @Schema(description = "계정 ID", example = "admin")
-            String accountId,
-
-            @Schema(description = "비밀번호", example = "password123")
-            String password,
-
             @Schema(description = "SSH 포트번호", example = "22")
             Integer sshPort,
-
-            @Schema(description = "SSH 계정 ID", example = "sshuser")
-            String sshAccountId,
-
-            @Schema(description = "SSH 비밀번호", example = "sshpassword")
-            String sshPassword,
 
             @Schema(description = "설명", example = "운영 데이터베이스 접속 정보")
             String description,

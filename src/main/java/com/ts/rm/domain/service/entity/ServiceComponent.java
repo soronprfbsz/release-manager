@@ -1,9 +1,7 @@
 package com.ts.rm.domain.service.entity;
 
 import com.ts.rm.domain.service.enums.ComponentType;
-import com.ts.rm.global.security.PasswordAttributeConverter;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -63,25 +61,11 @@ public class ServiceComponent {
     @Column(length = 500)
     private String url;
 
-    @Column(name = "account_id", length = 100)
-    private String accountId;
-
-    @Convert(converter = PasswordAttributeConverter.class)
-    @Column(length = 1000)
-    private String password;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Column(name = "ssh_port")
     private Integer sshPort;
-
-    @Column(name = "ssh_account_id", length = 100)
-    private String sshAccountId;
-
-    @Convert(converter = PasswordAttributeConverter.class)
-    @Column(name = "ssh_password", length = 1000)
-    private String sshPassword;
-
-    @Column(columnDefinition = "TEXT")
-    private String description;
 
     @Column(name = "sort_order", nullable = false)
     @Builder.Default
@@ -123,20 +107,14 @@ public class ServiceComponent {
      * @param host          호스트
      * @param port          포트
      * @param url           URL
-     * @param accountId     계정 ID
-     * @param password      비밀번호
-     * @param sshPort       SSH 포트
-     * @param sshAccountId  SSH 계정 ID
-     * @param sshPassword   SSH 비밀번호
      * @param description   설명
+     * @param sshPort       SSH 포트
      * @param isActive      활성 여부
      * @param updatedBy     수정자
      */
     public void update(ComponentType componentType, String componentName,
                        String host, Integer port, String url,
-                       String accountId, String password,
-                       Integer sshPort, String sshAccountId, String sshPassword,
-                       String description, Boolean isActive,
+                       String description, Integer sshPort, Boolean isActive,
                        String updatedBy) {
         if (componentType != null) {
             this.componentType = componentType;
@@ -148,12 +126,8 @@ public class ServiceComponent {
         this.host = host;
         this.port = port;
         this.url = url;
-        this.accountId = accountId;
-        this.password = password;
-        this.sshPort = sshPort;
-        this.sshAccountId = sshAccountId;
-        this.sshPassword = sshPassword;
         this.description = description;
+        this.sshPort = sshPort;
 
         if (isActive != null) {
             this.isActive = isActive;

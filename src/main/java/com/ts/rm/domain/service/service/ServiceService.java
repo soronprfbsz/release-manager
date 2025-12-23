@@ -192,9 +192,7 @@ public class ServiceService {
 
         component.update(componentType, request.componentName(),
                 request.host(), request.port(), request.url(),
-                request.accountId(), request.password(),
-                request.sshPort(), request.sshAccountId(), request.sshPassword(),
-                request.description(), request.isActive(), updatedBy);
+                request.description(), request.sshPort(), request.isActive(), updatedBy);
 
         log.info("Component updated successfully: {}", componentId);
         return toComponentResponseWithName(component);
@@ -344,11 +342,7 @@ public class ServiceService {
                 .host(request.host())
                 .port(request.port())
                 .url(request.url())
-                .accountId(request.accountId())
-                .password(request.password())
                 .sshPort(request.sshPort())
-                .sshAccountId(request.sshAccountId())
-                .sshPassword(request.sshPassword())
                 .description(request.description())
                 .sortOrder(0) // 임시값, 나중에 재계산됨
                 .isActive(request.isActive() != null ? request.isActive() : true)
@@ -414,8 +408,7 @@ public class ServiceService {
                 response.componentType(), componentTypeName,
                 response.componentName(),
                 response.host(), response.port(), response.url(),
-                response.accountId(), response.password(),
-                response.sshPort(), response.sshAccountId(), response.sshPassword(),
+                response.sshPort(),
                 response.description(), response.sortOrder(), response.isActive()
         );
     }
