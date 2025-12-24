@@ -166,8 +166,8 @@ public class ReleaseVersionUploadService {
             // 3. 임시 디렉토리에 ZIP 압축 해제
             tempDir = extractZipToTempDirectory(zipFile);
 
-            // 4. ZIP 구조 검증 (mariadb/, cratedb/ 폴더 확인)
-            validateZipStructure(tempDir);
+            // 4. ZIP 구조 검증 (releaseCategory에 따른 폴더 검증)
+            validateZipStructure(tempDir, releaseCategory);
 
             // 5. 버전 디렉토리 생성
             versionPath = fileSystemService.createVersionDirectory(versionInfo, projectId);
@@ -374,29 +374,64 @@ public class ReleaseVersionUploadService {
     }
 
     /**
-     * ZIP 구조 검증 (카테고리 폴더 확인)
+     * ZIP 구조 검증 (releaseCategory에 따른 카테고리 폴더 확인)
+     *
+     * <p>INSTALL: install/ 폴더만 허용
+     * <p>PATCH: database/, web/, engine/ 폴더만 허용
      */
-    public void validateZipStructure(Path tempDir) throws IOException {
-        // 최상위 디렉토리에서 유효한 카테고리 폴더가 최소 1개 이상 있는지 확인
-        boolean hasValidCategory = Files.list(tempDir)
+    public void validateZipStructure(Path tempDir, ReleaseCategory releaseCategory) throws IOException {
+        // releaseCategory에 따른 허용 카테고리 결정
+        List<FileCategory> allowedCategories = getAllowedCategoriesForReleaseCategory(releaseCategory);
+
+        // 최상위 디렉토리에서 유효한 카테고리 폴더 확인
+        List<String> foundCategories = Files.list(tempDir)
                 .filter(Files::isDirectory)
                 .map(path -> path.getFileName().toString().toUpperCase())
-                .anyMatch(dirName -> {
+                .filter(dirName -> {
                     try {
                         FileCategory.fromCode(dirName);
                         return true;
                     } catch (IllegalArgumentException e) {
                         return false;
                     }
-                });
+                })
+                .toList();
 
-        if (!hasValidCategory) {
+        if (foundCategories.isEmpty()) {
+            String allowedFolders = allowedCategories.stream()
+                    .map(c -> c.getCode().toLowerCase() + "/")
+                    .reduce((a, b) -> a + ", " + b)
+                    .orElse("");
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "ZIP 파일에 유효한 카테고리 폴더가 없습니다. " +
-                    "최소 1개 이상의 폴더 필요: database/, web/, engine/, install/");
+                    String.format("ZIP 파일에 유효한 카테고리 폴더가 없습니다. %s 릴리즈는 다음 폴더가 필요합니다: %s",
+                            releaseCategory.getDescription(), allowedFolders));
         }
 
-        // 파일 확장자 검증 제거: 모든 확장자 허용
+        // 허용되지 않은 카테고리 폴더가 있는지 확인
+        for (String foundCategory : foundCategories) {
+            FileCategory fileCategory = FileCategory.fromCode(foundCategory);
+            if (!allowedCategories.contains(fileCategory)) {
+                String allowedFolders = allowedCategories.stream()
+                        .map(c -> c.getCode().toLowerCase() + "/")
+                        .reduce((a, b) -> a + ", " + b)
+                        .orElse("");
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        String.format("%s 릴리즈에서는 '%s/' 폴더를 사용할 수 없습니다. 허용된 폴더: %s",
+                                releaseCategory.getDescription(), foundCategory.toLowerCase(), allowedFolders));
+            }
+        }
+    }
+
+    /**
+     * ReleaseCategory에 따른 허용 FileCategory 목록 반환
+     */
+    private List<FileCategory> getAllowedCategoriesForReleaseCategory(ReleaseCategory releaseCategory) {
+        if (releaseCategory == ReleaseCategory.INSTALL) {
+            return List.of(FileCategory.INSTALL);
+        } else {
+            // PATCH: DATABASE, WEB, ENGINE 허용
+            return List.of(FileCategory.DATABASE, FileCategory.WEB, FileCategory.ENGINE);
+        }
     }
 
     /**
