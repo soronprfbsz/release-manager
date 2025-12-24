@@ -570,7 +570,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('infrastructure_resources', 'ADMIN'),
 ('infrastructure_services', 'ADMIN');
 
--- USER: 계정 메뉴 제외
+-- USER: 제외 메뉴: [계정]
 INSERT INTO menu_role (menu_id, role) VALUES
 -- 1depth
 ('version_management', 'USER'),
@@ -598,27 +598,17 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('infrastructure_resources', 'USER'),
 ('infrastructure_services', 'USER');
 
--- GUEST: 운영 관리 전체 제외
+-- GUEST: 제외 메뉴: [운영 관리, 개발지원]
 INSERT INTO menu_role (menu_id, role) VALUES
--- 1depth (운영 관리 제외)
+-- 1depth (버전관리, 패치관리 외 제외)
 ('version_management', 'GUEST'),
 ('patch_management', 'GUEST'),
-('development_support', 'GUEST'),
 -- 2depth - 버전 관리
 ('version_standard', 'GUEST'),
 ('version_custom', 'GUEST'),
 -- 2depth - 패치 관리
 ('patch_standard', 'GUEST'),
-('patch_custom', 'GUEST'),
--- 2depth - 개발 지원
-('remote_jobs', 'GUEST'),
-('infrastructure', 'GUEST'),
--- 3depth - 원격 작업
-('remote_mariadb', 'GUEST'),
-('remote_terminal', 'GUEST'),
--- 3depth - 인프라
-('infrastructure_resources', 'GUEST'),
-('infrastructure_services', 'GUEST');
+('patch_custom', 'GUEST');
 
 -- =========================================================
 -- service 테이블

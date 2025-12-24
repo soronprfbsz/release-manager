@@ -33,7 +33,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
 
-    private static final String USER = "USER";
+    private static final String GUEST = "GUEST";
     private static final String ACTIVE = "ACTIVE";
     private static final int MAX_LOGIN_ATTEMPTS = 5;
     private static final int LOCK_DURATION_MINUTES = 10;
@@ -51,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .accountName(request.getAccountName())
-                .role(USER)
+                .role(GUEST)
                 .status(ACTIVE)
                 .build();
 
