@@ -1,8 +1,6 @@
 -- =========================================================
 -- V1_2: Release Manager 초기 데이터 삽입 (통합 DML)
 -- =========================================================
--- 테이블별로 INSERT문을 그룹화하여 관리 용이성 향상
--- =========================================================
 
 -- =========================================================
 -- code_type 테이블 (모든 코드 타입)
@@ -364,8 +362,9 @@ INSERT INTO release_version (project_id, release_type, release_category, custome
 -- release_file 테이블
 -- =========================================================
 INSERT INTO release_file (release_version_id,file_type,file_category,sub_category,file_name,file_path,relative_path,file_size,checksum,execution_order,description) VALUES
-(1,'PDF','ETC',NULL,'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','versions/infraeye2/standard/1.0.x/1.0.0/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',2727778,'b281accec63e4126ca6d76aa918397387e3a5247b45788d63608b9357be3cca8',1,'설치 가이드 문서'),
-(1,'MD','ETC',NULL,'설치본정보.md','versions/infraeye2/standard/1.0.x/1.0.0/install/설치본정보.md','/install/설치본정보.md',759,'768c8dabdcdaccbc5a507e09ce8b1f5072aede6db38c7aef0212866af99d5634',2,'설치본 정보'),
+(1,'GZ','INSTALL',NULL,'InfraEye-2.0.0.241127-STD.tar.gz','versions/infraeye2/standard/1.0.x/1.0.0/install/InfraEye-2.0.0.241127-STD.tar.gz','/install/InfraEye-2.0.0.241127-STD.tar.gz',148368152,'755bcad1bba2f91a3660e3cf838a4e33de7d958a1a3abcd9162ad07d44b50cd7',1,'설치 패키지'),
+(1,'PDF','INSTALL',NULL,'Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','versions/infraeye2/standard/1.0.x/1.0.0/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf','/install/Infraeye2 설치가이드(OracleLinux8.6)_NEW.pdf',2727778,'b281accec63e4126ca6d76aa918397387e3a5247b45788d63608b9357be3cca8',2,'설치 가이드 문서'),
+(1,'MD','INSTALL',NULL,'설치본정보.md','versions/infraeye2/standard/1.0.x/1.0.0/install/설치본정보.md','/install/설치본정보.md',830,'2cd5a7b167368cc0e85f7f00cca459ff38cd524560b86aae330a8302b71ab91b',3,'설치본 정보'),
 (2,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/1.patch_mariadb_ddl.sql','/database/MARIADB/1.patch_mariadb_ddl.sql',39108,'def68e585ad8f9a4eef6bf50850cb21b25396b596d1404f70010a3745f4e1b8b',1,'DDL 변경'),
 (2,'SQL','DATABASE','MARIADB','2.patch_mariadb_view.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/2.patch_mariadb_view.sql','/database/MARIADB/2.patch_mariadb_view.sql',10394,'5956bb62c11d8e97231c65034d17e3d2203f990fe705b289178abb22d523b430',2,'View 변경'),
 (2,'SQL','DATABASE','MARIADB','3.patch_mariadb_데이터코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/3.patch_mariadb_데이터코드.sql','/database/MARIADB/3.patch_mariadb_데이터코드.sql',135601,'cc373c6e9565020c4037b30dd495f1c6847ca476f8b51a2f2806fa00b0f56d48',3,'데이터 코드 추가'),

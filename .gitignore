@@ -77,6 +77,8 @@ lpt[1-9]
 
 ### Release Files ###
 src/main/resources/release/patches/
+src/main/resources/release/resource/
+src/main/resources/release/versions/
 
 ### Backup Files ###
 **/backup_files/
