@@ -2,12 +2,12 @@
   "versions" : [ {
     "version" : "1.1.0",
     "createdAt" : "2025-12-18",
-    "createdBy" : "jhlee@tscientific",
+    "createdBy" : "jhlee@tscientific.co.kr",
     "comment" : "SMS 추가 및 그에 따른 기존 DB 변경"
   }, {
     "version" : "1.0.0",
     "createdAt" : "2025-01-01",
-    "createdBy" : "TS",
+    "createdBy" : "admin@tscientific.co.kr",
     "comment" : "최초 설치본"
   } ]
 }
