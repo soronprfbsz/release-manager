@@ -458,8 +458,7 @@ INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visi
 
 -- 3depth 메뉴 - 인프라
 INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('infrastructure_resources', '리소스', 'development-support/infrastructure/resources', '리소스 정보를 관리 및 제공합니다.', TRUE, FALSE, 1),
-('infrastructure_services', '서비스', 'development-support/infrastructure/service', '서비스 정보를 관리 및 제공합니다.', TRUE, FALSE, 2);
+('infrastructure_resources', '리소스', 'development-support/infrastructure/resources', '리소스 정보를 관리 및 제공합니다.', TRUE, FALSE, 1);
 
 -- =========================================================
 -- menu_hierarchy 테이블
@@ -490,8 +489,7 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('remote_mariadb', 'remote_mariadb', 0),
 ('remote_terminal', 'remote_terminal', 0),
-('infrastructure_resources', 'infrastructure_resources', 0),
-('infrastructure_services', 'infrastructure_services', 0);
+('infrastructure_resources', 'infrastructure_resources', 0);
 
 -- 부모-자식 관계 (depth=1) - 버전 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
@@ -523,18 +521,16 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 
 -- 부모-자식 관계 (depth=1) - 인프라
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('infrastructure', 'infrastructure_resources', 1),
-('infrastructure', 'infrastructure_services', 1);
+('infrastructure', 'infrastructure_resources', 1);
 
 -- 조상-손자 관계 (depth=2) - 개발 지원 > 원격 작업 > MariaDB/터미널
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('development_support', 'remote_mariadb', 2),
 ('development_support', 'remote_terminal', 2);
 
--- 조상-손자 관계 (depth=2) - 개발 지원 > 인프라 > 리소스/서비스
+-- 조상-손자 관계 (depth=2) - 개발 지원 > 인프라 > 리소스
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('development_support', 'infrastructure_resources', 2),
-('development_support', 'infrastructure_services', 2);
+('development_support', 'infrastructure_resources', 2);
 
 -- =========================================================
 -- menu_role 테이블
@@ -566,8 +562,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('remote_mariadb', 'ADMIN'),
 ('remote_terminal', 'ADMIN'),
 -- 3depth - 인프라
-('infrastructure_resources', 'ADMIN'),
-('infrastructure_services', 'ADMIN');
+('infrastructure_resources', 'ADMIN');
 
 -- USER: 제외 메뉴: [계정]
 INSERT INTO menu_role (menu_id, role) VALUES
@@ -594,8 +589,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('remote_mariadb', 'USER'),
 ('remote_terminal', 'USER'),
 -- 3depth - 인프라
-('infrastructure_resources', 'USER'),
-('infrastructure_services', 'USER');
+('infrastructure_resources', 'USER');
 
 -- GUEST: 제외 메뉴: [운영 관리, 개발지원]
 INSERT INTO menu_role (menu_id, role) VALUES
