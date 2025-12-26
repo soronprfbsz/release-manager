@@ -385,58 +385,58 @@ deploy-main:
 # Dev 브랜치 전용 Job들
 # ========================================
 
-build-dev:
-  extends: .build-template
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-  tags:
-    - dev-runner
-  environment:
-    name: development
-
-test-dev:
-  extends: .test-template
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-  tags:
-    - dev-runner
-  environment:
-    name: development
-
-docker-build-dev:
-  extends: .docker-build-template
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-  tags:
-    - dev-runner
-  dependencies:
-    - build-dev
-  environment:
-    name: development
-
-harbor-push-dev:
-  extends: .harbor-push-template
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-      when: never  # dev 브랜치는 Harbor push 비활성화
-  tags:
-    - dev-runner
-  dependencies:
-    - docker-build-dev
-  environment:
-    name: development
-
-deploy-dev:
-  extends: .deploy-template
-  variables:
-    RELEASE_DIR: "/data/release-manager/resources"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-  tags:
-    - dev-runner
-  dependencies:
-    - build-dev
-    - docker-build-dev
-  environment:
-    name: development
-    url: http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}
+#build-dev:
+#  extends: .build-template
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "dev"'
+#  tags:
+#    - dev-runner
+#  environment:
+#    name: development
+#
+#test-dev:
+#  extends: .test-template
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "dev"'
+#  tags:
+#    - dev-runner
+#  environment:
+#    name: development
+#
+#docker-build-dev:
+#  extends: .docker-build-template
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "dev"'
+#  tags:
+#    - dev-runner
+#  dependencies:
+#    - build-dev
+#  environment:
+#    name: development
+#
+#harbor-push-dev:
+#  extends: .harbor-push-template
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "dev"'
+#      when: never  # dev 브랜치는 Harbor push 비활성화
+#  tags:
+#    - dev-runner
+#  dependencies:
+#    - docker-build-dev
+#  environment:
+#    name: development
+#
+#deploy-dev:
+#  extends: .deploy-template
+#  variables:
+#    RELEASE_DIR: "/data/release-manager/resources"
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "dev"'
+#  tags:
+#    - dev-runner
+#  dependencies:
+#    - build-dev
+#    - docker-build-dev
+#  environment:
+#    name: development
+#    url: http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}
