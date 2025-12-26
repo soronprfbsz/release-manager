@@ -1,5 +1,9 @@
 package com.ts.rm.domain.patch.filesync;
 
+import static com.ts.rm.global.util.MapExtractUtil.extractLong;
+import static com.ts.rm.global.util.MapExtractUtil.extractString;
+import static com.ts.rm.global.util.MapExtractUtil.extractStringOrDefault;
+
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.engineer.entity.Engineer;
@@ -326,37 +330,6 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
             );
         }
 
-        return null;
-    }
-
-    private String extractString(Map<String, Object> data, String key) {
-        if (data == null || !data.containsKey(key)) {
-            return null;
-        }
-        Object value = data.get(key);
-        return value != null ? value.toString() : null;
-    }
-
-    private String extractStringOrDefault(Map<String, Object> data, String key, String defaultValue) {
-        String value = extractString(data, key);
-        return value != null ? value : defaultValue;
-    }
-
-    private Long extractLong(Map<String, Object> data, String key) {
-        if (data == null || !data.containsKey(key)) {
-            return null;
-        }
-        Object value = data.get(key);
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
-        }
-        if (value instanceof String) {
-            try {
-                return Long.parseLong((String) value);
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
         return null;
     }
 

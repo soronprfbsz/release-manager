@@ -19,18 +19,6 @@ public class PatchRepositoryImpl implements PatchRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<Patch> findRecentByReleaseType(String releaseType, int limit) {
-        QPatch p = QPatch.patch;
-
-        return queryFactory
-                .selectFrom(p)
-                .where(p.releaseType.eq(releaseType))
-                .orderBy(p.createdAt.desc())
-                .limit(limit)
-                .fetch();
-    }
-
-    @Override
     public List<Patch> findRecentByProjectIdAndReleaseType(String projectId, String releaseType, int limit) {
         QPatch p = QPatch.patch;
 

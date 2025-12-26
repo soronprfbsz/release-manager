@@ -24,25 +24,6 @@ public interface ReleaseVersionRepositoryCustom {
     List<ReleaseVersion> findVersionsBetween(String releaseType, String fromVersion, String toVersion);
 
     /**
-     * 릴리즈 타입과 카테고리로 최신 버전 1개 조회
-     *
-     * @param releaseType     릴리즈 타입 (STANDARD/CUSTOM)
-     * @param releaseCategory 릴리즈 카테고리 (INSTALL/PATCH)
-     * @return 최신 버전
-     */
-    Optional<ReleaseVersion> findLatestByReleaseTypeAndCategory(String releaseType, ReleaseCategory releaseCategory);
-
-    /**
-     * 릴리즈 타입과 카테고리로 최근 N개 조회
-     *
-     * @param releaseType     릴리즈 타입 (STANDARD/CUSTOM)
-     * @param releaseCategory 릴리즈 카테고리 (INSTALL/PATCH)
-     * @param limit           조회 개수
-     * @return 최근 버전 목록
-     */
-    List<ReleaseVersion> findRecentByReleaseTypeAndCategory(String releaseType, ReleaseCategory releaseCategory, int limit);
-
-    /**
      * 프로젝트별 릴리즈 타입과 카테고리로 최신 버전 1개 조회
      *
      * @param projectId       프로젝트 ID

@@ -1,5 +1,9 @@
 package com.ts.rm.domain.resourcefile.filesync;
 
+import static com.ts.rm.global.util.FileTypeExtractor.extractFileType;
+import static com.ts.rm.global.util.MapExtractUtil.extractString;
+import static com.ts.rm.global.util.MapExtractUtil.extractStringOrDefault;
+
 import com.ts.rm.domain.resourcefile.entity.ResourceFile;
 import com.ts.rm.domain.resourcefile.repository.ResourceFileRepository;
 import com.ts.rm.global.exception.BusinessException;
@@ -133,30 +137,6 @@ public class ResourceFileSyncAdapter implements FileSyncAdapter {
                 .registeredAt(file.getCreatedAt())
                 .target(FileSyncTarget.RESOURCE_FILE)
                 .build();
-    }
-
-    /**
-     * 파일명에서 확장자 추출 (대문자)
-     */
-    private String extractFileType(String fileName) {
-        if (fileName == null || !fileName.contains(".")) {
-            return "UNKNOWN";
-        }
-        int lastDot = fileName.lastIndexOf(".");
-        return fileName.substring(lastDot + 1).toUpperCase();
-    }
-
-    private String extractString(Map<String, Object> data, String key) {
-        if (data == null || !data.containsKey(key)) {
-            return null;
-        }
-        Object value = data.get(key);
-        return value != null ? value.toString() : null;
-    }
-
-    private String extractStringOrDefault(Map<String, Object> data, String key, String defaultValue) {
-        String value = extractString(data, key);
-        return value != null ? value : defaultValue;
     }
 
     /**

@@ -1,5 +1,10 @@
 package com.ts.rm.domain.releasefile.filesync;
 
+import static com.ts.rm.global.util.FileTypeExtractor.extractFileType;
+import static com.ts.rm.global.util.MapExtractUtil.extractInteger;
+import static com.ts.rm.global.util.MapExtractUtil.extractLong;
+import static com.ts.rm.global.util.MapExtractUtil.extractString;
+
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.enums.FileCategory;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
@@ -218,53 +223,6 @@ public class ReleaseFileSyncAdapter implements FileSyncAdapter {
                 .registeredAt(file.getCreatedAt())
                 .target(FileSyncTarget.RELEASE_FILE)
                 .build();
-    }
-
-    /**
-     * 파일명에서 확장자 추출 (대문자)
-     */
-    private String extractFileType(String fileName) {
-        if (fileName == null || !fileName.contains(".")) {
-            return "UNKNOWN";
-        }
-        int lastDot = fileName.lastIndexOf(".");
-        return fileName.substring(lastDot + 1).toUpperCase();
-    }
-
-    private Long extractLong(Map<String, Object> data, String key) {
-        if (data == null || !data.containsKey(key)) {
-            return null;
-        }
-        Object value = data.get(key);
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
-        }
-        if (value instanceof String) {
-            return Long.parseLong((String) value);
-        }
-        return null;
-    }
-
-    private Integer extractInteger(Map<String, Object> data, String key) {
-        if (data == null || !data.containsKey(key)) {
-            return null;
-        }
-        Object value = data.get(key);
-        if (value instanceof Number) {
-            return ((Number) value).intValue();
-        }
-        if (value instanceof String) {
-            return Integer.parseInt((String) value);
-        }
-        return null;
-    }
-
-    private String extractString(Map<String, Object> data, String key) {
-        if (data == null || !data.containsKey(key)) {
-            return null;
-        }
-        Object value = data.get(key);
-        return value != null ? value.toString() : null;
     }
 
     private FileCategory extractFileCategory(Map<String, Object> data, String key) {

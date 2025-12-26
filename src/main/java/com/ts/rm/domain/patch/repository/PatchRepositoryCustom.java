@@ -11,15 +11,6 @@ import java.util.List;
 public interface PatchRepositoryCustom {
 
     /**
-     * 릴리즈 타입별 최근 N개 패치 조회
-     *
-     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
-     * @param limit       조회 개수
-     * @return 최근 패치 목록
-     */
-    List<Patch> findRecentByReleaseType(String releaseType, int limit);
-
-    /**
      * 프로젝트별 릴리즈 타입별 최근 N개 패치 조회
      *
      * @param projectId   프로젝트 ID

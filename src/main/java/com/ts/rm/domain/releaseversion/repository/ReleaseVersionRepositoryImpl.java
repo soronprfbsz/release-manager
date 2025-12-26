@@ -68,40 +68,6 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
     }
 
     @Override
-    public Optional<ReleaseVersion> findLatestByReleaseTypeAndCategory(String releaseType,
-            ReleaseCategory releaseCategory) {
-        QReleaseVersion rv = QReleaseVersion.releaseVersion;
-
-        ReleaseVersion result = queryFactory
-                .selectFrom(rv)
-                .where(
-                        rv.releaseType.eq(releaseType),
-                        rv.releaseCategory.eq(releaseCategory)
-                )
-                .orderBy(rv.createdAt.desc())
-                .limit(1)
-                .fetchOne();
-
-        return Optional.ofNullable(result);
-    }
-
-    @Override
-    public List<ReleaseVersion> findRecentByReleaseTypeAndCategory(String releaseType,
-            ReleaseCategory releaseCategory, int limit) {
-        QReleaseVersion rv = QReleaseVersion.releaseVersion;
-
-        return queryFactory
-                .selectFrom(rv)
-                .where(
-                        rv.releaseType.eq(releaseType),
-                        rv.releaseCategory.eq(releaseCategory)
-                )
-                .orderBy(rv.createdAt.desc())
-                .limit(limit)
-                .fetch();
-    }
-
-    @Override
     public Optional<ReleaseVersion> findLatestByProjectIdAndReleaseTypeAndCategory(String projectId,
             String releaseType, ReleaseCategory releaseCategory) {
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
