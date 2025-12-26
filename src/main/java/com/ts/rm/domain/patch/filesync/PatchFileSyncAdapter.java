@@ -43,19 +43,19 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
     /**
      * 패치 폴더명 파싱 패턴
      * <p>형식: {timestamp}_{fromVersion}_{toVersion}
-     * <p>예: 20251226123045_1.0.0_1.1.0
+     * <p>예: 202512241547_1.0.0_1.1.0 (12자리) 또는 20251226123045_1.0.0_1.1.0 (14자리)
      */
     private static final Pattern PATCH_FOLDER_PATTERN = Pattern.compile(
-            "^(\\d{14})_([0-9.]+)_([0-9.]+)$"
+            "^(\\d{12,14})_([0-9.]+)_([0-9.]+)$"
     );
 
     /**
      * 커스텀 패치 폴더명 파싱 패턴
      * <p>형식: {timestamp}_{customerCode}_{fromVersion}_{toVersion}
-     * <p>예: 20251226123045_customer1_1.0.0_1.1.0
+     * <p>예: 202512241547_customer1_1.0.0_1.1.0 (12자리) 또는 20251226123045_customer1_1.0.0_1.1.0 (14자리)
      */
     private static final Pattern CUSTOM_PATCH_FOLDER_PATTERN = Pattern.compile(
-            "^(\\d{14})_([a-zA-Z0-9_-]+)_([0-9.]+)_([0-9.]+)$"
+            "^(\\d{12,14})_([a-zA-Z0-9_-]+)_([0-9.]+)_([0-9.]+)$"
     );
 
     @Override
