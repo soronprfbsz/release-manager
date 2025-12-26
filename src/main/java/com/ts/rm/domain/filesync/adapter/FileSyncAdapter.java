@@ -98,4 +98,28 @@ public interface FileSyncAdapter {
     default boolean isValidSyncPath(String filePath) {
         return true;
     }
+
+    /**
+     * 폴더 기반 동기화 여부
+     *
+     * <p>true 반환 시 파일시스템 스캔 시 폴더(디렉토리)를 대상으로 합니다.
+     * <p>예: Patch는 폴더 단위로 관리되므로 true를 반환합니다.
+     *
+     * @return true면 폴더 스캔, false면 파일 스캔 (기본값)
+     */
+    default boolean isFolderBased() {
+        return false;
+    }
+
+    /**
+     * 폴더 스캔 시 깊이 제한
+     *
+     * <p>isFolderBased()가 true일 때만 적용됩니다.
+     * <p>1 = baseScanPath 바로 아래의 폴더만 스캔
+     *
+     * @return 스캔할 폴더 깊이 (기본값: 1)
+     */
+    default int getFolderScanDepth() {
+        return 1;
+    }
 }

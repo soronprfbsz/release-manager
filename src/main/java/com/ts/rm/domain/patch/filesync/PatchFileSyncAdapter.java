@@ -1,0 +1,320 @@
+package com.ts.rm.domain.patch.filesync;
+
+import com.ts.rm.domain.customer.entity.Customer;
+import com.ts.rm.domain.customer.repository.CustomerRepository;
+import com.ts.rm.domain.filesync.adapter.FileSyncAdapter;
+import com.ts.rm.domain.filesync.dto.FileSyncMetadata;
+import com.ts.rm.domain.filesync.enums.FileSyncTarget;
+import com.ts.rm.domain.patch.entity.Patch;
+import com.ts.rm.domain.patch.repository.PatchRepository;
+import com.ts.rm.domain.project.entity.Project;
+import com.ts.rm.domain.project.repository.ProjectRepository;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 패치 파일 동기화 어댑터
+ *
+ * <p>Patch 도메인의 파일 동기화를 담당합니다.
+ * <p>패치는 폴더 단위로 관리되며, outputPath가 폴더 경로입니다.
+ * <p>폴더 존재 여부로 동기화 상태를 판단합니다 (파일 크기/체크섬 비교 없음).
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class PatchFileSyncAdapter implements FileSyncAdapter {
+
+    private final PatchRepository patchRepository;
+    private final ProjectRepository projectRepository;
+    private final CustomerRepository customerRepository;
+
+    /**
+     * 패치 폴더명 파싱 패턴
+     * <p>형식: {projectId}_{fromVersion}_to_{toVersion}_{releaseType}_patch
+     * <p>예: infraeye2_1.0.0_to_1.1.0_standard_patch
+     */
+    private static final Pattern PATCH_FOLDER_PATTERN = Pattern.compile(
+            "^([a-zA-Z0-9_-]+)_([0-9.]+)_to_([0-9.]+)_(standard|custom)_patch$",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    /**
+     * 커스텀 패치 폴더명 파싱 패턴
+     * <p>형식: {projectId}_{customerCode}_{fromVersion}_to_{toVersion}_custom_patch
+     * <p>예: infraeye2_customer1_1.0.0_to_1.1.0_custom_patch
+     */
+    private static final Pattern CUSTOM_PATCH_FOLDER_PATTERN = Pattern.compile(
+            "^([a-zA-Z0-9_-]+)_([a-zA-Z0-9_-]+)_([0-9.]+)_to_([0-9.]+)_custom_patch$",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    @Override
+    public FileSyncTarget getTarget() {
+        return FileSyncTarget.PATCH_FILE;
+    }
+
+    @Override
+    public String getBaseScanPath() {
+        return "patches";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FileSyncMetadata> getRegisteredFiles(@Nullable String subPath) {
+        List<Patch> patches;
+
+        if (subPath != null && !subPath.isEmpty()) {
+            patches = patchRepository.findAll().stream()
+                    .filter(p -> p.getOutputPath() != null && p.getOutputPath().startsWith(subPath))
+                    .toList();
+        } else {
+            patches = patchRepository.findAllByOrderByCreatedAtDesc(
+                    org.springframework.data.domain.Pageable.unpaged()).getContent();
+        }
+
+        return patches.stream()
+                .map(this::toMetadata)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public Long registerFile(FileSyncMetadata metadata, @Nullable Map<String, Object> additionalData) {
+        // 폴더명에서 패치 정보 추출 시도
+        String folderName = metadata.getFileName();
+        PatchFolderInfo folderInfo = parsePatchFolderName(folderName);
+
+        if (folderInfo == null) {
+            throw new BusinessException(ErrorCode.INVALID_PATCH_FOLDER_NAME,
+                    "패치 폴더명 형식이 올바르지 않습니다: " + folderName +
+                    ". 예상 형식: {projectId}_{fromVersion}_to_{toVersion}_{releaseType}_patch");
+        }
+
+        // additionalData에서 오버라이드 가능
+        String projectId = extractStringOrDefault(additionalData, "projectId", folderInfo.projectId);
+        String releaseType = extractStringOrDefault(additionalData, "releaseType", folderInfo.releaseType);
+        String fromVersion = extractStringOrDefault(additionalData, "fromVersion", folderInfo.fromVersion);
+        String toVersion = extractStringOrDefault(additionalData, "toVersion", folderInfo.toVersion);
+        String customerCode = extractStringOrDefault(additionalData, "customerCode", folderInfo.customerCode);
+        String description = extractString(additionalData, "description");
+        String createdBy = extractStringOrDefault(additionalData, "createdBy", "SYSTEM_SYNC");
+
+        // 프로젝트 조회
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND,
+                        "프로젝트를 찾을 수 없습니다: " + projectId));
+
+        // 커스텀 패치인 경우 고객사 조회
+        Customer customer = null;
+        if ("CUSTOM".equalsIgnoreCase(releaseType) && customerCode != null) {
+            customer = customerRepository.findByCustomerCode(customerCode)
+                    .orElse(null); // 고객사가 없어도 등록은 진행
+            if (customer == null) {
+                log.warn("고객사를 찾을 수 없습니다: {}. 고객사 없이 패치를 등록합니다.", customerCode);
+            }
+        }
+
+        // 패치명 생성
+        String patchName = folderName;
+
+        Patch patch = Patch.builder()
+                .project(project)
+                .releaseType(releaseType.toUpperCase())
+                .customer(customer)
+                .fromVersion(fromVersion)
+                .toVersion(toVersion)
+                .patchName(patchName)
+                .outputPath(metadata.getFilePath())
+                .description(description)
+                .createdBy(createdBy)
+                .build();
+
+        Patch saved = patchRepository.save(patch);
+        log.info("패치 동기화 등록: {} (ID: {})", metadata.getFilePath(), saved.getPatchId());
+
+        return saved.getPatchId();
+    }
+
+    @Override
+    @Transactional
+    public void updateMetadata(Long id, FileSyncMetadata newMetadata) {
+        // 패치는 폴더 단위이므로 메타데이터 갱신이 필요 없음 (크기/체크섬 없음)
+        // outputPath만 갱신 가능
+        Patch patch = patchRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_NOT_FOUND,
+                        "패치를 찾을 수 없습니다: " + id));
+
+        patch.setOutputPath(newMetadata.getFilePath());
+        patchRepository.save(patch);
+        log.info("패치 메타데이터 갱신: {} (ID: {})", newMetadata.getFilePath(), id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteMetadata(Long id) {
+        if (!patchRepository.existsById(id)) {
+            throw new BusinessException(ErrorCode.PATCH_NOT_FOUND,
+                    "패치를 찾을 수 없습니다: " + id);
+        }
+
+        patchRepository.deleteById(id);
+        log.info("패치 메타데이터 삭제: ID {}", id);
+    }
+
+    /**
+     * 패치는 폴더 단위로 스캔
+     * <p>확장자 필터 없이 폴더만 스캔합니다.
+     */
+    @Override
+    public List<String> getAllowedExtensions() {
+        // null 반환 시 모든 항목 포함 (폴더 포함)
+        return null;
+    }
+
+    @Override
+    public List<String> getExcludedDirectories() {
+        // 제외할 디렉토리 없음
+        return null;
+    }
+
+    /**
+     * 패치는 폴더 기반 동기화
+     */
+    @Override
+    public boolean isFolderBased() {
+        return true;
+    }
+
+    /**
+     * patches/ 바로 아래의 폴더만 스캔 (깊이 1)
+     */
+    @Override
+    public int getFolderScanDepth() {
+        return 1;
+    }
+
+    /**
+     * 유효한 동기화 경로인지 확인
+     *
+     * <p>패치 폴더는 patches/{patchFolderName} 형식이어야 합니다.
+     * <p>폴더명이 패치 명명 규칙을 따르는지 확인합니다.
+     *
+     * @param filePath 파일/폴더 경로
+     * @return true면 동기화 대상, false면 무시
+     */
+    @Override
+    public boolean isValidSyncPath(String filePath) {
+        if (filePath == null || filePath.isEmpty()) {
+            return false;
+        }
+
+        // 경로 형식: patches/{patchFolderName}
+        String[] pathParts = filePath.split("/");
+        if (pathParts.length < 2) {
+            log.debug("패치 경로 형식 불일치 (최소 2단계 필요): {}", filePath);
+            return false;
+        }
+
+        // 첫 번째 부분이 "patches"인지 확인
+        if (!"patches".equalsIgnoreCase(pathParts[0])) {
+            log.debug("패치 경로는 'patches/'로 시작해야 합니다: {}", filePath);
+            return false;
+        }
+
+        // 폴더명이 패치 명명 규칙을 따르는지 확인
+        String folderName = pathParts[1];
+        if (parsePatchFolderName(folderName) == null) {
+            log.debug("패치 폴더명이 명명 규칙에 맞지 않습니다: {}", folderName);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Patch 엔티티를 FileSyncMetadata로 변환
+     */
+    private FileSyncMetadata toMetadata(Patch patch) {
+        return FileSyncMetadata.builder()
+                .id(patch.getPatchId())
+                .filePath(patch.getOutputPath())
+                .fileName(patch.getPatchName())
+                // 패치는 폴더 단위이므로 파일 크기/체크섬 없음
+                .fileSize(null)
+                .checksum(null)
+                .registeredAt(patch.getCreatedAt())
+                .target(FileSyncTarget.PATCH_FILE)
+                .build();
+    }
+
+    /**
+     * 패치 폴더명에서 정보 파싱
+     *
+     * @param folderName 패치 폴더명
+     * @return 파싱된 정보 또는 null (파싱 실패 시)
+     */
+    private PatchFolderInfo parsePatchFolderName(String folderName) {
+        if (folderName == null || folderName.isEmpty()) {
+            return null;
+        }
+
+        // 표준 패치 형식 시도: {projectId}_{fromVersion}_to_{toVersion}_standard_patch
+        Matcher standardMatcher = PATCH_FOLDER_PATTERN.matcher(folderName);
+        if (standardMatcher.matches()) {
+            return new PatchFolderInfo(
+                    standardMatcher.group(1),  // projectId
+                    standardMatcher.group(2),  // fromVersion
+                    standardMatcher.group(3),  // toVersion
+                    standardMatcher.group(4),  // releaseType
+                    null                       // customerCode
+            );
+        }
+
+        // 커스텀 패치 형식 시도: {projectId}_{customerCode}_{fromVersion}_to_{toVersion}_custom_patch
+        Matcher customMatcher = CUSTOM_PATCH_FOLDER_PATTERN.matcher(folderName);
+        if (customMatcher.matches()) {
+            return new PatchFolderInfo(
+                    customMatcher.group(1),    // projectId
+                    customMatcher.group(3),    // fromVersion
+                    customMatcher.group(4),    // toVersion
+                    "CUSTOM",                  // releaseType
+                    customMatcher.group(2)     // customerCode
+            );
+        }
+
+        return null;
+    }
+
+    private String extractString(Map<String, Object> data, String key) {
+        if (data == null || !data.containsKey(key)) {
+            return null;
+        }
+        Object value = data.get(key);
+        return value != null ? value.toString() : null;
+    }
+
+    private String extractStringOrDefault(Map<String, Object> data, String key, String defaultValue) {
+        String value = extractString(data, key);
+        return value != null ? value : defaultValue;
+    }
+
+    /**
+     * 패치 폴더명 파싱 결과를 담는 내부 클래스
+     */
+    private record PatchFolderInfo(
+            String projectId,
+            String fromVersion,
+            String toVersion,
+            String releaseType,
+            String customerCode
+    ) {}
+}

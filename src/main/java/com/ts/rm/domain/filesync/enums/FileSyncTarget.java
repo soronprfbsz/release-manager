@@ -13,7 +13,8 @@ import lombok.RequiredArgsConstructor;
 public enum FileSyncTarget {
     RELEASE_FILE("릴리즈 파일", "versions", "release_file"),
     RESOURCE_FILE("리소스 파일", "resource", "resource_file"),
-    BACKUP_FILE("백업 파일", "job", "backup_file");
+    BACKUP_FILE("백업 파일", "job", "backup_file"),
+    PATCH_FILE("패치 파일", "patches", "patch_file");
 
     /** 표시 이름 */
     private final String displayName;

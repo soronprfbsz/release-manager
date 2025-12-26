@@ -238,7 +238,8 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('FILE_SYNC_TARGET', 'RELEASE_FILE', '릴리즈 파일', '버전별 릴리즈 파일 (versions 경로)', 1, TRUE),
 ('FILE_SYNC_TARGET', 'RESOURCE_FILE', '리소스 파일', '공용 리소스 파일 (resource 경로)', 2, TRUE),
-('FILE_SYNC_TARGET', 'BACKUP_FILE', '백업 파일', '백업 파일 (job 경로)', 3, TRUE);
+('FILE_SYNC_TARGET', 'BACKUP_FILE', '백업 파일', '백업 파일 (job 경로)', 3, TRUE),
+('FILE_SYNC_TARGET', 'PATCH_FILE', '패치 파일', '누적 패치 폴더 (patches 경로)', 4, TRUE);
 
 -- FILE_SYNC_ACTION
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES

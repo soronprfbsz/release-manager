@@ -67,6 +67,10 @@ public enum ErrorCode {
   DATABASE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "R005", "error.release.database_type_not_found"),
   PATCH_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "R006", "error.release.patch_file_not_found"),
 
+  // Patch - 누적 패치
+  PATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "PA001", "error.patch.not_found"),
+  INVALID_PATCH_FOLDER_NAME(HttpStatus.BAD_REQUEST, "PA002", "error.patch.invalid_folder_name"),
+
   // Resource - 리소스 파일
   RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "RF001", "error.resource.not_found"),
   DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "RF002", "error.resource.duplicate"),

@@ -133,6 +133,51 @@ public class FileStorageService {
     }
 
     /**
+     * 디렉토리 및 하위 내용 재귀 삭제
+     *
+     * @param relativePath 상대 경로
+     */
+    public void deleteDirectory(String relativePath) {
+        try {
+            Path dirPath = this.baseStorageLocation.resolve(relativePath).normalize();
+
+            if (!dirPath.startsWith(this.baseStorageLocation)) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "허용되지 않은 경로입니다: " + relativePath);
+            }
+
+            if (!Files.exists(dirPath)) {
+                log.warn("삭제할 디렉토리가 존재하지 않습니다: {}", relativePath);
+                return;
+            }
+
+            if (!Files.isDirectory(dirPath)) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "디렉토리가 아닙니다: " + relativePath);
+            }
+
+            // 하위 파일과 디렉토리를 역순으로 삭제 (깊은 경로부터)
+            try (var pathStream = Files.walk(dirPath)) {
+                pathStream.sorted(java.util.Comparator.reverseOrder())
+                        .forEach(path -> {
+                            try {
+                                Files.delete(path);
+                            } catch (IOException e) {
+                                throw new RuntimeException("파일/디렉토리 삭제 실패: " + path, e);
+                            }
+                        });
+            }
+
+            log.info("디렉토리 삭제 완료: {}", relativePath);
+
+        } catch (IOException e) {
+            log.error("디렉토리 삭제 실패: {}", relativePath, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "디렉토리 삭제에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
      * 파일 복사
      *
      * @param sourceRelativePath 원본 상대 경로

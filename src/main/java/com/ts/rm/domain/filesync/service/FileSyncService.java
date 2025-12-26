@@ -223,24 +223,80 @@ public class FileSyncService {
 
         List<FileSyncMetadata> files = new ArrayList<>();
 
-        try (Stream<Path> paths = Files.walk(basePath)) {
-            paths.filter(Files::isRegularFile)
-                    .filter(p -> isAllowedFile(p, allowedExtensions, excludedDirs))
-                    .forEach(path -> {
-                        try {
-                            FileSyncMetadata metadata = createMetadataFromPath(path, adapter);
-                            files.add(metadata);
-                        } catch (Exception e) {
-                            log.warn("파일 메타데이터 생성 실패: {}", path, e);
-                        }
-                    });
-        } catch (IOException e) {
-            log.error("파일시스템 스캔 실패: {}", basePath, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "파일시스템 스캔에 실패했습니다: " + e.getMessage());
+        // 폴더 기반 어댑터인 경우 (예: PATCH_FILE)
+        if (adapter.isFolderBased()) {
+            int depth = adapter.getFolderScanDepth();
+            try (Stream<Path> paths = Files.walk(basePath, depth)) {
+                paths.filter(Files::isDirectory)
+                        .filter(p -> !p.equals(basePath)) // 기준 경로 제외
+                        .filter(p -> isAllowedFolder(p, excludedDirs))
+                        .forEach(path -> {
+                            try {
+                                FileSyncMetadata metadata = createMetadataFromFolder(path, adapter);
+                                files.add(metadata);
+                            } catch (Exception e) {
+                                log.warn("폴더 메타데이터 생성 실패: {}", path, e);
+                            }
+                        });
+            } catch (IOException e) {
+                log.error("폴더 스캔 실패: {}", basePath, e);
+                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                        "폴더 스캔에 실패했습니다: " + e.getMessage());
+            }
+        } else {
+            // 파일 기반 어댑터 (기본)
+            try (Stream<Path> paths = Files.walk(basePath)) {
+                paths.filter(Files::isRegularFile)
+                        .filter(p -> isAllowedFile(p, allowedExtensions, excludedDirs))
+                        .forEach(path -> {
+                            try {
+                                FileSyncMetadata metadata = createMetadataFromPath(path, adapter);
+                                files.add(metadata);
+                            } catch (Exception e) {
+                                log.warn("파일 메타데이터 생성 실패: {}", path, e);
+                            }
+                        });
+            } catch (IOException e) {
+                log.error("파일시스템 스캔 실패: {}", basePath, e);
+                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                        "파일시스템 스캔에 실패했습니다: " + e.getMessage());
+            }
         }
 
         return files;
+    }
+
+    /**
+     * 허용된 폴더인지 확인
+     */
+    private boolean isAllowedFolder(Path path, List<String> excludedDirs) {
+        if (excludedDirs != null) {
+            String folderName = path.getFileName().toString();
+            return !excludedDirs.contains(folderName);
+        }
+        return true;
+    }
+
+    /**
+     * 폴더에서 FileSyncMetadata 생성 (폴더 기반 어댑터용)
+     */
+    private FileSyncMetadata createMetadataFromFolder(Path path, FileSyncAdapter adapter) throws IOException {
+        Path basePath = fileStorageService.getAbsolutePath("");
+        String relativePath = basePath.relativize(path).toString().replace("\\", "/");
+
+        BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
+        LocalDateTime lastModified = LocalDateTime.ofInstant(
+                attrs.lastModifiedTime().toInstant(), ZoneId.systemDefault());
+
+        // 폴더는 파일 크기와 체크섬이 없음
+        return FileSyncMetadata.builder()
+                .filePath(relativePath)
+                .fileName(path.getFileName().toString())
+                .fileSize(null)  // 폴더는 크기 없음
+                .checksum(null)  // 폴더는 체크섬 없음
+                .lastModified(lastModified)
+                .target(adapter.getTarget())
+                .build();
     }
 
     /**
@@ -452,8 +508,14 @@ public class FileSyncService {
                 case REGISTER -> {
                     // 파일시스템에서 메타데이터 생성
                     Path filePath = fileStorageService.getAbsolutePath(discrepancy.getFilePath());
-                    String checksum = FileChecksumUtil.calculateChecksum(filePath);
-                    long fileSize = Files.size(filePath);
+
+                    // 폴더 기반 어댑터는 크기/체크섬 계산하지 않음
+                    Long fileSize = null;
+                    String checksum = null;
+                    if (!adapter.isFolderBased()) {
+                        checksum = FileChecksumUtil.calculateChecksum(filePath);
+                        fileSize = Files.size(filePath);
+                    }
 
                     FileSyncMetadata metadata = FileSyncMetadata.builder()
                             .filePath(discrepancy.getFilePath())
@@ -464,13 +526,21 @@ public class FileSyncService {
                             .build();
 
                     Long newId = adapter.registerFile(metadata, actionItem.getMetadata());
-                    resultMessage = "새 파일로 등록됨 (ID: " + newId + ")";
+                    resultMessage = adapter.isFolderBased()
+                            ? "새 폴더로 등록됨 (ID: " + newId + ")"
+                            : "새 파일로 등록됨 (ID: " + newId + ")";
                 }
                 case UPDATE_METADATA -> {
                     // 파일시스템 정보로 DB 갱신
                     Path filePath = fileStorageService.getAbsolutePath(discrepancy.getFilePath());
-                    String checksum = FileChecksumUtil.calculateChecksum(filePath);
-                    long fileSize = Files.size(filePath);
+
+                    // 폴더 기반 어댑터는 크기/체크섬 계산하지 않음
+                    Long fileSize = null;
+                    String checksum = null;
+                    if (!adapter.isFolderBased()) {
+                        checksum = FileChecksumUtil.calculateChecksum(filePath);
+                        fileSize = Files.size(filePath);
+                    }
 
                     FileSyncMetadata newMetadata = FileSyncMetadata.builder()
                             .filePath(discrepancy.getFilePath())
@@ -481,8 +551,12 @@ public class FileSyncService {
 
                     Long dbId = discrepancy.getDbInfo().getId();
                     adapter.updateMetadata(dbId, newMetadata);
-                    resultMessage = String.format("메타데이터 갱신됨 (size: %d → %d)",
-                            discrepancy.getDbInfo().getSize(), fileSize);
+                    if (adapter.isFolderBased()) {
+                        resultMessage = "폴더 메타데이터 갱신됨";
+                    } else {
+                        resultMessage = String.format("메타데이터 갱신됨 (size: %d → %d)",
+                                discrepancy.getDbInfo().getSize(), fileSize);
+                    }
                 }
                 case DELETE_METADATA -> {
                     Long dbId = discrepancy.getDbInfo().getId();
@@ -490,8 +564,14 @@ public class FileSyncService {
                     resultMessage = "메타데이터 삭제됨";
                 }
                 case DELETE_FILE -> {
-                    fileStorageService.deleteFile(discrepancy.getFilePath());
-                    resultMessage = "파일 삭제됨";
+                    // 폴더 기반 어댑터는 디렉토리 삭제, 아니면 파일 삭제
+                    if (adapter.isFolderBased()) {
+                        fileStorageService.deleteDirectory(discrepancy.getFilePath());
+                        resultMessage = "폴더 삭제됨";
+                    } else {
+                        fileStorageService.deleteFile(discrepancy.getFilePath());
+                        resultMessage = "파일 삭제됨";
+                    }
                 }
                 case IGNORE -> {
                     // 무시 목록에 등록 (중복 체크)
