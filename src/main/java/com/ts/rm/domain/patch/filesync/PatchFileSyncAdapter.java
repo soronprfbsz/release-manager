@@ -2,6 +2,8 @@ package com.ts.rm.domain.patch.filesync;
 
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
+import com.ts.rm.domain.engineer.entity.Engineer;
+import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.domain.filesync.adapter.FileSyncAdapter;
 import com.ts.rm.domain.filesync.dto.FileSyncMetadata;
 import com.ts.rm.domain.filesync.enums.FileSyncTarget;
@@ -39,6 +41,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
     private final PatchRepository patchRepository;
     private final ProjectRepository projectRepository;
     private final CustomerRepository customerRepository;
+    private final EngineerRepository engineerRepository;
 
     /**
      * 패치 폴더명 파싱 패턴
@@ -121,6 +124,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
         String customerCode = extractStringOrDefault(additionalData, "customerCode", folderInfo.customerCode);
         String description = extractString(additionalData, "description");
         String createdBy = extractStringOrDefault(additionalData, "createdBy", "SYSTEM_SYNC");
+        Long engineerId = extractLong(additionalData, "engineerId");
 
         // 프로젝트 조회
         Project project = projectRepository.findById(projectId)
@@ -137,6 +141,15 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
             }
         }
 
+        // 담당 엔지니어 조회
+        Engineer engineer = null;
+        if (engineerId != null) {
+            engineer = engineerRepository.findById(engineerId).orElse(null);
+            if (engineer == null) {
+                log.warn("엔지니어를 찾을 수 없습니다: {}. 엔지니어 없이 패치를 등록합니다.", engineerId);
+            }
+        }
+
         // 패치명 생성
         String patchName = folderName;
 
@@ -144,6 +157,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
                 .project(project)
                 .releaseType(releaseType.toUpperCase())
                 .customer(customer)
+                .engineer(engineer)
                 .fromVersion(fromVersion)
                 .toVersion(toVersion)
                 .patchName(patchName)
@@ -326,6 +340,24 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
     private String extractStringOrDefault(Map<String, Object> data, String key, String defaultValue) {
         String value = extractString(data, key);
         return value != null ? value : defaultValue;
+    }
+
+    private Long extractLong(Map<String, Object> data, String key) {
+        if (data == null || !data.containsKey(key)) {
+            return null;
+        }
+        Object value = data.get(key);
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        if (value instanceof String) {
+            try {
+                return Long.parseLong((String) value);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     /**

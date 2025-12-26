@@ -506,29 +506,20 @@ public class FileSyncService {
 
             switch (action) {
                 case REGISTER -> {
-                    // 파일시스템에서 메타데이터 생성
-                    Path filePath = fileStorageService.getAbsolutePath(discrepancy.getFilePath());
-
-                    // 폴더 기반 어댑터는 크기/체크섬 계산하지 않음
-                    Long fileSize = null;
-                    String checksum = null;
-                    if (!adapter.isFolderBased()) {
-                        checksum = FileChecksumUtil.calculateChecksum(filePath);
-                        fileSize = Files.size(filePath);
-                    }
-
-                    FileSyncMetadata metadata = FileSyncMetadata.builder()
+                    // REGISTER 액션은 유형별 분리 API 사용 안내
+                    String apiEndpoint = switch (discrepancy.getTarget()) {
+                        case RESOURCE_FILE -> "/api/file-sync/resources/register";
+                        case BACKUP_FILE -> "/api/file-sync/backups/register";
+                        case PATCH_FILE -> "/api/file-sync/patches/register";
+                        case RELEASE_FILE -> "/api/file-sync/releases/register";
+                    };
+                    return FileSyncDto.ActionResult.builder()
+                            .id(id)
                             .filePath(discrepancy.getFilePath())
-                            .fileName(discrepancy.getFileName())
-                            .fileSize(fileSize)
-                            .checksum(checksum)
-                            .target(discrepancy.getTarget())
+                            .action(action)
+                            .success(false)
+                            .message("파일 등록은 전용 API를 사용해주세요: " + apiEndpoint)
                             .build();
-
-                    Long newId = adapter.registerFile(metadata, actionItem.getMetadata());
-                    resultMessage = adapter.isFolderBased()
-                            ? "새 폴더로 등록됨 (ID: " + newId + ")"
-                            : "새 파일로 등록됨 (ID: " + newId + ")";
                 }
                 case UPDATE_METADATA -> {
                     // 파일시스템 정보로 DB 갱신
@@ -687,5 +678,467 @@ public class FileSyncService {
                 .ignoredBy(entity.getIgnoredBy())
                 .createdAt(entity.getCreatedAt())
                 .build();
+    }
+
+    // ========================================
+    // 파일 등록 (유형별 분리 API)
+    // ========================================
+
+    /**
+     * 리소스 파일 등록
+     *
+     * @param request 등록 요청
+     * @return 등록 결과
+     */
+    @Transactional
+    public FileSyncDto.RegisterResponse registerResourceFiles(FileSyncDto.ResourceFileRegisterRequest request) {
+        log.info("리소스 파일 등록 시작 - {}건", request.getItems().size());
+
+        List<FileSyncDto.RegisterResult> results = new ArrayList<>();
+        int successCount = 0;
+        int failedCount = 0;
+
+        FileSyncAdapter adapter = getAdapterByTarget(FileSyncTarget.RESOURCE_FILE);
+
+        for (FileSyncDto.ResourceFileRegisterItem item : request.getItems()) {
+            FileSyncDto.RegisterResult result = processResourceFileRegister(item, adapter);
+            results.add(result);
+
+            if (result.isSuccess()) {
+                successCount++;
+            } else {
+                failedCount++;
+            }
+        }
+
+        log.info("리소스 파일 등록 완료 - 성공 {}건, 실패 {}건", successCount, failedCount);
+
+        return FileSyncDto.RegisterResponse.builder()
+                .registeredAt(LocalDateTime.now())
+                .results(results)
+                .summary(FileSyncDto.ApplySummary.builder()
+                        .total(request.getItems().size())
+                        .success(successCount)
+                        .failed(failedCount)
+                        .build())
+                .build();
+    }
+
+    /**
+     * 백업 파일 등록
+     *
+     * @param request 등록 요청
+     * @return 등록 결과
+     */
+    @Transactional
+    public FileSyncDto.RegisterResponse registerBackupFiles(FileSyncDto.BackupFileRegisterRequest request) {
+        log.info("백업 파일 등록 시작 - {}건", request.getItems().size());
+
+        List<FileSyncDto.RegisterResult> results = new ArrayList<>();
+        int successCount = 0;
+        int failedCount = 0;
+
+        FileSyncAdapter adapter = getAdapterByTarget(FileSyncTarget.BACKUP_FILE);
+
+        for (FileSyncDto.BackupFileRegisterItem item : request.getItems()) {
+            FileSyncDto.RegisterResult result = processBackupFileRegister(item, adapter);
+            results.add(result);
+
+            if (result.isSuccess()) {
+                successCount++;
+            } else {
+                failedCount++;
+            }
+        }
+
+        log.info("백업 파일 등록 완료 - 성공 {}건, 실패 {}건", successCount, failedCount);
+
+        return FileSyncDto.RegisterResponse.builder()
+                .registeredAt(LocalDateTime.now())
+                .results(results)
+                .summary(FileSyncDto.ApplySummary.builder()
+                        .total(request.getItems().size())
+                        .success(successCount)
+                        .failed(failedCount)
+                        .build())
+                .build();
+    }
+
+    /**
+     * 패치 파일 등록
+     *
+     * @param request 등록 요청
+     * @return 등록 결과
+     */
+    @Transactional
+    public FileSyncDto.RegisterResponse registerPatchFiles(FileSyncDto.PatchFileRegisterRequest request) {
+        log.info("패치 파일 등록 시작 - {}건", request.getItems().size());
+
+        List<FileSyncDto.RegisterResult> results = new ArrayList<>();
+        int successCount = 0;
+        int failedCount = 0;
+
+        FileSyncAdapter adapter = getAdapterByTarget(FileSyncTarget.PATCH_FILE);
+
+        for (FileSyncDto.PatchFileRegisterItem item : request.getItems()) {
+            FileSyncDto.RegisterResult result = processPatchFileRegister(item, adapter);
+            results.add(result);
+
+            if (result.isSuccess()) {
+                successCount++;
+            } else {
+                failedCount++;
+            }
+        }
+
+        log.info("패치 파일 등록 완료 - 성공 {}건, 실패 {}건", successCount, failedCount);
+
+        return FileSyncDto.RegisterResponse.builder()
+                .registeredAt(LocalDateTime.now())
+                .results(results)
+                .summary(FileSyncDto.ApplySummary.builder()
+                        .total(request.getItems().size())
+                        .success(successCount)
+                        .failed(failedCount)
+                        .build())
+                .build();
+    }
+
+    /**
+     * 릴리즈 파일 등록
+     *
+     * @param request 등록 요청
+     * @return 등록 결과
+     */
+    @Transactional
+    public FileSyncDto.RegisterResponse registerReleaseFiles(FileSyncDto.ReleaseFileRegisterRequest request) {
+        log.info("릴리즈 파일 등록 시작 - {}건", request.getItems().size());
+
+        List<FileSyncDto.RegisterResult> results = new ArrayList<>();
+        int successCount = 0;
+        int failedCount = 0;
+
+        FileSyncAdapter adapter = getAdapterByTarget(FileSyncTarget.RELEASE_FILE);
+
+        for (FileSyncDto.ReleaseFileRegisterItem item : request.getItems()) {
+            FileSyncDto.RegisterResult result = processReleaseFileRegister(item, adapter);
+            results.add(result);
+
+            if (result.isSuccess()) {
+                successCount++;
+            } else {
+                failedCount++;
+            }
+        }
+
+        log.info("릴리즈 파일 등록 완료 - 성공 {}건, 실패 {}건", successCount, failedCount);
+
+        return FileSyncDto.RegisterResponse.builder()
+                .registeredAt(LocalDateTime.now())
+                .results(results)
+                .summary(FileSyncDto.ApplySummary.builder()
+                        .total(request.getItems().size())
+                        .success(successCount)
+                        .failed(failedCount)
+                        .build())
+                .build();
+    }
+
+    // ----------------------------------------
+    // 유형별 등록 처리 메서드
+    // ----------------------------------------
+
+    private FileSyncDto.RegisterResult processResourceFileRegister(
+            FileSyncDto.ResourceFileRegisterItem item, FileSyncAdapter adapter) {
+
+        String id = item.getId();
+        FileSyncDiscrepancy discrepancy = discrepancyCache.get(id);
+
+        if (discrepancy == null) {
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .success(false)
+                    .message("불일치 항목을 찾을 수 없습니다. 다시 분석해주세요.")
+                    .build();
+        }
+
+        if (discrepancy.getTarget() != FileSyncTarget.RESOURCE_FILE) {
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(false)
+                    .message("리소스 파일이 아닙니다. 대상 유형: " + discrepancy.getTarget())
+                    .build();
+        }
+
+        try {
+            Path filePath = fileStorageService.getAbsolutePath(discrepancy.getFilePath());
+            String checksum = FileChecksumUtil.calculateChecksum(filePath);
+            Long fileSize = Files.size(filePath);
+
+            FileSyncMetadata metadata = FileSyncMetadata.builder()
+                    .filePath(discrepancy.getFilePath())
+                    .fileName(discrepancy.getFileName())
+                    .fileSize(fileSize)
+                    .checksum(checksum)
+                    .target(FileSyncTarget.RESOURCE_FILE)
+                    .build();
+
+            // 추가 메타데이터 구성
+            Map<String, Object> additionalData = new HashMap<>();
+            if (item.getResourceFileName() != null) {
+                additionalData.put("resourceFileName", item.getResourceFileName());
+            }
+            if (item.getFileCategory() != null) {
+                additionalData.put("fileCategory", item.getFileCategory());
+            }
+            if (item.getSubCategory() != null) {
+                additionalData.put("subCategory", item.getSubCategory());
+            }
+            if (item.getDescription() != null) {
+                additionalData.put("description", item.getDescription());
+            }
+            additionalData.put("createdBy", SecurityUtil.getTokenInfo().email());
+
+            Long newId = adapter.registerFile(metadata, additionalData);
+
+            // 캐시에서 제거
+            discrepancyCache.remove(id);
+
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(true)
+                    .message("리소스 파일 등록 완료")
+                    .registeredId(newId)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("리소스 파일 등록 실패: {}", id, e);
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(false)
+                    .message("등록 실패: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    private FileSyncDto.RegisterResult processBackupFileRegister(
+            FileSyncDto.BackupFileRegisterItem item, FileSyncAdapter adapter) {
+
+        String id = item.getId();
+        FileSyncDiscrepancy discrepancy = discrepancyCache.get(id);
+
+        if (discrepancy == null) {
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .success(false)
+                    .message("불일치 항목을 찾을 수 없습니다. 다시 분석해주세요.")
+                    .build();
+        }
+
+        if (discrepancy.getTarget() != FileSyncTarget.BACKUP_FILE) {
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(false)
+                    .message("백업 파일이 아닙니다. 대상 유형: " + discrepancy.getTarget())
+                    .build();
+        }
+
+        try {
+            Path filePath = fileStorageService.getAbsolutePath(discrepancy.getFilePath());
+            String checksum = FileChecksumUtil.calculateChecksum(filePath);
+            Long fileSize = Files.size(filePath);
+
+            FileSyncMetadata metadata = FileSyncMetadata.builder()
+                    .filePath(discrepancy.getFilePath())
+                    .fileName(discrepancy.getFileName())
+                    .fileSize(fileSize)
+                    .checksum(checksum)
+                    .target(FileSyncTarget.BACKUP_FILE)
+                    .build();
+
+            // 추가 메타데이터 구성
+            Map<String, Object> additionalData = new HashMap<>();
+            if (item.getFileCategory() != null) {
+                additionalData.put("fileCategory", item.getFileCategory());
+            }
+            if (item.getDescription() != null) {
+                additionalData.put("description", item.getDescription());
+            }
+            additionalData.put("createdBy", SecurityUtil.getTokenInfo().email());
+
+            Long newId = adapter.registerFile(metadata, additionalData);
+
+            // 캐시에서 제거
+            discrepancyCache.remove(id);
+
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(true)
+                    .message("백업 파일 등록 완료")
+                    .registeredId(newId)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("백업 파일 등록 실패: {}", id, e);
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(false)
+                    .message("등록 실패: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    private FileSyncDto.RegisterResult processPatchFileRegister(
+            FileSyncDto.PatchFileRegisterItem item, FileSyncAdapter adapter) {
+
+        String id = item.getId();
+        FileSyncDiscrepancy discrepancy = discrepancyCache.get(id);
+
+        if (discrepancy == null) {
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .success(false)
+                    .message("불일치 항목을 찾을 수 없습니다. 다시 분석해주세요.")
+                    .build();
+        }
+
+        if (discrepancy.getTarget() != FileSyncTarget.PATCH_FILE) {
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(false)
+                    .message("패치 파일이 아닙니다. 대상 유형: " + discrepancy.getTarget())
+                    .build();
+        }
+
+        try {
+            // 패치는 폴더 기반이므로 크기/체크섬 없음
+            FileSyncMetadata metadata = FileSyncMetadata.builder()
+                    .filePath(discrepancy.getFilePath())
+                    .fileName(discrepancy.getFileName())
+                    .fileSize(null)
+                    .checksum(null)
+                    .target(FileSyncTarget.PATCH_FILE)
+                    .build();
+
+            // 추가 메타데이터 구성
+            Map<String, Object> additionalData = new HashMap<>();
+            if (item.getEngineerId() != null) {
+                additionalData.put("engineerId", item.getEngineerId());
+            }
+            if (item.getCustomerCode() != null) {
+                additionalData.put("customerCode", item.getCustomerCode());
+            }
+            if (item.getDescription() != null) {
+                additionalData.put("description", item.getDescription());
+            }
+            additionalData.put("createdBy", SecurityUtil.getTokenInfo().email());
+
+            Long newId = adapter.registerFile(metadata, additionalData);
+
+            // 캐시에서 제거
+            discrepancyCache.remove(id);
+
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(true)
+                    .message("패치 폴더 등록 완료")
+                    .registeredId(newId)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("패치 파일 등록 실패: {}", id, e);
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(false)
+                    .message("등록 실패: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    private FileSyncDto.RegisterResult processReleaseFileRegister(
+            FileSyncDto.ReleaseFileRegisterItem item, FileSyncAdapter adapter) {
+
+        String id = item.getId();
+        FileSyncDiscrepancy discrepancy = discrepancyCache.get(id);
+
+        if (discrepancy == null) {
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .success(false)
+                    .message("불일치 항목을 찾을 수 없습니다. 다시 분석해주세요.")
+                    .build();
+        }
+
+        if (discrepancy.getTarget() != FileSyncTarget.RELEASE_FILE) {
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(false)
+                    .message("릴리즈 파일이 아닙니다. 대상 유형: " + discrepancy.getTarget())
+                    .build();
+        }
+
+        try {
+            Path filePath = fileStorageService.getAbsolutePath(discrepancy.getFilePath());
+            String checksum = FileChecksumUtil.calculateChecksum(filePath);
+            Long fileSize = Files.size(filePath);
+
+            FileSyncMetadata metadata = FileSyncMetadata.builder()
+                    .filePath(discrepancy.getFilePath())
+                    .fileName(discrepancy.getFileName())
+                    .fileSize(fileSize)
+                    .checksum(checksum)
+                    .target(FileSyncTarget.RELEASE_FILE)
+                    .build();
+
+            // 추가 메타데이터 구성
+            Map<String, Object> additionalData = new HashMap<>();
+            if (item.getReleaseVersionId() != null) {
+                additionalData.put("releaseVersionId", item.getReleaseVersionId());
+            }
+            if (item.getFileCategory() != null) {
+                additionalData.put("fileCategory", item.getFileCategory());
+            }
+            if (item.getSubCategory() != null) {
+                additionalData.put("subCategory", item.getSubCategory());
+            }
+            if (item.getExecutionOrder() != null) {
+                additionalData.put("executionOrder", item.getExecutionOrder());
+            }
+            if (item.getDescription() != null) {
+                additionalData.put("description", item.getDescription());
+            }
+
+            Long newId = adapter.registerFile(metadata, additionalData);
+
+            // 캐시에서 제거
+            discrepancyCache.remove(id);
+
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(true)
+                    .message("릴리즈 파일 등록 완료")
+                    .registeredId(newId)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("릴리즈 파일 등록 실패: {}", id, e);
+            return FileSyncDto.RegisterResult.builder()
+                    .id(id)
+                    .filePath(discrepancy.getFilePath())
+                    .success(false)
+                    .message("등록 실패: " + e.getMessage())
+                    .build();
+        }
     }
 }

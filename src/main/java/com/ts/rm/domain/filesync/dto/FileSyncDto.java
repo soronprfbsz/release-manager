@@ -218,4 +218,222 @@ public class FileSyncDto {
         /** 등록일시 */
         private LocalDateTime createdAt;
     }
+
+    // ========================================
+    // 파일 등록 API (유형별 분리)
+    // ========================================
+
+    /**
+     * 공통 등록 결과 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RegisterResponse {
+
+        /** 등록 시각 */
+        private LocalDateTime registeredAt;
+
+        /** 개별 결과 목록 */
+        private List<RegisterResult> results;
+
+        /** 요약 정보 */
+        private ApplySummary summary;
+    }
+
+    /**
+     * 개별 등록 결과
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RegisterResult {
+
+        /** 불일치 항목 ID (analyze 결과) */
+        private String id;
+
+        /** 파일 경로 */
+        private String filePath;
+
+        /** 성공 여부 */
+        private boolean success;
+
+        /** 결과 메시지 */
+        private String message;
+
+        /** 등록된 DB ID (성공 시) */
+        private Long registeredId;
+    }
+
+    // ----------------------------------------
+    // 리소스 파일 등록
+    // ----------------------------------------
+
+    /**
+     * 리소스 파일 등록 요청 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ResourceFileRegisterRequest {
+
+        @NotEmpty(message = "등록할 항목 목록이 비어있습니다")
+        @Valid
+        private List<ResourceFileRegisterItem> items;
+    }
+
+    /**
+     * 리소스 파일 등록 항목
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ResourceFileRegisterItem {
+
+        /** 불일치 항목 ID (필수) */
+        @NotBlank(message = "불일치 항목 ID가 필요합니다")
+        private String id;
+
+        /** 리소스 관리용 이름 (선택, 기본값: 파일명) */
+        private String resourceFileName;
+
+        /** 대분류 오버라이드 (선택, 기본값: 경로에서 추론) */
+        private String fileCategory;
+
+        /** 소분류 오버라이드 (선택, 기본값: 경로에서 추론) */
+        private String subCategory;
+
+        /** 설명 (선택) */
+        private String description;
+    }
+
+    // ----------------------------------------
+    // 백업 파일 등록
+    // ----------------------------------------
+
+    /**
+     * 백업 파일 등록 요청 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BackupFileRegisterRequest {
+
+        @NotEmpty(message = "등록할 항목 목록이 비어있습니다")
+        @Valid
+        private List<BackupFileRegisterItem> items;
+    }
+
+    /**
+     * 백업 파일 등록 항목
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BackupFileRegisterItem {
+
+        /** 불일치 항목 ID (필수) */
+        @NotBlank(message = "불일치 항목 ID가 필요합니다")
+        private String id;
+
+        /** 파일 카테고리 오버라이드 (선택, 기본값: 경로에서 추론 - MARIADB, CRATEDB 등) */
+        private String fileCategory;
+
+        /** 설명 (선택) */
+        private String description;
+    }
+
+    // ----------------------------------------
+    // 패치 파일 등록
+    // ----------------------------------------
+
+    /**
+     * 패치 파일 등록 요청 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PatchFileRegisterRequest {
+
+        @NotEmpty(message = "등록할 항목 목록이 비어있습니다")
+        @Valid
+        private List<PatchFileRegisterItem> items;
+    }
+
+    /**
+     * 패치 파일 등록 항목
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PatchFileRegisterItem {
+
+        /** 불일치 항목 ID (필수) */
+        @NotBlank(message = "불일치 항목 ID가 필요합니다")
+        private String id;
+
+        /** 담당 엔지니어 ID (선택) */
+        private Long engineerId;
+
+        /** 고객사 코드 (선택, 커스텀 패치 시 폴더명에서 추론 안 될 때) */
+        private String customerCode;
+
+        /** 설명 (선택) */
+        private String description;
+    }
+
+    // ----------------------------------------
+    // 릴리즈 파일 등록
+    // ----------------------------------------
+
+    /**
+     * 릴리즈 파일 등록 요청 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ReleaseFileRegisterRequest {
+
+        @NotEmpty(message = "등록할 항목 목록이 비어있습니다")
+        @Valid
+        private List<ReleaseFileRegisterItem> items;
+    }
+
+    /**
+     * 릴리즈 파일 등록 항목
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ReleaseFileRegisterItem {
+
+        /** 불일치 항목 ID (필수) */
+        @NotBlank(message = "불일치 항목 ID가 필요합니다")
+        private String id;
+
+        /** 릴리즈 버전 ID (필수 - 경로에서 자동 추론) */
+        private Long releaseVersionId;
+
+        /** 파일 카테고리 (선택, DATABASE/WEB/ENGINE/ETC) */
+        private String fileCategory;
+
+        /** 하위 카테고리 (선택, MARIADB/CRATEDB/BUILD/SH 등) */
+        private String subCategory;
+
+        /** 실행 순서 (선택, 기본값: 99) */
+        private Integer executionOrder;
+
+        /** 설명 (선택) */
+        private String description;
+    }
 }

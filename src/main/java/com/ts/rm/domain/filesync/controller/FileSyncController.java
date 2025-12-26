@@ -129,4 +129,104 @@ public class FileSyncController {
 
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    // ========================================
+    // 파일 등록 API (유형별 분리)
+    // ========================================
+
+    /**
+     * 리소스 파일 등록
+     *
+     * <p>분석 결과에서 UNREGISTERED 상태인 리소스 파일들을 등록합니다.
+     *
+     * @param request 등록 요청
+     * @return 등록 결과
+     */
+    @PostMapping("/resources/register")
+    @Operation(
+            summary = "리소스 파일 등록",
+            description = "분석 결과에서 UNREGISTERED 상태인 리소스 파일들을 DB에 등록합니다. " +
+                    "리소스명, 대분류, 소분류, 설명 등의 메타데이터를 함께 입력할 수 있습니다."
+    )
+    public ResponseEntity<ApiResponse<FileSyncDto.RegisterResponse>> registerResourceFiles(
+            @Valid @RequestBody FileSyncDto.ResourceFileRegisterRequest request) {
+
+        log.info("리소스 파일 등록 요청 - {}건", request.getItems().size());
+
+        FileSyncDto.RegisterResponse response = fileSyncService.registerResourceFiles(request);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 백업 파일 등록
+     *
+     * <p>분석 결과에서 UNREGISTERED 상태인 백업 파일들을 등록합니다.
+     *
+     * @param request 등록 요청
+     * @return 등록 결과
+     */
+    @PostMapping("/backups/register")
+    @Operation(
+            summary = "백업 파일 등록",
+            description = "분석 결과에서 UNREGISTERED 상태인 백업 파일들을 DB에 등록합니다. " +
+                    "파일 카테고리, 설명 등의 메타데이터를 함께 입력할 수 있습니다."
+    )
+    public ResponseEntity<ApiResponse<FileSyncDto.RegisterResponse>> registerBackupFiles(
+            @Valid @RequestBody FileSyncDto.BackupFileRegisterRequest request) {
+
+        log.info("백업 파일 등록 요청 - {}건", request.getItems().size());
+
+        FileSyncDto.RegisterResponse response = fileSyncService.registerBackupFiles(request);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 패치 파일 등록
+     *
+     * <p>분석 결과에서 UNREGISTERED 상태인 패치 폴더들을 등록합니다.
+     *
+     * @param request 등록 요청
+     * @return 등록 결과
+     */
+    @PostMapping("/patches/register")
+    @Operation(
+            summary = "패치 파일 등록",
+            description = "분석 결과에서 UNREGISTERED 상태인 패치 폴더들을 DB에 등록합니다. " +
+                    "담당 엔지니어, 고객사 코드, 설명 등의 메타데이터를 함께 입력할 수 있습니다."
+    )
+    public ResponseEntity<ApiResponse<FileSyncDto.RegisterResponse>> registerPatchFiles(
+            @Valid @RequestBody FileSyncDto.PatchFileRegisterRequest request) {
+
+        log.info("패치 파일 등록 요청 - {}건", request.getItems().size());
+
+        FileSyncDto.RegisterResponse response = fileSyncService.registerPatchFiles(request);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 릴리즈 파일 등록
+     *
+     * <p>분석 결과에서 UNREGISTERED 상태인 릴리즈 파일들을 등록합니다.
+     *
+     * @param request 등록 요청
+     * @return 등록 결과
+     */
+    @PostMapping("/releases/register")
+    @Operation(
+            summary = "릴리즈 파일 등록",
+            description = "분석 결과에서 UNREGISTERED 상태인 릴리즈 파일들을 DB에 등록합니다. " +
+                    "릴리즈 버전 ID, 파일 카테고리, 하위 카테고리, 실행 순서, 설명 등의 메타데이터를 함께 입력할 수 있습니다."
+    )
+    public ResponseEntity<ApiResponse<FileSyncDto.RegisterResponse>> registerReleaseFiles(
+            @Valid @RequestBody FileSyncDto.ReleaseFileRegisterRequest request) {
+
+        log.info("릴리즈 파일 등록 요청 - {}건", request.getItems().size());
+
+        FileSyncDto.RegisterResponse response = fileSyncService.registerReleaseFiles(request);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }
