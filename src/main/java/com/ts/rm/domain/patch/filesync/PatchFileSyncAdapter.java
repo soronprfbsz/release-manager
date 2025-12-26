@@ -27,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Patch 도메인의 파일 동기화를 담당합니다.
  * <p>패치는 폴더 단위로 관리되며, outputPath가 폴더 경로입니다.
  * <p>폴더 존재 여부로 동기화 상태를 판단합니다 (파일 크기/체크섬 비교 없음).
+ *
+ * <p>실제 폴더 구조: patches/{projectId}/{patchName}
+ * <p>예: patches/infraeye2/20251226123045_1.0.0_1.1.0
  */
 @Slf4j
 @Component
@@ -39,22 +42,20 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
 
     /**
      * 패치 폴더명 파싱 패턴
-     * <p>형식: {projectId}_{fromVersion}_to_{toVersion}_{releaseType}_patch
-     * <p>예: infraeye2_1.0.0_to_1.1.0_standard_patch
+     * <p>형식: {timestamp}_{fromVersion}_{toVersion}
+     * <p>예: 20251226123045_1.0.0_1.1.0
      */
     private static final Pattern PATCH_FOLDER_PATTERN = Pattern.compile(
-            "^([a-zA-Z0-9_-]+)_([0-9.]+)_to_([0-9.]+)_(standard|custom)_patch$",
-            Pattern.CASE_INSENSITIVE
+            "^(\\d{14})_([0-9.]+)_([0-9.]+)$"
     );
 
     /**
      * 커스텀 패치 폴더명 파싱 패턴
-     * <p>형식: {projectId}_{customerCode}_{fromVersion}_to_{toVersion}_custom_patch
-     * <p>예: infraeye2_customer1_1.0.0_to_1.1.0_custom_patch
+     * <p>형식: {timestamp}_{customerCode}_{fromVersion}_{toVersion}
+     * <p>예: 20251226123045_customer1_1.0.0_1.1.0
      */
     private static final Pattern CUSTOM_PATCH_FOLDER_PATTERN = Pattern.compile(
-            "^([a-zA-Z0-9_-]+)_([a-zA-Z0-9_-]+)_([0-9.]+)_to_([0-9.]+)_custom_patch$",
-            Pattern.CASE_INSENSITIVE
+            "^(\\d{14})_([a-zA-Z0-9_-]+)_([0-9.]+)_([0-9.]+)$"
     );
 
     @Override
@@ -89,18 +90,31 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
     @Override
     @Transactional
     public Long registerFile(FileSyncMetadata metadata, @Nullable Map<String, Object> additionalData) {
+        // 경로에서 projectId와 폴더명 추출
+        // 경로 형식: patches/{projectId}/{patchName}
+        String filePath = metadata.getFilePath();
+        String[] pathParts = filePath.split("/");
+
+        if (pathParts.length < 3) {
+            throw new BusinessException(ErrorCode.INVALID_PATCH_FOLDER_NAME,
+                    "패치 경로 형식이 올바르지 않습니다: " + filePath +
+                    ". 예상 형식: patches/{projectId}/{patchName}");
+        }
+
+        String pathProjectId = pathParts[1];
+        String folderName = pathParts[2];
+
         // 폴더명에서 패치 정보 추출 시도
-        String folderName = metadata.getFileName();
         PatchFolderInfo folderInfo = parsePatchFolderName(folderName);
 
         if (folderInfo == null) {
             throw new BusinessException(ErrorCode.INVALID_PATCH_FOLDER_NAME,
                     "패치 폴더명 형식이 올바르지 않습니다: " + folderName +
-                    ". 예상 형식: {projectId}_{fromVersion}_to_{toVersion}_{releaseType}_patch");
+                    ". 예상 형식: {yyyyMMddHHmmss}_{fromVersion}_{toVersion}");
         }
 
         // additionalData에서 오버라이드 가능
-        String projectId = extractStringOrDefault(additionalData, "projectId", folderInfo.projectId);
+        String projectId = extractStringOrDefault(additionalData, "projectId", pathProjectId);
         String releaseType = extractStringOrDefault(additionalData, "releaseType", folderInfo.releaseType);
         String fromVersion = extractStringOrDefault(additionalData, "fromVersion", folderInfo.fromVersion);
         String toVersion = extractStringOrDefault(additionalData, "toVersion", folderInfo.toVersion);
@@ -195,17 +209,17 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
     }
 
     /**
-     * patches/ 바로 아래의 폴더만 스캔 (깊이 1)
+     * patches/{projectId}/{patchName} 형식이므로 깊이 2
      */
     @Override
     public int getFolderScanDepth() {
-        return 1;
+        return 2;
     }
 
     /**
      * 유효한 동기화 경로인지 확인
      *
-     * <p>패치 폴더는 patches/{patchFolderName} 형식이어야 합니다.
+     * <p>패치 폴더는 patches/{projectId}/{patchName} 형식이어야 합니다.
      * <p>폴더명이 패치 명명 규칙을 따르는지 확인합니다.
      *
      * @param filePath 파일/폴더 경로
@@ -217,10 +231,10 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
             return false;
         }
 
-        // 경로 형식: patches/{patchFolderName}
+        // 경로 형식: patches/{projectId}/{patchName}
         String[] pathParts = filePath.split("/");
-        if (pathParts.length < 2) {
-            log.debug("패치 경로 형식 불일치 (최소 2단계 필요): {}", filePath);
+        if (pathParts.length < 3) {
+            log.debug("패치 경로 형식 불일치 (최소 3단계 필요): {}", filePath);
             return false;
         }
 
@@ -230,8 +244,15 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
             return false;
         }
 
-        // 폴더명이 패치 명명 규칙을 따르는지 확인
-        String folderName = pathParts[1];
+        // 두 번째 부분이 projectId (프로젝트 존재 여부는 등록 시 확인)
+        String projectId = pathParts[1];
+        if (projectId == null || projectId.isEmpty()) {
+            log.debug("프로젝트 ID가 없습니다: {}", filePath);
+            return false;
+        }
+
+        // 세 번째 부분이 패치 폴더명 - 패치 명명 규칙 확인
+        String folderName = pathParts[2];
         if (parsePatchFolderName(folderName) == null) {
             log.debug("패치 폴더명이 명명 규칙에 맞지 않습니다: {}", folderName);
             return false;
@@ -267,23 +288,23 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
             return null;
         }
 
-        // 표준 패치 형식 시도: {projectId}_{fromVersion}_to_{toVersion}_standard_patch
+        // 표준 패치 형식 시도: {timestamp}_{fromVersion}_{toVersion}
+        // 예: 20251226123045_1.0.0_1.1.0
         Matcher standardMatcher = PATCH_FOLDER_PATTERN.matcher(folderName);
         if (standardMatcher.matches()) {
             return new PatchFolderInfo(
-                    standardMatcher.group(1),  // projectId
                     standardMatcher.group(2),  // fromVersion
                     standardMatcher.group(3),  // toVersion
-                    standardMatcher.group(4),  // releaseType
+                    "STANDARD",                // releaseType
                     null                       // customerCode
             );
         }
 
-        // 커스텀 패치 형식 시도: {projectId}_{customerCode}_{fromVersion}_to_{toVersion}_custom_patch
+        // 커스텀 패치 형식 시도: {timestamp}_{customerCode}_{fromVersion}_{toVersion}
+        // 예: 20251226123045_customer1_1.0.0_1.1.0
         Matcher customMatcher = CUSTOM_PATCH_FOLDER_PATTERN.matcher(folderName);
         if (customMatcher.matches()) {
             return new PatchFolderInfo(
-                    customMatcher.group(1),    // projectId
                     customMatcher.group(3),    // fromVersion
                     customMatcher.group(4),    // toVersion
                     "CUSTOM",                  // releaseType
@@ -311,7 +332,6 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
      * 패치 폴더명 파싱 결과를 담는 내부 클래스
      */
     private record PatchFolderInfo(
-            String projectId,
             String fromVersion,
             String toVersion,
             String releaseType,
