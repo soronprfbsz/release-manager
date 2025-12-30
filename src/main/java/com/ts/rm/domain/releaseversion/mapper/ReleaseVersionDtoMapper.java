@@ -28,6 +28,8 @@ public interface ReleaseVersionDtoMapper {
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "releaseFiles", source = "releaseFiles")
+    @Mapping(target = "baseVersionId", source = "baseVersion.releaseVersionId")
+    @Mapping(target = "baseVersionNumber", source = "baseVersion.version")
     ReleaseVersionDto.DetailResponse toDetailResponse(ReleaseVersion releaseVersion);
 
     List<ReleaseVersionDto.DetailResponse> toDetailResponseList(

@@ -19,7 +19,6 @@ import com.ts.rm.domain.releaseversion.mapper.ReleaseVersionDtoMapper;
 import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionHierarchyRepository;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
-import com.ts.rm.domain.releaseversion.util.ReleaseMetadataManager;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import java.time.LocalDateTime;
@@ -55,9 +54,6 @@ class ReleaseVersionServiceTest {
 
     @Mock
     private ReleaseVersionDtoMapper mapper;
-
-    @Mock
-    private ReleaseMetadataManager metadataManager;
 
     @Mock
     private ReleaseVersionFileSystemService fileSystemService;

@@ -81,6 +81,51 @@ public interface ReleaseVersionControllerDocs {
     );
 
     @Operation(
+            summary = "커스텀 릴리즈 버전 생성",
+            description = "ZIP 파일로 커스텀 릴리즈 버전을 생성합니다.\n\n"
+                    + "**커스텀 버전 특징**:\n"
+                    + "- 특정 표준 버전(baseVersionId)을 기준으로 파생된 버전\n"
+                    + "- 특정 고객사(customerId)를 위한 맞춤 릴리즈\n"
+                    + "- 커스텀 버전 번호(customVersion)는 고객사별로 독립적으로 관리\n"
+                    + "- **커스텀 버전은 PATCH 카테고리만 지원** (INSTALL 불가)\n\n"
+                    + "**baseVersionId 필수 조건**:\n"
+                    + "- 해당 고객사의 **최초 커스텀 버전 생성 시 필수**\n"
+                    + "- 이후 버전 생성 시에는 선택 (생략 시 null로 저장)\n\n"
+                    + "**ZIP 파일 구조 규칙**: database/, web/, engine/ 폴더만 허용\n"
+                    + "```\n"
+                    + "custom_patch.zip\n"
+                    + "├── database/\n"
+                    + "│   └── mariadb/\n"
+                    + "│       └── 1.custom_patch.sql\n"
+                    + "├── web/\n"
+                    + "│   └── build/\n"
+                    + "│       └── custom_frontend.war\n"
+                    + "└── engine/\n"
+                    + "    └── build/\n"
+                    + "        └── custom_engine.jar\n"
+                    + "```\n\n"
+                    + "**저장 경로**: `versions/{projectId}/custom/{customerCode}/{customMajorMinor}/{customVersion}/`",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CreateCustomVersionApiResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<ReleaseVersionDto.CreateCustomVersionResponse>> createCustomVersion(
+            @Parameter(description = "커스텀 버전 정보 (projectId, customerId, baseVersionId, customVersion, comment)", required = true)
+            @Valid @ModelAttribute ReleaseVersionDto.CreateCustomVersionRequest request,
+
+            @Parameter(description = "패치 파일 ZIP", required = true)
+            @RequestPart("patchFiles") MultipartFile patchFiles,
+
+            @Parameter(description = "JWT 토큰 (Bearer {token})", required = true)
+            @RequestHeader("Authorization") String authorization
+    );
+
+    @Operation(
             summary = "릴리즈 버전 조회 (ID)",
             description = "ID로 릴리즈 버전 정보를 조회합니다",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -167,7 +212,114 @@ public interface ReleaseVersionControllerDocs {
     );
 
     @Operation(
-            summary = "커스텀 릴리즈 버전 트리 조회",
+            summary = "전체 커스텀 릴리즈 버전 트리 조회",
+            description = "프로젝트별 모든 고객사의 커스텀 릴리즈 버전들을 계층 구조로 조회합니다.\n\n"
+                    + "**응답 구조** (4단계 중첩):\n"
+                    + "1. customers: 고객사 목록\n"
+                    + "2. majorMinorGroups: 각 고객사의 커스텀 메이저.마이너 그룹 목록 (예: 1.0.x, 1.1.x)\n"
+                    + "3. versions: 각 그룹 내의 커스텀 버전 목록 (예: 1.0.0, 1.0.1)\n"
+                    + "4. 각 고객사에는 기준 표준본 정보(baseVersionId, baseVersion) 포함 (고객사별로 하나의 기준 표준본)",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomTreeApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "전체 커스텀 릴리즈 버전 트리 조회 성공 예시",
+                                    value = """
+                                            {
+                                              "status": "success",
+                                              "data": {
+                                                "releaseType": "CUSTOM",
+                                                "customers": [
+                                                  {
+                                                    "customerId": 1,
+                                                    "customerCode": "companyA",
+                                                    "customerName": "A회사",
+                                                    "baseVersionId": 5,
+                                                    "baseVersion": "1.1.0",
+                                                    "majorMinorGroups": [
+                                                      {
+                                                        "majorMinor": "1.0.x",
+                                                        "versions": [
+                                                          {
+                                                            "versionId": 101,
+                                                            "version": "1.0.0",
+                                                            "createdAt": "2025-12-01",
+                                                            "createdBy": "jhlee@tscientific",
+                                                            "comment": "A사 커스텀 패치",
+                                                            "isApproved": true,
+                                                            "approvedBy": "admin@tscientific.co.kr",
+                                                            "approvedAt": "2025-12-02",
+                                                            "fileCategories": ["DATABASE", "WEB"]
+                                                          },
+                                                          {
+                                                            "versionId": 102,
+                                                            "version": "1.0.1",
+                                                            "createdAt": "2025-12-10",
+                                                            "createdBy": "jhlee@tscientific",
+                                                            "comment": "A사 버그 수정",
+                                                            "isApproved": false,
+                                                            "approvedBy": null,
+                                                            "approvedAt": null,
+                                                            "fileCategories": ["DATABASE"]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "customerId": 2,
+                                                    "customerCode": "companyB",
+                                                    "customerName": "B회사",
+                                                    "baseVersionId": 8,
+                                                    "baseVersion": "1.2.0",
+                                                    "majorMinorGroups": [
+                                                      {
+                                                        "majorMinor": "1.4.x",
+                                                        "versions": [
+                                                          {
+                                                            "versionId": 201,
+                                                            "version": "1.4.1",
+                                                            "createdAt": "2025-12-05",
+                                                            "createdBy": "jhlee@tscientific",
+                                                            "comment": "B사 커스텀 기능",
+                                                            "isApproved": true,
+                                                            "approvedBy": "admin@tscientific.co.kr",
+                                                            "approvedAt": "2025-12-06",
+                                                            "fileCategories": ["DATABASE", "WEB", "ENGINE"]
+                                                          },
+                                                          {
+                                                            "versionId": 202,
+                                                            "version": "1.4.2",
+                                                            "createdAt": "2025-12-15",
+                                                            "createdBy": "jhlee@tscientific",
+                                                            "comment": "B사 추가 수정",
+                                                            "isApproved": false,
+                                                            "approvedBy": null,
+                                                            "approvedAt": null,
+                                                            "fileCategories": ["DATABASE"]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<ReleaseVersionDto.CustomTreeResponse>> getAllCustomReleaseTree(
+            @Parameter(description = "프로젝트 ID", required = true, example = "infraeye2")
+            @PathVariable String projectId
+    );
+
+    @Operation(
+            summary = "특정 고객사 커스텀 릴리즈 버전 트리 조회",
             description = "프로젝트별 특정 고객사의 커스텀 릴리즈 버전들을 계층 구조로 조회합니다 (프론트엔드 트리 렌더링용)\n\n"
                     + "**응답 구조** (3단계 중첩):\n"
                     + "1. majorMinorGroups: 메이저.마이너 그룹 목록 (예: 1.1.x, 1.2.x)\n"
@@ -235,8 +387,7 @@ public interface ReleaseVersionControllerDocs {
             description = "릴리즈 버전을 완전히 삭제합니다.\n\n"
                     + "**삭제되는 항목**:\n"
                     + "- 데이터베이스: release_version, release_file, release_version_hierarchy\n"
-                    + "- 파일 시스템: versions/{type}/{majorMinor}/{version}/ 디렉토리\n"
-                    + "- release_metadata.json: 해당 버전 정보",
+                    + "- 파일 시스템: versions/{type}/{majorMinor}/{version}/ 디렉토리",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",
@@ -356,6 +507,50 @@ public interface ReleaseVersionControllerDocs {
     );
 
     @Operation(
+            summary = "표준본 버전 목록 조회 (셀렉트박스용)",
+            description = "프로젝트별 표준본 버전 목록을 조회합니다.\n\n"
+                    + "**용도**: 커스텀 버전 생성 시 기준 표준본 선택 셀렉트박스 구성\n\n"
+                    + "**정렬**: 최신순 (createdAt DESC)",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = VersionSelectListApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "표준본 버전 목록 조회 성공 예시",
+                                    value = """
+                                            {
+                                              "status": "success",
+                                              "data": [
+                                                {
+                                                  "versionId": 5,
+                                                  "version": "1.2.0",
+                                                  "isApproved": true
+                                                },
+                                                {
+                                                  "versionId": 3,
+                                                  "version": "1.1.1",
+                                                  "isApproved": true
+                                                },
+                                                {
+                                                  "versionId": 1,
+                                                  "version": "1.1.0",
+                                                  "isApproved": false
+                                                }
+                                              ]
+                                            }
+                                            """
+                            )
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<java.util.List<ReleaseVersionDto.VersionSelectOption>>> getStandardVersionsForSelect(
+            @Parameter(description = "프로젝트 ID", required = true, example = "infraeye2")
+            @PathVariable String projectId
+    );
+
+    @Operation(
             summary = "릴리즈 버전 승인",
             description = "릴리즈 버전을 승인합니다.\n\n"
                     + "**권한**: ADMIN, USER\n\n"
@@ -378,15 +573,27 @@ public interface ReleaseVersionControllerDocs {
     );
 
     /**
-     * Swagger 스키마용 wrapper 클래스 - 버전 생성 응답
+     * Swagger 스키마용 wrapper 클래스 - 표준 버전 생성 응답
      */
-    @Schema(description = "버전 생성 API 응답")
+    @Schema(description = "표준 버전 생성 API 응답")
     class CreateVersionApiResponse {
         @Schema(description = "응답 상태", example = "success")
         public String status;
 
         @Schema(description = "생성된 버전 정보")
         public ReleaseVersionDto.CreateVersionResponse data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 커스텀 버전 생성 응답
+     */
+    @Schema(description = "커스텀 버전 생성 API 응답")
+    class CreateCustomVersionApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "생성된 커스텀 버전 정보")
+        public ReleaseVersionDto.CreateCustomVersionResponse data;
     }
 
     /**
@@ -423,5 +630,29 @@ public interface ReleaseVersionControllerDocs {
 
         @Schema(description = "파일 트리")
         public ReleaseVersionDto.FileTreeResponse data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 전체 커스텀 트리 응답
+     */
+    @Schema(description = "전체 커스텀 트리 API 응답")
+    class CustomTreeApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "커스텀 버전 트리 (고객사별 그룹화)")
+        public ReleaseVersionDto.CustomTreeResponse data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 표준본 버전 셀렉트박스 목록 응답
+     */
+    @Schema(description = "표준본 버전 셀렉트박스 목록 API 응답")
+    class VersionSelectListApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "표준본 버전 목록")
+        public java.util.List<ReleaseVersionDto.VersionSelectOption> data;
     }
 }

@@ -46,7 +46,7 @@ public class ReleaseVersionTreeService {
     }
 
     /**
-     * 커스텀 릴리즈 버전 트리 조회 (프로젝트별)
+     * 커스텀 릴리즈 버전 트리 조회 (프로젝트별, 특정 고객사)
      *
      * @param projectId    프로젝트 ID
      * @param customerCode 고객사 코드
@@ -55,6 +55,163 @@ public class ReleaseVersionTreeService {
     public ReleaseVersionDto.TreeResponse getCustomReleaseTree(String projectId, String customerCode) {
         log.info("Getting custom release tree for project: {}, customer: {}", projectId, customerCode);
         return buildReleaseTree(projectId, "CUSTOM", customerCode);
+    }
+
+    /**
+     * 전체 커스텀 릴리즈 버전 트리 조회 (프로젝트별, 모든 고객사)
+     *
+     * <p>고객사별로 그룹화된 커스텀 버전 트리를 반환합니다.
+     *
+     * @param projectId 프로젝트 ID
+     * @return 전체 커스텀 버전 트리 (고객사별 그룹화)
+     */
+    public ReleaseVersionDto.CustomTreeResponse getAllCustomReleaseTree(String projectId) {
+        log.info("Getting all custom release tree for project: {}", projectId);
+
+        try {
+            // 프로젝트 내의 모든 CUSTOM 릴리즈 버전 조회
+            List<ReleaseVersion> allCustomVersions = hierarchyRepository
+                    .findAllByProjectIdAndReleaseTypeWithHierarchy(projectId, "CUSTOM");
+
+            if (allCustomVersions.isEmpty()) {
+                log.warn("No custom versions found for projectId: {}", projectId);
+                return new ReleaseVersionDto.CustomTreeResponse("CUSTOM", List.of());
+            }
+
+            // 고객사별로 그룹화
+            Map<Long, List<ReleaseVersion>> groupedByCustomer = new java.util.LinkedHashMap<>();
+            for (ReleaseVersion version : allCustomVersions) {
+                if (version.getCustomer() != null) {
+                    groupedByCustomer.computeIfAbsent(
+                            version.getCustomer().getCustomerId(),
+                            k -> new ArrayList<>()
+                    ).add(version);
+                }
+            }
+
+            // CustomerNode 목록 생성
+            List<ReleaseVersionDto.CustomerNode> customerNodes = new ArrayList<>();
+            for (Map.Entry<Long, List<ReleaseVersion>> entry : groupedByCustomer.entrySet()) {
+                List<ReleaseVersion> customerVersions = entry.getValue();
+
+                // 첫 번째 버전에서 고객사 정보 및 기준 표준본 정보 추출
+                ReleaseVersion firstVersion = customerVersions.get(0);
+                Long customerId = firstVersion.getCustomer().getCustomerId();
+                String customerCode = firstVersion.getCustomer().getCustomerCode();
+                String customerName = firstVersion.getCustomer().getCustomerName();
+
+                // 기준 표준본 정보 (고객사 내 모든 커스텀 버전은 동일한 기준 표준본 사용)
+                Long baseVersionId = firstVersion.getBaseVersion() != null
+                        ? firstVersion.getBaseVersion().getReleaseVersionId()
+                        : null;
+                String baseVersion = firstVersion.getBaseVersion() != null
+                        ? firstVersion.getBaseVersion().getVersion()
+                        : null;
+
+                // 커스텀 버전의 majorMinor로 그룹화 (customMajorMinor 사용)
+                List<ReleaseVersionDto.CustomMajorMinorNode> majorMinorGroups =
+                        buildCustomMajorMinorGroups(customerVersions);
+
+                customerNodes.add(new ReleaseVersionDto.CustomerNode(
+                        customerId,
+                        customerCode,
+                        customerName,
+                        baseVersionId,
+                        baseVersion,
+                        majorMinorGroups
+                ));
+            }
+
+            return new ReleaseVersionDto.CustomTreeResponse("CUSTOM", customerNodes);
+
+        } catch (Exception e) {
+            log.error("Failed to build all custom release tree", e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "커스텀 릴리즈 트리 조회 중 오류가 발생했습니다");
+        }
+    }
+
+    /**
+     * 커스텀 버전 목록을 Major.Minor로 그룹핑
+     *
+     * @param versions 커스텀 릴리즈 버전 목록
+     * @return 커스텀 Major.Minor 그룹 목록
+     */
+    private List<ReleaseVersionDto.CustomMajorMinorNode> buildCustomMajorMinorGroups(
+            List<ReleaseVersion> versions) {
+
+        // 커스텀 버전의 MajorMinor로 그룹핑
+        Map<String, List<ReleaseVersion>> groupedByMajorMinor = new java.util.LinkedHashMap<>();
+
+        for (ReleaseVersion version : versions) {
+            String customMajorMinor = version.getCustomMajorMinor();
+            if (customMajorMinor != null) {
+                groupedByMajorMinor.computeIfAbsent(customMajorMinor, k -> new ArrayList<>())
+                        .add(version);
+            }
+        }
+
+        // CustomMajorMinorNode 생성
+        List<ReleaseVersionDto.CustomMajorMinorNode> majorMinorNodes = new ArrayList<>();
+
+        for (Map.Entry<String, List<ReleaseVersion>> entry : groupedByMajorMinor.entrySet()) {
+            String majorMinor = entry.getKey();
+            List<ReleaseVersion> versionsInGroup = entry.getValue();
+
+            // 그룹 내에서 커스텀 패치 버전 내림차순 정렬
+            versionsInGroup.sort((v1, v2) ->
+                    Integer.compare(
+                            v2.getCustomPatchVersion() != null ? v2.getCustomPatchVersion() : 0,
+                            v1.getCustomPatchVersion() != null ? v1.getCustomPatchVersion() : 0
+                    )
+            );
+
+            // 각 버전에 대한 CustomVersionNode 생성
+            List<ReleaseVersionDto.CustomVersionNode> versionNodes = versionsInGroup.stream()
+                    .map(this::buildCustomVersionNode)
+                    .toList();
+
+            majorMinorNodes.add(new ReleaseVersionDto.CustomMajorMinorNode(majorMinor, versionNodes));
+        }
+
+        return majorMinorNodes;
+    }
+
+    /**
+     * ReleaseVersion 엔티티로부터 CustomVersionNode 생성
+     *
+     * @param version 릴리즈 버전 엔티티
+     * @return CustomVersionNode
+     */
+    private ReleaseVersionDto.CustomVersionNode buildCustomVersionNode(ReleaseVersion version) {
+        // createdAt을 "YYYY-MM-DD" 형식으로 포맷
+        String createdAt = version.getCreatedAt() != null
+                ? version.getCreatedAt().toLocalDate().toString()
+                : null;
+
+        // fileCategories 조회
+        List<FileCategory> fileCategoryEnums = releaseFileRepository
+                .findCategoriesByVersionId(version.getReleaseVersionId());
+        List<String> fileCategories = fileCategoryEnums.stream()
+                .map(FileCategory::getCode)
+                .toList();
+
+        // approvedAt 포매팅
+        String approvedAt = version.getApprovedAt() != null
+                ? version.getApprovedAt().toLocalDate().toString()
+                : null;
+
+        return new ReleaseVersionDto.CustomVersionNode(
+                version.getReleaseVersionId(),
+                version.getCustomVersion(),  // 커스텀 버전 문자열 (예: 1.0.0)
+                createdAt,
+                version.getCreatedBy(),
+                version.getComment(),
+                version.getIsApproved(),
+                version.getApprovedBy(),
+                approvedAt,
+                fileCategories
+        );
     }
 
     /**

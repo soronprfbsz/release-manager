@@ -1,6 +1,8 @@
 package com.ts.rm.domain.releaseversion.service;
 
 import com.ts.rm.domain.common.service.FileStorageService;
+import com.ts.rm.domain.customer.entity.Customer;
+import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.project.repository.ProjectRepository;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
@@ -12,7 +14,6 @@ import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import com.ts.rm.domain.releaseversion.mapper.ReleaseVersionDtoMapper;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
-import com.ts.rm.domain.releaseversion.util.ReleaseMetadataManager;
 import com.ts.rm.domain.releaseversion.util.VersionParser;
 import com.ts.rm.domain.releaseversion.util.VersionParser.VersionInfo;
 import com.ts.rm.global.exception.BusinessException;
@@ -44,7 +45,7 @@ public class ReleaseVersionUploadService {
     private final ReleaseVersionRepository releaseVersionRepository;
     private final ReleaseFileRepository releaseFileRepository;
     private final ProjectRepository projectRepository;
-    private final ReleaseMetadataManager metadataManager;
+    private final CustomerRepository customerRepository;
     private final FileStorageService fileStorageService;
     private final ReleaseVersionFileSystemService fileSystemService;
     private final ReleaseVersionTreeService treeService;
@@ -175,12 +176,9 @@ public class ReleaseVersionUploadService {
             // 6. 파일 복사 및 DB 저장
             ReleaseVersion savedVersion = copyFilesAndSaveToDb(project, tempDir, versionPath, versionInfo, releaseCategory, createdBy, comment);
 
-            // 7. release_metadata.json 업데이트
-            metadataManager.addVersionEntry(savedVersion);
-
             log.info("ZIP 파일로 표준 릴리즈 버전 생성 완료 - projectId: {}, version: {}, ID: {}", projectId, version, savedVersion.getReleaseVersionId());
 
-            // 8. 응답 생성
+            // 7. 응답 생성
             return new ReleaseVersionDto.CreateVersionResponse(
                     savedVersion.getReleaseVersionId(),
                     projectId,
@@ -215,6 +213,215 @@ public class ReleaseVersionUploadService {
                 fileSystemService.deleteDirectory(tempDir);
             }
         }
+    }
+
+    /**
+     * ZIP 파일로 커스텀 릴리즈 버전 생성
+     *
+     * @param request   커스텀 버전 생성 요청
+     * @param zipFile   패치 파일이 포함된 ZIP 파일
+     * @param createdBy 생성자 이메일 (JWT에서 추출)
+     * @return 생성된 커스텀 버전 응답
+     */
+    @Transactional
+    public ReleaseVersionDto.CreateCustomVersionResponse createCustomVersionWithZip(
+            ReleaseVersionDto.CreateCustomVersionRequest request, MultipartFile zipFile, String createdBy) {
+
+        log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 시작 - projectId: {}, customerId: {}, baseVersionId: {}, customVersion: {}, createdBy: {}",
+                request.projectId(), request.customerId(), request.baseVersionId(), request.customVersion(), createdBy);
+
+        // 0. 프로젝트 조회
+        Project project = projectRepository.findById(request.projectId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND,
+                        "프로젝트를 찾을 수 없습니다: " + request.projectId()));
+
+        // 1. 고객사 조회
+        Customer customer = customerRepository.findById(request.customerId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND,
+                        "고객사를 찾을 수 없습니다: " + request.customerId()));
+
+        // 2. 해당 고객사의 기존 커스텀 버전 존재 여부 확인
+        List<ReleaseVersion> existingCustomVersions = releaseVersionRepository
+                .findAllByCustomer_CustomerIdOrderByCreatedAtDesc(request.customerId());
+        boolean isFirstCustomVersion = existingCustomVersions.isEmpty();
+
+        // 3. 기준 표준 버전 조회 및 검증
+        ReleaseVersion baseVersion = null;
+        if (request.baseVersionId() != null) {
+            baseVersion = releaseVersionRepository.findById(request.baseVersionId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
+                            "기준 버전을 찾을 수 없습니다: " + request.baseVersionId()));
+
+            if (!"STANDARD".equals(baseVersion.getReleaseType())) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "커스텀 버전의 기준 버전은 표준(STANDARD) 버전이어야 합니다.");
+            }
+        } else if (isFirstCustomVersion) {
+            // 최초 커스텀 버전 생성 시 baseVersionId 필수
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "해당 고객사의 최초 커스텀 버전 생성 시 기준 표준 버전 ID(baseVersionId)는 필수입니다.");
+        }
+
+        // 4. 커스텀 버전 파싱
+        VersionInfo customVersionInfo = VersionParser.parse(request.customVersion());
+        String customVersion = request.customVersion();
+        String customMajorMinor = customVersionInfo.getMajorMinor();
+        int customMajorVersion = customVersionInfo.getMajorVersion();
+        int customMinorVersion = customVersionInfo.getMinorVersion();
+        int customPatchVersion = customVersionInfo.getPatchVersion();
+
+        // 5. 커스텀 버전 중복 검증 (같은 고객사 내에서)
+        validateCustomVersionUnique(request.customerId(), customMajorVersion, customMinorVersion, customPatchVersion);
+
+        // 6. ZIP 파일 검증
+        validateZipFile(zipFile);
+
+        Path tempDir = null;
+        Path versionPath = null;
+
+        try {
+            // 7. 임시 디렉토리에 ZIP 압축 해제
+            tempDir = extractZipToTempDirectory(zipFile);
+
+            // 8. ZIP 구조 검증 (커스텀 버전은 PATCH만 허용)
+            validateZipStructure(tempDir, ReleaseCategory.PATCH);
+
+            // 9. 커스텀 버전 디렉토리 생성
+            versionPath = fileSystemService.createCustomVersionDirectory(
+                    request.projectId(), customer.getCustomerCode(), customMajorMinor, customVersion);
+
+            // 10. 파일 복사 및 DB 저장 (커스텀 버전은 PATCH로 고정)
+            ReleaseVersion savedVersion = copyFilesAndSaveToDbForCustomVersion(
+                    project, customer, baseVersion, tempDir, versionPath,
+                    customMajorVersion, customMinorVersion, customPatchVersion,
+                    ReleaseCategory.PATCH, request.comment(), createdBy);
+
+            log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 완료 - projectId: {}, customerId: {}, customVersion: {}, ID: {}",
+                    request.projectId(), request.customerId(), customVersion, savedVersion.getReleaseVersionId());
+
+            // 11. 응답 생성
+            return new ReleaseVersionDto.CreateCustomVersionResponse(
+                    savedVersion.getReleaseVersionId(),
+                    request.projectId(),
+                    customer.getCustomerCode(),
+                    customer.getCustomerName(),
+                    baseVersion != null ? baseVersion.getReleaseVersionId() : null,
+                    baseVersion != null ? baseVersion.getVersion() : null,
+                    customMajorVersion,
+                    customMinorVersion,
+                    customPatchVersion,
+                    customVersion,
+                    customMajorMinor,
+                    createdBy,
+                    request.comment(),
+                    savedVersion.getCreatedAt(),
+                    getCreatedFilesList(savedVersion)
+            );
+
+        } catch (BusinessException e) {
+            // 생성된 버전 디렉토리 롤백
+            if (versionPath != null) {
+                fileSystemService.deleteDirectory(versionPath);
+            }
+            throw e;
+        } catch (Exception e) {
+            // 생성된 버전 디렉토리 롤백
+            if (versionPath != null) {
+                fileSystemService.deleteDirectory(versionPath);
+            }
+            log.error("ZIP 파일로 커스텀 버전 생성 실패: {}", customVersion, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "커스텀 버전 생성 중 오류가 발생했습니다: " + e.getMessage());
+        } finally {
+            // 임시 디렉토리 정리
+            if (tempDir != null) {
+                fileSystemService.deleteDirectory(tempDir);
+            }
+        }
+    }
+
+    /**
+     * 커스텀 버전 중복 검증 (같은 고객사 내에서 동일 버전이 있는지 확인)
+     */
+    private void validateCustomVersionUnique(Long customerId, Integer major, Integer minor, Integer patch) {
+        boolean exists = releaseVersionRepository.existsByCustomer_CustomerIdAndCustomMajorVersionAndCustomMinorVersionAndCustomPatchVersion(
+                customerId, major, minor, patch);
+        if (exists) {
+            throw new BusinessException(ErrorCode.RELEASE_VERSION_CONFLICT,
+                    String.format("이미 존재하는 커스텀 버전입니다: %d.%d.%d", major, minor, patch));
+        }
+    }
+
+    /**
+     * 커스텀 버전용 파일 복사 및 DB 저장
+     *
+     * @return 저장된 ReleaseVersion 엔티티
+     */
+    private ReleaseVersion copyFilesAndSaveToDbForCustomVersion(
+            Project project, Customer customer, ReleaseVersion baseVersion,
+            Path tempDir, Path versionPath,
+            int customMajorVersion, int customMinorVersion, int customPatchVersion,
+            ReleaseCategory releaseCategory, String comment, String createdBy) throws IOException {
+
+        String customVersion = customMajorVersion + "." + customMinorVersion + "." + customPatchVersion;
+
+        // ReleaseVersion 생성 및 저장 (커스텀 버전 전용 필드 설정)
+        // 커스텀 버전은 version 필드에 커스텀 버전 번호를 저장 (uk_project_version 유니크 제약을 위해)
+        final ReleaseVersion savedVersion = releaseVersionRepository.save(
+                ReleaseVersion.builder()
+                        .project(project)
+                        .releaseType("CUSTOM")
+                        .releaseCategory(releaseCategory)
+                        .customer(customer)
+                        .baseVersion(baseVersion)
+                        .version(customVersion)  // 커스텀 버전 번호 저장
+                        .majorVersion(customMajorVersion)
+                        .minorVersion(customMinorVersion)
+                        .patchVersion(customPatchVersion)
+                        .customMajorVersion(customMajorVersion)
+                        .customMinorVersion(customMinorVersion)
+                        .customPatchVersion(customPatchVersion)
+                        .createdBy(createdBy)
+                        .comment(comment)
+                        .build()
+        );
+
+        log.info("커스텀 ReleaseVersion 저장 완료 - ID: {}, customVersion: {}, baseVersion: {}",
+                savedVersion.getReleaseVersionId(), customVersion,
+                baseVersion != null ? baseVersion.getVersion() : "null");
+
+        // 클로저 테이블에 계층 구조 데이터 추가
+        treeService.createHierarchyForNewVersion(savedVersion, "CUSTOM");
+
+        // 모든 카테고리 폴더 순회 및 파일 복사
+        Files.list(tempDir)
+                .filter(Files::isDirectory)
+                .forEach(categoryDir -> {
+                    String categoryName = categoryDir.getFileName().toString().toUpperCase();
+
+                    try {
+                        // FileCategory 검증 및 변환
+                        FileCategory fileCategory = FileCategory.fromCode(categoryName);
+
+                        // 타겟 카테고리 디렉토리 생성
+                        Path targetCategoryDir = versionPath.resolve(categoryName.toLowerCase());
+                        Files.createDirectories(targetCategoryDir);
+
+                        log.info("카테고리 폴더 처리 시작: {} -> {}", categoryName, fileCategory.getDescription());
+
+                        // 카테고리별 파일 복사 (재귀적)
+                        processCategoryFiles(categoryDir, targetCategoryDir, savedVersion, fileCategory);
+
+                    } catch (IllegalArgumentException e) {
+                        log.warn("알 수 없는 카테고리 폴더 무시: {}", categoryName);
+                    } catch (IOException e) {
+                        log.error("카테고리 파일 복사 실패: {}", categoryName, e);
+                        throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                                "파일 복사 중 오류 발생: " + e.getMessage());
+                    }
+                });
+
+        return savedVersion;
     }
 
     /**

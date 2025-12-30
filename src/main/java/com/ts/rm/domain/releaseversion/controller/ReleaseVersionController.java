@@ -47,7 +47,7 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
      * @return 생성된 버전 정보
      */
     @Override
-    @PostMapping(value = "/standard/versions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/versions/standard", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ReleaseVersionDto.CreateVersionResponse>> createStandardVersion(
             @Valid @ModelAttribute ReleaseVersionDto.CreateStandardVersionRequest request,
             @RequestPart("patchFiles") MultipartFile patchFiles,
@@ -68,6 +68,41 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
                 request.version(),
                 request.releaseCategory(),
                 request.comment(),
+                patchFiles,
+                createdBy
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 커스텀 릴리즈 버전 생성 (ZIP 파일 업로드)
+     *
+     * @param request       버전 생성 요청 (customerId, baseVersionId, customVersion, comment)
+     * @param patchFiles    패치 파일 ZIP
+     * @param authorization JWT 토큰 (Bearer {token})
+     * @return 생성된 버전 정보
+     */
+    @Override
+    @PostMapping(value = "/versions/custom", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.CreateCustomVersionResponse>> createCustomVersion(
+            @Valid @ModelAttribute ReleaseVersionDto.CreateCustomVersionRequest request,
+            @RequestPart("patchFiles") MultipartFile patchFiles,
+            @RequestHeader("Authorization") String authorization) {
+
+        log.info("커스텀 릴리즈 버전 생성 요청 - projectId: {}, customerId: {}, baseVersionId: {}, customVersion: {}, comment: {}, fileSize: {}",
+                request.projectId(), request.customerId(), request.baseVersionId(),
+                request.customVersion(), request.comment(), patchFiles.getSize());
+
+        // JWT 토큰에서 이메일 추출
+        String token = extractToken(authorization);
+        String createdBy = jwtTokenProvider.getEmail(token);
+
+        log.info("버전 생성자: {}", createdBy);
+
+        // 커스텀 버전 생성
+        ReleaseVersionDto.CreateCustomVersionResponse response = uploadService.createCustomVersionWithZip(
+                request,
                 patchFiles,
                 createdBy
         );
@@ -117,7 +152,21 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
     }
 
     /**
-     * 커스텀 릴리즈 버전 트리 조회 (프로젝트별)
+     * 전체 커스텀 릴리즈 버전 트리 조회 (프로젝트별, 모든 고객사)
+     *
+     * @param id 프로젝트 ID
+     * @return 커스텀 릴리즈 버전 트리 (고객사별 그룹화)
+     */
+    @Override
+    @GetMapping("/projects/{id}/custom/tree")
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.CustomTreeResponse>> getAllCustomReleaseTree(
+            @PathVariable String id) {
+        ReleaseVersionDto.CustomTreeResponse response = treeService.getAllCustomReleaseTree(id);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 커스텀 릴리즈 버전 트리 조회 (프로젝트별, 특정 고객사)
      *
      * @param id           프로젝트 ID
      * @param customerCode 고객사 코드
@@ -165,6 +214,24 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
         com.ts.rm.domain.releaseversion.entity.ReleaseVersion version = releaseVersionService.findVersionById(id);
 
         ReleaseVersionDto.FileTreeResponse response = treeService.getVersionFileTree(id, version);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 프로젝트별 표준본 버전 목록 조회 (셀렉트박스용)
+     *
+     * @param id 프로젝트 ID
+     * @return 표준본 버전 목록
+     */
+    @Override
+    @GetMapping("/projects/{id}/versions")
+    public ResponseEntity<ApiResponse<java.util.List<ReleaseVersionDto.VersionSelectOption>>> getStandardVersionsForSelect(
+            @PathVariable String id) {
+
+        log.info("표준본 버전 셀렉트박스 목록 조회 요청 - projectId: {}", id);
+
+        java.util.List<ReleaseVersionDto.VersionSelectOption> response = releaseVersionService.getStandardVersionsForSelect(id);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

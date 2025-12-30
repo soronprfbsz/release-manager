@@ -12,7 +12,6 @@ import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.mapper.ReleaseVersionDtoMapper;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionHierarchyRepository;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
-import com.ts.rm.domain.releaseversion.util.ReleaseMetadataManager;
 import com.ts.rm.domain.releaseversion.util.VersionParser;
 import com.ts.rm.domain.releaseversion.util.VersionParser.VersionInfo;
 import com.ts.rm.global.exception.BusinessException;
@@ -41,7 +40,6 @@ public class ReleaseVersionService {
     private final CustomerRepository customerRepository;
     private final ProjectRepository projectRepository;
     private final ReleaseVersionDtoMapper mapper;
-    private final ReleaseMetadataManager metadataManager;
 
     // 분리된 서비스들
     private final ReleaseVersionFileSystemService fileSystemService;
@@ -187,11 +185,6 @@ public class ReleaseVersionService {
             // 5. 파일 시스템 삭제
             fileSystemService.deleteVersionDirectory(version);
 
-            // 6. release_metadata.json에서 버전 정보 제거
-            String projectId = version.getProject() != null ? version.getProject().getProjectId() : "infraeye2";
-            String customerCode = version.getCustomer() != null ? version.getCustomer().getCustomerCode() : null;
-            metadataManager.removeVersionEntry(projectId, releaseType, customerCode, versionNumber);
-
             log.info("버전 삭제 완료 - version: {}", versionNumber);
 
         } catch (Exception e) {
@@ -239,7 +232,9 @@ public class ReleaseVersionService {
                 .createdBy(request.createdBy())
                 .comment(request.comment())
                 .isApproved(request.isApproved() != null ? request.isApproved() : false)
-                .customVersion(request.customVersion())
+                .customMajorVersion(request.customMajorVersion())
+                .customMinorVersion(request.customMinorVersion())
+                .customPatchVersion(request.customPatchVersion())
                 .build();
 
         ReleaseVersion savedVersion = releaseVersionRepository.save(version);
@@ -249,9 +244,6 @@ public class ReleaseVersionService {
 
         // 디렉토리 구조 생성
         fileSystemService.createDirectoryStructure(savedVersion, customer);
-
-        // release_metadata.json 업데이트
-        metadataManager.addVersionEntry(savedVersion);
 
         log.info("Release version created successfully with id: {}, projectId: {}",
                 savedVersion.getReleaseVersionId(), project.getProjectId());
@@ -304,6 +296,27 @@ public class ReleaseVersionService {
                 response.createdAt(),
                 response.patchFileCount()
         );
+    }
+
+    /**
+     * 프로젝트별 표준본 버전 목록 조회 (셀렉트박스용)
+     *
+     * @param projectId 프로젝트 ID
+     * @return 표준본 버전 목록 (value: versionId, name: version)
+     */
+    public List<ReleaseVersionDto.VersionSelectOption> getStandardVersionsForSelect(String projectId) {
+        log.info("표준본 버전 셀렉트박스 목록 조회 - projectId: {}", projectId);
+
+        List<ReleaseVersion> versions = releaseVersionRepository
+                .findAllByProject_ProjectIdAndReleaseTypeOrderByCreatedAtDesc(projectId, "STANDARD");
+
+        return versions.stream()
+                .map(v -> new ReleaseVersionDto.VersionSelectOption(
+                        v.getReleaseVersionId(),  // versionId
+                        v.getVersion(),           // version
+                        v.getIsApproved()         // isApproved
+                ))
+                .toList();
     }
 
     /**

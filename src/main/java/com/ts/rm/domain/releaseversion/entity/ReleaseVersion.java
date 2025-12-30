@@ -92,8 +92,18 @@ public class ReleaseVersion {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
-    @Column(name = "custom_version", length = 50)
-    private String customVersion;
+    @Column(name = "custom_major_version")
+    private Integer customMajorVersion;
+
+    @Column(name = "custom_minor_version")
+    private Integer customMinorVersion;
+
+    @Column(name = "custom_patch_version")
+    private Integer customPatchVersion;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "base_version_id")
+    private ReleaseVersion baseVersion;
 
     @OneToMany(mappedBy = "releaseVersion", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -128,5 +138,45 @@ public class ReleaseVersion {
     @Transient
     public String getMajorMinor() {
         return majorVersion + "." + minorVersion + ".x";
+    }
+
+    /**
+     * 커스텀 버전 문자열 반환 (예: 1.0.0)
+     *
+     * <p>customMajorVersion, customMinorVersion, customPatchVersion이 모두 존재할 때만 반환
+     */
+    @Transient
+    public String getCustomVersion() {
+        if (customMajorVersion == null || customMinorVersion == null || customPatchVersion == null) {
+            return null;
+        }
+        return customMajorVersion + "." + customMinorVersion + "." + customPatchVersion;
+    }
+
+    /**
+     * 커스텀 버전 존재 여부 확인
+     */
+    @Transient
+    public boolean hasCustomVersion() {
+        return customMajorVersion != null && customMinorVersion != null && customPatchVersion != null;
+    }
+
+    /**
+     * 커스텀 버전의 Major.Minor 계산 (예: 1.0.x)
+     */
+    @Transient
+    public String getCustomMajorMinor() {
+        if (customMajorVersion == null || customMinorVersion == null) {
+            return null;
+        }
+        return customMajorVersion + "." + customMinorVersion + ".x";
+    }
+
+    /**
+     * 커스텀 릴리즈 여부 확인
+     */
+    @Transient
+    public boolean isCustomRelease() {
+        return "CUSTOM".equals(releaseType);
     }
 }

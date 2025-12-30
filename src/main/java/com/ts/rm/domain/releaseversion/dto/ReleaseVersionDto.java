@@ -50,8 +50,14 @@ public final class ReleaseVersionDto {
             @Schema(description = "고객사 ID (커스텀 릴리즈인 경우)", example = "1")
             Long customerId,
 
-            @Schema(description = "커스텀 버전 (커스텀 릴리즈인 경우)", example = "1.0.0-custom")
-            String customVersion
+            @Schema(description = "커스텀 메이저 버전 (커스텀 릴리즈인 경우)", example = "1")
+            Integer customMajorVersion,
+
+            @Schema(description = "커스텀 마이너 버전 (커스텀 릴리즈인 경우)", example = "0")
+            Integer customMinorVersion,
+
+            @Schema(description = "커스텀 패치 버전 (커스텀 릴리즈인 경우)", example = "0")
+            Integer customPatchVersion
     ) {
 
     }
@@ -125,8 +131,23 @@ public final class ReleaseVersionDto {
             @Schema(description = "승인일시")
             LocalDateTime approvedAt,
 
-            @Schema(description = "커스텀 버전", example = "1.0.0-custom")
+            @Schema(description = "커스텀 메이저 버전", example = "1")
+            Integer customMajorVersion,
+
+            @Schema(description = "커스텀 마이너 버전", example = "0")
+            Integer customMinorVersion,
+
+            @Schema(description = "커스텀 패치 버전", example = "0")
+            Integer customPatchVersion,
+
+            @Schema(description = "커스텀 버전 (조합)", example = "1.0.0")
             String customVersion,
+
+            @Schema(description = "기준 표준 버전 ID (커스텀인 경우)", example = "2")
+            Long baseVersionId,
+
+            @Schema(description = "기준 표준 버전 번호 (커스텀인 경우)", example = "1.1.0")
+            String baseVersionNumber,
 
             @Schema(description = "생성일시")
             LocalDateTime createdAt,
@@ -268,6 +289,95 @@ public final class ReleaseVersionDto {
     }
 
     /**
+     * 커스텀 릴리즈 버전 전체 트리 응답 (고객사별 그룹화)
+     */
+    @Schema(description = "커스텀 릴리즈 버전 전체 트리 응답")
+    public record CustomTreeResponse(
+            @Schema(description = "릴리즈 타입", example = "CUSTOM")
+            String releaseType,
+
+            @Schema(description = "고객사별 커스텀 버전 목록")
+            List<CustomerNode> customers
+    ) {
+
+    }
+
+    /**
+     * 고객사 노드 (커스텀 트리의 최상위 노드)
+     */
+    @Schema(description = "고객사 노드")
+    public record CustomerNode(
+            @Schema(description = "고객사 ID", example = "1")
+            Long customerId,
+
+            @Schema(description = "고객사 코드", example = "companyA")
+            String customerCode,
+
+            @Schema(description = "고객사명", example = "A회사")
+            String customerName,
+
+            @Schema(description = "기준 표준본 버전 ID", example = "5")
+            Long baseVersionId,
+
+            @Schema(description = "기준 표준본 버전", example = "1.1.0")
+            String baseVersion,
+
+            @Schema(description = "커스텀 메이저.마이너 그룹 목록")
+            List<CustomMajorMinorNode> majorMinorGroups
+    ) {
+
+    }
+
+    /**
+     * 커스텀 메이저.마이너 버전 그룹 노드 (예: 1.0.x)
+     */
+    @Schema(description = "커스텀 메이저.마이너 버전 그룹 노드")
+    public record CustomMajorMinorNode(
+            @Schema(description = "커스텀 메이저.마이너", example = "1.0.x")
+            String majorMinor,
+
+            @Schema(description = "해당 메이저.마이너에 속한 커스텀 버전 목록")
+            List<CustomVersionNode> versions
+    ) {
+
+    }
+
+    /**
+     * 커스텀 버전 노드
+     */
+    @Schema(description = "커스텀 버전 노드")
+    public record CustomVersionNode(
+            @Schema(description = "버전 ID", example = "101")
+            Long versionId,
+
+            @Schema(description = "커스텀 버전", example = "1.0.0")
+            String version,
+
+            @Schema(description = "생성일자", example = "2025-12-01")
+            String createdAt,
+
+            @Schema(description = "생성자", example = "jhlee@tscientific")
+            String createdBy,
+
+            @Schema(description = "코멘트", example = "A사 커스텀 패치")
+            String comment,
+
+            @Schema(description = "승인 여부", example = "false")
+            Boolean isApproved,
+
+            @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
+            String approvedBy,
+
+            @Schema(description = "승인일시")
+            String approvedAt,
+
+            @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\"]")
+            List<String> fileCategories
+    ) {
+
+    }
+
+    /**
      * 표준 릴리즈 버전 생성 요청 (Multipart Form Data)
      */
     @Builder
@@ -288,6 +398,37 @@ public final class ReleaseVersionDto {
             ReleaseCategory releaseCategory,
 
             @Schema(description = "패치 노트 내용", example = "새로운 기능 추가", required = true)
+            @NotBlank(message = "패치 노트 내용은 필수입니다")
+            @Size(max = 500, message = "패치 노트 내용은 500자 이하여야 합니다")
+            String comment
+    ) {
+
+    }
+
+    /**
+     * 커스텀 릴리즈 버전 생성 요청 (Multipart Form Data)
+     */
+    @Builder
+    @Schema(description = "커스텀 릴리즈 버전 생성 요청")
+    public record CreateCustomVersionRequest(
+            @Schema(description = "프로젝트 ID", example = "infraeye2", required = true)
+            @NotBlank(message = "프로젝트 ID는 필수입니다")
+            @Size(max = 50, message = "프로젝트 ID는 50자 이하여야 합니다")
+            String projectId,
+
+            @Schema(description = "고객사 ID", example = "1", required = true)
+            @NotNull(message = "고객사 ID는 필수입니다")
+            Long customerId,
+
+            @Schema(description = "기준 표준 버전 ID (파생 원본). 해당 고객사의 최초 커스텀 버전 생성 시 필수", example = "2")
+            Long baseVersionId,
+
+            @Schema(description = "커스텀 버전 (예: 1.0.0)", example = "1.0.0", required = true)
+            @NotBlank(message = "커스텀 버전은 필수입니다")
+            @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+$", message = "버전 형식이 올바르지 않습니다 (예: 1.0.0)")
+            String customVersion,
+
+            @Schema(description = "패치 노트 내용", example = "A사 커스텀 패치", required = true)
             @NotBlank(message = "패치 노트 내용은 필수입니다")
             @Size(max = 500, message = "패치 노트 내용은 500자 이하여야 합니다")
             String comment
@@ -382,6 +523,76 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "생성된 파일 목록 (상대 경로)")
             List<String> filesCreated
+    ) {
+
+    }
+
+    /**
+     * 커스텀 릴리즈 버전 생성 응답
+     */
+    @Schema(description = "커스텀 릴리즈 버전 생성 응답")
+    public record CreateCustomVersionResponse(
+            @Schema(description = "릴리즈 버전 ID", example = "5")
+            Long releaseVersionId,
+
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
+
+            @Schema(description = "고객사 코드", example = "customerA")
+            String customerCode,
+
+            @Schema(description = "고객사명", example = "A회사")
+            String customerName,
+
+            @Schema(description = "기준 표준 버전 ID", example = "2")
+            Long baseVersionId,
+
+            @Schema(description = "기준 표준 버전 번호", example = "1.1.0")
+            String baseVersionNumber,
+
+            @Schema(description = "커스텀 메이저 버전", example = "1")
+            Integer customMajorVersion,
+
+            @Schema(description = "커스텀 마이너 버전", example = "0")
+            Integer customMinorVersion,
+
+            @Schema(description = "커스텀 패치 버전", example = "0")
+            Integer customPatchVersion,
+
+            @Schema(description = "커스텀 버전 (조합)", example = "1.0.0")
+            String customVersion,
+
+            @Schema(description = "커스텀 메이저.마이너", example = "1.0.x")
+            String customMajorMinor,
+
+            @Schema(description = "생성자 (JWT에서 추출)", example = "admin@tscientific")
+            String createdBy,
+
+            @Schema(description = "패치 노트 내용", example = "A사 커스텀 패치")
+            String comment,
+
+            @Schema(description = "생성일시")
+            LocalDateTime createdAt,
+
+            @Schema(description = "생성된 파일 목록 (상대 경로)")
+            List<String> filesCreated
+    ) {
+
+    }
+
+    /**
+     * 셀렉트박스용 버전 옵션 (커스텀 버전의 기준 표준본 선택용)
+     */
+    @Schema(description = "셀렉트박스용 버전 옵션")
+    public record VersionSelectOption(
+            @Schema(description = "버전 ID", example = "5")
+            Long versionId,
+
+            @Schema(description = "버전", example = "1.1.0")
+            String version,
+
+            @Schema(description = "승인 여부", example = "true")
+            Boolean isApproved
     ) {
 
     }

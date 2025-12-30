@@ -2,7 +2,6 @@ package com.ts.rm.domain.releaseversion.service;
 
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
-import com.ts.rm.domain.releaseversion.util.ReleaseMetadataManager;
 import com.ts.rm.domain.releaseversion.util.VersionParser.VersionInfo;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
@@ -13,7 +12,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,10 +23,7 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ReleaseVersionFileSystemService {
-
-    private final ReleaseMetadataManager metadataManager;
 
     @Value("${app.release.base-path:src/main/resources/release}")
     private String baseReleasePath;
@@ -78,7 +73,7 @@ public class ReleaseVersionFileSystemService {
     }
 
     /**
-     * 버전 디렉토리 생성
+     * 표준 버전 디렉토리 생성
      *
      * @param versionInfo 버전 정보
      * @param projectId   프로젝트 ID
@@ -93,7 +88,28 @@ public class ReleaseVersionFileSystemService {
                 majorMinor, version);
 
         Files.createDirectories(versionPath);
-        log.info("버전 디렉토리 생성: {}", versionPath);
+        log.info("표준 버전 디렉토리 생성: {}", versionPath);
+
+        return versionPath;
+    }
+
+    /**
+     * 커스텀 버전 디렉토리 생성
+     *
+     * @param projectId        프로젝트 ID
+     * @param customerCode     고객사 코드
+     * @param customMajorMinor 커스텀 메이저.마이너 (예: 1.0.x)
+     * @param customVersion    커스텀 버전 (예: 1.0.0)
+     * @return 생성된 버전 경로
+     */
+    public Path createCustomVersionDirectory(String projectId, String customerCode,
+                                              String customMajorMinor, String customVersion) throws IOException {
+        // 경로: resources/release/versions/{projectId}/custom/{customerCode}/{customMajorMinor}/{customVersion}/
+        Path versionPath = Paths.get(baseReleasePath, "versions", projectId, "custom",
+                customerCode, customMajorMinor, customVersion);
+
+        Files.createDirectories(versionPath);
+        log.info("커스텀 버전 디렉토리 생성: {}", versionPath);
 
         return versionPath;
     }
@@ -192,10 +208,6 @@ public class ReleaseVersionFileSystemService {
                 log.warn("Rolling back: Deleting empty major.minor directory {}", parentPath);
                 Files.delete(parentPath);
             }
-
-            // 3. release_metadata.json에서 해당 버전 엔트리 제거
-            metadataManager.removeVersionEntry(projectId, "STANDARD", null, version);
-            log.warn("Rolling back: Removed version {} from release_metadata.json", version);
 
         } catch (Exception e) {
             log.error("Failed to rollback filesystem for version {}", version, e);

@@ -107,7 +107,10 @@ CREATE TABLE IF NOT EXISTS release_version (
     major_version INT NOT NULL COMMENT '메이저 버전',
     minor_version INT NOT NULL COMMENT '마이너 버전',
     patch_version INT NOT NULL COMMENT '패치 버전',
-    custom_version VARCHAR(100) COMMENT '커스텀 버전',
+    custom_major_version INT COMMENT '커스텀 메이저 버전',
+    custom_minor_version INT COMMENT '커스텀 마이너 버전',
+    custom_patch_version INT COMMENT '커스텀 패치 버전',
+    base_version_id BIGINT COMMENT '기준 표준 버전 ID (커스텀 릴리즈인 경우)',
     comment TEXT COMMENT '버전 설명',
     is_approved BOOLEAN NOT NULL DEFAULT FALSE COMMENT '승인 여부',
     approved_by VARCHAR(100) COMMENT '승인자 이메일',
@@ -119,17 +122,21 @@ CREATE TABLE IF NOT EXISTS release_version (
     INDEX idx_release_type (release_type),
     INDEX idx_release_category (release_category),
     INDEX idx_customer_id (customer_id),
+    INDEX idx_base_version_id (base_version_id),
     INDEX idx_version (version),
     INDEX idx_major_minor (major_version, minor_version),
     INDEX idx_is_approved (is_approved),
     INDEX idx_created_at (created_at),
 
-    UNIQUE KEY uk_project_version (project_id, version),
+    UNIQUE KEY uk_project_type_customer_version (project_id, release_type, customer_id, version),
+    UNIQUE KEY uk_custom_version (customer_id, custom_major_version, custom_minor_version, custom_patch_version),
 
     CONSTRAINT fk_release_version_project FOREIGN KEY (project_id)
         REFERENCES project(project_id) ON DELETE RESTRICT,
     CONSTRAINT fk_release_version_customer FOREIGN KEY (customer_id)
-        REFERENCES customer(customer_id) ON DELETE SET NULL
+        REFERENCES customer(customer_id) ON DELETE SET NULL,
+    CONSTRAINT fk_release_version_base FOREIGN KEY (base_version_id)
+        REFERENCES release_version(release_version_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 버전 테이블';
 
 CREATE TABLE IF NOT EXISTS release_file (
