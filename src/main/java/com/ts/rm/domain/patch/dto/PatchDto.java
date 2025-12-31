@@ -311,4 +311,90 @@ public final class PatchDto {
     ) {
 
     }
+
+    // ========================================
+    // 커스텀 패치용 DTOs
+    // ========================================
+
+    /**
+     * 커스텀 패치 생성 요청
+     */
+    @Builder
+    @Schema(description = "커스텀 패치 생성 요청")
+    public record GenerateCustomPatchRequest(
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            @NotBlank(message = "프로젝트 ID는 필수입니다")
+            @Size(max = 50, message = "프로젝트 ID는 50자 이하여야 합니다")
+            String projectId,
+
+            @Schema(description = "고객사 ID", example = "1")
+            @jakarta.validation.constraints.NotNull(message = "고객사 ID는 필수입니다")
+            Long customerId,
+
+            @Schema(description = "시작 버전 (베이스 버전 또는 커스텀 버전)", example = "1.1.0-companyA.1.0.0")
+            @NotBlank(message = "시작 버전은 필수입니다")
+            @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9_]+\\.\\d+\\.\\d+\\.\\d+)?$",
+                    message = "버전 형식이 올바르지 않습니다 (예: 1.1.0 또는 1.1.0-companyA.1.0.0)")
+            String fromVersion,
+
+            @Schema(description = "종료 커스텀 버전", example = "1.1.0-companyA.1.0.2")
+            @NotBlank(message = "종료 버전은 필수입니다")
+            @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+-[a-zA-Z0-9_]+\\.\\d+\\.\\d+\\.\\d+$",
+                    message = "버전 형식이 올바르지 않습니다 (예: 1.1.0-companyA.1.0.0)")
+            String toVersion,
+
+            @Schema(description = "생성자", example = "admin@tscientific")
+            @NotBlank(message = "생성자는 필수입니다")
+            @Size(max = 100, message = "생성자는 100자 이하여야 합니다")
+            String createdBy,
+
+            @Schema(description = "설명", example = "A사 1.0.0에서 1.0.2로 업그레이드용 커스텀 패치")
+            String description,
+
+            @Schema(description = "패치 담당자 (엔지니어 ID)", example = "1")
+            Long engineerId,
+
+            @Schema(description = "패치 이름 (미입력 시 자동 생성)", example = "20251225_1.0.0_1.0.2")
+            @Size(max = 100, message = "패치 이름은 100자 이하여야 합니다")
+            String patchName
+    ) {
+
+    }
+
+    /**
+     * 커스텀 버전 보유 고객사 응답
+     */
+    @Schema(description = "커스텀 버전 보유 고객사")
+    public record CustomerWithCustomVersions(
+            @Schema(description = "고객사 ID", example = "1")
+            Long customerId,
+
+            @Schema(description = "고객사 코드", example = "companyA")
+            String customerCode,
+
+            @Schema(description = "고객사명", example = "A 회사")
+            String customerName
+    ) {
+
+    }
+
+    /**
+     * 커스텀 버전 셀렉트 옵션
+     */
+    @Schema(description = "커스텀 버전 셀렉트 옵션")
+    public record CustomVersionSelectOption(
+            @Schema(description = "버전 ID", example = "101")
+            Long versionId,
+
+            @Schema(description = "버전 번호 (커스텀 버전 또는 베이스 버전)", example = "1.0.0")
+            String version,
+
+            @Schema(description = "승인 여부", example = "true")
+            Boolean isApproved,
+
+            @Schema(description = "베이스 버전 여부 (true: 표준 베이스 버전, false: 커스텀 버전)", example = "false")
+            Boolean isBaseVersion
+    ) {
+
+    }
 }

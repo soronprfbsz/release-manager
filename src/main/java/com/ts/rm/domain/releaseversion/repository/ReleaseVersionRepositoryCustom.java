@@ -53,4 +53,32 @@ public interface ReleaseVersionRepositoryCustom {
      * @return 미승인 버전 목록 (isApproved = false)
      */
     List<ReleaseVersion> findUnapprovedVersionsBetween(String releaseType, String fromVersion, String toVersion);
+
+    /**
+     * 고객사별 커스텀 버전 범위 조회 (from ~ to)
+     *
+     * @param customerId  고객사 ID
+     * @param fromVersion 시작 버전 (커스텀 버전)
+     * @param toVersion   종료 버전 (커스텀 버전)
+     * @return 커스텀 버전 목록
+     */
+    List<ReleaseVersion> findCustomVersionsBetween(Long customerId, String fromVersion, String toVersion);
+
+    /**
+     * 고객사별 커스텀 버전 범위 내 미승인 버전 조회 (from ~ to)
+     *
+     * @param customerId  고객사 ID
+     * @param fromVersion 시작 버전 (커스텀 버전)
+     * @param toVersion   종료 버전 (커스텀 버전)
+     * @return 미승인 버전 목록 (isApproved = false)
+     */
+    List<ReleaseVersion> findUnapprovedCustomVersionsBetween(Long customerId, String fromVersion, String toVersion);
+
+    /**
+     * 커스텀 버전이 존재하는 고객사 ID 목록 조회
+     *
+     * @param projectId 프로젝트 ID
+     * @return 고객사 ID 목록 (중복 제거)
+     */
+    List<Long> findCustomerIdsWithCustomVersions(String projectId);
 }

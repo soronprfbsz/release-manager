@@ -264,11 +264,16 @@ public class ReleaseVersionUploadService {
 
         // 4. 커스텀 버전 파싱
         VersionInfo customVersionInfo = VersionParser.parse(request.customVersion());
-        String customVersion = request.customVersion();
+        String customVersionStr = request.customVersion();
         String customMajorMinor = customVersionInfo.getMajorMinor();
         int customMajorVersion = customVersionInfo.getMajorVersion();
         int customMinorVersion = customVersionInfo.getMinorVersion();
         int customPatchVersion = customVersionInfo.getPatchVersion();
+
+        // 시멘틱 버저닝 형식의 전체 버전 문자열 생성
+        // 형식: {베이스버전}-{고객사코드}.{커스텀버전}
+        // 예: 1.1.0-companyA.1.0.0
+        String fullVersion = baseVersion.getVersion() + "-" + customer.getCustomerCode() + "." + customVersionStr;
 
         // 5. 커스텀 버전 중복 검증 (같은 고객사 내에서)
         validateCustomVersionUnique(request.customerId(), customMajorVersion, customMinorVersion, customPatchVersion);
@@ -286,9 +291,9 @@ public class ReleaseVersionUploadService {
             // 8. ZIP 구조 검증 (커스텀 버전은 PATCH만 허용)
             validateZipStructure(tempDir, ReleaseCategory.PATCH);
 
-            // 9. 커스텀 버전 디렉토리 생성
+            // 9. 커스텀 버전 디렉토리 생성 (전체 버전 형식 사용)
             versionPath = fileSystemService.createCustomVersionDirectory(
-                    request.projectId(), customer.getCustomerCode(), customMajorMinor, customVersion);
+                    request.projectId(), customer.getCustomerCode(), customMajorMinor, fullVersion);
 
             // 10. 파일 복사 및 DB 저장 (커스텀 버전은 PATCH로 고정)
             ReleaseVersion savedVersion = copyFilesAndSaveToDbForCustomVersion(
@@ -296,8 +301,8 @@ public class ReleaseVersionUploadService {
                     customMajorVersion, customMinorVersion, customPatchVersion,
                     ReleaseCategory.PATCH, request.comment(), createdBy);
 
-            log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 완료 - projectId: {}, customerId: {}, customVersion: {}, ID: {}",
-                    request.projectId(), request.customerId(), customVersion, savedVersion.getReleaseVersionId());
+            log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 완료 - projectId: {}, customerId: {}, version: {}, ID: {}",
+                    request.projectId(), request.customerId(), fullVersion, savedVersion.getReleaseVersionId());
 
             // 11. 응답 생성
             return new ReleaseVersionDto.CreateCustomVersionResponse(
@@ -310,7 +315,7 @@ public class ReleaseVersionUploadService {
                     customMajorVersion,
                     customMinorVersion,
                     customPatchVersion,
-                    customVersion,
+                    fullVersion,  // 전체 버전 형식 반환
                     customMajorMinor,
                     createdBy,
                     request.comment(),
@@ -329,7 +334,7 @@ public class ReleaseVersionUploadService {
             if (versionPath != null) {
                 fileSystemService.deleteDirectory(versionPath);
             }
-            log.error("ZIP 파일로 커스텀 버전 생성 실패: {}", customVersion, e);
+            log.error("ZIP 파일로 커스텀 버전 생성 실패: {}", fullVersion, e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
                     "커스텀 버전 생성 중 오류가 발생했습니다: " + e.getMessage());
         } finally {
@@ -363,10 +368,17 @@ public class ReleaseVersionUploadService {
             int customMajorVersion, int customMinorVersion, int customPatchVersion,
             ReleaseCategory releaseCategory, String comment, String createdBy) throws IOException {
 
-        String customVersion = customMajorVersion + "." + customMinorVersion + "." + customPatchVersion;
+        String customVersionStr = customMajorVersion + "." + customMinorVersion + "." + customPatchVersion;
+
+        // 시멘틱 버저닝 형식의 전체 버전 문자열 생성
+        // 형식: {베이스버전}-{고객사코드}.{커스텀버전}
+        // 예: 1.1.0-companyA.1.0.0
+        String fullVersion = baseVersion.getVersion() + "-" + customer.getCustomerCode() + "." + customVersionStr;
 
         // ReleaseVersion 생성 및 저장 (커스텀 버전 전용 필드 설정)
-        // 커스텀 버전은 version 필드에 커스텀 버전 번호를 저장 (uk_project_version 유니크 제약을 위해)
+        // version 필드: 시멘틱 버저닝 형식의 전체 버전 문자열
+        // majorVersion/minorVersion/patchVersion: 베이스 버전 숫자 (버전 정렬 및 비교용)
+        // customMajorVersion/customMinorVersion/customPatchVersion: 커스텀 버전 숫자
         final ReleaseVersion savedVersion = releaseVersionRepository.save(
                 ReleaseVersion.builder()
                         .project(project)
@@ -374,10 +386,10 @@ public class ReleaseVersionUploadService {
                         .releaseCategory(releaseCategory)
                         .customer(customer)
                         .baseVersion(baseVersion)
-                        .version(customVersion)  // 커스텀 버전 번호 저장
-                        .majorVersion(customMajorVersion)
-                        .minorVersion(customMinorVersion)
-                        .patchVersion(customPatchVersion)
+                        .version(fullVersion)  // 시멘틱 버저닝 형식: 1.1.0-companyA.1.0.0
+                        .majorVersion(baseVersion.getMajorVersion())    // 베이스 버전 기준
+                        .minorVersion(baseVersion.getMinorVersion())    // 베이스 버전 기준
+                        .patchVersion(baseVersion.getPatchVersion())    // 베이스 버전 기준
                         .customMajorVersion(customMajorVersion)
                         .customMinorVersion(customMinorVersion)
                         .customPatchVersion(customPatchVersion)
@@ -386,9 +398,9 @@ public class ReleaseVersionUploadService {
                         .build()
         );
 
-        log.info("커스텀 ReleaseVersion 저장 완료 - ID: {}, customVersion: {}, baseVersion: {}",
-                savedVersion.getReleaseVersionId(), customVersion,
-                baseVersion != null ? baseVersion.getVersion() : "null");
+        log.info("커스텀 ReleaseVersion 저장 완료 - ID: {}, version: {}, customVersion: {}, baseVersion: {}",
+                savedVersion.getReleaseVersionId(), fullVersion, customVersionStr,
+                baseVersion.getVersion());
 
         // 클로저 테이블에 계층 구조 데이터 추가
         treeService.createHierarchyForNewVersion(savedVersion, "CUSTOM");

@@ -57,7 +57,7 @@ public class PatchGenerationService {
     private String releaseBasePath;
 
     /**
-     * 패치 생성 (버전 문자열 기반)
+     * 패치 생성 (버전 문자열 기반) - 표준 버전용
      *
      * @param projectId    프로젝트 ID
      * @param releaseType  릴리즈 타입 (STANDARD/CUSTOM)
@@ -88,6 +88,321 @@ public class PatchGenerationService {
 
         return generatePatch(projectId, from.getReleaseVersionId(), to.getReleaseVersionId(),
                 customerId, createdBy, description, engineerId, patchName);
+    }
+
+    /**
+     * 커스텀 패치 생성 (커스텀 버전 문자열 기반)
+     *
+     * @param projectId    프로젝트 ID
+     * @param customerId   고객사 ID
+     * @param fromVersion  From 커스텀 버전 (예: 1.0.0)
+     * @param toVersion    To 커스텀 버전 (예: 1.0.2)
+     * @param createdBy    생성자
+     * @param description  설명 (선택)
+     * @param engineerId   패치 담당자 엔지니어 ID (선택)
+     * @param patchName    패치 이름 (선택, 미입력 시 자동 생성)
+     * @return 생성된 패치
+     */
+    @Transactional
+    public Patch generateCustomPatchByVersion(String projectId, Long customerId,
+            String fromVersion, String toVersion, String createdBy, String description,
+            Long engineerId, String patchName) {
+
+        // 고객사 조회
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND,
+                        "고객사를 찾을 수 없습니다: " + customerId));
+
+        // From 버전 조회 (베이스 버전 또는 커스텀 버전)
+        // 베이스 버전 형식: 1.1.0, 커스텀 버전 형식: 1.1.0-companyA.1.0.0
+        ReleaseVersion from;
+        if (fromVersion.contains("-")) {
+            // 커스텀 버전인 경우: version 필드로 조회
+            from = releaseVersionRepository.findAllByCustomer_CustomerIdOrderByCreatedAtDesc(customerId)
+                    .stream()
+                    .filter(v -> fromVersion.equals(v.getVersion()))
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
+                            "From 커스텀 버전을 찾을 수 없습니다: " + fromVersion));
+        } else {
+            // 베이스 버전(표준 버전)인 경우: 프로젝트 내 표준 버전에서 조회
+            from = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersion(
+                            projectId, "STANDARD", fromVersion)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
+                            "From 베이스 버전을 찾을 수 없습니다: " + fromVersion));
+        }
+
+        // To 버전 조회 (커스텀 버전만 허용)
+        ReleaseVersion to = releaseVersionRepository.findAllByCustomer_CustomerIdOrderByCreatedAtDesc(customerId)
+                .stream()
+                .filter(v -> toVersion.equals(v.getVersion()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
+                        "To 커스텀 버전을 찾을 수 없습니다: " + toVersion));
+
+        return generateCustomPatch(projectId, customerId, from, to, createdBy, description, engineerId, patchName);
+    }
+
+    /**
+     * 커스텀 패치 생성 (ReleaseVersion 기반)
+     *
+     * <p>fromVersion이 베이스 버전(STANDARD)인 경우와 커스텀 버전인 경우를 모두 지원합니다.
+     */
+    @Transactional
+    public Patch generateCustomPatch(String projectId, Long customerId,
+            ReleaseVersion fromVersion, ReleaseVersion toVersion,
+            String createdBy, String description, Long engineerId, String patchName) {
+        try {
+            // 프로젝트 조회
+            Project project = projectRepository.findById(projectId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND,
+                            "프로젝트를 찾을 수 없습니다: " + projectId));
+
+            // 고객사 조회
+            Customer customer = customerRepository.findById(customerId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND,
+                            "고객사를 찾을 수 없습니다: " + customerId));
+
+            // 1. 버전 검증
+            validateCustomVersionRange(fromVersion, toVersion);
+
+            // fromVersion이 베이스 버전인지 확인
+            boolean isFromBaseVersion = isBaseVersion(fromVersion);
+
+            // 2. 중간 버전 목록 조회 (fromVersion < customVersion <= toVersion)
+            // 베이스 버전에서 시작하는 경우 모든 커스텀 버전을 포함 (fromCustomVersion = "0.0.-1")
+            String fromCustomVersionForQuery = isFromBaseVersion ? "0.0.-1" : fromVersion.getCustomVersion();
+            List<ReleaseVersion> betweenVersions = releaseVersionRepository.findCustomVersionsBetween(
+                    customerId,
+                    fromCustomVersionForQuery,
+                    toVersion.getCustomVersion()
+            );
+
+            if (betweenVersions.isEmpty()) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        String.format("From %s와 To %s 사이에 패치할 커스텀 버전이 없습니다.",
+                                fromVersion.getVersion(), toVersion.getVersion()));
+            }
+
+            log.info("커스텀 패치 생성 시작 - Project: {}, Customer: {}, From: {}{}, To: {}, 포함 버전: {}",
+                    projectId, customer.getCustomerCode(),
+                    fromVersion.getVersion(), isFromBaseVersion ? " (베이스)" : "",
+                    toVersion.getVersion(),
+                    betweenVersions.stream().map(ReleaseVersion::getVersion).toList());
+
+            // 3. 엔지니어 조회 (engineerId가 있는 경우)
+            Engineer engineer = null;
+            if (engineerId != null) {
+                engineer = engineerRepository.findById(engineerId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                                "엔지니어를 찾을 수 없습니다: " + engineerId));
+            }
+
+            // 4. 패치 이름 결정 (전체 버전 형식 사용)
+            String resolvedPatchName = resolvePatchName(patchName, fromVersion.getVersion(), toVersion.getVersion());
+
+            // 5. 출력 디렉토리 생성 (커스텀 패치용)
+            String outputPath = createCustomOutputDirectory(resolvedPatchName, projectId, customer.getCustomerCode());
+
+            // 6. SQL 파일 복사
+            copySqlFiles(betweenVersions, outputPath);
+
+            // 7. 패치 스크립트 생성
+            String engineerEmail = engineer != null ? engineer.getEngineerEmail() : null;
+            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, engineerEmail);
+
+            // 8. README 생성
+            generateCustomReadme(fromVersion, toVersion, betweenVersions, outputPath, customer);
+
+            // 9. 패치 저장 (전체 버전 형식 저장)
+            Patch patch = Patch.builder()
+                    .project(project)
+                    .releaseType("CUSTOM")
+                    .customer(customer)
+                    .fromVersion(fromVersion.getVersion())
+                    .toVersion(toVersion.getVersion())
+                    .patchName(resolvedPatchName)
+                    .outputPath(outputPath)
+                    .createdBy(createdBy)
+                    .description(description)
+                    .engineer(engineer)
+                    .build();
+
+            Patch saved = patchRepository.save(patch);
+
+            // 10. CustomerProject 마지막 패치 정보 업데이트
+            updateCustomerProjectPatchInfo(customer, project, toVersion.getVersion());
+
+            log.info("커스텀 패치 생성 완료 - ID: {}, Path: {}", saved.getPatchId(), outputPath);
+
+            return saved;
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("커스텀 패치 생성 실패", e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "커스텀 패치 생성 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 커스텀 버전 범위 검증
+     *
+     * <p>fromVersion이 베이스 버전(STANDARD)인 경우와 커스텀 버전인 경우를 구분하여 처리합니다.
+     */
+    private void validateCustomVersionRange(ReleaseVersion fromVersion, ReleaseVersion toVersion) {
+        boolean isFromBaseVersion = isBaseVersion(fromVersion);
+
+        if (isFromBaseVersion) {
+            // 베이스 버전에서 시작하는 경우:
+            // - 베이스 버전이 toVersion의 baseVersion과 일치하는지 확인
+            if (toVersion.getBaseVersion() == null ||
+                    !fromVersion.getReleaseVersionId().equals(toVersion.getBaseVersion().getReleaseVersionId())) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        String.format("From 베이스 버전(%s)은 To 버전(%s)의 기반 버전이어야 합니다.",
+                                fromVersion.getVersion(), toVersion.getVersion()));
+            }
+            // 베이스 버전에서 시작하므로 모든 커스텀 버전이 더 높은 버전임 - 추가 검증 불필요
+
+        } else {
+            // 커스텀 버전에서 시작하는 경우:
+            // 버전 비교: fromCustomVersion < toCustomVersion
+            if (compareCustomVersions(fromVersion, toVersion) >= 0) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        String.format("From 버전은 To 버전보다 작아야 합니다. (From: %s, To: %s)",
+                                fromVersion.getVersion(), toVersion.getVersion()));
+            }
+
+            // 같은 고객사 검증
+            if (!fromVersion.getCustomer().getCustomerId().equals(toVersion.getCustomer().getCustomerId())) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "From 버전과 To 버전은 같은 고객사의 버전이어야 합니다.");
+            }
+        }
+
+        // 미승인 버전 검증 (커스텀 버전 범위 내)
+        // 베이스 버전에서 시작하는 경우 fromCustomVersion은 "0.0.0" 이전이므로 모든 커스텀 버전 포함
+        String fromCustomVersion = isFromBaseVersion ? "0.0.-1" : fromVersion.getCustomVersion();
+        List<ReleaseVersion> unapprovedVersions = releaseVersionRepository.findUnapprovedCustomVersionsBetween(
+                toVersion.getCustomer().getCustomerId(),
+                fromCustomVersion,
+                toVersion.getCustomVersion()
+        );
+
+        if (!unapprovedVersions.isEmpty()) {
+            String unapprovedVersionList = unapprovedVersions.stream()
+                    .map(ReleaseVersion::getVersion)
+                    .reduce((v1, v2) -> v1 + ", " + v2)
+                    .orElse("");
+
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    String.format("버전 범위 내에 미승인 버전이 존재합니다. 패치를 생성할 수 없습니다. (미승인 버전: %s)",
+                            unapprovedVersionList));
+        }
+    }
+
+    /**
+     * 베이스 버전(STANDARD) 여부 확인
+     */
+    private boolean isBaseVersion(ReleaseVersion version) {
+        return "STANDARD".equals(version.getReleaseType()) || version.getCustomMajorVersion() == null;
+    }
+
+    /**
+     * 커스텀 버전 비교 (v1 < v2 이면 -1, v1 == v2 이면 0, v1 > v2 이면 1)
+     *
+     * <p>두 버전 모두 커스텀 버전이어야 합니다.
+     */
+    private int compareCustomVersions(ReleaseVersion v1, ReleaseVersion v2) {
+        // null 체크 - 베이스 버전인 경우 customMajorVersion이 null
+        if (v1.getCustomMajorVersion() == null || v2.getCustomMajorVersion() == null) {
+            throw new IllegalArgumentException("커스텀 버전 비교는 두 버전 모두 커스텀 버전이어야 합니다.");
+        }
+
+        if (!v1.getCustomMajorVersion().equals(v2.getCustomMajorVersion())) {
+            return Integer.compare(v1.getCustomMajorVersion(), v2.getCustomMajorVersion());
+        }
+        if (!v1.getCustomMinorVersion().equals(v2.getCustomMinorVersion())) {
+            return Integer.compare(v1.getCustomMinorVersion(), v2.getCustomMinorVersion());
+        }
+        return Integer.compare(v1.getCustomPatchVersion(), v2.getCustomPatchVersion());
+    }
+
+    /**
+     * 커스텀 패치 출력 디렉토리 생성
+     */
+    private String createCustomOutputDirectory(String patchName, String projectId, String customerCode) {
+        try {
+            // 출력 경로: patches/{projectId}/custom/{customerCode}/{patchName}
+            String relativePath = String.format("patches/%s/custom/%s/%s", projectId, customerCode, patchName);
+
+            Path outputDir = Paths.get(releaseBasePath, relativePath);
+            Files.createDirectories(outputDir);
+
+            log.info("커스텀 패치 출력 디렉토리 생성 완료: {}", outputDir.toAbsolutePath());
+
+            return relativePath;
+
+        } catch (IOException e) {
+            log.error("커스텀 패치 출력 디렉토리 생성 실패: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "커스텀 패치 출력 디렉토리 생성 실패");
+        }
+    }
+
+    /**
+     * 커스텀 패치 README.md 생성
+     *
+     * <p>fromVersion이 베이스 버전(STANDARD)인 경우와 커스텀 버전인 경우를 모두 지원합니다.
+     */
+    private void generateCustomReadme(ReleaseVersion fromVersion, ReleaseVersion toVersion,
+            List<ReleaseVersion> includedVersions, String outputPath, Customer customer) {
+        try {
+            Path readmePath = Paths.get(releaseBasePath, outputPath, "README.md");
+
+            // 버전 표시: 전체 version 필드 사용 (베이스/커스텀 모두 지원)
+            String fromVersionStr = fromVersion.getVersion();
+            String toVersionStr = toVersion.getVersion();
+
+            StringBuilder content = new StringBuilder();
+            content.append(String.format("# 커스텀 누적 패치: from-%s to %s\n\n",
+                    fromVersionStr, toVersionStr));
+            content.append("## 개요\n");
+            content.append(String.format(
+                    "이 패치는 **%s** 고객사의 **%s** 버전에서 **%s** 버전으로 업그레이드하기 위한 커스텀 누적 패치입니다.\n\n",
+                    customer.getCustomerName(), fromVersionStr, toVersionStr));
+
+            content.append("## 생성 정보\n");
+            content.append(String.format("- **생성일**: %s\n",
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+            content.append(String.format("- **고객사**: %s (%s)\n", customer.getCustomerName(), customer.getCustomerCode()));
+            content.append(String.format("- **From Version**: %s%s\n", fromVersionStr,
+                    isBaseVersion(fromVersion) ? " (베이스 버전)" : ""));
+            content.append(String.format("- **To Version**: %s\n", toVersionStr));
+            content.append("- **포함된 버전**: ");
+            content.append(includedVersions.stream()
+                    .map(ReleaseVersion::getVersion)
+                    .reduce((a, b) -> a + ", " + b)
+                    .orElse(""));
+            content.append("\n\n");
+
+            content.append("## 주의사항\n");
+            content.append("⚠️ **중요**: 이 패치는 커스텀 버전의 변경사항을 누적한 것입니다.\n");
+            content.append("- 패치 실행 전 반드시 백업을 수행하세요.\n");
+            content.append("- 패치 실행 중 오류 발생 시 로그를 확인하세요.\n\n");
+
+            content.append("---\n");
+            content.append("CREATED BY - Release Manager (Custom Patch)\n");
+
+            Files.writeString(readmePath, content.toString());
+
+            log.info("커스텀 패치 README.md 생성 완료: {}", readmePath);
+
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "README 생성 실패: " + e.getMessage());
+        }
     }
 
     /**

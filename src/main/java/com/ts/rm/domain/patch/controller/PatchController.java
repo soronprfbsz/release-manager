@@ -18,6 +18,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,10 +41,10 @@ public class PatchController implements PatchControllerDocs {
     private final PatchDtoMapper patchDtoMapper;
 
     /**
-     * 패치 생성 (누적 패치 생성)
+     * 표준 패치 생성 (누적 패치 생성)
      */
     @Override
-    @PostMapping("/generate")
+    @PostMapping("/standard/generate")
     public ApiResponse<PatchDto.DetailResponse> generatePatch(
             @Valid @RequestBody PatchDto.GenerateRequest request) {
 
@@ -184,5 +185,67 @@ public class PatchController implements PatchControllerDocs {
         patchService.deletePatch(id);
 
         return ApiResponse.success(null);
+    }
+
+    // ========================================
+    // 커스텀 패치 API
+    // ========================================
+
+    /**
+     * 커스텀 버전 보유 고객사 목록 조회
+     */
+    @Override
+    @GetMapping("/custom/customers")
+    public ApiResponse<List<PatchDto.CustomerWithCustomVersions>> getCustomersWithCustomVersions(
+            @RequestParam String projectId) {
+
+        log.info("커스텀 버전 보유 고객사 목록 조회 요청 - projectId: {}", projectId);
+
+        List<PatchDto.CustomerWithCustomVersions> customers = patchService.getCustomersWithCustomVersions(projectId);
+
+        return ApiResponse.success(customers);
+    }
+
+    /**
+     * 고객사별 커스텀 버전 목록 조회
+     */
+    @Override
+    @GetMapping("/custom/customers/{customerId}/versions")
+    public ApiResponse<List<PatchDto.CustomVersionSelectOption>> getCustomVersionsByCustomer(
+            @RequestParam String projectId,
+            @PathVariable Long customerId) {
+
+        log.info("고객사별 커스텀 버전 목록 조회 요청 - projectId: {}, customerId: {}", projectId, customerId);
+
+        List<PatchDto.CustomVersionSelectOption> versions = patchService.getCustomVersionsByCustomer(projectId, customerId);
+
+        return ApiResponse.success(versions);
+    }
+
+    /**
+     * 커스텀 패치 생성
+     */
+    @Override
+    @PostMapping("/custom/generate")
+    public ApiResponse<PatchDto.DetailResponse> generateCustomPatch(
+            @Valid @RequestBody PatchDto.GenerateCustomPatchRequest request) {
+
+        log.info("커스텀 패치 생성 요청 - Project: {}, Customer: {}, From: {}, To: {}",
+                request.projectId(), request.customerId(), request.fromVersion(), request.toVersion());
+
+        Patch patch = patchService.generateCustomPatchByVersion(
+                request.projectId(),
+                request.customerId(),
+                request.fromVersion(),
+                request.toVersion(),
+                request.createdBy(),
+                request.description(),
+                request.engineerId(),
+                request.patchName()
+        );
+
+        PatchDto.DetailResponse response = patchDtoMapper.toDetailResponse(patch);
+
+        return ApiResponse.success(response);
     }
 }

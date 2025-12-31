@@ -203,7 +203,7 @@ public class ReleaseVersionTreeService {
 
         return new ReleaseVersionDto.CustomVersionNode(
                 version.getReleaseVersionId(),
-                version.getCustomVersion(),  // 커스텀 버전 문자열 (예: 1.0.0)
+                version.getVersion(),  // 전체 버전 문자열 (예: 1.1.0-companyA.1.0.0)
                 createdAt,
                 version.getCreatedBy(),
                 version.getComment(),

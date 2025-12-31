@@ -150,4 +150,115 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                 )
                 .fetch();
     }
+
+    @Override
+    public List<ReleaseVersion> findCustomVersionsBetween(Long customerId, String fromVersion,
+            String toVersion) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        // From 버전 파싱
+        String[] fromParts = fromVersion.split("\\.");
+        int fromMajor = Integer.parseInt(fromParts[0]);
+        int fromMinor = Integer.parseInt(fromParts[1]);
+        int fromPatch = Integer.parseInt(fromParts[2]);
+
+        // To 버전 파싱
+        String[] toParts = toVersion.split("\\.");
+        int toMajor = Integer.parseInt(toParts[0]);
+        int toMinor = Integer.parseInt(toParts[1]);
+        int toPatch = Integer.parseInt(toParts[2]);
+
+        return queryFactory
+                .selectFrom(rv)
+                .where(rv.releaseType.eq("CUSTOM")
+                        .and(rv.customer.customerId.eq(customerId))
+                        .and(
+                                // fromVersion < version <= toVersion (커스텀 버전 기준)
+                                rv.customMajorVersion.gt(fromMajor)
+                                        .or(rv.customMajorVersion.eq(fromMajor)
+                                                .and(rv.customMinorVersion.gt(fromMinor)))
+                                        .or(rv.customMajorVersion.eq(fromMajor)
+                                                .and(rv.customMinorVersion.eq(fromMinor))
+                                                .and(rv.customPatchVersion.gt(fromPatch)))
+                        )
+                        .and(
+                                // version <= toVersion (커스텀 버전 기준)
+                                rv.customMajorVersion.lt(toMajor)
+                                        .or(rv.customMajorVersion.eq(toMajor)
+                                                .and(rv.customMinorVersion.lt(toMinor)))
+                                        .or(rv.customMajorVersion.eq(toMajor)
+                                                .and(rv.customMinorVersion.eq(toMinor))
+                                                .and(rv.customPatchVersion.loe(toPatch)))
+                        )
+                )
+                .orderBy(
+                        rv.customMajorVersion.asc(),
+                        rv.customMinorVersion.asc(),
+                        rv.customPatchVersion.asc()
+                )
+                .fetch();
+    }
+
+    @Override
+    public List<ReleaseVersion> findUnapprovedCustomVersionsBetween(Long customerId,
+            String fromVersion, String toVersion) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        // From 버전 파싱
+        String[] fromParts = fromVersion.split("\\.");
+        int fromMajor = Integer.parseInt(fromParts[0]);
+        int fromMinor = Integer.parseInt(fromParts[1]);
+        int fromPatch = Integer.parseInt(fromParts[2]);
+
+        // To 버전 파싱
+        String[] toParts = toVersion.split("\\.");
+        int toMajor = Integer.parseInt(toParts[0]);
+        int toMinor = Integer.parseInt(toParts[1]);
+        int toPatch = Integer.parseInt(toParts[2]);
+
+        return queryFactory
+                .selectFrom(rv)
+                .where(rv.releaseType.eq("CUSTOM")
+                        .and(rv.customer.customerId.eq(customerId))
+                        .and(rv.isApproved.isFalse())  // 미승인 버전만 조회
+                        .and(
+                                // fromVersion < version <= toVersion (커스텀 버전 기준)
+                                rv.customMajorVersion.gt(fromMajor)
+                                        .or(rv.customMajorVersion.eq(fromMajor)
+                                                .and(rv.customMinorVersion.gt(fromMinor)))
+                                        .or(rv.customMajorVersion.eq(fromMajor)
+                                                .and(rv.customMinorVersion.eq(fromMinor))
+                                                .and(rv.customPatchVersion.gt(fromPatch)))
+                        )
+                        .and(
+                                // version <= toVersion (커스텀 버전 기준)
+                                rv.customMajorVersion.lt(toMajor)
+                                        .or(rv.customMajorVersion.eq(toMajor)
+                                                .and(rv.customMinorVersion.lt(toMinor)))
+                                        .or(rv.customMajorVersion.eq(toMajor)
+                                                .and(rv.customMinorVersion.eq(toMinor))
+                                                .and(rv.customPatchVersion.loe(toPatch)))
+                        )
+                )
+                .orderBy(
+                        rv.customMajorVersion.asc(),
+                        rv.customMinorVersion.asc(),
+                        rv.customPatchVersion.asc()
+                )
+                .fetch();
+    }
+
+    @Override
+    public List<Long> findCustomerIdsWithCustomVersions(String projectId) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        return queryFactory
+                .select(rv.customer.customerId)
+                .distinct()
+                .from(rv)
+                .where(rv.releaseType.eq("CUSTOM")
+                        .and(rv.project.projectId.eq(projectId))
+                        .and(rv.customer.isNotNull()))
+                .fetch();
+    }
 }

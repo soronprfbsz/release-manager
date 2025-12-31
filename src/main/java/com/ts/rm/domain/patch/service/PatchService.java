@@ -1,9 +1,13 @@
 package com.ts.rm.domain.patch.service;
 
+import com.ts.rm.domain.customer.entity.Customer;
+import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.patch.dto.PatchDto;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.mapper.PatchDtoMapper;
 import com.ts.rm.domain.patch.repository.PatchRepository;
+import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
+import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.pagination.PageRowNumberUtil;
@@ -12,6 +16,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +39,8 @@ public class PatchService {
     private final PatchDtoMapper patchDtoMapper;
     private final PatchGenerationService patchGenerationService;
     private final PatchDownloadService patchDownloadService;
+    private final ReleaseVersionRepository releaseVersionRepository;
+    private final CustomerRepository customerRepository;
 
     @Value("${app.release.base-path:src/main/resources/release}")
     private String releaseBasePath;
@@ -219,5 +226,95 @@ public class PatchService {
                         }
                     });
         }
+    }
+
+    // ========================================
+    // 커스텀 패치용 메서드
+    // ========================================
+
+    /**
+     * 커스텀 버전 보유 고객사 목록 조회
+     *
+     * @param projectId 프로젝트 ID
+     * @return 커스텀 버전이 있는 고객사 목록
+     */
+    @Transactional(readOnly = true)
+    public List<PatchDto.CustomerWithCustomVersions> getCustomersWithCustomVersions(String projectId) {
+        log.info("커스텀 버전 보유 고객사 목록 조회 - projectId: {}", projectId);
+
+        List<Long> customerIds = releaseVersionRepository.findCustomerIdsWithCustomVersions(projectId);
+
+        return customerIds.stream()
+                .map(customerId -> customerRepository.findById(customerId)
+                        .map(customer -> new PatchDto.CustomerWithCustomVersions(
+                                customer.getCustomerId(),
+                                customer.getCustomerCode(),
+                                customer.getCustomerName()
+                        ))
+                        .orElse(null))
+                .filter(dto -> dto != null)
+                .toList();
+    }
+
+    /**
+     * 고객사별 커스텀 버전 목록 조회 (셀렉트박스용)
+     *
+     * <p>베이스 버전(표준본)을 첫 번째로, 이후 커스텀 버전들을 반환합니다.
+     * 프론트엔드에서 From 버전 선택 시 베이스 버전부터 선택 가능합니다.
+     *
+     * @param projectId  프로젝트 ID
+     * @param customerId 고객사 ID
+     * @return 버전 목록 (베이스 버전 + 커스텀 버전들)
+     */
+    @Transactional(readOnly = true)
+    public List<PatchDto.CustomVersionSelectOption> getCustomVersionsByCustomer(String projectId, Long customerId) {
+        log.info("고객사별 커스텀 버전 목록 조회 - projectId: {}, customerId: {}", projectId, customerId);
+
+        // 고객사 존재 확인
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND,
+                        "고객사를 찾을 수 없습니다: " + customerId));
+
+        List<ReleaseVersion> customVersions = releaseVersionRepository.findAllByCustomer_CustomerIdOrderByCreatedAtDesc(customerId);
+
+        List<PatchDto.CustomVersionSelectOption> result = new java.util.ArrayList<>();
+
+        // 베이스 버전 추가 (첫 번째 커스텀 버전의 baseVersion에서 가져옴)
+        if (!customVersions.isEmpty()) {
+            ReleaseVersion firstCustomVersion = customVersions.get(customVersions.size() - 1); // 가장 오래된 버전
+            ReleaseVersion baseVersion = firstCustomVersion.getBaseVersion();
+
+            if (baseVersion != null) {
+                result.add(new PatchDto.CustomVersionSelectOption(
+                        baseVersion.getReleaseVersionId(),
+                        baseVersion.getVersion(),
+                        true, // 표준 버전은 항상 승인됨
+                        true  // 베이스 버전
+                ));
+            }
+        }
+
+        // 커스텀 버전들 추가 (최신순)
+        // version 필드: 시멘틱 버저닝 형식 (예: 1.1.0-companyA.1.0.0)
+        customVersions.forEach(v -> result.add(new PatchDto.CustomVersionSelectOption(
+                v.getReleaseVersionId(),
+                v.getVersion(),  // 전체 버전 문자열 사용
+                v.getIsApproved(),
+                false // 커스텀 버전
+        )));
+
+        return result;
+    }
+
+    /**
+     * 커스텀 패치 생성 (버전 문자열 기반) - 위임
+     */
+    @Transactional
+    public Patch generateCustomPatchByVersion(String projectId, Long customerId,
+            String fromVersion, String toVersion, String createdBy, String description,
+            Long engineerId, String patchName) {
+        return patchGenerationService.generateCustomPatchByVersion(
+                projectId, customerId, fromVersion, toVersion,
+                createdBy, description, engineerId, patchName);
     }
 }

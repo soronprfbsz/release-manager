@@ -28,8 +28,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface PatchControllerDocs {
 
     @Operation(
-            summary = "패치 생성",
-            description = "From 버전부터 To 버전까지의 누적 패치를 생성합니다.",
+            summary = "표준 패치 생성",
+            description = "표준 릴리즈 버전 범위(From ~ To)에 대한 누적 패치를 생성합니다.",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",
@@ -254,6 +254,75 @@ public interface PatchControllerDocs {
             @PathVariable Long id
     );
 
+    // ========================================
+    // 커스텀 패치 API
+    // ========================================
+
+    @Operation(
+            summary = "커스텀 버전 보유 고객사 목록 조회",
+            description = "프로젝트 내에서 커스텀 버전이 존재하는 고객사 목록을 조회합니다.\n\n"
+                    + "커스텀 패치 생성 시 고객사 선택 드롭다운에 사용됩니다.",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomerListApiResponse.class)
+                    )
+            )
+    )
+    ApiResponse<List<PatchDto.CustomerWithCustomVersions>> getCustomersWithCustomVersions(
+            @Parameter(description = "프로젝트 ID", example = "infraeye2", required = true)
+            @RequestParam String projectId
+    );
+
+    @Operation(
+            summary = "고객사별 커스텀 버전 목록 조회",
+            description = "특정 고객사의 베이스 버전과 커스텀 버전 목록을 조회합니다.\n\n"
+                    + "**응답 구조**:\n"
+                    + "- 첫 번째 항목: 베이스 버전 (표준본, isBaseVersion=true)\n"
+                    + "- 이후 항목들: 커스텀 버전들 (최신순, isBaseVersion=false)\n\n"
+                    + "**사용 예시**:\n"
+                    + "- From 버전: 베이스 버전(1.1.0) 선택 → To 버전: 커스텀 버전(1.1.0-C2) 선택\n"
+                    + "- From 버전: 커스텀 버전(1.1.0-C1) 선택 → To 버전: 커스텀 버전(1.1.0-C3) 선택",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomVersionListApiResponse.class)
+                    )
+            )
+    )
+    ApiResponse<List<PatchDto.CustomVersionSelectOption>> getCustomVersionsByCustomer(
+            @Parameter(description = "프로젝트 ID", example = "infraeye2", required = true)
+            @RequestParam String projectId,
+
+            @Parameter(description = "고객사 ID", example = "1", required = true)
+            @PathVariable Long customerId
+    );
+
+    @Operation(
+            summary = "커스텀 패치 생성",
+            description = "고객사의 커스텀 버전 범위에 대한 누적 패치를 생성합니다.\n\n"
+                    + "**프로세스**:\n"
+                    + "1. From ~ To 커스텀 버전 사이의 파일을 수집\n"
+                    + "2. 누적 패치 디렉토리 생성 (patches/{projectId}/custom/{customerCode}/{patchName})\n"
+                    + "3. 패치 스크립트 및 README 생성\n"
+                    + "4. DB에 패치 정보 저장",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PatchDetailApiResponse.class)
+                    )
+            )
+    )
+    ApiResponse<PatchDto.DetailResponse> generateCustomPatch(
+            @Valid @RequestBody PatchDto.GenerateCustomPatchRequest request
+    );
+
     /**
      * Swagger 스키마용 wrapper 클래스 - 패치 상세 응답
      */
@@ -318,5 +387,29 @@ public interface PatchControllerDocs {
 
         @Schema(description = "파일 내용")
         public PatchDto.FileContentResponse data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 커스텀 버전 보유 고객사 목록 응답
+     */
+    @Schema(description = "커스텀 버전 보유 고객사 목록 API 응답")
+    class CustomerListApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "고객사 목록")
+        public List<PatchDto.CustomerWithCustomVersions> data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 커스텀 버전 목록 응답
+     */
+    @Schema(description = "커스텀 버전 목록 API 응답")
+    class CustomVersionListApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "커스텀 버전 목록")
+        public List<PatchDto.CustomVersionSelectOption> data;
     }
 }
