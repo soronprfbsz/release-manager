@@ -124,6 +124,34 @@ public class SshShellExecutor {
     }
 
     /**
+     * PTY 크기 변경
+     * <p>
+     * 클라이언트 터미널 창 크기 변경 시 SSH PTY 크기를 동기화합니다.
+     * 이를 통해 줄바꿈이 올바르게 처리됩니다.
+     * </p>
+     *
+     * @param context SSH 실행 컨텍스트
+     * @param cols    컬럼 수 (가로 문자 수)
+     * @param rows    행 수 (세로 줄 수)
+     * @throws BusinessException PTY 크기 변경 실패
+     */
+    public void resizePty(SshExecutionContext context, int cols, int rows) {
+        validateExecutionContext(context);
+
+        try {
+            ChannelShell channel = (ChannelShell) context.getChannel();
+            channel.setPtySize(cols, rows, 0, 0);
+
+            log.debug("PTY 크기 변경: {}x{}", cols, rows);
+
+        } catch (Exception e) {
+            String errorMessage = "PTY 크기 변경 실패: " + e.getMessage();
+            log.error(errorMessage);
+            throw new BusinessException(ErrorCode.SSH_IO_ERROR, errorMessage);
+        }
+    }
+
+    /**
      * 셸 닫기
      *
      * @param context SSH 실행 컨텍스트

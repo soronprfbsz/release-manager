@@ -94,6 +94,32 @@ public class TerminalDto {
     }
 
     /**
+     * 터미널 크기 변경 메시지 (WebSocket - 클라이언트 → 서버)
+     * <p>
+     * xterm.js 터미널 창 크기가 변경될 때 SSH PTY 크기를 동기화합니다.
+     * 이를 통해 줄바꿈이 올바르게 처리됩니다.
+     * </p>
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "터미널 크기 변경 메시지")
+    public static class ResizeMessage {
+        @Schema(description = "컬럼 수 (가로 문자 수)", example = "120")
+        @NotNull(message = "컬럼 수는 필수입니다")
+        @Min(value = 1, message = "컬럼 수는 1 이상이어야 합니다")
+        @Max(value = 500, message = "컬럼 수는 500 이하여야 합니다")
+        private Integer cols;
+
+        @Schema(description = "행 수 (세로 줄 수)", example = "30")
+        @NotNull(message = "행 수는 필수입니다")
+        @Min(value = 1, message = "행 수는 1 이상이어야 합니다")
+        @Max(value = 200, message = "행 수는 200 이하여야 합니다")
+        private Integer rows;
+    }
+
+    /**
      * 출력 메시지 (WebSocket - 서버 → 클라이언트)
      */
     @Data

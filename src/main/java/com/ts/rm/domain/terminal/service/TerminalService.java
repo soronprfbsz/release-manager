@@ -158,6 +158,47 @@ public class TerminalService {
     }
 
     /**
+     * 터미널 크기 변경 (PTY resize)
+     * <p>
+     * 클라이언트 터미널(xterm.js) 창 크기가 변경될 때 SSH PTY 크기를 동기화합니다.
+     * SSH 연결이 완료되기 전에 호출되면 무시됩니다 (연결 후 재요청됨).
+     * </p>
+     *
+     * @param shellSessionId 터미널 세션 ID
+     * @param cols           컬럼 수
+     * @param rows           행 수
+     */
+    public void resize(String shellSessionId, int cols, int rows) {
+        try {
+            // 터미널 컨텍스트 가져오기 (연결 완료 전이면 없을 수 있음)
+            var executionContextOpt = sessionManager.getExecutionContext(shellSessionId);
+
+            if (executionContextOpt.isEmpty()) {
+                // SSH 연결이 아직 완료되지 않음 - 연결 후 클라이언트가 다시 요청할 것이므로 무시
+                log.debug("[{}] PTY 크기 변경 무시 (SSH 연결 중): {}x{}", shellSessionId, cols, rows);
+                return;
+            }
+
+            SshExecutionContext executionContext = executionContextOpt.get();
+
+            // 터미널 연결 확인
+            if (!sshAdapter.isShellConnected(executionContext)) {
+                log.debug("[{}] PTY 크기 변경 무시 (터미널 미연결): {}x{}", shellSessionId, cols, rows);
+                return;
+            }
+
+            // PTY 크기 변경 (SSH Adapter 사용)
+            sshAdapter.resizePty(executionContext, cols, rows);
+
+            log.debug("[{}] PTY 크기 변경: {}x{}", shellSessionId, cols, rows);
+
+        } catch (Exception e) {
+            log.error("[{}] PTY 크기 변경 실패: {}x{}", shellSessionId, cols, rows, e);
+            webSocketAdapter.sendErrorMessage(shellSessionId, "터미널 크기 변경 실패: " + e.getMessage());
+        }
+    }
+
+    /**
      * 터미널 연결 종료
      *
      * @param shellSessionId 터미널 세션 ID
