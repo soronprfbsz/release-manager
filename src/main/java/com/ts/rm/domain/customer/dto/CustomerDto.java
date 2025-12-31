@@ -111,6 +111,9 @@ public final class CustomerDto {
             @Schema(description = "활성 여부", example = "true")
             Boolean isActive,
 
+            @Schema(description = "커스텀 버전 존재 여부", example = "true")
+            Boolean hasCustomVersion,
+
             @Schema(description = "사용 프로젝트 정보")
             ProjectInfo project,
 
@@ -171,6 +174,9 @@ public final class CustomerDto {
 
             @Schema(description = "활성 여부", example = "true")
             Boolean isActive,
+
+            @Schema(description = "커스텀 버전 존재 여부", example = "true")
+            Boolean hasCustomVersion,
 
             @Schema(description = "사용 프로젝트 정보")
             ProjectInfo project,

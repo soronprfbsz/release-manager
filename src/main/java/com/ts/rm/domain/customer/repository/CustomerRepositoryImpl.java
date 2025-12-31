@@ -1,13 +1,18 @@
 package com.ts.rm.domain.customer.repository;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.entity.QCustomer;
 import com.ts.rm.domain.customer.entity.QCustomerProject;
 import com.ts.rm.domain.project.entity.QProject;
+import com.ts.rm.domain.releaseversion.entity.QReleaseVersion;
 import com.ts.rm.global.querydsl.QuerydslPaginationUtil;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +33,7 @@ public class CustomerRepositoryImpl implements CustomerRepositoryCustom {
     private static final QCustomer customer = QCustomer.customer;
     private static final QCustomerProject customerProject = QCustomerProject.customerProject;
     private static final QProject project = QProject.project;
+    private static final QReleaseVersion releaseVersion = QReleaseVersion.releaseVersion;
 
     @Override
     public Page<Customer> findAllWithProjectInfo(Boolean isActive, String keyword, Pageable pageable) {
@@ -54,21 +60,31 @@ public class CustomerRepositoryImpl implements CustomerRepositoryCustom {
                 );
 
         // 3. 정렬 필드 매핑 정의
-        Map<String, com.querydsl.core.types.Expression<?>> sortMapping = Map.of(
-                // Customer 필드
-                "customerId", customer.customerId,
-                "customerCode", customer.customerCode,
-                "customerName", customer.customerName,
-                "isActive", customer.isActive,
-                "createdAt", customer.createdAt,
-                "updatedAt", customer.updatedAt,
-                // Project 필드
-                "project.projectName", project.projectName,
-                "project.projectId", project.projectId,
-                // CustomerProject 필드
-                "lastPatchedVersion", customerProject.lastPatchedVersion,
-                "lastPatchedAt", customerProject.lastPatchedAt
-        );
+        // hasCustomVersion: 커스텀 버전 존재 여부 (EXISTS 서브쿼리 → CASE WHEN으로 1/0 변환)
+        NumberExpression<Integer> hasCustomVersionExpression = new CaseBuilder()
+                .when(JPAExpressions.selectOne()
+                        .from(releaseVersion)
+                        .where(releaseVersion.customer.customerId.eq(customer.customerId))
+                        .exists())
+                .then(1)
+                .otherwise(0);
+
+        Map<String, com.querydsl.core.types.Expression<?>> sortMapping = new HashMap<>();
+        // Customer 필드
+        sortMapping.put("customerId", customer.customerId);
+        sortMapping.put("customerCode", customer.customerCode);
+        sortMapping.put("customerName", customer.customerName);
+        sortMapping.put("isActive", customer.isActive);
+        sortMapping.put("createdAt", customer.createdAt);
+        sortMapping.put("updatedAt", customer.updatedAt);
+        // Project 필드
+        sortMapping.put("project.projectName", project.projectName);
+        sortMapping.put("project.projectId", project.projectId);
+        // CustomerProject 필드
+        sortMapping.put("lastPatchedVersion", customerProject.lastPatchedVersion);
+        sortMapping.put("lastPatchedAt", customerProject.lastPatchedAt);
+        // 커스텀 버전 존재 여부 (서브쿼리)
+        sortMapping.put("hasCustomVersion", hasCustomVersionExpression);
 
         // 4. 공통 유틸리티로 페이징/정렬 적용
         return QuerydslPaginationUtil.applyPagination(

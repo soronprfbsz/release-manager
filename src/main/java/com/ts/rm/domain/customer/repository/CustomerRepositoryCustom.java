@@ -15,10 +15,11 @@ public interface CustomerRepositoryCustom {
      * 고객사 목록 페이징 조회 (프로젝트 정보 포함 정렬 지원)
      *
      * <p>CustomerProject 테이블과 LEFT JOIN하여 lastPatchedVersion, lastPatchedAt 정렬 지원
+     * <p>hasCustomVersion 서브쿼리 정렬 지원 (커스텀 버전 존재 여부)
      *
      * @param isActive 활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
      * @param keyword  고객사명 검색 키워드
-     * @param pageable 페이징 정보 (sort에 "project.projectName", "lastPatchedVersion", "lastPatchedAt" 사용 가능)
+     * @param pageable 페이징 정보 (sort에 "project.projectName", "lastPatchedVersion", "lastPatchedAt", "hasCustomVersion" 사용 가능)
      * @return 고객사 페이지
      */
     Page<Customer> findAllWithProjectInfo(Boolean isActive, String keyword, Pageable pageable);

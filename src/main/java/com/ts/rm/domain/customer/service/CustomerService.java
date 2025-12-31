@@ -8,6 +8,7 @@ import com.ts.rm.domain.customer.repository.CustomerProjectRepository;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.project.repository.ProjectRepository;
+import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.pagination.PageRowNumberUtil;
@@ -33,6 +34,7 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final CustomerProjectRepository customerProjectRepository;
     private final ProjectRepository projectRepository;
+    private final ReleaseVersionRepository releaseVersionRepository;
     private final CustomerDtoMapper mapper;
 
     /**
@@ -128,7 +130,7 @@ public class CustomerService {
      *
      * @param isActive 활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
      * @param keyword  고객사명 검색 키워드
-     * @param pageable 페이징 정보 (sort에 "project.projectName", "lastPatchedVersion", "lastPatchedAt" 사용 가능)
+     * @param pageable 페이징 정보 (sort에 "project.projectName", "lastPatchedVersion", "lastPatchedAt", "hasCustomVersion" 사용 가능)
      * @return 고객사 페이지
      */
     public Page<CustomerDto.ListResponse> getCustomersWithPaging(Boolean isActive, String keyword, Pageable pageable) {
@@ -138,6 +140,7 @@ public class CustomerService {
         // rowNumber 계산 (공통 유틸리티 사용)
         return PageRowNumberUtil.mapWithRowNumber(customers, (customer, rowNumber) -> {
             CustomerDto.ProjectInfo projectInfo = getProjectInfoByCustomerId(customer.getCustomerId());
+            boolean hasCustomVersion = releaseVersionRepository.existsByCustomer_CustomerId(customer.getCustomerId());
             return new CustomerDto.ListResponse(
                     rowNumber,
                     customer.getCustomerId(),
@@ -145,6 +148,7 @@ public class CustomerService {
                     customer.getCustomerName(),
                     customer.getDescription(),
                     customer.getIsActive(),
+                    hasCustomVersion,
                     projectInfo,
                     customer.getCreatedAt()
             );
@@ -277,12 +281,14 @@ public class CustomerService {
      */
     private CustomerDto.DetailResponse toDetailResponseWithProject(Customer customer,
             CustomerDto.ProjectInfo projectInfo) {
+        boolean hasCustomVersion = releaseVersionRepository.existsByCustomer_CustomerId(customer.getCustomerId());
         return new CustomerDto.DetailResponse(
                 customer.getCustomerId(),
                 customer.getCustomerCode(),
                 customer.getCustomerName(),
                 customer.getDescription(),
                 customer.getIsActive(),
+                hasCustomVersion,
                 projectInfo,
                 customer.getCreatedAt(),
                 customer.getCreatedBy(),

@@ -18,6 +18,7 @@ public interface CustomerDtoMapper {
     Customer toEntity(CustomerDto.CreateRequest request);
 
     @Mapping(target = "project", ignore = true)
+    @Mapping(target = "hasCustomVersion", ignore = true)
     CustomerDto.DetailResponse toDetailResponse(Customer customer);
 
     List<CustomerDto.DetailResponse> toDetailResponseList(List<Customer> customers);
@@ -28,5 +29,6 @@ public interface CustomerDtoMapper {
 
     @Mapping(target = "rowNumber", ignore = true)
     @Mapping(target = "project", ignore = true)
+    @Mapping(target = "hasCustomVersion", ignore = true)
     CustomerDto.ListResponse toListResponse(Customer customer);
 }
