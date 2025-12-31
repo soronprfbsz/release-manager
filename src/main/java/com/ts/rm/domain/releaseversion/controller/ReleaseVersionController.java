@@ -69,7 +69,8 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
                 request.releaseCategory(),
                 request.comment(),
                 patchFiles,
-                createdBy
+                createdBy,
+                request.isApproved()
         );
 
         return ResponseEntity.ok(ApiResponse.success(response));

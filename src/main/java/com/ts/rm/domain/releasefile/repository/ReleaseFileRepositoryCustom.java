@@ -14,31 +14,34 @@ public interface ReleaseFileRepositoryCustom {
     /**
      * 버전 범위 내 릴리즈 파일 목록 조회 (INSTALL 카테고리 버전 제외)
      *
+     * @param projectId   프로젝트 ID
      * @param fromVersion 시작 버전
      * @param toVersion   종료 버전
      * @return 릴리즈 파일 목록
      */
-    List<ReleaseFile> findReleaseFilesBetweenVersionsExcludingInstall(String fromVersion, String toVersion);
+    List<ReleaseFile> findReleaseFilesBetweenVersionsExcludingInstall(String projectId, String fromVersion, String toVersion);
 
     /**
      * 버전 범위 내 특정 하위 카테고리 파일 목록 조회
      *
+     * @param projectId   프로젝트 ID
      * @param fromVersion 시작 버전
      * @param toVersion   종료 버전
      * @param subCategory 하위 카테고리 (대소문자 무시)
      * @return 릴리즈 파일 목록
      */
-    List<ReleaseFile> findReleaseFilesBetweenVersionsBySubCategory(String fromVersion, String toVersion, String subCategory);
+    List<ReleaseFile> findReleaseFilesBetweenVersionsBySubCategory(String projectId, String fromVersion, String toVersion, String subCategory);
 
     /**
      * 버전 범위 내 빌드 산출물 파일 목록 조회
      * (fileCategory가 WEB 또는 ENGINE인 파일)
      *
+     * @param projectId   프로젝트 ID
      * @param fromVersion 시작 버전
      * @param toVersion   종료 버전
      * @return 릴리즈 파일 목록
      */
-    List<ReleaseFile> findBuildArtifactsBetweenVersions(String fromVersion, String toVersion);
+    List<ReleaseFile> findBuildArtifactsBetweenVersions(String projectId, String fromVersion, String toVersion);
 
     /**
      * 릴리즈 버전 ID로 포함된 파일 카테고리 목록 조회 (중복 제거)

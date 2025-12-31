@@ -440,6 +440,7 @@ public class PatchGenerationService {
 
             // 2. 중간 버전 목록 조회 (fromVersion < version <= toVersion)
             List<ReleaseVersion> betweenVersions = releaseVersionRepository.findVersionsBetween(
+                    projectId,
                     fromVersion.getReleaseType(),
                     fromVersion.getVersion(),
                     toVersion.getVersion()
@@ -557,7 +558,10 @@ public class PatchGenerationService {
         }
 
         // 임시버전(미승인 버전) 검증
+        // 프로젝트 ID가 필요하므로 from 또는 to 버전에서 추출
+        String projectIdForValidation = fromVersion.getProject().getProjectId();
         List<ReleaseVersion> unapprovedVersions = releaseVersionRepository.findUnapprovedVersionsBetween(
+                projectIdForValidation,
                 fromVersion.getReleaseType(),
                 fromVersion.getVersion(),
                 toVersion.getVersion()
@@ -743,13 +747,18 @@ public class PatchGenerationService {
     private void generatePatchScripts(ReleaseVersion fromVersion, ReleaseVersion toVersion,
             List<ReleaseVersion> versions, String outputPath, String patchedBy) {
         try {
+            // 프로젝트 ID 추출 (versions 목록의 첫 번째 버전에서)
+            String projectId = versions.get(0).getProject().getProjectId();
+
             List<ReleaseFile> mariadbFiles = releaseFileRepository.findReleaseFilesBetweenVersionsBySubCategory(
+                    projectId,
                     versions.get(0).getVersion(),
                     versions.get(versions.size() - 1).getVersion(),
                     "MARIADB"
             );
 
             List<ReleaseFile> cratedbFiles = releaseFileRepository.findReleaseFilesBetweenVersionsBySubCategory(
+                    projectId,
                     versions.get(0).getVersion(),
                     versions.get(versions.size() - 1).getVersion(),
                     "CRATEDB"

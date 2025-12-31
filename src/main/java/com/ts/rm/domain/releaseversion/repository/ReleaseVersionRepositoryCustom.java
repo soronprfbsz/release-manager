@@ -16,12 +16,13 @@ public interface ReleaseVersionRepositoryCustom {
     /**
      * 버전 범위 조회 (from ~ to)
      *
+     * @param projectId   프로젝트 ID
      * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
      * @param fromVersion 시작 버전
      * @param toVersion   종료 버전
      * @return 버전 목록
      */
-    List<ReleaseVersion> findVersionsBetween(String releaseType, String fromVersion, String toVersion);
+    List<ReleaseVersion> findVersionsBetween(String projectId, String releaseType, String fromVersion, String toVersion);
 
     /**
      * 프로젝트별 릴리즈 타입과 카테고리로 최신 버전 1개 조회
@@ -47,12 +48,13 @@ public interface ReleaseVersionRepositoryCustom {
     /**
      * 버전 범위 내 미승인 버전 조회 (from ~ to)
      *
+     * @param projectId   프로젝트 ID
      * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
      * @param fromVersion 시작 버전
      * @param toVersion   종료 버전
      * @return 미승인 버전 목록 (isApproved = false)
      */
-    List<ReleaseVersion> findUnapprovedVersionsBetween(String releaseType, String fromVersion, String toVersion);
+    List<ReleaseVersion> findUnapprovedVersionsBetween(String projectId, String releaseType, String fromVersion, String toVersion);
 
     /**
      * 고객사별 커스텀 버전 범위 조회 (from ~ to)

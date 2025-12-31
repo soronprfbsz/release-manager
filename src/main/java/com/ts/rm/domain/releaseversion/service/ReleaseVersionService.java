@@ -113,16 +113,17 @@ public class ReleaseVersionService {
     /**
      * 버전 범위 조회
      *
+     * @param projectId   프로젝트 ID
      * @param typeName    릴리즈 타입
      * @param fromVersion 시작 버전
      * @param toVersion   종료 버전
      * @return 버전 목록
      */
-    public List<ReleaseVersionDto.SimpleResponse> getVersionsBetween(String typeName,
+    public List<ReleaseVersionDto.SimpleResponse> getVersionsBetween(String projectId, String typeName,
             String fromVersion, String toVersion) {
         String releaseType = typeName.toUpperCase();
         List<ReleaseVersion> versions = releaseVersionRepository.findVersionsBetween(
-                releaseType, fromVersion, toVersion);
+                projectId, releaseType, fromVersion, toVersion);
         List<ReleaseVersionDto.SimpleResponse> responses = mapper.toSimpleResponseList(versions);
         return enrichWithCategories(responses);
     }

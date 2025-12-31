@@ -21,12 +21,13 @@ public class ReleaseFileRepositoryImpl implements ReleaseFileRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<ReleaseFile> findReleaseFilesBetweenVersionsExcludingInstall(String fromVersion, String toVersion) {
+    public List<ReleaseFile> findReleaseFilesBetweenVersionsExcludingInstall(String projectId, String fromVersion, String toVersion) {
         QReleaseFile rf = QReleaseFile.releaseFile;
 
         return queryFactory
                 .selectFrom(rf)
                 .where(
+                        rf.releaseVersion.project.projectId.eq(projectId),  // 프로젝트 ID 필터링 추가
                         rf.releaseVersion.version.goe(fromVersion),
                         rf.releaseVersion.version.loe(toVersion),
                         rf.releaseVersion.releaseCategory.isNull()
@@ -40,12 +41,13 @@ public class ReleaseFileRepositoryImpl implements ReleaseFileRepositoryCustom {
     }
 
     @Override
-    public List<ReleaseFile> findReleaseFilesBetweenVersionsBySubCategory(String fromVersion, String toVersion, String subCategory) {
+    public List<ReleaseFile> findReleaseFilesBetweenVersionsBySubCategory(String projectId, String fromVersion, String toVersion, String subCategory) {
         QReleaseFile rf = QReleaseFile.releaseFile;
 
         return queryFactory
                 .selectFrom(rf)
                 .where(
+                        rf.releaseVersion.project.projectId.eq(projectId),  // 프로젝트 ID 필터링 추가
                         rf.releaseVersion.version.goe(fromVersion),
                         rf.releaseVersion.version.loe(toVersion),
                         rf.subCategory.equalsIgnoreCase(subCategory)
@@ -58,12 +60,13 @@ public class ReleaseFileRepositoryImpl implements ReleaseFileRepositoryCustom {
     }
 
     @Override
-    public List<ReleaseFile> findBuildArtifactsBetweenVersions(String fromVersion, String toVersion) {
+    public List<ReleaseFile> findBuildArtifactsBetweenVersions(String projectId, String fromVersion, String toVersion) {
         QReleaseFile rf = QReleaseFile.releaseFile;
 
         return queryFactory
                 .selectFrom(rf)
                 .where(
+                        rf.releaseVersion.project.projectId.eq(projectId),  // 프로젝트 ID 필터링 추가
                         rf.releaseVersion.version.goe(fromVersion),
                         rf.releaseVersion.version.loe(toVersion),
                         rf.fileCategory.in(FileCategory.WEB, FileCategory.ENGINE)

@@ -139,14 +139,16 @@ public class ReleaseVersionUploadService {
      * @param comment         패치 노트 내용
      * @param zipFile         패치 파일이 포함된 ZIP 파일
      * @param createdBy       생성자 이메일 (JWT에서 추출)
+     * @param isApproved      승인 여부 (true: 승인됨, false: 미승인, null: 미승인)
      * @return 생성된 버전 응답
      */
     @Transactional
     public ReleaseVersionDto.CreateVersionResponse createStandardVersionWithZip(
-            String projectId, String version, ReleaseCategory releaseCategory, String comment, MultipartFile zipFile, String createdBy) {
+            String projectId, String version, ReleaseCategory releaseCategory, String comment,
+            MultipartFile zipFile, String createdBy, Boolean isApproved) {
 
-        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - projectId: {}, version: {}, releaseCategory: {}, createdBy: {}",
-                projectId, version, releaseCategory, createdBy);
+        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - projectId: {}, version: {}, releaseCategory: {}, createdBy: {}, isApproved: {}",
+                projectId, version, releaseCategory, createdBy, isApproved);
 
         // 0. 프로젝트 조회
         Project project = projectRepository.findById(projectId)
@@ -174,9 +176,10 @@ public class ReleaseVersionUploadService {
             versionPath = fileSystemService.createVersionDirectory(versionInfo, projectId);
 
             // 6. 파일 복사 및 DB 저장
-            ReleaseVersion savedVersion = copyFilesAndSaveToDb(project, tempDir, versionPath, versionInfo, releaseCategory, createdBy, comment);
+            ReleaseVersion savedVersion = copyFilesAndSaveToDb(project, tempDir, versionPath, versionInfo, releaseCategory, createdBy, comment, isApproved);
 
-            log.info("ZIP 파일로 표준 릴리즈 버전 생성 완료 - projectId: {}, version: {}, ID: {}", projectId, version, savedVersion.getReleaseVersionId());
+            log.info("ZIP 파일로 표준 릴리즈 버전 생성 완료 - projectId: {}, version: {}, ID: {}, isApproved: {}",
+                    projectId, version, savedVersion.getReleaseVersionId(), savedVersion.getIsApproved());
 
             // 7. 응답 생성
             return new ReleaseVersionDto.CreateVersionResponse(
@@ -659,25 +662,36 @@ public class ReleaseVersionUploadService {
      * @return 저장된 ReleaseVersion 엔티티
      */
     public ReleaseVersion copyFilesAndSaveToDb(Project project, Path tempDir, Path versionPath,
-                                                VersionInfo versionInfo, ReleaseCategory releaseCategory, String createdBy, String comment) throws IOException {
+                                                VersionInfo versionInfo, ReleaseCategory releaseCategory,
+                                                String createdBy, String comment, Boolean isApproved) throws IOException {
         String version = versionInfo.getMajorVersion() + "." + versionInfo.getMinorVersion() + "." + versionInfo.getPatchVersion();
 
-        // ReleaseVersion 생성 및 저장
-        final ReleaseVersion savedVersion = releaseVersionRepository.save(
-                ReleaseVersion.builder()
-                        .project(project)
-                        .releaseType("STANDARD")
-                        .releaseCategory(releaseCategory)
-                        .version(version)
-                        .majorVersion(versionInfo.getMajorVersion())
-                        .minorVersion(versionInfo.getMinorVersion())
-                        .patchVersion(versionInfo.getPatchVersion())
-                        .createdBy(createdBy)
-                        .comment(comment)
-                        .build()
-        );
+        // isApproved가 null이면 false로 처리
+        boolean approved = Boolean.TRUE.equals(isApproved);
 
-        log.info("ReleaseVersion 저장 완료 - ID: {}, version: {}", savedVersion.getReleaseVersionId(), version);
+        // ReleaseVersion 생성 및 저장
+        ReleaseVersion.ReleaseVersionBuilder builder = ReleaseVersion.builder()
+                .project(project)
+                .releaseType("STANDARD")
+                .releaseCategory(releaseCategory)
+                .version(version)
+                .majorVersion(versionInfo.getMajorVersion())
+                .minorVersion(versionInfo.getMinorVersion())
+                .patchVersion(versionInfo.getPatchVersion())
+                .createdBy(createdBy)
+                .comment(comment)
+                .isApproved(approved);
+
+        // 승인된 경우 승인자와 승인일시 설정
+        if (approved) {
+            builder.approvedBy(createdBy)
+                   .approvedAt(java.time.LocalDateTime.now());
+        }
+
+        final ReleaseVersion savedVersion = releaseVersionRepository.save(builder.build());
+
+        log.info("ReleaseVersion 저장 완료 - ID: {}, version: {}, isApproved: {}",
+                savedVersion.getReleaseVersionId(), version, savedVersion.getIsApproved());
 
         // 클로저 테이블에 계층 구조 데이터 추가
         treeService.createHierarchyForNewVersion(savedVersion, "STANDARD");

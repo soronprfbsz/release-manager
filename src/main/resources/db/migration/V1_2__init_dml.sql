@@ -639,6 +639,6 @@ INSERT INTO service_component (service_id,component_type,component_name,host,por
  (2,'DATABASE','infraeye2 - cratedb','10.110.1.103',15432,NULL,NULL,NULL,3,1,'admin@tscientific.co.kr'),
  (2,'DATABASE','infraeye2 - redis','10.110.1.103',55501,NULL,NULL,NULL,4,1,'admin@tscientific.co.kr'),
  (10,'WEB','release-manager - web','10.110.1.106',13000,'http://10.110.1.106:13000',20022,'release-manager - web',1,1,'admin@tscientific.co.kr'),
- (10,'WEB','release-manager - api','10.110.1.106',18080,'http://10.110.1.106:13000',NULL,'release-manager - api',2,1,'admin@tscientific.co.kr'),
+ (10,'WEB','release-manager - api','10.110.1.106',18080,'http://10.110.1.106:18080',NULL,'release-manager - api',2,1,'admin@tscientific.co.kr'),
  (10,'DATABASE','release-manager - mariadb','10.110.1.106',13306,NULL,NULL,'release-manager - mariadb',3,1,'admin@tscientific.co.kr'),
  (10,'DATABASE','release-manager - redis','10.110.1.106',16379,NULL,NULL,'release-manager - redis',4,1,'admin@tscientific.co.kr');

@@ -21,8 +21,8 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<ReleaseVersion> findVersionsBetween(String releaseType, String fromVersion,
-            String toVersion) {
+    public List<ReleaseVersion> findVersionsBetween(String projectId, String releaseType,
+            String fromVersion, String toVersion) {
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
 
         // From 버전 파싱
@@ -39,7 +39,8 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
 
         return queryFactory
                 .selectFrom(rv)
-                .where(rv.releaseType.eq(releaseType)
+                .where(rv.project.projectId.eq(projectId)  // 프로젝트 ID 필터링 추가
+                        .and(rv.releaseType.eq(releaseType))
                         .and(
                                 // fromVersion < version <= toVersion
                                 rv.majorVersion.gt(fromMajor)
@@ -104,8 +105,8 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
     }
 
     @Override
-    public List<ReleaseVersion> findUnapprovedVersionsBetween(String releaseType, String fromVersion,
-            String toVersion) {
+    public List<ReleaseVersion> findUnapprovedVersionsBetween(String projectId, String releaseType,
+            String fromVersion, String toVersion) {
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
 
         // From 버전 파싱
@@ -122,7 +123,8 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
 
         return queryFactory
                 .selectFrom(rv)
-                .where(rv.releaseType.eq(releaseType)
+                .where(rv.project.projectId.eq(projectId)  // 프로젝트 ID 필터링 추가
+                        .and(rv.releaseType.eq(releaseType))
                         .and(rv.isApproved.isFalse())  // 미승인 버전만 조회
                         .and(
                                 // fromVersion < version <= toVersion

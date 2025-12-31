@@ -119,11 +119,11 @@ public class ReleaseFileService {
         return mapper.toDetailResponse(releaseFile);
     }
 
-    public List<ReleaseFileDto.SimpleResponse> getReleaseFilesBetweenVersions(String fromVersion,
-            String toVersion) {
+    public List<ReleaseFileDto.SimpleResponse> getReleaseFilesBetweenVersions(String projectId,
+            String fromVersion, String toVersion) {
 
         List<ReleaseFile> releaseFiles = releaseFileRepository
-                .findReleaseFilesBetweenVersionsExcludingInstall(fromVersion, toVersion);
+                .findReleaseFilesBetweenVersionsExcludingInstall(projectId, fromVersion, toVersion);
         return mapper.toSimpleResponseList(releaseFiles);
     }
 
