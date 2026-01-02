@@ -147,14 +147,14 @@ public class ReleaseFileUploadService {
     }
 
     /**
-     * 파일 체크섬(MD5) 계산
+     * 파일 체크섬(SHA-256) 계산
      *
      * @param content 파일 내용
-     * @return MD5 해시값 (32자리 16진수)
+     * @return SHA-256 해시값 (64자리 16진수)
      */
     public String calculateChecksum(byte[] content) {
         try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = md.digest(content);
 
             StringBuilder sb = new StringBuilder();
@@ -164,7 +164,7 @@ public class ReleaseFileUploadService {
             return sb.toString();
 
         } catch (NoSuchAlgorithmException e) {
-            log.error("MD5 algorithm not found", e);
+            log.error("SHA-256 algorithm not found", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }

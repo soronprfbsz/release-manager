@@ -147,4 +147,44 @@ public interface ReleaseVersionRepository extends JpaRepository<ReleaseVersion, 
      * @return 커스텀 버전 존재 여부
      */
     boolean existsByCustomer_CustomerId(Long customerId);
+
+    /**
+     * 프로젝트, 릴리즈 타입 내 미승인 버전 존재 여부 확인
+     *
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @param isApproved  승인 여부
+     * @return 미승인 버전 존재 여부
+     */
+    boolean existsByProject_ProjectIdAndReleaseTypeAndIsApproved(
+            String projectId, String releaseType, boolean isApproved);
+
+    /**
+     * 프로젝트, 릴리즈 타입 내 미승인 버전 목록 조회
+     *
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @param isApproved  승인 여부
+     * @return 미승인 버전 목록
+     */
+    List<ReleaseVersion> findAllByProject_ProjectIdAndReleaseTypeAndIsApproved(
+            String projectId, String releaseType, boolean isApproved);
+
+    /**
+     * 고객사 내 미승인 커스텀 버전 존재 여부 확인
+     *
+     * @param customerId 고객사 ID
+     * @param isApproved 승인 여부
+     * @return 미승인 버전 존재 여부
+     */
+    boolean existsByCustomer_CustomerIdAndIsApproved(Long customerId, boolean isApproved);
+
+    /**
+     * 고객사 내 미승인 커스텀 버전 목록 조회
+     *
+     * @param customerId 고객사 ID
+     * @param isApproved 승인 여부
+     * @return 미승인 버전 목록
+     */
+    List<ReleaseVersion> findAllByCustomer_CustomerIdAndIsApproved(Long customerId, boolean isApproved);
 }

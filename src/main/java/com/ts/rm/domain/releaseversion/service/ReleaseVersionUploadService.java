@@ -155,6 +155,9 @@ public class ReleaseVersionUploadService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND,
                         "프로젝트를 찾을 수 없습니다: " + projectId));
 
+        // 0-1. 미승인 버전 존재 여부 확인 (미승인 버전이 있으면 새 버전 생성 불가)
+        validateNoUnapprovedVersionExists(projectId, "STANDARD");
+
         // 1. 버전 파싱 및 검증
         VersionInfo versionInfo = VersionParser.parse(version);
         validateNewVersion(projectId, "STANDARD", versionInfo);
@@ -247,6 +250,9 @@ public class ReleaseVersionUploadService {
         List<ReleaseVersion> existingCustomVersions = releaseVersionRepository
                 .findAllByCustomer_CustomerIdOrderByCreatedAtDesc(request.customerId());
         boolean isFirstCustomVersion = existingCustomVersions.isEmpty();
+
+        // 2-1. 미승인 커스텀 버전 존재 여부 확인 (미승인 버전이 있으면 새 버전 생성 불가)
+        validateNoUnapprovedCustomVersionExists(request.customerId());
 
         // 3. 기준 표준 버전 조회 및 검증
         ReleaseVersion baseVersion = null;
@@ -888,11 +894,14 @@ public class ReleaseVersionUploadService {
     }
 
     /**
-     * 체크섬 계산 (MD5)
+     * 체크섬 계산 (SHA-256)
+     *
+     * @param content 파일 바이트 배열
+     * @return 64자리 SHA-256 해시값
      */
     public String calculateChecksum(byte[] content) {
         try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = md.digest(content);
 
             StringBuilder sb = new StringBuilder();
@@ -902,7 +911,7 @@ public class ReleaseVersionUploadService {
             return sb.toString();
 
         } catch (NoSuchAlgorithmException e) {
-            log.error("MD5 algorithm not found", e);
+            log.error("SHA-256 algorithm not found", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
@@ -953,6 +962,63 @@ public class ReleaseVersionUploadService {
         if (exists) {
             throw new BusinessException(ErrorCode.RELEASE_VERSION_CONFLICT,
                     "이미 존재하는 버전입니다: " + version);
+        }
+    }
+
+    /**
+     * 미승인 표준 버전 존재 여부 검증
+     *
+     * <p>해당 프로젝트의 표준(STANDARD) 버전 중 미승인 버전이 존재하면 새 버전 생성 불가
+     *
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (STANDARD)
+     * @throws BusinessException 미승인 버전이 존재하는 경우
+     */
+    private void validateNoUnapprovedVersionExists(String projectId, String releaseType) {
+        boolean hasUnapproved = releaseVersionRepository.existsByProject_ProjectIdAndReleaseTypeAndIsApproved(
+                projectId, releaseType, false);
+
+        if (hasUnapproved) {
+            // 미승인 버전 목록 조회 (에러 메시지용)
+            List<ReleaseVersion> unapprovedVersions = releaseVersionRepository
+                    .findAllByProject_ProjectIdAndReleaseTypeAndIsApproved(projectId, releaseType, false);
+
+            String unapprovedVersionList = unapprovedVersions.stream()
+                    .map(ReleaseVersion::getVersion)
+                    .reduce((v1, v2) -> v1 + ", " + v2)
+                    .orElse("");
+
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    String.format("미승인 버전이 존재하여 새 버전을 생성할 수 없습니다. (미승인 버전: %s)",
+                            unapprovedVersionList));
+        }
+    }
+
+    /**
+     * 미승인 커스텀 버전 존재 여부 검증
+     *
+     * <p>해당 고객사의 커스텀 버전 중 미승인 버전이 존재하면 새 버전 생성 불가
+     *
+     * @param customerId 고객사 ID
+     * @throws BusinessException 미승인 버전이 존재하는 경우
+     */
+    private void validateNoUnapprovedCustomVersionExists(Long customerId) {
+        boolean hasUnapproved = releaseVersionRepository.existsByCustomer_CustomerIdAndIsApproved(
+                customerId, false);
+
+        if (hasUnapproved) {
+            // 미승인 버전 목록 조회 (에러 메시지용)
+            List<ReleaseVersion> unapprovedVersions = releaseVersionRepository
+                    .findAllByCustomer_CustomerIdAndIsApproved(customerId, false);
+
+            String unapprovedVersionList = unapprovedVersions.stream()
+                    .map(ReleaseVersion::getVersion)
+                    .reduce((v1, v2) -> v1 + ", " + v2)
+                    .orElse("");
+
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    String.format("미승인 커스텀 버전이 존재하여 새 버전을 생성할 수 없습니다. (미승인 버전: %s)",
+                            unapprovedVersionList));
         }
     }
 
