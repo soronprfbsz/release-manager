@@ -356,8 +356,9 @@ WHERE customer_code IN (
 -- =========================================================
 
 INSERT INTO release_version (project_id, release_type, release_category, customer_id, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_at, created_by, comment, created_at) VALUES
-('infraeye2', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, TRUE, 'jhlee@tscientific.co.kr', '2025-01-01 00:00:00', 'jhlee@tscientific.co.kr', '최초 설치본', '2025-01-01 00:00:00'),
-('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, TRUE, 'jhlee@tscientific.co.kr', '2025-12-18 00:00:00', 'jhlee@tscientific.co.kr', 'SMS 기능 추가', '2025-12-18 00:00:00');
+('infraeye2', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, TRUE, 'admin@tscientific.co.kr', '2025-01-01 00:00:00', 'admin@tscientific.co.kr', '최초 설치본', '2025-01-01 00:00:00'),
+('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, TRUE, 'admin@tscientific.co.kr', '2025-12-18 00:00:00', 'admin@tscientific.co.kr', 'SMS 기능 추가', '2025-12-18 00:00:00'),
+('infraeye1', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, TRUE, 'admin@tscientific.co.kr', '2026-01-02 00:00:00', 'admin@tscientific.co.kr', '최초 설치본', '2026-01-02 00:00:00');
 
 -- =========================================================
 -- release_file 테이블
@@ -376,7 +377,9 @@ INSERT INTO release_file (release_version_id,file_type,file_category,sub_categor
 (2,'SQL','DATABASE','MARIADB','8.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/8.patch_mariadb_dml.sql','/database/MARIADB/8.patch_mariadb_dml.sql',40466,'e48609ba8654cb4481e875cd4018a32e9bfaa20ba72bd76e2421f96df4a6563c',8,'DML 변경'),
 (2,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',19718,'b04cad39e4ae870c38c5472e63d6824d63d44545f3da1a5c9cd07b4db28cb2b0',1,'CrateDB DDL 변경'),
 (2,'WAR','WEB',NULL,'nms_solution-2.0.0.240102-1-STD.war','versions/infraeye2/standard/1.1.x/1.1.0/web/nms_solution-2.0.0.240102-1-STD.war','/web/nms_solution-2.0.0.240102-1-STD.war',164829225,'d6fd55b9610d73ce14738689e3af086c288d6cb9065010c985ea0e119210126c',1,'NMS Solution WAR 패키지'),
-(2,'ZIP','WEB',NULL,'webobjects.zip','versions/infraeye2/standard/1.1.x/1.1.0/web/webobjects.zip','/web/webobjects.zip',392505570,'92924a7c1e5f44174aa42f9398ece490c6b0906e77cb5741c2a1cfa9bb3c2383',2,'Web Objects 패키지');
+(2,'ZIP','WEB',NULL,'webobjects.zip','versions/infraeye2/standard/1.1.x/1.1.0/web/webobjects.zip','/web/webobjects.zip',392505570,'92924a7c1e5f44174aa42f9398ece490c6b0906e77cb5741c2a1cfa9bb3c2383',2,'Web Objects 패키지'),
+(3,'PDF','INSTALL',NULL,'InfraEye 설치가이드_20210416.pdf','versions/infraeye1/standard/1.0.x/1.0.0/install/InfraEye 설치가이드_20210416.pdf','/install/InfraEye 설치가이드_20210416.pdf',1527560,'39cd5659976f28717f4d29395fdef89aa66a05bee580c0b87bb0daf61ee13396',1,'설치 가이드 문서'),
+(3,'MD','INSTALL',NULL,'설치본.md','versions/infraeye1/standard/1.0.x/1.0.0/install/설치본.md','/install/설치본.md',318,'a7c902feb41664d936aab4ea6d5b77f9713a3902f43e7bf7141fe0b41d7f1adc',2,'설치본 정보');
 
 -- =========================================================
 -- release_version_hierarchy 테이블
@@ -391,6 +394,10 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 (2, 2, 0),
 (1, 2, 1);
 
+-- infraeye1 1.0.0 (release_version_id = 3)
+INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
+(3, 3, 0);
+
 -- =========================================================
 -- resource_file 테이블 (resource_file_name 추가)
 -- =========================================================
@@ -399,8 +406,6 @@ INSERT INTO resource_file (file_type, file_category, sub_category, resource_file
 -- SCRIPT - MARIADB (sort_order: 1, 2)
 ('SH', 'SCRIPT', 'MARIADB', 'MariaDB 백업', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 데이터베이스 백업 수행 셸 스크립트', 1, 'system'),
 ('SH', 'SCRIPT', 'MARIADB', 'MariaDB 복원', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 데이터베이스 복원 수행 셸 스크립트', 2, 'system'),
-
--- DOCUMENT - INFRAEYE2 (sort_order: 1)
 ('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치 가이드 문서', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 상세 가이드 문서', 1, 'system');
 
 -- =========================================================
