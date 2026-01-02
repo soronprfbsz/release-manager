@@ -400,10 +400,6 @@ INSERT INTO resource_file (file_type, file_category, sub_category, resource_file
 ('SH', 'SCRIPT', 'MARIADB', 'MariaDB 백업', 'mariadb_backup.sh', 'resource/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 데이터베이스 백업 수행 셸 스크립트', 1, 'system'),
 ('SH', 'SCRIPT', 'MARIADB', 'MariaDB 복원', 'mariadb_restore.sh', 'resource/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 데이터베이스 복원 수행 셸 스크립트', 2, 'system'),
 
--- SCRIPT - CRATEDB (sort_order: 1, 2)
-('SH', 'SCRIPT', 'CRATEDB', 'CrateDB 백업', 'cratedb_backup.sh', 'resource/script/CRATEDB/cratedb_backup.sh', 11458, 'CrateDB 데이터베이스 스냅샷 생성 셸 스크립트', 1, 'system'),
-('SH', 'SCRIPT', 'CRATEDB', 'CrateDB 복원', 'cratedb_restore.sh', 'resource/script/CRATEDB/cratedb_restore.sh', 14675, 'CrateDB 데이터베이스 복원 셸 스크립트', 2, 'system'),
-
 -- DOCUMENT - INFRAEYE2 (sort_order: 1)
 ('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치 가이드 문서', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resource/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 상세 가이드 문서', 1, 'system');
 
