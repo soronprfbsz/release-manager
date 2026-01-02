@@ -558,12 +558,35 @@ public class ReleaseVersionUploadService {
 
     /**
      * ZIP 파일을 임시 디렉토리에 압축 해제
+     *
+     * <p>한글 파일명 인코딩 문제 해결을 위해 UTF-8 → MS949 순서로 시도합니다.
      */
     public Path extractZipToTempDirectory(MultipartFile zipFile) throws IOException {
+        // UTF-8로 먼저 시도
+        try {
+            return extractZipWithCharset(zipFile, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (BusinessException e) {
+            // UTF-8 실패 시 MS949(한글 Windows 기본 인코딩)로 재시도
+            if (e.getMessage().contains("malformed input")) {
+                log.info("UTF-8 인코딩 실패, MS949로 재시도합니다.");
+                return extractZipWithCharset(zipFile, java.nio.charset.Charset.forName("MS949"));
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * 지정된 문자셋으로 ZIP 파일을 임시 디렉토리에 압축 해제
+     *
+     * @param zipFile ZIP 파일
+     * @param charset 파일명 인코딩
+     * @return 압축 해제된 임시 디렉토리 경로
+     */
+    private Path extractZipWithCharset(MultipartFile zipFile, java.nio.charset.Charset charset) throws IOException {
         Path tempDir = Files.createTempDirectory("release_upload_");
 
         try (java.util.zip.ZipInputStream zis =
-                     new java.util.zip.ZipInputStream(zipFile.getInputStream())) {
+                     new java.util.zip.ZipInputStream(zipFile.getInputStream(), charset)) {
 
             java.util.zip.ZipEntry entry;
             long totalSize = 0;
