@@ -567,11 +567,19 @@ public class ReleaseVersionUploadService {
             return extractZipWithCharset(zipFile, java.nio.charset.StandardCharsets.UTF_8);
         } catch (BusinessException e) {
             // UTF-8 실패 시 MS949(한글 Windows 기본 인코딩)로 재시도
-            if (e.getMessage().contains("malformed input")) {
+            if (e.getMessage() != null && e.getMessage().contains("malformed input")) {
                 log.info("UTF-8 인코딩 실패, MS949로 재시도합니다.");
                 return extractZipWithCharset(zipFile, java.nio.charset.Charset.forName("MS949"));
             }
             throw e;
+        } catch (IllegalArgumentException e) {
+            // ZipInputStream.getNextEntry()가 인코딩 오류 시 IllegalArgumentException을 던짐
+            if (e.getMessage() != null && e.getMessage().contains("malformed input")) {
+                log.info("UTF-8 인코딩 실패 (IllegalArgumentException), MS949로 재시도합니다.");
+                return extractZipWithCharset(zipFile, java.nio.charset.Charset.forName("MS949"));
+            }
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "ZIP 파일 압축 해제 실패: " + e.getMessage());
         }
     }
 
@@ -619,6 +627,11 @@ public class ReleaseVersionUploadService {
             fileSystemService.deleteDirectory(tempDir);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
                     "ZIP 파일 압축 해제 실패: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            // ZipInputStream.getNextEntry()가 인코딩 오류 시 IllegalArgumentException을 던짐
+            fileSystemService.deleteDirectory(tempDir);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "ZIP 파일 압축 해제 실패 (인코딩 오류): " + e.getMessage());
         }
 
         return tempDir;
