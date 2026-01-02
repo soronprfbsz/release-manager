@@ -47,25 +47,30 @@ public class PatchService {
 
     /**
      * 패치 생성 (버전 문자열 기반) - 위임
+     *
+     * @param includeAllBuildVersions WEB/ENGINE 모든 버전 포함 여부 (false: 마지막 버전만)
      */
     @Transactional
     public Patch generatePatchByVersion(String projectId, String releaseType, Long customerId,
             String fromVersion, String toVersion, String createdBy, String description,
-            Long engineerId, String patchName) {
+            Long engineerId, String patchName, boolean includeAllBuildVersions) {
         return patchGenerationService.generatePatchByVersion(
                 projectId, releaseType, customerId, fromVersion, toVersion,
-                createdBy, description, engineerId, patchName);
+                createdBy, description, engineerId, patchName, includeAllBuildVersions);
     }
 
     /**
      * 패치 생성 (버전 ID 기반) - 위임
+     *
+     * @param includeAllBuildVersions WEB/ENGINE 모든 버전 포함 여부 (false: 마지막 버전만)
      */
     @Transactional
     public Patch generatePatch(String projectId, Long fromVersionId, Long toVersionId, Long customerId,
-            String createdBy, String description, Long engineerId, String patchName) {
+            String createdBy, String description, Long engineerId, String patchName,
+            boolean includeAllBuildVersions) {
         return patchGenerationService.generatePatch(
                 projectId, fromVersionId, toVersionId, customerId,
-                createdBy, description, engineerId, patchName);
+                createdBy, description, engineerId, patchName, includeAllBuildVersions);
     }
 
     /**

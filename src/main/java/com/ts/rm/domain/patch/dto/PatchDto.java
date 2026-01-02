@@ -60,9 +60,17 @@ public final class PatchDto {
 
             @Schema(description = "패치 이름 (미입력 시 자동 생성: 날짜_fromversion_toversion)", example = "20251125_1.0.0_1.1.1")
             @Size(max = 100, message = "패치 이름은 100자 이하여야 합니다")
-            String patchName
-    ) {
+            String patchName,
 
+            @Schema(description = "WEB/ENGINE 빌드 파일의 모든 버전 포함 여부 (false: 마지막 버전만, true: 모든 버전)", example = "false", defaultValue = "false")
+            Boolean includeAllBuildVersions
+    ) {
+        /**
+         * WEB/ENGINE 빌드 파일의 모든 버전 포함 여부 반환 (null인 경우 false)
+         */
+        public boolean shouldIncludeAllBuildVersions() {
+            return Boolean.TRUE.equals(includeAllBuildVersions);
+        }
     }
 
     // ========================================

@@ -68,12 +68,13 @@ public class PatchGenerationService {
      * @param description  설명 (선택)
      * @param engineerId   패치 담당자 엔지니어 ID (선택)
      * @param patchName    패치 이름 (선택, 미입력 시 자동 생성)
+     * @param includeAllBuildVersions WEB/ENGINE 모든 버전 포함 여부 (false: 마지막 버전만)
      * @return 생성된 패치
      */
     @Transactional
     public Patch generatePatchByVersion(String projectId, String releaseType, Long customerId,
             String fromVersion, String toVersion, String createdBy, String description,
-            Long engineerId, String patchName) {
+            Long engineerId, String patchName, boolean includeAllBuildVersions) {
 
         // 버전 조회 (프로젝트 내에서)
         ReleaseVersion from = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersion(
@@ -87,7 +88,7 @@ public class PatchGenerationService {
                         "To 버전을 찾을 수 없습니다: " + toVersion));
 
         return generatePatch(projectId, from.getReleaseVersionId(), to.getReleaseVersionId(),
-                customerId, createdBy, description, engineerId, patchName);
+                customerId, createdBy, description, engineerId, patchName, includeAllBuildVersions);
     }
 
     /**
@@ -204,8 +205,8 @@ public class PatchGenerationService {
             // 5. 출력 디렉토리 생성 (커스텀 패치용)
             String outputPath = createCustomOutputDirectory(resolvedPatchName, projectId, customer.getCustomerCode());
 
-            // 6. SQL 파일 복사
-            copySqlFiles(betweenVersions, outputPath);
+            // 6. SQL 파일 복사 (커스텀 패치는 기본적으로 WEB/ENGINE 마지막 버전만 포함)
+            copySqlFiles(betweenVersions, outputPath, false);
 
             // 7. 패치 스크립트 생성
             String engineerEmail = engineer != null ? engineer.getEngineerEmail() : null;
@@ -416,11 +417,13 @@ public class PatchGenerationService {
      * @param description   설명 (선택)
      * @param engineerId    패치 담당자 엔지니어 ID (선택)
      * @param patchName     패치 이름 (선택, 미입력 시 자동 생성)
+     * @param includeAllBuildVersions WEB/ENGINE 모든 버전 포함 여부 (false: 마지막 버전만)
      * @return 생성된 패치
      */
     @Transactional
     public Patch generatePatch(String projectId, Long fromVersionId, Long toVersionId, Long customerId,
-            String createdBy, String description, Long engineerId, String patchName) {
+            String createdBy, String description, Long engineerId, String patchName,
+            boolean includeAllBuildVersions) {
         try {
             // 프로젝트 조회
             Project project = projectRepository.findById(projectId)
@@ -478,8 +481,8 @@ public class PatchGenerationService {
             // 5. 출력 디렉토리 생성 (패치 이름으로)
             String outputPath = createOutputDirectory(resolvedPatchName, projectId);
 
-            // 6. SQL 파일 복사
-            copySqlFiles(betweenVersions, outputPath);
+            // 6. SQL 파일 복사 (WEB/ENGINE은 includeAllBuildVersions에 따라 마지막 버전만 또는 모든 버전 포함)
+            copySqlFiles(betweenVersions, outputPath, includeAllBuildVersions);
 
             // 7. 패치 스크립트 생성
             String engineerEmail = engineer != null ? engineer.getEngineerEmail() : null;
@@ -623,10 +626,31 @@ public class PatchGenerationService {
     /**
      * 모든 파일 복사 (버전별 디렉토리 구조 유지)
      * <p>⚠️ INSTALL 카테고리 버전은 패치 생성에서 제외됩니다.
+     * <p>⚠️ WEB/ENGINE 카테고리는 기본적으로 마지막 버전만 포함됩니다.
+     *
+     * @param versions 복사할 버전 목록
+     * @param outputPath 출력 경로
+     * @param includeAllBuildVersions WEB/ENGINE 모든 버전 포함 여부 (false: 마지막 버전만)
      */
-    private void copySqlFiles(List<ReleaseVersion> versions, String outputPath) {
+    private void copySqlFiles(List<ReleaseVersion> versions, String outputPath, boolean includeAllBuildVersions) {
         try {
             Path outputDir = Paths.get(releaseBasePath, outputPath);
+
+            // WEB/ENGINE 카테고리의 마지막 버전 파악 (includeAllBuildVersions가 false인 경우에만 사용)
+            ReleaseVersion lastVersionForBuild = null;
+            if (!includeAllBuildVersions && !versions.isEmpty()) {
+                // INSTALL 카테고리가 아닌 마지막 버전 찾기
+                for (int i = versions.size() - 1; i >= 0; i--) {
+                    ReleaseVersion v = versions.get(i);
+                    if (v.getReleaseCategory() == null || !v.getReleaseCategory().isExcludedFromPatch()) {
+                        lastVersionForBuild = v;
+                        break;
+                    }
+                }
+                if (lastVersionForBuild != null) {
+                    log.info("WEB/ENGINE 카테고리는 마지막 버전({})의 파일만 포함됩니다.", lastVersionForBuild.getVersion());
+                }
+            }
 
             for (ReleaseVersion version : versions) {
                 // INSTALL 카테고리 버전은 패치에서 제외
@@ -646,13 +670,32 @@ public class PatchGenerationService {
                     continue;
                 }
 
-                log.info("버전 {} 패치 대상 파일: {}개", version.getVersion(), files.size());
+                // WEB/ENGINE 카테고리 필터링 (마지막 버전이 아닌 경우)
+                boolean isLastVersionForBuild = lastVersionForBuild != null
+                        && version.getReleaseVersionId().equals(lastVersionForBuild.getReleaseVersionId());
+
+                int copiedCount = 0;
+                int skippedBuildCount = 0;
 
                 for (ReleaseFile file : files) {
+                    // WEB/ENGINE 카테고리이고 마지막 버전이 아닌 경우 건너뛰기
+                    if (!includeAllBuildVersions && !isLastVersionForBuild
+                            && file.getFileCategory() != null
+                            && (file.getFileCategory() == FileCategory.WEB
+                                || file.getFileCategory() == FileCategory.ENGINE)) {
+                        skippedBuildCount++;
+                        continue;
+                    }
                     copyFileByCategory(file, version, outputDir);
+                    copiedCount++;
                 }
 
-                log.info("버전 {} 파일 복사 완료 - {}개", version.getVersion(), files.size());
+                if (skippedBuildCount > 0) {
+                    log.info("버전 {} 파일 복사 완료 - {}개 (WEB/ENGINE 빌드 파일 {}개 건너뜀)",
+                            version.getVersion(), copiedCount, skippedBuildCount);
+                } else {
+                    log.info("버전 {} 파일 복사 완료 - {}개", version.getVersion(), copiedCount);
+                }
             }
 
         } catch (Exception e) {
