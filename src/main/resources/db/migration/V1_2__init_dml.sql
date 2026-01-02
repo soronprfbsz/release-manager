@@ -357,7 +357,7 @@ WHERE customer_code IN (
 
 INSERT INTO release_version (project_id, release_type, release_category, customer_id, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_at, created_by, comment, created_at) VALUES
 ('infraeye2', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, TRUE, 'jhlee@tscientific.co.kr', '2025-01-01 00:00:00', 'jhlee@tscientific.co.kr', '최초 설치본', '2025-01-01 00:00:00'),
-('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, TRUE, 'jhlee@tscientific.co.kr', '2025-12-18 00:00:00', 'jhlee@tscientific.co.kr', 'SMS 추가 및 그에 따른 기존 DB 변경', '2025-12-18 00:00:00');
+('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, TRUE, 'jhlee@tscientific.co.kr', '2025-12-18 00:00:00', 'jhlee@tscientific.co.kr', 'SMS 기능 추가', '2025-12-18 00:00:00');
 
 -- =========================================================
 -- release_file 테이블
@@ -374,7 +374,9 @@ INSERT INTO release_file (release_version_id,file_type,file_category,sub_categor
 (2,'SQL','DATABASE','MARIADB','6.patch_mariadb_성능지표.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/6.patch_mariadb_성능지표.sql','/database/MARIADB/6.patch_mariadb_성능지표.sql',117686,'09c021b1ac756312daa95df193ff355683957104f1cc4054cce1231009114996',6,'성능지표 추가'),
 (2,'SQL','DATABASE','MARIADB','7.patch_mariadb_procedure.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/7.patch_mariadb_procedure.sql','/database/MARIADB/7.patch_mariadb_procedure.sql',21567,'63df6fdaa440d69abff8866b630ddea824d4a6f21d0adadf2275462250e1c804',7,'Procedure 변경'),
 (2,'SQL','DATABASE','MARIADB','8.patch_mariadb_dml.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/8.patch_mariadb_dml.sql','/database/MARIADB/8.patch_mariadb_dml.sql',40466,'e48609ba8654cb4481e875cd4018a32e9bfaa20ba72bd76e2421f96df4a6563c',8,'DML 변경'),
-(2,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',19718,'b04cad39e4ae870c38c5472e63d6824d63d44545f3da1a5c9cd07b4db28cb2b0',1,'CrateDB DDL 변경');
+(2,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql','/database/CRATEDB/1.patch_cratedb_ddl.sql',19718,'b04cad39e4ae870c38c5472e63d6824d63d44545f3da1a5c9cd07b4db28cb2b0',1,'CrateDB DDL 변경'),
+(2,'WAR','WEB',NULL,'nms_solution-2.0.0.240102-1-STD.war','versions/infraeye2/standard/1.1.x/1.1.0/web/nms_solution-2.0.0.240102-1-STD.war','/web/nms_solution-2.0.0.240102-1-STD.war',164829225,'d6fd55b9610d73ce14738689e3af086c288d6cb9065010c985ea0e119210126c',1,'NMS Solution WAR 패키지'),
+(2,'ZIP','WEB',NULL,'webobjects.zip','versions/infraeye2/standard/1.1.x/1.1.0/web/webobjects.zip','/web/webobjects.zip',392505570,'92924a7c1e5f44174aa42f9398ece490c6b0906e77cb5741c2a1cfa9bb3c2383',2,'Web Objects 패키지');
 
 -- =========================================================
 -- release_version_hierarchy 테이블
