@@ -342,22 +342,19 @@ public class ReleaseVersionTreeService {
                 : null;
 
         // 핫픽스 목록 조회 및 정렬
-        List<ReleaseVersionDto.VersionNode> hotfixNodes = new ArrayList<>();
+        List<ReleaseVersionDto.HotfixNode> hotfixNodes = new ArrayList<>();
         List<ReleaseVersion> hotfixes = hotfixesByParentId.get(version.getReleaseVersionId());
         if (hotfixes != null && !hotfixes.isEmpty()) {
             // 핫픽스 버전 순으로 정렬
             hotfixes.sort((h1, h2) -> Integer.compare(h1.getHotfixVersion(), h2.getHotfixVersion()));
             hotfixNodes = hotfixes.stream()
-                    .map(this::buildVersionNodeFromDb)
+                    .map(this::buildHotfixNode)
                     .toList();
         }
 
         return new ReleaseVersionDto.VersionNode(
                 version.getReleaseVersionId(),
                 version.getVersion(),
-                version.getHotfixVersion(),
-                version.isHotfix(),
-                version.getFullVersion(),
                 createdAt,
                 version.getCreatedBy(),
                 version.getComment(),
@@ -370,15 +367,14 @@ public class ReleaseVersionTreeService {
     }
 
     /**
-     * ReleaseVersion 엔티티로부터 VersionNode 생성 (DB 기반)
+     * ReleaseVersion 엔티티로부터 HotfixNode 생성
      *
-     * <p>핫픽스 노드 생성 시 사용됩니다. 핫픽스의 핫픽스는 지원되지 않으므로
-     * hotfixes 필드는 항상 빈 리스트로 설정됩니다.
+     * <p>핫픽스는 자식을 가질 수 없으므로 별도의 간단한 DTO를 사용합니다.
      *
-     * @param version 릴리즈 버전 엔티티
-     * @return VersionNode
+     * @param version 릴리즈 버전 엔티티 (핫픽스)
+     * @return HotfixNode
      */
-    public ReleaseVersionDto.VersionNode buildVersionNodeFromDb(ReleaseVersion version) {
+    private ReleaseVersionDto.HotfixNode buildHotfixNode(ReleaseVersion version) {
         // createdAt을 "YYYY-MM-DD" 형식으로 포맷
         String createdAt = version.getCreatedAt() != null
                 ? version.getCreatedAt().toLocalDate().toString()
@@ -396,11 +392,9 @@ public class ReleaseVersionTreeService {
                 ? version.getApprovedAt().toLocalDate().toString()
                 : null;
 
-        return new ReleaseVersionDto.VersionNode(
+        return new ReleaseVersionDto.HotfixNode(
                 version.getReleaseVersionId(),
-                version.getVersion(),
                 version.getHotfixVersion(),
-                version.isHotfix(),
                 version.getFullVersion(),
                 createdAt,
                 version.getCreatedBy(),
@@ -408,8 +402,7 @@ public class ReleaseVersionTreeService {
                 version.getIsApproved(),
                 version.getApprovedBy(),
                 approvedAt,
-                fileCategories,
-                List.of()  // 핫픽스의 하위 핫픽스는 없음
+                fileCategories
         );
     }
 

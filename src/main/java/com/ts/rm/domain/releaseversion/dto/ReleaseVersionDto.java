@@ -264,7 +264,7 @@ public final class ReleaseVersionDto {
     }
 
     /**
-     * 버전 노드 (예: 1.1.0)
+     * 버전 노드 (예: 1.1.0) - 일반 버전용
      */
     @Schema(description = "버전 노드")
     public record VersionNode(
@@ -273,15 +273,6 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "버전", example = "1.1.0")
             String version,
-
-            @Schema(description = "핫픽스 버전 (0이면 일반 버전)", example = "0")
-            Integer hotfixVersion,
-
-            @Schema(description = "핫픽스 여부", example = "false")
-            Boolean isHotfix,
-
-            @Schema(description = "전체 버전 (핫픽스 포함)", example = "1.1.0")
-            String fullVersion,
 
             @Schema(description = "생성일자", example = "2025-11-20")
             String createdAt,
@@ -304,8 +295,46 @@ public final class ReleaseVersionDto {
             @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\", \"ENGINE\", \"ETC\"]")
             List<String> fileCategories,
 
-            @Schema(description = "핫픽스 버전 목록 (원본 버전인 경우에만 값이 있음)")
-            List<VersionNode> hotfixes
+            @Schema(description = "핫픽스 버전 목록")
+            List<HotfixNode> hotfixes
+    ) {
+
+    }
+
+    /**
+     * 핫픽스 노드 (예: 1.1.0.1) - 핫픽스는 자식을 가질 수 없음
+     */
+    @Schema(description = "핫픽스 노드")
+    public record HotfixNode(
+            @Schema(description = "버전 ID", example = "25")
+            Long versionId,
+
+            @Schema(description = "핫픽스 버전 번호", example = "1")
+            Integer hotfixVersion,
+
+            @Schema(description = "전체 버전 (핫픽스 포함)", example = "1.1.0.1")
+            String fullVersion,
+
+            @Schema(description = "생성일자", example = "2025-11-20")
+            String createdAt,
+
+            @Schema(description = "생성자", example = "jhlee@tscientific")
+            String createdBy,
+
+            @Schema(description = "코멘트", example = "긴급 버그 수정")
+            String comment,
+
+            @Schema(description = "승인 여부", example = "false")
+            Boolean isApproved,
+
+            @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
+            String approvedBy,
+
+            @Schema(description = "승인일시")
+            String approvedAt,
+
+            @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\"]")
+            List<String> fileCategories
     ) {
 
     }
