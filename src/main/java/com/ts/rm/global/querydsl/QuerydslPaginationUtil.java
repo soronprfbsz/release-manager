@@ -60,10 +60,39 @@ public final class QuerydslPaginationUtil {
             Map<String, com.querydsl.core.types.Expression<?>> sortMapping,
             OrderSpecifier<?>... defaultOrder) {
 
+        return applyPaginationWithSecondaryOrder(
+                contentQuery, countQuery, pageable, sortMapping, null, defaultOrder);
+    }
+
+    /**
+     * JPAQuery에 페이징 및 정렬을 적용하여 Page 객체 반환 (보조 정렬 지원)
+     *
+     * @param <T>             엔티티 타입
+     * @param contentQuery    데이터 조회 쿼리 (정렬/페이징 적용 전)
+     * @param countQuery      전체 개수 조회 쿼리 (정렬/페이징 미적용)
+     * @param pageable        페이징 정보
+     * @param sortMapping     정렬 필드 매핑 (key: 필드명, value: QueryDSL Expression)
+     * @param secondaryOrder  보조 정렬 (요청 정렬 후 항상 적용, null이면 무시)
+     * @param defaultOrder    기본 정렬 (정렬 조건이 없을 때 사용)
+     * @return Page 객체
+     */
+    public static <T> Page<T> applyPaginationWithSecondaryOrder(
+            JPAQuery<T> contentQuery,
+            JPAQuery<?> countQuery,
+            Pageable pageable,
+            Map<String, com.querydsl.core.types.Expression<?>> sortMapping,
+            OrderSpecifier<?>[] secondaryOrder,
+            OrderSpecifier<?>... defaultOrder) {
+
         // 1. 정렬 적용
         List<OrderSpecifier<?>> orders = createOrderSpecifiers(pageable.getSort(), sortMapping);
         for (OrderSpecifier<?> order : orders) {
             contentQuery.orderBy(order);
+        }
+
+        // 보조 정렬 추가 (요청 정렬이 있을 때 항상 적용)
+        if (!orders.isEmpty() && secondaryOrder != null && secondaryOrder.length > 0) {
+            contentQuery.orderBy(secondaryOrder);
         }
 
         // 기본 정렬 추가 (정렬이 없을 경우)

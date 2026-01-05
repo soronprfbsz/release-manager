@@ -56,20 +56,21 @@ public class EngineerRepositoryImpl implements EngineerRepositoryCustom {
                 "engineerEmail", engineer.engineerEmail,
                 "engineerPhone", engineer.engineerPhone,
                 "position", positionCode.sortOrder,
-                "departmentId", engineer.department.departmentId,
-                "departmentName", engineer.department.departmentName,
+                "department", engineer.department.departmentId,
                 "createdAt", engineer.createdAt
         );
 
         // 4. 공통 유틸리티로 페이징/정렬 적용
-        // 기본 정렬: 소속팀(department_id) asc, 직급(sort_order) desc
-        return QuerydslPaginationUtil.applyPagination(
+        // 보조 정렬: position (sort_order asc) - 요청 정렬 후 항상 적용
+        // 기본 정렬: 소속팀(department_id) asc, 직급(sort_order) asc - 정렬 요청이 없을 때 적용
+        return QuerydslPaginationUtil.applyPaginationWithSecondaryOrder(
                 contentQuery,
                 countQuery,
                 pageable,
                 sortMapping,
+                new com.querydsl.core.types.OrderSpecifier[]{positionCode.sortOrder.asc()},
                 engineer.department.departmentId.asc(),
-                positionCode.sortOrder.desc()
+                positionCode.sortOrder.asc()
         );
     }
 
