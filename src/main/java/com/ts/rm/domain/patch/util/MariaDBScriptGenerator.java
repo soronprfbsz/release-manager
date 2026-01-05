@@ -156,6 +156,154 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
     }
 
     /**
+     * 핫픽스 패치 스크립트 생성
+     *
+     * <p>핫픽스는 단일 버전에 대한 패치이므로 From-To 범위가 아닌 단일 버전 스크립트를 생성합니다.
+     * 기존 템플릿을 재사용하되, 핫픽스에 맞게 변수를 치환합니다.
+     *
+     * @param hotfixVersion    핫픽스 버전 엔티티
+     * @param mariadbFiles     MariaDB SQL 파일 리스트
+     * @param outputDirPath    출력 디렉토리 경로
+     * @param defaultPatchedBy 패치 담당자 기본값 (nullable)
+     */
+    @Override
+    public void generateHotfixScript(
+            ReleaseVersion hotfixVersion,
+            List<ReleaseFile> mariadbFiles,
+            String outputDirPath,
+            String defaultPatchedBy) {
+
+        // 템플릿 로드
+        String template = loadTemplate();
+
+        // 핫픽스 버전 정보
+        String hotfixBaseVersion = hotfixVersion.getVersion();  // 예: 1.1.0
+        String fullVersion = hotfixVersion.getFullVersion();     // 예: 1.1.0.1
+
+        // SQL 실행 명령어 생성 (핫픽스용)
+        String sqlCommands = mariadbFiles.isEmpty()
+                ? buildHotfixVersionHistoryOnlyCommands(hotfixVersion)
+                : buildHotfixSqlExecutionCommands(hotfixVersion, mariadbFiles);
+
+        // 패치 담당자 기본값 처리
+        String patchedByDefault = (defaultPatchedBy != null && !defaultPatchedBy.isBlank())
+                ? defaultPatchedBy.trim()
+                : "";
+
+        // 변수 치환 (핫픽스용)
+        String script = template
+                .replace("{{GENERATED_DATE}}", getCurrentDateTime())
+                .replace("{{FROM_VERSION}}", hotfixBaseVersion)
+                .replace("{{TO_VERSION}}", fullVersion)
+                .replace("{{VERSION_COUNT}}", "1")
+                .replace("{{VERSION_METADATA}}", buildHotfixVersionMetadata(hotfixVersion))
+                .replace("{{SQL_EXECUTION_COMMANDS}}", sqlCommands)
+                .replace("{{DEFAULT_PATCHED_BY}}", patchedByDefault);
+
+        // 스크립트 저장
+        saveScript(script, outputDirPath);
+
+        log.info("핫픽스 MariaDB 패치 스크립트 생성 완료: {} ({})", fullVersion, outputDirPath);
+    }
+
+    /**
+     * 핫픽스 버전 메타데이터 생성
+     */
+    private String buildHotfixVersionMetadata(ReleaseVersion hotfixVersion) {
+        return String.format("    \"%s:%s:%s:%s\"",
+                hotfixVersion.getFullVersion(),
+                hotfixVersion.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
+                hotfixVersion.getCreatedBy(),
+                hotfixVersion.getComment() != null ? hotfixVersion.getComment().replace("\"", "\\\"") : "핫픽스");
+    }
+
+    /**
+     * 핫픽스 VERSION_HISTORY INSERT만 생성 (SQL 파일 없는 경우)
+     */
+    private String buildHotfixVersionHistoryOnlyCommands(ReleaseVersion hotfixVersion) {
+        StringBuilder commands = new StringBuilder();
+
+        commands.append("log_info \"이 핫픽스에는 MariaDB SQL 파일이 없습니다.\"\n");
+        commands.append("log_info \"VERSION_HISTORY에 핫픽스 이력만 기록합니다.\"\n\n");
+
+        commands.append(String.format("log_step \"핫픽스 %s 이력 기록 중...\"\n", hotfixVersion.getFullVersion()));
+        commands.append(buildHotfixVersionHistoryInsertCommand(hotfixVersion));
+        commands.append(String.format("log_success \"핫픽스 %s 이력 기록 완료!\"\n\n", hotfixVersion.getFullVersion()));
+
+        return commands.toString();
+    }
+
+    /**
+     * 핫픽스 SQL 실행 명령어 생성
+     */
+    private String buildHotfixSqlExecutionCommands(ReleaseVersion hotfixVersion, List<ReleaseFile> files) {
+        StringBuilder commands = new StringBuilder();
+
+        String fullVersion = hotfixVersion.getFullVersion();
+
+        commands.append(String.format("log_step \"핫픽스 %s 패치 적용 중...\"\n", fullVersion));
+
+        // SQL 파일 실행 (핫픽스는 단일 디렉토리에 있으므로 디렉토리 이동 없이 실행)
+        files.stream()
+                .sorted((a, b) -> Integer.compare(a.getExecutionOrder(), b.getExecutionOrder()))
+                .forEach(file -> {
+                    commands.append(String.format("log_info \"실행: %s\"\n", file.getFileName()));
+                    commands.append(String.format("execute_sql \"%s\"\n", file.getFileName()));
+                });
+
+        // VERSION_HISTORY INSERT
+        commands.append(buildHotfixVersionHistoryInsertCommand(hotfixVersion));
+
+        commands.append(String.format("log_success \"핫픽스 %s 패치 완료!\"\n\n", fullVersion));
+
+        return commands.toString();
+    }
+
+    /**
+     * 핫픽스 VERSION_HISTORY INSERT SQL 실행 명령어 생성
+     *
+     * <p>핫픽스의 경우 fullVersion (예: 1.1.0.1)을 VERSION_ID로 사용합니다.
+     */
+    private String buildHotfixVersionHistoryInsertCommand(ReleaseVersion hotfixVersion) {
+        StringBuilder command = new StringBuilder();
+
+        // VERSION_ID: 핫픽스는 fullVersion 사용 (예: 1.1.0.1)
+        String versionId = hotfixVersion.getFullVersion();
+
+        // CUSTOM_VERSION 처리: 핫픽스는 null
+        String customVersionValue = hotfixVersion.getCustomVersion() != null
+                ? "'" + escapeForSql(hotfixVersion.getCustomVersion()) + "'"
+                : "NULL";
+
+        // COMMENT 처리
+        String commentValue = hotfixVersion.getComment() != null
+                ? "'" + escapeForSql(hotfixVersion.getComment()) + "'"
+                : "'핫픽스'";
+
+        // VERSION_CREATED_AT 포맷
+        String createdAtValue = hotfixVersion.getCreatedAt() != null
+                ? "'" + hotfixVersion.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "'"
+                : "NOW()";
+
+        command.append("log_info \"VERSION_HISTORY에 핫픽스 정보 기록 중...\"\n");
+        command.append("execute_sql_string \"INSERT INTO CM_DB.VERSION_HISTORY ");
+        command.append("(VERSION_ID, STANDARD_VERSION, CUSTOM_VERSION, VERSION_CREATED_AT, VERSION_CREATED_BY, SYSTEM_APPLIED_BY, COMMENT) ");
+        command.append("VALUES (");
+        command.append("'").append(escapeForSql(versionId)).append("', ");
+        command.append("'").append(escapeForSql(hotfixVersion.getVersion())).append("', ");  // 베이스 버전
+        command.append(customVersionValue).append(", ");
+        command.append(createdAtValue).append(", ");
+        command.append("'").append(escapeForSql(hotfixVersion.getCreatedBy())).append("', ");
+        command.append("'$APPLIED_BY', ");
+        command.append(commentValue);
+        command.append(") ON DUPLICATE KEY UPDATE ");
+        command.append("SYSTEM_APPLIED_AT = NOW(), ");
+        command.append("SYSTEM_APPLIED_BY = '$APPLIED_BY';\"\n");
+
+        return command.toString();
+    }
+
+    /**
      * VERSION_HISTORY INSERT SQL 실행 명령어 생성
      *
      * <p>현장에 적용된 버전 관리를 위해 CM_DB.VERSION_HISTORY 테이블에 버전 정보를 삽입합니다.

@@ -681,19 +681,13 @@ public final class ReleaseVersionDto {
     @Builder
     @Schema(description = "핫픽스 생성 요청")
     public record CreateHotfixRequest(
-            @Schema(description = "프로젝트 ID", example = "infraeye2", required = true)
-            @NotBlank(message = "프로젝트 ID는 필수입니다")
-            @Size(max = 50, message = "프로젝트 ID는 50자 이하여야 합니다")
-            String projectId,
-
-            @Schema(description = "핫픽스 대상 버전 ID (예: 1.3.2 버전의 ID)", example = "15", required = true)
-            @NotNull(message = "핫픽스 대상 버전 ID는 필수입니다")
-            Long hotfixBaseVersionId,
-
             @Schema(description = "패치 노트 내용", example = "특정 버그 수정", required = true)
             @NotBlank(message = "패치 노트 내용은 필수입니다")
             @Size(max = 500, message = "패치 노트 내용은 500자 이하여야 합니다")
-            String comment
+            String comment,
+
+            @Schema(description = "담당 엔지니어 ID (선택, 패치 스크립트의 기본 담당자로 사용)", example = "5")
+            Long engineerId
     ) {
 
     }

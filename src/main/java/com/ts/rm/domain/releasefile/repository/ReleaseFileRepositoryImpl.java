@@ -30,6 +30,7 @@ public class ReleaseFileRepositoryImpl implements ReleaseFileRepositoryCustom {
                         rf.releaseVersion.project.projectId.eq(projectId),  // 프로젝트 ID 필터링 추가
                         rf.releaseVersion.version.goe(fromVersion),
                         rf.releaseVersion.version.loe(toVersion),
+                        rf.releaseVersion.hotfixVersion.eq(0),  // 핫픽스 제외 (패치 생성 시 핫픽스 파일 미포함)
                         rf.releaseVersion.releaseCategory.isNull()
                                 .or(rf.releaseVersion.releaseCategory.ne(ReleaseCategory.INSTALL))
                 )
@@ -50,6 +51,7 @@ public class ReleaseFileRepositoryImpl implements ReleaseFileRepositoryCustom {
                         rf.releaseVersion.project.projectId.eq(projectId),  // 프로젝트 ID 필터링 추가
                         rf.releaseVersion.version.goe(fromVersion),
                         rf.releaseVersion.version.loe(toVersion),
+                        rf.releaseVersion.hotfixVersion.eq(0),  // 핫픽스 제외 (패치 생성 시 핫픽스 파일 미포함)
                         rf.subCategory.equalsIgnoreCase(subCategory)
                 )
                 .orderBy(
@@ -69,6 +71,7 @@ public class ReleaseFileRepositoryImpl implements ReleaseFileRepositoryCustom {
                         rf.releaseVersion.project.projectId.eq(projectId),  // 프로젝트 ID 필터링 추가
                         rf.releaseVersion.version.goe(fromVersion),
                         rf.releaseVersion.version.loe(toVersion),
+                        rf.releaseVersion.hotfixVersion.eq(0),  // 핫픽스 제외 (패치 생성 시 핫픽스 파일 미포함)
                         rf.fileCategory.in(FileCategory.WEB, FileCategory.ENGINE)
                 )
                 .orderBy(

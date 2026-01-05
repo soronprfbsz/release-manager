@@ -601,7 +601,7 @@ public interface ReleaseVersionControllerDocs {
             @Parameter(description = "원본 버전 ID (핫픽스 대상)", required = true)
             @PathVariable Long id,
 
-            @Parameter(description = "핫픽스 정보 (comment)", required = true)
+            @Parameter(description = "핫픽스 정보 (comment, engineerId)", required = true)
             @Valid @ModelAttribute ReleaseVersionDto.CreateHotfixRequest request,
 
             @Parameter(description = "패치 파일 ZIP", required = true)

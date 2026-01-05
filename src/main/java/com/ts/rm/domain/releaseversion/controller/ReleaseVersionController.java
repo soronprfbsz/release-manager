@@ -298,7 +298,8 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
                 id,
                 request.comment(),
                 patchFiles,
-                createdBy
+                createdBy,
+                request.engineerId()
         );
 
         return ResponseEntity.ok(ApiResponse.success(response));

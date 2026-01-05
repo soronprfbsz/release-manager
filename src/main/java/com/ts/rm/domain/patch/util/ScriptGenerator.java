@@ -35,4 +35,20 @@ public interface ScriptGenerator {
      * @return 생성될 스크립트 파일명 (예: mariadb_patch.sh)
      */
     String getScriptFileName();
+
+    /**
+     * 핫픽스 패치 스크립트 생성
+     *
+     * <p>핫픽스는 단일 버전에 대한 패치이므로 From-To 범위가 아닌 단일 버전 스크립트를 생성합니다.
+     *
+     * @param hotfixVersion    핫픽스 버전 엔티티
+     * @param files            SQL 파일 리스트
+     * @param outputDirPath    출력 디렉토리 경로
+     * @param defaultPatchedBy 패치 담당자 기본값 (nullable)
+     */
+    void generateHotfixScript(
+            ReleaseVersion hotfixVersion,
+            List<ReleaseFile> files,
+            String outputDirPath,
+            String defaultPatchedBy);
 }

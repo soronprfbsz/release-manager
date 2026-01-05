@@ -3,6 +3,9 @@ package com.ts.rm.domain.releaseversion.service;
 import com.ts.rm.domain.common.service.FileStorageService;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
+import com.ts.rm.domain.engineer.entity.Engineer;
+import com.ts.rm.domain.engineer.repository.EngineerRepository;
+import com.ts.rm.domain.patch.util.ScriptGenerator;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.project.repository.ProjectRepository;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
@@ -46,10 +49,13 @@ public class ReleaseVersionUploadService {
     private final ReleaseFileRepository releaseFileRepository;
     private final ProjectRepository projectRepository;
     private final CustomerRepository customerRepository;
+    private final EngineerRepository engineerRepository;
     private final FileStorageService fileStorageService;
     private final ReleaseVersionFileSystemService fileSystemService;
     private final ReleaseVersionTreeService treeService;
     private final ReleaseVersionDtoMapper mapper;
+    private final ScriptGenerator mariaDBScriptGenerator;
+    private final ScriptGenerator crateDBScriptGenerator;
 
     @Value("${app.release.base-path:src/main/resources/release}")
     private String baseReleasePath;
@@ -1085,11 +1091,12 @@ public class ReleaseVersionUploadService {
      * @param comment             패치 노트 내용
      * @param zipFile             패치 파일이 포함된 ZIP 파일
      * @param createdBy           생성자 이메일 (JWT에서 추출)
+     * @param engineerId          담당 엔지니어 ID (선택, 패치 스크립트의 기본 담당자로 사용)
      * @return 생성된 핫픽스 응답
      */
     @Transactional
     public ReleaseVersionDto.CreateHotfixResponse createHotfixWithZip(
-            Long hotfixBaseVersionId, String comment, MultipartFile zipFile, String createdBy) {
+            Long hotfixBaseVersionId, String comment, MultipartFile zipFile, String createdBy, Long engineerId) {
 
         log.info("ZIP 파일로 핫픽스 버전 생성 시작 - hotfixBaseVersionId: {}, createdBy: {}", hotfixBaseVersionId, createdBy);
 
@@ -1131,10 +1138,13 @@ public class ReleaseVersionUploadService {
             // 9. 파일 복사 처리
             copyHotfixFiles(tempDir, hotfixPath, hotfixVersion);
 
+            // 10. 핫픽스 패치 스크립트 생성
+            generateHotfixPatchScripts(hotfixVersion, hotfixPath, engineerId);
+
             log.info("ZIP 파일로 핫픽스 버전 생성 완료 - hotfixBaseVersionId: {}, hotfixVersion: {}, ID: {}",
                     hotfixBaseVersionId, nextHotfixVersion, hotfixVersion.getReleaseVersionId());
 
-            // 10. 응답 생성
+            // 11. 응답 생성
             String projectId = baseVersion.getProject() != null
                     ? baseVersion.getProject().getProjectId()
                     : "infraeye2";
@@ -1330,6 +1340,146 @@ public class ReleaseVersionUploadService {
             return "XML";
         } else {
             return "UNDEFINED";
+        }
+    }
+
+    /**
+     * 핫픽스 패치 스크립트 생성
+     *
+     * <p>핫픽스 생성 시 MariaDB 및 CrateDB 패치 스크립트를 자동 생성합니다.
+     * 각 데이터베이스 타입에 해당하는 SQL 파일이 있는 경우에만 스크립트를 생성합니다.
+     *
+     * @param hotfixVersion 핫픽스 버전 엔티티
+     * @param hotfixPath    핫픽스 디렉토리 경로
+     * @param engineerId    담당 엔지니어 ID (선택, null 가능)
+     */
+    private void generateHotfixPatchScripts(ReleaseVersion hotfixVersion, Path hotfixPath, Long engineerId) {
+        log.info("핫픽스 패치 스크립트 생성 시작 - fullVersion: {}, engineerId: {}",
+                hotfixVersion.getFullVersion(), engineerId);
+
+        // 엔지니어 이메일 조회 (패치 담당자 기본값으로 사용 - 패치 파일과 동일하게 이메일 사용)
+        String defaultPatchedBy = null;
+        if (engineerId != null) {
+            defaultPatchedBy = engineerRepository.findById(engineerId)
+                    .map(Engineer::getEngineerEmail)
+                    .orElse(null);
+        }
+
+        // 핫픽스 버전의 파일 목록 조회
+        List<ReleaseFile> hotfixFiles = releaseFileRepository
+                .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(
+                        hotfixVersion.getReleaseVersionId());
+
+        // MariaDB SQL 파일 필터링
+        List<ReleaseFile> mariadbFiles = hotfixFiles.stream()
+                .filter(f -> "MARIADB".equalsIgnoreCase(f.getSubCategory()))
+                .toList();
+
+        // CrateDB SQL 파일 필터링
+        List<ReleaseFile> cratedbFiles = hotfixFiles.stream()
+                .filter(f -> "CRATEDB".equalsIgnoreCase(f.getSubCategory()))
+                .toList();
+
+        // 스크립트 출력 디렉토리 (baseReleasePath 기준 상대 경로)
+        Path basePath = Paths.get(baseReleasePath).toAbsolutePath().normalize();
+        Path absoluteHotfixPath = hotfixPath.toAbsolutePath().normalize();
+        String outputDirPath = basePath.relativize(absoluteHotfixPath).toString().replace("\\", "/");
+
+        // MariaDB 패치 스크립트 생성 (MariaDB는 VERSION_HISTORY 기록을 위해 항상 생성)
+        try {
+            mariaDBScriptGenerator.generateHotfixScript(
+                    hotfixVersion,
+                    mariadbFiles,
+                    outputDirPath,
+                    defaultPatchedBy);
+
+            // 스크립트 파일을 release_file 테이블에 등록
+            saveScriptFileToDb(hotfixVersion, outputDirPath, mariaDBScriptGenerator.getScriptFileName());
+
+            log.info("핫픽스 MariaDB 패치 스크립트 생성 완료 - path: {}", outputDirPath);
+        } catch (Exception e) {
+            log.error("핫픽스 MariaDB 패치 스크립트 생성 실패", e);
+            // 스크립트 생성 실패는 핫픽스 생성 자체를 실패시키지 않음
+        }
+
+        // CrateDB 패치 스크립트 생성 (CrateDB 파일이 있는 경우에만)
+        if (!cratedbFiles.isEmpty()) {
+            try {
+                crateDBScriptGenerator.generateHotfixScript(
+                        hotfixVersion,
+                        cratedbFiles,
+                        outputDirPath,
+                        defaultPatchedBy);
+
+                // 스크립트 파일을 release_file 테이블에 등록
+                saveScriptFileToDb(hotfixVersion, outputDirPath, crateDBScriptGenerator.getScriptFileName());
+
+                log.info("핫픽스 CrateDB 패치 스크립트 생성 완료 - path: {}", outputDirPath);
+            } catch (Exception e) {
+                log.error("핫픽스 CrateDB 패치 스크립트 생성 실패", e);
+                // 스크립트 생성 실패는 핫픽스 생성 자체를 실패시키지 않음
+            }
+        }
+
+        log.info("핫픽스 패치 스크립트 생성 완료 - mariadbFiles: {}, cratedbFiles: {}",
+                mariadbFiles.size(), cratedbFiles.size());
+    }
+
+    /**
+     * 스크립트 파일을 release_file 테이블에 등록
+     *
+     * @param releaseVersion 릴리즈 버전 엔티티
+     * @param outputDirPath  출력 디렉토리 상대 경로
+     * @param scriptFileName 스크립트 파일명 (예: mariadb_patch.sh)
+     */
+    private void saveScriptFileToDb(ReleaseVersion releaseVersion, String outputDirPath, String scriptFileName) {
+        try {
+            // 스크립트 파일 경로
+            Path scriptPath = Paths.get(baseReleasePath, outputDirPath, scriptFileName);
+
+            log.info("스크립트 파일 DB 등록 시도 - path: {}", scriptPath);
+
+            if (!Files.exists(scriptPath)) {
+                log.warn("스크립트 파일이 존재하지 않아 DB 등록을 건너뜁니다: {}", scriptPath);
+                return;
+            }
+
+            // 파일 크기 및 체크섬 계산
+            byte[] fileContent = Files.readAllBytes(scriptPath);
+            long fileSize = fileContent.length;
+            String checksum = calculateChecksum(fileContent);
+
+            // 물리 경로 (baseReleasePath 기준 상대 경로)
+            String physicalPath = outputDirPath + "/" + scriptFileName;
+
+            // 상대 경로 (ZIP 내부 경로)
+            String relativePath = "/" + scriptFileName;
+
+            // ReleaseFile 저장
+            // fileCategory를 null로 설정하여 ZIP 다운로드 시 루트에 배치
+            ReleaseFile releaseFile = ReleaseFile.builder()
+                    .releaseVersion(releaseVersion)
+                    .fileType("SH")
+                    .fileCategory(null)  // null로 설정하여 ZIP 루트에 배치
+                    .subCategory(null)
+                    .fileName(scriptFileName)
+                    .filePath(physicalPath)
+                    .relativePath(relativePath)
+                    .fileSize(fileSize)
+                    .checksum(checksum)
+                    .executionOrder(0)  // 스크립트는 실행 순서 0
+                    .description("핫픽스 패치 실행 스크립트 (자동 생성)")
+                    .build();
+
+            releaseFileRepository.save(releaseFile);
+
+            log.info("스크립트 파일 DB 등록 완료: {} (versionId: {}, size: {})",
+                    scriptFileName, releaseVersion.getReleaseVersionId(), fileSize);
+
+        } catch (Exception e) {
+            log.error("스크립트 파일 DB 등록 실패 - scriptFileName: {}, outputDirPath: {}, error: {}",
+                    scriptFileName, outputDirPath, e.getMessage(), e);
+            // 스크립트 DB 등록 실패는 핫픽스 생성 자체를 실패시키지 않음
         }
     }
 }

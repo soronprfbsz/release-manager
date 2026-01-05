@@ -56,14 +56,14 @@ public abstract class AbstractScriptGenerator implements ScriptGenerator {
      * 스크립트 파일 저장
      *
      * @param script        스크립트 내용
-     * @param outputDirPath 출력 디렉토리 경로
+     * @param outputDirPath 출력 디렉토리 상대 경로 (baseReleasePath 기준)
      */
     protected void saveScript(String script, String outputDirPath) {
         try {
             // CRLF를 LF로 변환 (Linux 환경에서 실행 가능하도록)
             script = script.replace("\r\n", "\n").replace("\r", "\n");
 
-            // 스크립트 파일 저장
+            // 스크립트 파일 저장 (baseReleasePath + 상대 경로)
             Path scriptPath = Paths.get(baseReleasePath, outputDirPath, getScriptFileName());
             Files.createDirectories(scriptPath.getParent());
             Files.writeString(scriptPath, script);
