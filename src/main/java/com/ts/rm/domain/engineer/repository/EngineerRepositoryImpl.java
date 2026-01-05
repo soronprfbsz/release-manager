@@ -40,10 +40,13 @@ public class EngineerRepositoryImpl implements EngineerRepositoryCustom {
                         keywordCondition(keyword)
                 );
 
-        // 2. Count 쿼리 생성
+        // 2. Count 쿼리 생성 (직급명 검색을 위해 Code 테이블 left join 필요)
         JPAQuery<Long> countQuery = queryFactory
                 .select(engineer.count())
                 .from(engineer)
+                .leftJoin(positionCode)
+                .on(positionCode.codeTypeId.eq("POSITION")
+                        .and(positionCode.codeId.eq(engineer.position)))
                 .where(
                         departmentCondition(departmentId),
                         keywordCondition(keyword)
@@ -82,7 +85,7 @@ public class EngineerRepositoryImpl implements EngineerRepositoryCustom {
     }
 
     /**
-     * 키워드 검색 조건 (이름, 이메일, 직급, 설명 통합 검색)
+     * 키워드 검색 조건 (이름, 이메일, 소속팀명, 직급명, 설명 통합 검색)
      */
     private BooleanExpression keywordCondition(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -91,7 +94,8 @@ public class EngineerRepositoryImpl implements EngineerRepositoryCustom {
         String trimmedKeyword = keyword.trim();
         return engineer.engineerName.containsIgnoreCase(trimmedKeyword)
                 .or(engineer.engineerEmail.containsIgnoreCase(trimmedKeyword))
-                .or(engineer.position.containsIgnoreCase(trimmedKeyword))
+                .or(engineer.department.departmentName.containsIgnoreCase(trimmedKeyword))
+                .or(positionCode.codeName.containsIgnoreCase(trimmedKeyword))
                 .or(engineer.description.containsIgnoreCase(trimmedKeyword));
     }
 }
