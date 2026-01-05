@@ -1,5 +1,7 @@
 package com.ts.rm.domain.engineer.service;
 
+import com.ts.rm.domain.common.entity.Code;
+import com.ts.rm.domain.common.repository.CodeRepository;
 import com.ts.rm.domain.department.entity.Department;
 import com.ts.rm.domain.department.repository.DepartmentRepository;
 import com.ts.rm.domain.engineer.dto.EngineerDto;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Engineer Service
  * - MapStruct를 사용한 Entity ↔ DTO 자동 변환
  * - EngineerDto 단일 클래스에서 Request/Response DTO 관리
+ * - position 필드는 Code 테이블(code_type_id=POSITION)의 code_id 값 저장
  */
 @Slf4j
 @Service
@@ -27,8 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class EngineerService {
 
+    private static final String POSITION_CODE_TYPE = "POSITION";
+
     private final EngineerRepository engineerRepository;
     private final DepartmentRepository departmentRepository;
+    private final CodeRepository codeRepository;
     private final EngineerDtoMapper mapper;
 
     /**
@@ -47,6 +53,11 @@ public class EngineerService {
             throw new BusinessException(ErrorCode.ENGINEER_EMAIL_CONFLICT);
         }
 
+        // positionCode 검증
+        if (request.positionCode() != null) {
+            validatePositionCode(request.positionCode());
+        }
+
         Engineer engineer = mapper.toEntity(request);
 
         // 부서 설정
@@ -62,7 +73,7 @@ public class EngineerService {
         Engineer savedEngineer = engineerRepository.save(engineer);
 
         log.info("엔지니어 생성 완료 - id: {}", savedEngineer.getEngineerId());
-        return mapper.toDetailResponse(savedEngineer);
+        return toDetailResponseWithPositionName(savedEngineer);
     }
 
     /**
@@ -73,7 +84,7 @@ public class EngineerService {
      */
     public EngineerDto.DetailResponse getEngineerById(Long engineerId) {
         Engineer engineer = findEngineerById(engineerId);
-        return mapper.toDetailResponse(engineer);
+        return toDetailResponseWithPositionName(engineer);
     }
 
     /**
@@ -92,13 +103,15 @@ public class EngineerService {
         // rowNumber 계산 (공통 유틸리티 사용)
         return PageRowNumberUtil.mapWithRowNumber(engineers, (engineer, rowNumber) -> {
             EngineerDto.ListResponse response = mapper.toListResponse(engineer);
+            String positionName = getPositionName(engineer.getPosition());
             return new EngineerDto.ListResponse(
                     rowNumber,
                     response.engineerId(),
                     response.engineerName(),
                     response.engineerEmail(),
                     response.engineerPhone(),
-                    response.position(),
+                    response.positionCode(),
+                    positionName,
                     response.departmentId(),
                     response.departmentName(),
                     response.description(),
@@ -136,8 +149,9 @@ public class EngineerService {
         if (request.engineerPhone() != null) {
             engineer.setEngineerPhone(request.engineerPhone());
         }
-        if (request.position() != null) {
-            engineer.setPosition(request.position());
+        if (request.positionCode() != null) {
+            validatePositionCode(request.positionCode());
+            engineer.setPosition(request.positionCode());
         }
         if (request.departmentId() != null) {
             Department department = departmentRepository.findById(request.departmentId())
@@ -151,7 +165,7 @@ public class EngineerService {
         engineer.setUpdatedBy(updatedBy);
 
         log.info("엔지니어 수정 완료 - id: {}", engineerId);
-        return mapper.toDetailResponse(engineer);
+        return toDetailResponseWithPositionName(engineer);
     }
 
     /**
@@ -178,5 +192,60 @@ public class EngineerService {
     private Engineer findEngineerById(Long engineerId) {
         return engineerRepository.findById(engineerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENGINEER_NOT_FOUND));
+    }
+
+    /**
+     * positionCode 유효성 검증
+     *
+     * @param positionCode 직급 코드 (code_id)
+     * @throws BusinessException 유효하지 않은 직급 코드인 경우
+     */
+    private void validatePositionCode(String positionCode) {
+        if (!codeRepository.existsByCodeTypeIdAndCodeId(POSITION_CODE_TYPE, positionCode)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "유효하지 않은 직급 코드입니다: " + positionCode);
+        }
+    }
+
+    /**
+     * positionCode로 position name 조회
+     *
+     * @param positionCode 직급 코드 (code_id)
+     * @return 직급명 (code_name), 없으면 null
+     */
+    private String getPositionName(String positionCode) {
+        if (positionCode == null) {
+            return null;
+        }
+        return codeRepository.findByCodeTypeIdAndCodeId(POSITION_CODE_TYPE, positionCode)
+                .map(Code::getCodeName)
+                .orElse(null);
+    }
+
+    /**
+     * Engineer 엔티티를 DetailResponse로 변환 (position name 포함)
+     *
+     * @param engineer 엔지니어 엔티티
+     * @return DetailResponse (position name 포함)
+     */
+    private EngineerDto.DetailResponse toDetailResponseWithPositionName(Engineer engineer) {
+        EngineerDto.DetailResponse response = mapper.toDetailResponse(engineer);
+        String positionName = getPositionName(engineer.getPosition());
+
+        return new EngineerDto.DetailResponse(
+                response.engineerId(),
+                response.engineerName(),
+                response.engineerEmail(),
+                response.engineerPhone(),
+                response.positionCode(),
+                positionName,
+                response.departmentId(),
+                response.departmentName(),
+                response.description(),
+                response.createdAt(),
+                response.createdBy(),
+                response.updatedAt(),
+                response.updatedBy()
+        );
     }
 }

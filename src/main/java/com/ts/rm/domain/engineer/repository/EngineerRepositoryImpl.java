@@ -3,6 +3,7 @@ package com.ts.rm.domain.engineer.repository;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.ts.rm.domain.common.entity.QCode;
 import com.ts.rm.domain.engineer.entity.Engineer;
 import com.ts.rm.domain.engineer.entity.QEngineer;
 import com.ts.rm.global.querydsl.QuerydslPaginationUtil;
@@ -24,12 +25,16 @@ public class EngineerRepositoryImpl implements EngineerRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     private static final QEngineer engineer = QEngineer.engineer;
+    private static final QCode positionCode = new QCode("positionCode");
 
     @Override
     public Page<Engineer> findAllWithFilters(Long departmentId, String keyword, Pageable pageable) {
-        // 1. 기본 쿼리 생성
+        // 1. 기본 쿼리 생성 (Code 테이블 left join으로 직급 sort_order 조회)
         JPAQuery<Engineer> contentQuery = queryFactory
                 .selectFrom(engineer)
+                .leftJoin(positionCode)
+                .on(positionCode.codeTypeId.eq("POSITION")
+                        .and(positionCode.codeId.eq(engineer.position)))
                 .where(
                         departmentCondition(departmentId),
                         keywordCondition(keyword)
@@ -50,17 +55,21 @@ public class EngineerRepositoryImpl implements EngineerRepositoryCustom {
                 "engineerName", engineer.engineerName,
                 "engineerEmail", engineer.engineerEmail,
                 "engineerPhone", engineer.engineerPhone,
-                "position", engineer.position,
+                "position", positionCode.sortOrder,
+                "departmentId", engineer.department.departmentId,
+                "departmentName", engineer.department.departmentName,
                 "createdAt", engineer.createdAt
         );
 
         // 4. 공통 유틸리티로 페이징/정렬 적용
+        // 기본 정렬: 소속팀(department_id) asc, 직급(sort_order) desc
         return QuerydslPaginationUtil.applyPagination(
                 contentQuery,
                 countQuery,
                 pageable,
                 sortMapping,
-                engineer.engineerName.asc()
+                engineer.department.departmentId.asc(),
+                positionCode.sortOrder.desc()
         );
     }
 

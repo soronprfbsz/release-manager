@@ -44,9 +44,9 @@ public final class EngineerDto {
             @Size(max = 20, message = "연락처는 20자 이하여야 합니다")
             String engineerPhone,
 
-            @Schema(description = "직급 (선택)", example = "책임", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-            @Size(max = 100, message = "직급은 100자 이하여야 합니다")
-            String position,
+            @Schema(description = "직급 코드 (code_type_id=POSITION의 code_id)", example = "MANAGER", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+            @Size(max = 100, message = "직급 코드는 100자 이하여야 합니다")
+            String positionCode,
 
             @Schema(description = "소속 부서 ID (선택)", example = "1", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
             Long departmentId,
@@ -76,9 +76,9 @@ public final class EngineerDto {
             @Size(max = 20, message = "연락처는 20자 이하여야 합니다")
             String engineerPhone,
 
-            @Schema(description = "직급", example = "책임")
-            @Size(max = 100, message = "직급은 100자 이하여야 합니다")
-            String position,
+            @Schema(description = "직급 코드 (code_type_id=POSITION의 code_id)", example = "MANAGER")
+            @Size(max = 100, message = "직급 코드는 100자 이하여야 합니다")
+            String positionCode,
 
             @Schema(description = "소속 부서 ID", example = "1")
             Long departmentId,
@@ -110,7 +110,10 @@ public final class EngineerDto {
             @Schema(description = "연락처", example = "010-1234-5678")
             String engineerPhone,
 
-            @Schema(description = "직급", example = "책임")
+            @Schema(description = "직급 코드 (code_id)", example = "MANAGER")
+            String positionCode,
+
+            @Schema(description = "직급명 (code_name)", example = "과장")
             String position,
 
             @Schema(description = "소속 부서 ID", example = "1")
@@ -150,7 +153,10 @@ public final class EngineerDto {
             @Schema(description = "회사 이메일", example = "engineer@tscientific.co.kr")
             String engineerEmail,
 
-            @Schema(description = "직급", example = "책임")
+            @Schema(description = "직급 코드 (code_id)", example = "MANAGER")
+            String positionCode,
+
+            @Schema(description = "직급명 (code_name)", example = "과장")
             String position,
 
             @Schema(description = "소속 부서명", example = "개발2팀")
@@ -178,7 +184,10 @@ public final class EngineerDto {
             @Schema(description = "연락처", example = "010-1234-5678")
             String engineerPhone,
 
-            @Schema(description = "직급", example = "책임")
+            @Schema(description = "직급 코드 (code_id)", example = "MANAGER")
+            String positionCode,
+
+            @Schema(description = "직급명 (code_name)", example = "과장")
             String position,
 
             @Schema(description = "소속 부서 ID", example = "1")
