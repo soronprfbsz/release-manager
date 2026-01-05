@@ -113,6 +113,15 @@ public final class ReleaseVersionDto {
             @Schema(description = "패치 버전", example = "0")
             Integer patchVersion,
 
+            @Schema(description = "핫픽스 버전 (0이면 일반 버전)", example = "0")
+            Integer hotfixVersion,
+
+            @Schema(description = "핫픽스 여부", example = "false")
+            Boolean isHotfix,
+
+            @Schema(description = "전체 버전 (핫픽스 포함, 예: 1.1.0 또는 1.1.0.1)", example = "1.1.0")
+            String fullVersion,
+
             @Schema(description = "메이저.마이너", example = "1.1.x")
             String majorMinor,
 
@@ -149,6 +158,12 @@ public final class ReleaseVersionDto {
             @Schema(description = "기준 표준 버전 번호 (커스텀인 경우)", example = "1.1.0")
             String baseVersionNumber,
 
+            @Schema(description = "핫픽스 원본 버전 ID (핫픽스인 경우)", example = "5")
+            Long parentVersionId,
+
+            @Schema(description = "핫픽스 원본 버전 번호 (핫픽스인 경우)", example = "1.1.0")
+            String parentVersionNumber,
+
             @Schema(description = "생성일시")
             LocalDateTime createdAt,
 
@@ -177,6 +192,15 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "버전", example = "1.1.0")
             String version,
+
+            @Schema(description = "핫픽스 버전 (0이면 일반 버전)", example = "0")
+            Integer hotfixVersion,
+
+            @Schema(description = "핫픽스 여부", example = "false")
+            Boolean isHotfix,
+
+            @Schema(description = "전체 버전 (핫픽스 포함)", example = "1.1.0")
+            String fullVersion,
 
             @Schema(description = "메이저.마이너", example = "1.1.x")
             String majorMinor,
@@ -250,6 +274,15 @@ public final class ReleaseVersionDto {
             @Schema(description = "버전", example = "1.1.0")
             String version,
 
+            @Schema(description = "핫픽스 버전 (0이면 일반 버전)", example = "0")
+            Integer hotfixVersion,
+
+            @Schema(description = "핫픽스 여부", example = "false")
+            Boolean isHotfix,
+
+            @Schema(description = "전체 버전 (핫픽스 포함)", example = "1.1.0")
+            String fullVersion,
+
             @Schema(description = "생성일자", example = "2025-11-20")
             String createdAt,
 
@@ -269,7 +302,10 @@ public final class ReleaseVersionDto {
             String approvedAt,
 
             @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\", \"ENGINE\", \"ETC\"]")
-            List<String> fileCategories
+            List<String> fileCategories,
+
+            @Schema(description = "핫픽스 버전 목록 (원본 버전인 경우에만 값이 있음)")
+            List<VersionNode> hotfixes
     ) {
 
     }
@@ -512,6 +548,12 @@ public final class ReleaseVersionDto {
             @Schema(description = "패치 버전", example = "3")
             Integer patchVersion,
 
+            @Schema(description = "핫픽스 버전 (0이면 일반 버전)", example = "0")
+            Integer hotfixVersion,
+
+            @Schema(description = "전체 버전 (핫픽스 포함)", example = "1.1.3")
+            String fullVersion,
+
             @Schema(description = "메이저.마이너", example = "1.1.x")
             String majorMinor,
 
@@ -596,6 +638,132 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "승인 여부", example = "true")
             Boolean isApproved
+    ) {
+
+    }
+
+    // ========================================
+    // Hotfix DTOs
+    // ========================================
+
+    /**
+     * 핫픽스 생성 요청 (Multipart Form Data)
+     */
+    @Builder
+    @Schema(description = "핫픽스 생성 요청")
+    public record CreateHotfixRequest(
+            @Schema(description = "프로젝트 ID", example = "infraeye2", required = true)
+            @NotBlank(message = "프로젝트 ID는 필수입니다")
+            @Size(max = 50, message = "프로젝트 ID는 50자 이하여야 합니다")
+            String projectId,
+
+            @Schema(description = "핫픽스 대상 버전 ID (예: 1.3.2 버전의 ID)", example = "15", required = true)
+            @NotNull(message = "핫픽스 대상 버전 ID는 필수입니다")
+            Long parentVersionId,
+
+            @Schema(description = "패치 노트 내용", example = "특정 버그 수정", required = true)
+            @NotBlank(message = "패치 노트 내용은 필수입니다")
+            @Size(max = 500, message = "패치 노트 내용은 500자 이하여야 합니다")
+            String comment
+    ) {
+
+    }
+
+    /**
+     * 핫픽스 생성 응답
+     */
+    @Schema(description = "핫픽스 생성 응답")
+    public record CreateHotfixResponse(
+            @Schema(description = "릴리즈 버전 ID", example = "25")
+            Long releaseVersionId,
+
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
+
+            @Schema(description = "핫픽스 대상 버전 ID", example = "15")
+            Long parentVersionId,
+
+            @Schema(description = "핫픽스 대상 버전", example = "1.3.2")
+            String parentVersion,
+
+            @Schema(description = "메이저 버전", example = "1")
+            Integer majorVersion,
+
+            @Schema(description = "마이너 버전", example = "3")
+            Integer minorVersion,
+
+            @Schema(description = "패치 버전", example = "2")
+            Integer patchVersion,
+
+            @Schema(description = "핫픽스 버전", example = "1")
+            Integer hotfixVersion,
+
+            @Schema(description = "전체 버전 (핫픽스 포함)", example = "1.3.2.1")
+            String fullVersion,
+
+            @Schema(description = "메이저.마이너", example = "1.3.x")
+            String majorMinor,
+
+            @Schema(description = "생성자 (JWT에서 추출)", example = "admin@tscientific")
+            String createdBy,
+
+            @Schema(description = "패치 노트 내용", example = "특정 버그 수정")
+            String comment,
+
+            @Schema(description = "생성일시")
+            LocalDateTime createdAt,
+
+            @Schema(description = "생성된 파일 목록 (상대 경로)")
+            List<String> filesCreated
+    ) {
+
+    }
+
+    /**
+     * 핫픽스 목록 조회 응답 (특정 버전의 핫픽스들)
+     */
+    @Schema(description = "핫픽스 목록 조회 응답")
+    public record HotfixListResponse(
+            @Schema(description = "원본 버전 ID", example = "15")
+            Long parentVersionId,
+
+            @Schema(description = "원본 버전", example = "1.3.2")
+            String parentVersion,
+
+            @Schema(description = "핫픽스 목록")
+            List<HotfixItem> hotfixes
+    ) {
+
+    }
+
+    /**
+     * 핫픽스 항목
+     */
+    @Schema(description = "핫픽스 항목")
+    public record HotfixItem(
+            @Schema(description = "핫픽스 버전 ID", example = "25")
+            Long releaseVersionId,
+
+            @Schema(description = "핫픽스 버전 번호", example = "1")
+            Integer hotfixVersion,
+
+            @Schema(description = "전체 버전", example = "1.3.2.1")
+            String fullVersion,
+
+            @Schema(description = "생성일자", example = "2025-12-01")
+            String createdAt,
+
+            @Schema(description = "생성자", example = "jhlee@tscientific")
+            String createdBy,
+
+            @Schema(description = "코멘트", example = "특정 버그 수정")
+            String comment,
+
+            @Schema(description = "승인 여부", example = "false")
+            Boolean isApproved,
+
+            @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\"]")
+            List<String> fileCategories
     ) {
 
     }

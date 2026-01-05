@@ -192,6 +192,8 @@ public class ReleaseVersionUploadService {
                     versionInfo.getMajorVersion(),
                     versionInfo.getMinorVersion(),
                     versionInfo.getPatchVersion(),
+                    0,  // hotfixVersion (표준 버전은 0)
+                    version,  // fullVersion (표준 버전은 version과 동일)
                     versionInfo.getMajorMinor(),
                     createdBy,
                     comment,
@@ -1074,6 +1076,226 @@ public class ReleaseVersionUploadService {
                     return category + "/" + file.getFileName();
                 })
                 .toList();
+    }
+
+    /**
+     * ZIP 파일로 핫픽스 버전 생성
+     *
+     * @param parentVersionId 원본 버전 ID
+     * @param comment         패치 노트 내용
+     * @param zipFile         패치 파일이 포함된 ZIP 파일
+     * @param createdBy       생성자 이메일 (JWT에서 추출)
+     * @return 생성된 핫픽스 응답
+     */
+    @Transactional
+    public ReleaseVersionDto.CreateHotfixResponse createHotfixWithZip(
+            Long parentVersionId, String comment, MultipartFile zipFile, String createdBy) {
+
+        log.info("ZIP 파일로 핫픽스 버전 생성 시작 - parentVersionId: {}, createdBy: {}", parentVersionId, createdBy);
+
+        // 1. 원본 버전 조회
+        ReleaseVersion parentVersion = releaseVersionRepository.findById(parentVersionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
+                        "원본 버전을 찾을 수 없습니다: " + parentVersionId));
+
+        // 2. 원본 버전이 핫픽스인지 확인 (핫픽스의 핫픽스는 불가)
+        if (parentVersion.isHotfix()) {
+            throw new BusinessException(ErrorCode.INVALID_HOTFIX_PARENT,
+                    "핫픽스 버전에는 추가 핫픽스를 생성할 수 없습니다. 원본 버전에 핫픽스를 생성하세요.");
+        }
+
+        // 3. ZIP 파일 검증
+        validateZipFile(zipFile);
+
+        Path tempDir = null;
+        Path hotfixPath = null;
+
+        try {
+            // 4. 임시 디렉토리에 ZIP 압축 해제
+            tempDir = extractZipToTempDirectory(zipFile);
+
+            // 5. ZIP 구조 검증 (핫픽스는 PATCH 카테고리만 허용)
+            validateZipStructure(tempDir, ReleaseCategory.PATCH);
+
+            // 6. 다음 핫픽스 버전 번호 결정
+            Integer maxHotfixVersion = releaseVersionRepository.findMaxHotfixVersionByParentVersionId(parentVersionId);
+            int nextHotfixVersion = maxHotfixVersion + 1;
+
+            // 7. 핫픽스 버전 엔티티 생성 및 저장
+            ReleaseVersion hotfixVersion = copyFilesAndSaveToDbForHotfix(
+                    parentVersion, tempDir, nextHotfixVersion, comment, createdBy);
+
+            // 8. 핫픽스용 디렉토리 구조 생성
+            hotfixPath = createHotfixDirectory(hotfixVersion, parentVersion);
+
+            // 9. 파일 복사 처리
+            copyHotfixFiles(tempDir, hotfixPath, hotfixVersion);
+
+            log.info("ZIP 파일로 핫픽스 버전 생성 완료 - parentVersionId: {}, hotfixVersion: {}, ID: {}",
+                    parentVersionId, nextHotfixVersion, hotfixVersion.getReleaseVersionId());
+
+            // 10. 응답 생성
+            String projectId = parentVersion.getProject() != null
+                    ? parentVersion.getProject().getProjectId()
+                    : "infraeye2";
+
+            return new ReleaseVersionDto.CreateHotfixResponse(
+                    hotfixVersion.getReleaseVersionId(),
+                    projectId,
+                    parentVersionId,
+                    parentVersion.getVersion(),
+                    hotfixVersion.getMajorVersion(),
+                    hotfixVersion.getMinorVersion(),
+                    hotfixVersion.getPatchVersion(),
+                    hotfixVersion.getHotfixVersion(),
+                    hotfixVersion.getFullVersion(),
+                    hotfixVersion.getMajorMinor(),
+                    createdBy,
+                    comment,
+                    hotfixVersion.getCreatedAt(),
+                    getCreatedFilesList(hotfixVersion)
+            );
+
+        } catch (BusinessException e) {
+            // 생성된 핫픽스 디렉토리 롤백
+            if (hotfixPath != null) {
+                fileSystemService.deleteDirectory(hotfixPath);
+            }
+            throw e;
+        } catch (Exception e) {
+            // 생성된 핫픽스 디렉토리 롤백
+            if (hotfixPath != null) {
+                fileSystemService.deleteDirectory(hotfixPath);
+            }
+            log.error("ZIP 파일로 핫픽스 버전 생성 실패: parentVersionId={}", parentVersionId, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "핫픽스 버전 생성 중 오류가 발생했습니다: " + e.getMessage());
+        } finally {
+            // 임시 디렉토리 정리
+            if (tempDir != null) {
+                fileSystemService.deleteDirectory(tempDir);
+            }
+        }
+    }
+
+    /**
+     * 핫픽스용 파일 복사 및 DB 저장
+     *
+     * @param parentVersion    원본 버전
+     * @param tempDir          임시 디렉토리 (ZIP 압축 해제 경로)
+     * @param hotfixVersion    핫픽스 버전 번호
+     * @param comment          코멘트
+     * @param createdBy        생성자
+     * @return 저장된 ReleaseVersion 엔티티
+     */
+    private ReleaseVersion copyFilesAndSaveToDbForHotfix(
+            ReleaseVersion parentVersion, Path tempDir, int hotfixVersion,
+            String comment, String createdBy) throws IOException {
+
+        // 핫픽스 버전은 부모 버전의 메타데이터를 상속
+        ReleaseVersion savedHotfix = releaseVersionRepository.save(
+                ReleaseVersion.builder()
+                        .project(parentVersion.getProject())
+                        .releaseType(parentVersion.getReleaseType())
+                        .releaseCategory(ReleaseCategory.PATCH)  // 핫픽스는 항상 PATCH
+                        .customer(parentVersion.getCustomer())
+                        .version(parentVersion.getVersion())
+                        .majorVersion(parentVersion.getMajorVersion())
+                        .minorVersion(parentVersion.getMinorVersion())
+                        .patchVersion(parentVersion.getPatchVersion())
+                        .hotfixVersion(hotfixVersion)
+                        .parentVersion(parentVersion)
+                        .createdBy(createdBy)
+                        .comment(comment)
+                        .isApproved(false)  // 핫픽스는 기본 미승인
+                        .build()
+        );
+
+        log.info("핫픽스 ReleaseVersion 저장 완료 - ID: {}, fullVersion: {}, parentVersion: {}",
+                savedHotfix.getReleaseVersionId(), savedHotfix.getFullVersion(),
+                parentVersion.getVersion());
+
+        // 클로저 테이블에 계층 구조 데이터 추가 (트리 조회에 필요)
+        treeService.createHierarchyForNewVersion(savedHotfix, parentVersion.getReleaseType());
+
+        return savedHotfix;
+    }
+
+    /**
+     * 핫픽스 디렉토리 경로 생성
+     *
+     * @param hotfixVersion 핫픽스 버전 엔티티
+     * @param parentVersion 원본 버전 엔티티
+     * @return 생성된 핫픽스 디렉토리 경로
+     */
+    private Path createHotfixDirectory(ReleaseVersion hotfixVersion, ReleaseVersion parentVersion) throws IOException {
+        String projectId = parentVersion.getProject() != null
+                ? parentVersion.getProject().getProjectId()
+                : "infraeye2";
+        String basePath;
+
+        if ("STANDARD".equals(parentVersion.getReleaseType())) {
+            basePath = String.format("versions/%s/standard/%s/%s/hotfix/%d",
+                    projectId,
+                    parentVersion.getMajorMinor(),
+                    parentVersion.getVersion(),
+                    hotfixVersion.getHotfixVersion());
+        } else {
+            // CUSTOM인 경우 고객사 코드 사용
+            String customerCode = parentVersion.getCustomer() != null
+                    ? parentVersion.getCustomer().getCustomerCode()
+                    : "unknown";
+            basePath = String.format("versions/%s/custom/%s/%s/%s/hotfix/%d",
+                    projectId,
+                    customerCode,
+                    parentVersion.getMajorMinor(),
+                    parentVersion.getVersion(),
+                    hotfixVersion.getHotfixVersion());
+        }
+
+        Path hotfixPath = Paths.get(baseReleasePath, basePath);
+        Files.createDirectories(hotfixPath);
+
+        log.info("핫픽스 디렉토리 생성 완료: {}", hotfixPath);
+
+        return hotfixPath;
+    }
+
+    /**
+     * 핫픽스 파일 복사 처리
+     *
+     * @param tempDir       임시 디렉토리 (ZIP 압축 해제 경로)
+     * @param hotfixPath    핫픽스 디렉토리 경로
+     * @param hotfixVersion 핫픽스 버전 엔티티
+     */
+    private void copyHotfixFiles(Path tempDir, Path hotfixPath, ReleaseVersion hotfixVersion) throws IOException {
+        // 모든 카테고리 폴더 순회 및 파일 복사
+        Files.list(tempDir)
+                .filter(Files::isDirectory)
+                .forEach(categoryDir -> {
+                    String categoryName = categoryDir.getFileName().toString().toUpperCase();
+
+                    try {
+                        // FileCategory 검증 및 변환
+                        FileCategory fileCategory = FileCategory.fromCode(categoryName);
+
+                        // 타겟 카테고리 디렉토리 생성
+                        Path targetCategoryDir = hotfixPath.resolve(categoryName.toLowerCase());
+                        Files.createDirectories(targetCategoryDir);
+
+                        log.info("핫픽스 카테고리 폴더 처리 시작: {} -> {}", categoryName, fileCategory.getDescription());
+
+                        // 카테고리별 파일 복사 (재귀적)
+                        processCategoryFiles(categoryDir, targetCategoryDir, hotfixVersion, fileCategory);
+
+                    } catch (IllegalArgumentException e) {
+                        log.warn("알 수 없는 카테고리 폴더 무시: {}", categoryName);
+                    } catch (IOException e) {
+                        log.error("핫픽스 카테고리 파일 복사 실패: {}", categoryName, e);
+                        throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                                "핫픽스 파일 복사 중 오류 발생: " + e.getMessage());
+                    }
+                });
     }
 
     /**

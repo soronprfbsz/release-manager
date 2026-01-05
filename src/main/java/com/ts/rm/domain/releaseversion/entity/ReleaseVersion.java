@@ -105,6 +105,14 @@ public class ReleaseVersion {
     @JoinColumn(name = "base_version_id")
     private ReleaseVersion baseVersion;
 
+    @Column(name = "hotfix_version", nullable = false)
+    @Builder.Default
+    private Integer hotfixVersion = 0;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_version_id")
+    private ReleaseVersion parentVersion;
+
     @OneToMany(mappedBy = "releaseVersion", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ReleaseFile> releaseFiles = new ArrayList<>();
@@ -178,5 +186,35 @@ public class ReleaseVersion {
     @Transient
     public boolean isCustomRelease() {
         return "CUSTOM".equals(releaseType);
+    }
+
+    /**
+     * 핫픽스 여부 확인
+     */
+    @Transient
+    public boolean isHotfix() {
+        return hotfixVersion != null && hotfixVersion > 0;
+    }
+
+    /**
+     * 전체 버전 문자열 반환 (핫픽스 포함)
+     * <p>일반 버전: 1.3.2
+     * <p>핫픽스: 1.3.2.1
+     */
+    @Transient
+    public String getFullVersion() {
+        if (isHotfix()) {
+            return majorVersion + "." + minorVersion + "." + patchVersion + "." + hotfixVersion;
+        }
+        return majorVersion + "." + minorVersion + "." + patchVersion;
+    }
+
+    /**
+     * 기본 버전 문자열 반환 (핫픽스 제외)
+     * <p>1.3.2.1 → 1.3.2
+     */
+    @Transient
+    public String getBaseVersionString() {
+        return majorVersion + "." + minorVersion + "." + patchVersion;
     }
 }

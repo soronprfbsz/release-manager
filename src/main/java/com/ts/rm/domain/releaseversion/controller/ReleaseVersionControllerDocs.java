@@ -572,6 +572,100 @@ public interface ReleaseVersionControllerDocs {
             @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization
     );
 
+    // ========================================
+    // Hotfix API Documentation
+    // ========================================
+
+    @Operation(
+            summary = "핫픽스 생성",
+            description = "특정 버전에 대한 핫픽스를 생성합니다.\n\n"
+                    + "**핫픽스 특징**:\n"
+                    + "- 기존 버전(예: 1.3.2)에 대한 긴급 버그 수정 패치\n"
+                    + "- 4자리 버전 형식 사용 (예: 1.3.2.1, 1.3.2.2)\n"
+                    + "- 핫픽스 버전은 자동으로 증가 (1 → 2 → 3)\n"
+                    + "- **메인 라인 패치 생성 시 제외됨** (별도 관리)\n\n"
+                    + "**제약사항**:\n"
+                    + "- 핫픽스의 핫픽스는 생성 불가 (1.3.2.1에 대한 핫픽스 불가)\n"
+                    + "- ZIP 파일 구조 규칙은 표준 버전과 동일\n\n"
+                    + "**저장 경로**: `versions/{projectId}/standard/{majorMinor}/{version}/hotfix/{hotfixVersion}/`",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CreateHotfixApiResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<ReleaseVersionDto.CreateHotfixResponse>> createHotfix(
+            @Parameter(description = "원본 버전 ID (핫픽스 대상)", required = true)
+            @PathVariable Long id,
+
+            @Parameter(description = "핫픽스 정보 (comment)", required = true)
+            @Valid @ModelAttribute ReleaseVersionDto.CreateHotfixRequest request,
+
+            @Parameter(description = "패치 파일 ZIP", required = true)
+            @RequestPart("patchFiles") MultipartFile patchFiles,
+
+            @Parameter(description = "JWT 토큰 (Bearer {token})", required = true)
+            @RequestHeader("Authorization") String authorization
+    );
+
+    @Operation(
+            summary = "핫픽스 목록 조회",
+            description = "특정 버전의 핫픽스 목록을 조회합니다.\n\n"
+                    + "**응답 구조**:\n"
+                    + "- parentVersionId: 원본 버전 ID\n"
+                    + "- parentVersion: 원본 버전 번호 (예: 1.3.2)\n"
+                    + "- hotfixes: 핫픽스 목록 (버전 순 정렬)",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = HotfixListApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "핫픽스 목록 조회 성공 예시",
+                                    value = """
+                                            {
+                                              "status": "success",
+                                              "data": {
+                                                "parentVersionId": 15,
+                                                "parentVersion": "1.3.2",
+                                                "hotfixes": [
+                                                  {
+                                                    "releaseVersionId": 25,
+                                                    "hotfixVersion": 1,
+                                                    "fullVersion": "1.3.2.1",
+                                                    "createdAt": "2025-12-15",
+                                                    "createdBy": "jhlee@tscientific",
+                                                    "comment": "특정 버그 수정",
+                                                    "isApproved": true,
+                                                    "fileCategories": ["DATABASE"]
+                                                  },
+                                                  {
+                                                    "releaseVersionId": 26,
+                                                    "hotfixVersion": 2,
+                                                    "fullVersion": "1.3.2.2",
+                                                    "createdAt": "2025-12-20",
+                                                    "createdBy": "jhlee@tscientific",
+                                                    "comment": "추가 버그 수정",
+                                                    "isApproved": false,
+                                                    "fileCategories": ["DATABASE", "WEB"]
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<ReleaseVersionDto.HotfixListResponse>> getHotfixesByVersionId(
+            @Parameter(description = "원본 버전 ID", required = true)
+            @PathVariable Long id
+    );
+
     /**
      * Swagger 스키마용 wrapper 클래스 - 표준 버전 생성 응답
      */
@@ -654,5 +748,29 @@ public interface ReleaseVersionControllerDocs {
 
         @Schema(description = "표준본 버전 목록")
         public java.util.List<ReleaseVersionDto.VersionSelectOption> data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 핫픽스 생성 응답
+     */
+    @Schema(description = "핫픽스 생성 API 응답")
+    class CreateHotfixApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "생성된 핫픽스 정보")
+        public ReleaseVersionDto.CreateHotfixResponse data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 핫픽스 목록 응답
+     */
+    @Schema(description = "핫픽스 목록 API 응답")
+    class HotfixListApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "핫픽스 목록")
+        public ReleaseVersionDto.HotfixListResponse data;
     }
 }

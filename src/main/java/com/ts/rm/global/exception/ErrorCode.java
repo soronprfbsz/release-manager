@@ -66,6 +66,7 @@ public enum ErrorCode {
   INVALID_VERSION_FORMAT(HttpStatus.BAD_REQUEST, "R004", "error.release.invalid_version_format"),
   DATABASE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "R005", "error.release.database_type_not_found"),
   PATCH_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "R006", "error.release.patch_file_not_found"),
+  INVALID_HOTFIX_PARENT(HttpStatus.BAD_REQUEST, "R007", "error.release.invalid_hotfix_parent"),
 
   // Patch - 누적 패치
   PATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "PA001", "error.patch.not_found"),

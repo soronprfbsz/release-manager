@@ -262,4 +262,63 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    // ========================================
+    // Hotfix API
+    // ========================================
+
+    /**
+     * 핫픽스 생성 (ZIP 파일 업로드)
+     *
+     * @param id            원본 버전 ID
+     * @param request       핫픽스 생성 요청 (comment)
+     * @param patchFiles    패치 파일 ZIP
+     * @param authorization JWT 토큰 (Bearer {token})
+     * @return 생성된 핫픽스 정보
+     */
+    @Override
+    @PostMapping(value = "/versions/{id}/hotfix", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.CreateHotfixResponse>> createHotfix(
+            @PathVariable Long id,
+            @Valid @ModelAttribute ReleaseVersionDto.CreateHotfixRequest request,
+            @RequestPart("patchFiles") MultipartFile patchFiles,
+            @RequestHeader("Authorization") String authorization) {
+
+        log.info("핫픽스 생성 요청 - parentVersionId: {}, comment: {}, fileSize: {}",
+                id, request.comment(), patchFiles.getSize());
+
+        // JWT 토큰에서 이메일 추출
+        String token = extractToken(authorization);
+        String createdBy = jwtTokenProvider.getEmail(token);
+
+        log.info("핫픽스 생성자: {}", createdBy);
+
+        // 핫픽스 생성
+        ReleaseVersionDto.CreateHotfixResponse response = uploadService.createHotfixWithZip(
+                id,
+                request.comment(),
+                patchFiles,
+                createdBy
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 특정 버전의 핫픽스 목록 조회
+     *
+     * @param id 원본 버전 ID
+     * @return 핫픽스 목록
+     */
+    @Override
+    @GetMapping("/versions/{id}/hotfixes")
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.HotfixListResponse>> getHotfixesByVersionId(
+            @PathVariable Long id) {
+
+        log.info("핫픽스 목록 조회 요청 - parentVersionId: {}", id);
+
+        ReleaseVersionDto.HotfixListResponse response = releaseVersionService.getHotfixesByParentVersionId(id);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }

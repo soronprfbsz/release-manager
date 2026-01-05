@@ -83,4 +83,45 @@ public interface ReleaseVersionRepositoryCustom {
      * @return 고객사 ID 목록 (중복 제거)
      */
     List<Long> findCustomerIdsWithCustomVersions(String projectId);
+
+    // ========================================
+    // Hotfix 관련 메서드
+    // ========================================
+
+    /**
+     * 버전 범위 조회 (핫픽스 제외)
+     *
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @param fromVersion 시작 버전
+     * @param toVersion   종료 버전
+     * @return 버전 목록 (핫픽스 제외)
+     */
+    List<ReleaseVersion> findVersionsBetweenExcludingHotfixes(String projectId, String releaseType,
+            String fromVersion, String toVersion);
+
+    /**
+     * 특정 버전의 최대 핫픽스 버전 조회
+     *
+     * @param parentVersionId 원본 버전 ID
+     * @return 최대 핫픽스 버전 (없으면 0)
+     */
+    Integer findMaxHotfixVersionByParentVersionId(Long parentVersionId);
+
+    /**
+     * 특정 버전의 핫픽스 개수 조회
+     *
+     * @param parentVersionId 원본 버전 ID
+     * @return 핫픽스 개수
+     */
+    Long countHotfixesByParentVersionId(Long parentVersionId);
+
+    /**
+     * 프로젝트별 핫픽스가 있는 버전 목록 조회
+     *
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @return 핫픽스가 있는 버전 ID 목록
+     */
+    List<Long> findVersionIdsWithHotfixes(String projectId, String releaseType);
 }

@@ -16,6 +16,9 @@ public interface ReleaseVersionDtoMapper {
     @Mapping(target = "projectId", source = "project.projectId")
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
+    @Mapping(target = "hotfixVersion", source = "hotfixVersion")
+    @Mapping(target = "isHotfix", expression = "java(releaseVersion.isHotfix())")
+    @Mapping(target = "fullVersion", expression = "java(releaseVersion.getFullVersion())")
     @Mapping(target = "patchFileCount", expression = "java(releaseVersion.getReleaseFiles() != null ? releaseVersion.getReleaseFiles().size() : 0)")
     @Mapping(target = "fileCategories", ignore = true)
     ReleaseVersionDto.SimpleResponse toSimpleResponse(ReleaseVersion releaseVersion);
@@ -27,11 +30,27 @@ public interface ReleaseVersionDtoMapper {
     @Mapping(target = "projectName", source = "project.projectName")
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
+    @Mapping(target = "hotfixVersion", source = "hotfixVersion")
+    @Mapping(target = "isHotfix", expression = "java(releaseVersion.isHotfix())")
+    @Mapping(target = "fullVersion", expression = "java(releaseVersion.getFullVersion())")
     @Mapping(target = "releaseFiles", source = "releaseFiles")
     @Mapping(target = "baseVersionId", source = "baseVersion.releaseVersionId")
     @Mapping(target = "baseVersionNumber", source = "baseVersion.version")
+    @Mapping(target = "parentVersionId", source = "parentVersion.releaseVersionId")
+    @Mapping(target = "parentVersionNumber", source = "parentVersion.version")
     ReleaseVersionDto.DetailResponse toDetailResponse(ReleaseVersion releaseVersion);
 
     List<ReleaseVersionDto.DetailResponse> toDetailResponseList(
             List<ReleaseVersion> releaseVersions);
+
+    /**
+     * 핫픽스 항목 변환
+     */
+    @Mapping(target = "hotfixVersion", source = "hotfixVersion")
+    @Mapping(target = "fullVersion", expression = "java(releaseVersion.getFullVersion())")
+    @Mapping(target = "createdAt", expression = "java(releaseVersion.getCreatedAt() != null ? releaseVersion.getCreatedAt().toLocalDate().toString() : null)")
+    @Mapping(target = "fileCategories", ignore = true)
+    ReleaseVersionDto.HotfixItem toHotfixItem(ReleaseVersion releaseVersion);
+
+    List<ReleaseVersionDto.HotfixItem> toHotfixItemList(List<ReleaseVersion> releaseVersions);
 }

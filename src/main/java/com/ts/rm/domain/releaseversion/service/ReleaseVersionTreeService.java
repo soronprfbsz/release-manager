@@ -257,16 +257,38 @@ public class ReleaseVersionTreeService {
     /**
      * DB에서 조회한 버전들을 Major.Minor로 그룹핑 (DB 기반)
      *
+     * <p>핫픽스 버전은 원본 버전의 하위 계층으로 표시됩니다.
+     *
      * @param versions 릴리즈 버전 목록
      * @return Major.Minor 그룹 목록
      */
     public List<ReleaseVersionDto.MajorMinorNode> buildMajorMinorGroupsFromDb(
             List<ReleaseVersion> versions) {
 
-        // Major.Minor로 그룹핑
-        java.util.Map<String, List<ReleaseVersion>> groupedByMajorMinor = new java.util.LinkedHashMap<>();
+        // 원본 버전과 핫픽스 버전 분리
+        List<ReleaseVersion> mainVersions = new ArrayList<>();
+        Map<Long, List<ReleaseVersion>> hotfixesByParentId = new java.util.HashMap<>();
 
         for (ReleaseVersion version : versions) {
+            if (version.isHotfix()) {
+                // 핫픽스 버전: 부모 버전 ID로 그룹핑
+                Long parentId = version.getParentVersion() != null
+                        ? version.getParentVersion().getReleaseVersionId()
+                        : null;
+                if (parentId != null) {
+                    hotfixesByParentId.computeIfAbsent(parentId, k -> new ArrayList<>())
+                            .add(version);
+                }
+            } else {
+                // 원본 버전: 메인 리스트에 추가
+                mainVersions.add(version);
+            }
+        }
+
+        // Major.Minor로 그룹핑 (원본 버전만)
+        java.util.Map<String, List<ReleaseVersion>> groupedByMajorMinor = new java.util.LinkedHashMap<>();
+
+        for (ReleaseVersion version : mainVersions) {
             groupedByMajorMinor.computeIfAbsent(version.getMajorMinor(), k -> new ArrayList<>())
                     .add(version);
         }
@@ -281,9 +303,9 @@ public class ReleaseVersionTreeService {
             // 그룹 내에서 패치 버전 내림차순 정렬
             versionsInGroup.sort((v1, v2) -> Integer.compare(v2.getPatchVersion(), v1.getPatchVersion()));
 
-            // 각 버전에 대한 VersionNode 생성
+            // 각 버전에 대한 VersionNode 생성 (핫픽스 포함)
             List<ReleaseVersionDto.VersionNode> versionNodes = versionsInGroup.stream()
-                    .map(this::buildVersionNodeFromDb)
+                    .map(v -> buildVersionNodeWithHotfixes(v, hotfixesByParentId))
                     .toList();
 
             majorMinorNodes.add(new ReleaseVersionDto.MajorMinorNode(majorMinor, versionNodes));
@@ -293,7 +315,65 @@ public class ReleaseVersionTreeService {
     }
 
     /**
+     * ReleaseVersion 엔티티로부터 VersionNode 생성 (핫픽스 포함)
+     *
+     * @param version             릴리즈 버전 엔티티
+     * @param hotfixesByParentId  부모 버전 ID별 핫픽스 Map
+     * @return VersionNode (핫픽스 포함)
+     */
+    private ReleaseVersionDto.VersionNode buildVersionNodeWithHotfixes(
+            ReleaseVersion version, Map<Long, List<ReleaseVersion>> hotfixesByParentId) {
+
+        // createdAt을 "YYYY-MM-DD" 형식으로 포맷
+        String createdAt = version.getCreatedAt() != null
+                ? version.getCreatedAt().toLocalDate().toString()
+                : null;
+
+        // fileCategories 조회
+        List<FileCategory> fileCategoryEnums = releaseFileRepository
+                .findCategoriesByVersionId(version.getReleaseVersionId());
+        List<String> fileCategories = fileCategoryEnums.stream()
+                .map(FileCategory::getCode)
+                .toList();
+
+        // approvedAt 포매팅
+        String approvedAt = version.getApprovedAt() != null
+                ? version.getApprovedAt().toLocalDate().toString()
+                : null;
+
+        // 핫픽스 목록 조회 및 정렬
+        List<ReleaseVersionDto.VersionNode> hotfixNodes = new ArrayList<>();
+        List<ReleaseVersion> hotfixes = hotfixesByParentId.get(version.getReleaseVersionId());
+        if (hotfixes != null && !hotfixes.isEmpty()) {
+            // 핫픽스 버전 순으로 정렬
+            hotfixes.sort((h1, h2) -> Integer.compare(h1.getHotfixVersion(), h2.getHotfixVersion()));
+            hotfixNodes = hotfixes.stream()
+                    .map(this::buildVersionNodeFromDb)
+                    .toList();
+        }
+
+        return new ReleaseVersionDto.VersionNode(
+                version.getReleaseVersionId(),
+                version.getVersion(),
+                version.getHotfixVersion(),
+                version.isHotfix(),
+                version.getFullVersion(),
+                createdAt,
+                version.getCreatedBy(),
+                version.getComment(),
+                version.getIsApproved(),
+                version.getApprovedBy(),
+                approvedAt,
+                fileCategories,
+                hotfixNodes
+        );
+    }
+
+    /**
      * ReleaseVersion 엔티티로부터 VersionNode 생성 (DB 기반)
+     *
+     * <p>핫픽스 노드 생성 시 사용됩니다. 핫픽스의 핫픽스는 지원되지 않으므로
+     * hotfixes 필드는 항상 빈 리스트로 설정됩니다.
      *
      * @param version 릴리즈 버전 엔티티
      * @return VersionNode
@@ -319,13 +399,17 @@ public class ReleaseVersionTreeService {
         return new ReleaseVersionDto.VersionNode(
                 version.getReleaseVersionId(),
                 version.getVersion(),
+                version.getHotfixVersion(),
+                version.isHotfix(),
+                version.getFullVersion(),
                 createdAt,
                 version.getCreatedBy(),
                 version.getComment(),
                 version.getIsApproved(),
                 version.getApprovedBy(),
                 approvedAt,
-                fileCategories
+                fileCategories,
+                List.of()  // 핫픽스의 하위 핫픽스는 없음
         );
     }
 

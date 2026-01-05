@@ -214,4 +214,100 @@ public class ReleaseVersionFileSystemService {
             // 롤백 실패는 로그만 남기고 예외를 던지지 않음 (원본 예외가 중요)
         }
     }
+
+    /**
+     * 핫픽스 디렉토리 구조 생성
+     *
+     * <pre>
+     * versions/{projectId}/{type}/{majorMinor}.x/{version}/hotfix/{hotfixVersion}/mariadb/
+     * versions/{projectId}/{type}/{majorMinor}.x/{version}/hotfix/{hotfixVersion}/cratedb/
+     * </pre>
+     *
+     * @param hotfixVersion 핫픽스 버전 엔티티
+     * @param parentVersion 원본 버전 엔티티
+     */
+    public void createHotfixDirectoryStructure(ReleaseVersion hotfixVersion, ReleaseVersion parentVersion) {
+        try {
+            String projectId = parentVersion.getProject() != null ? parentVersion.getProject().getProjectId() : "infraeye2";
+            String basePath;
+
+            if ("STANDARD".equals(parentVersion.getReleaseType())) {
+                basePath = String.format("versions/%s/standard/%s/%s/hotfix/%d",
+                        projectId,
+                        parentVersion.getMajorMinor(),
+                        parentVersion.getVersion(),
+                        hotfixVersion.getHotfixVersion());
+            } else {
+                // CUSTOM인 경우 고객사 코드 사용
+                String customerCode = parentVersion.getCustomer() != null
+                        ? parentVersion.getCustomer().getCustomerCode()
+                        : "unknown";
+                basePath = String.format("versions/%s/custom/%s/%s/%s/hotfix/%d",
+                        projectId,
+                        customerCode,
+                        parentVersion.getMajorMinor(),
+                        parentVersion.getVersion(),
+                        hotfixVersion.getHotfixVersion());
+            }
+
+            // 디렉토리 생성
+            Path mariadbPath = Paths.get(baseReleasePath, basePath, "mariadb");
+            Path cratedbPath = Paths.get(baseReleasePath, basePath, "cratedb");
+
+            Files.createDirectories(mariadbPath);
+            Files.createDirectories(cratedbPath);
+
+            log.info("핫픽스 디렉토리 구조 생성 완료: {}", basePath);
+
+        } catch (IOException e) {
+            log.error("핫픽스 디렉토리 생성 실패: {}", hotfixVersion.getFullVersion(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "핫픽스 디렉토리 생성 실패: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 핫픽스 버전 디렉토리 삭제
+     *
+     * @param hotfixVersion 핫픽스 버전 엔티티
+     */
+    public void deleteHotfixDirectory(ReleaseVersion hotfixVersion) {
+        if (hotfixVersion.getParentVersion() == null) {
+            log.warn("핫픽스의 부모 버전이 없습니다: {}", hotfixVersion.getReleaseVersionId());
+            return;
+        }
+
+        ReleaseVersion parentVersion = hotfixVersion.getParentVersion();
+        String projectId = parentVersion.getProject() != null ? parentVersion.getProject().getProjectId() : "infraeye2";
+        Path hotfixPath;
+
+        if ("STANDARD".equals(parentVersion.getReleaseType())) {
+            hotfixPath = Paths.get(baseReleasePath, "versions", projectId, "standard",
+                    parentVersion.getMajorMinor(), parentVersion.getVersion(),
+                    "hotfix", String.valueOf(hotfixVersion.getHotfixVersion()));
+        } else {
+            String customerCode = parentVersion.getCustomer() != null
+                    ? parentVersion.getCustomer().getCustomerCode()
+                    : "unknown";
+            hotfixPath = Paths.get(baseReleasePath, "versions", projectId, "custom",
+                    customerCode, parentVersion.getMajorMinor(), parentVersion.getVersion(),
+                    "hotfix", String.valueOf(hotfixVersion.getHotfixVersion()));
+        }
+
+        if (Files.exists(hotfixPath)) {
+            deleteDirectory(hotfixPath);
+            log.info("핫픽스 디렉토리 삭제 완료: {}", hotfixPath);
+
+            // 빈 hotfix 디렉토리도 정리
+            try {
+                Path parentPath = hotfixPath.getParent();  // hotfix 디렉토리
+                if (parentPath != null && Files.exists(parentPath) && isDirectoryEmpty(parentPath)) {
+                    Files.delete(parentPath);
+                    log.info("빈 hotfix 디렉토리 삭제: {}", parentPath);
+                }
+            } catch (IOException e) {
+                log.warn("hotfix 디렉토리 삭제 실패: {}", hotfixPath.getParent(), e);
+            }
+        }
+    }
 }

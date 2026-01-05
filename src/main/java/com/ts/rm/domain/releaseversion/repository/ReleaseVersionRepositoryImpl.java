@@ -41,6 +41,7 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                 .selectFrom(rv)
                 .where(rv.project.projectId.eq(projectId)  // 프로젝트 ID 필터링 추가
                         .and(rv.releaseType.eq(releaseType))
+                        .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외 (패치 생성에서 핫픽스 미포함)
                         .and(
                                 // fromVersion < version <= toVersion
                                 rv.majorVersion.gt(fromMajor)
@@ -125,6 +126,7 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                 .selectFrom(rv)
                 .where(rv.project.projectId.eq(projectId)  // 프로젝트 ID 필터링 추가
                         .and(rv.releaseType.eq(releaseType))
+                        .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외 (핫픽스는 별도 승인 처리)
                         .and(rv.isApproved.isFalse())  // 미승인 버전만 조회
                         .and(
                                 // fromVersion < version <= toVersion
@@ -174,6 +176,7 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                 .selectFrom(rv)
                 .where(rv.releaseType.eq("CUSTOM")
                         .and(rv.customer.customerId.eq(customerId))
+                        .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외 (패치 생성에서 핫픽스 미포함)
                         .and(
                                 // fromVersion < version <= toVersion (커스텀 버전 기준)
                                 rv.customMajorVersion.gt(fromMajor)
@@ -222,6 +225,7 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                 .selectFrom(rv)
                 .where(rv.releaseType.eq("CUSTOM")
                         .and(rv.customer.customerId.eq(customerId))
+                        .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외 (핫픽스는 별도 승인 처리)
                         .and(rv.isApproved.isFalse())  // 미승인 버전만 조회
                         .and(
                                 // fromVersion < version <= toVersion (커스텀 버전 기준)
@@ -261,6 +265,100 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                 .where(rv.releaseType.eq("CUSTOM")
                         .and(rv.project.projectId.eq(projectId))
                         .and(rv.customer.isNotNull()))
+                .fetch();
+    }
+
+    // ========================================
+    // Hotfix 관련 메서드 구현
+    // ========================================
+
+    @Override
+    public List<ReleaseVersion> findVersionsBetweenExcludingHotfixes(String projectId, String releaseType,
+            String fromVersion, String toVersion) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        // From 버전 파싱
+        String[] fromParts = fromVersion.split("\\.");
+        int fromMajor = Integer.parseInt(fromParts[0]);
+        int fromMinor = Integer.parseInt(fromParts[1]);
+        int fromPatch = Integer.parseInt(fromParts[2]);
+
+        // To 버전 파싱
+        String[] toParts = toVersion.split("\\.");
+        int toMajor = Integer.parseInt(toParts[0]);
+        int toMinor = Integer.parseInt(toParts[1]);
+        int toPatch = Integer.parseInt(toParts[2]);
+
+        return queryFactory
+                .selectFrom(rv)
+                .where(rv.project.projectId.eq(projectId)
+                        .and(rv.releaseType.eq(releaseType))
+                        .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외
+                        .and(
+                                // fromVersion < version <= toVersion
+                                rv.majorVersion.gt(fromMajor)
+                                        .or(rv.majorVersion.eq(fromMajor)
+                                                .and(rv.minorVersion.gt(fromMinor)))
+                                        .or(rv.majorVersion.eq(fromMajor)
+                                                .and(rv.minorVersion.eq(fromMinor))
+                                                .and(rv.patchVersion.gt(fromPatch)))
+                        )
+                        .and(
+                                // version <= toVersion
+                                rv.majorVersion.lt(toMajor)
+                                        .or(rv.majorVersion.eq(toMajor)
+                                                .and(rv.minorVersion.lt(toMinor)))
+                                        .or(rv.majorVersion.eq(toMajor)
+                                                .and(rv.minorVersion.eq(toMinor))
+                                                .and(rv.patchVersion.loe(toPatch)))
+                        )
+                )
+                .orderBy(
+                        rv.majorVersion.asc(),
+                        rv.minorVersion.asc(),
+                        rv.patchVersion.asc()
+                )
+                .fetch();
+    }
+
+    @Override
+    public Integer findMaxHotfixVersionByParentVersionId(Long parentVersionId) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        Integer maxHotfixVersion = queryFactory
+                .select(rv.hotfixVersion.max())
+                .from(rv)
+                .where(rv.parentVersion.releaseVersionId.eq(parentVersionId))
+                .fetchOne();
+
+        return maxHotfixVersion != null ? maxHotfixVersion : 0;
+    }
+
+    @Override
+    public Long countHotfixesByParentVersionId(Long parentVersionId) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        Long count = queryFactory
+                .select(rv.count())
+                .from(rv)
+                .where(rv.parentVersion.releaseVersionId.eq(parentVersionId))
+                .fetchOne();
+
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public List<Long> findVersionIdsWithHotfixes(String projectId, String releaseType) {
+        QReleaseVersion rv = QReleaseVersion.releaseVersion;
+
+        return queryFactory
+                .select(rv.parentVersion.releaseVersionId)
+                .distinct()
+                .from(rv)
+                .where(rv.project.projectId.eq(projectId)
+                        .and(rv.releaseType.eq(releaseType))
+                        .and(rv.parentVersion.isNotNull())
+                        .and(rv.hotfixVersion.gt(0)))
                 .fetch();
     }
 }
