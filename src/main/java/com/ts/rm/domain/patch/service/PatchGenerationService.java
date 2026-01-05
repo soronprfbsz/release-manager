@@ -25,7 +25,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -626,7 +628,8 @@ public class PatchGenerationService {
     /**
      * 모든 파일 복사 (버전별 디렉토리 구조 유지)
      * <p>⚠️ INSTALL 카테고리 버전은 패치 생성에서 제외됩니다.
-     * <p>⚠️ WEB/ENGINE 카테고리는 기본적으로 마지막 버전만 포함됩니다.
+     * <p>⚠️ WEB 카테고리는 해당 파일이 있는 마지막 버전만 포함됩니다.
+     * <p>⚠️ ENGINE 카테고리는 sub_category(NC_SMS, NC_FAULT_MS 등)별로 각각 마지막 버전만 포함됩니다.
      *
      * @param versions 복사할 버전 목록
      * @param outputPath 출력 경로
@@ -636,19 +639,42 @@ public class PatchGenerationService {
         try {
             Path outputDir = Paths.get(releaseBasePath, outputPath);
 
-            // WEB/ENGINE 카테고리의 마지막 버전 파악 (includeAllBuildVersions가 false인 경우에만 사용)
-            ReleaseVersion lastVersionForBuild = null;
+            // WEB은 카테고리 전체에서 마지막 버전, ENGINE은 sub_category별 마지막 버전 파악
+            Long lastVersionIdForWeb = null;
+            // ENGINE: sub_category → 해당 sub_category 파일이 있는 마지막 버전 ID
+            Map<String, Long> lastVersionIdByEngineSubCategory = new HashMap<>();
+
             if (!includeAllBuildVersions && !versions.isEmpty()) {
-                // INSTALL 카테고리가 아닌 마지막 버전 찾기
+                // 모든 버전의 파일을 역순으로 조회하여 마지막 버전 찾기
                 for (int i = versions.size() - 1; i >= 0; i--) {
                     ReleaseVersion v = versions.get(i);
-                    if (v.getReleaseCategory() == null || !v.getReleaseCategory().isExcludedFromPatch()) {
-                        lastVersionForBuild = v;
-                        break;
+
+                    // INSTALL 카테고리 버전은 제외
+                    if (v.getReleaseCategory() != null && v.getReleaseCategory().isExcludedFromPatch()) {
+                        continue;
                     }
-                }
-                if (lastVersionForBuild != null) {
-                    log.info("WEB/ENGINE 카테고리는 마지막 버전({})의 파일만 포함됩니다.", lastVersionForBuild.getVersion());
+
+                    List<ReleaseFile> files = releaseFileRepository
+                            .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(v.getReleaseVersionId());
+
+                    for (ReleaseFile file : files) {
+                        if (file.getFileCategory() == null) continue;
+
+                        // WEB: 아직 찾지 못했으면 이 버전이 마지막
+                        if (lastVersionIdForWeb == null && file.getFileCategory() == FileCategory.WEB) {
+                            lastVersionIdForWeb = v.getReleaseVersionId();
+                            log.info("WEB 카테고리는 버전 {}의 파일만 포함됩니다.", v.getVersion());
+                        }
+
+                        // ENGINE: sub_category별로 아직 찾지 못했으면 이 버전이 해당 sub_category의 마지막
+                        if (file.getFileCategory() == FileCategory.ENGINE) {
+                            String subCategory = file.getSubCategory() != null ? file.getSubCategory() : "ETC";
+                            if (!lastVersionIdByEngineSubCategory.containsKey(subCategory)) {
+                                lastVersionIdByEngineSubCategory.put(subCategory, v.getReleaseVersionId());
+                                log.info("ENGINE/{} 카테고리는 버전 {}의 파일만 포함됩니다.", subCategory, v.getVersion());
+                            }
+                        }
+                    }
                 }
             }
 
@@ -670,21 +696,36 @@ public class PatchGenerationService {
                     continue;
                 }
 
-                // WEB/ENGINE 카테고리 필터링 (마지막 버전이 아닌 경우)
-                boolean isLastVersionForBuild = lastVersionForBuild != null
-                        && version.getReleaseVersionId().equals(lastVersionForBuild.getReleaseVersionId());
-
                 int copiedCount = 0;
                 int skippedBuildCount = 0;
 
                 for (ReleaseFile file : files) {
-                    // WEB/ENGINE 카테고리이고 마지막 버전이 아닌 경우 건너뛰기
-                    if (!includeAllBuildVersions && !isLastVersionForBuild
-                            && file.getFileCategory() != null
-                            && (file.getFileCategory() == FileCategory.WEB
-                                || file.getFileCategory() == FileCategory.ENGINE)) {
-                        skippedBuildCount++;
-                        continue;
+                    // WEB/ENGINE 카테고리 필터링
+                    if (!includeAllBuildVersions && file.getFileCategory() != null) {
+                        boolean shouldSkip = false;
+
+                        // WEB: 마지막 버전이 아니면 건너뛰기
+                        if (file.getFileCategory() == FileCategory.WEB) {
+                            if (lastVersionIdForWeb == null
+                                    || !version.getReleaseVersionId().equals(lastVersionIdForWeb)) {
+                                shouldSkip = true;
+                            }
+                        }
+
+                        // ENGINE: 해당 sub_category의 마지막 버전이 아니면 건너뛰기
+                        if (file.getFileCategory() == FileCategory.ENGINE) {
+                            String subCategory = file.getSubCategory() != null ? file.getSubCategory() : "ETC";
+                            Long lastVersionId = lastVersionIdByEngineSubCategory.get(subCategory);
+                            if (lastVersionId == null
+                                    || !version.getReleaseVersionId().equals(lastVersionId)) {
+                                shouldSkip = true;
+                            }
+                        }
+
+                        if (shouldSkip) {
+                            skippedBuildCount++;
+                            continue;
+                        }
                     }
                     copyFileByCategory(file, version, outputDir);
                     copiedCount++;
