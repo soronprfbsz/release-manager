@@ -195,10 +195,10 @@ public interface ReleaseVersionRepository extends JpaRepository<ReleaseVersion, 
     /**
      * 특정 버전의 핫픽스 목록 조회 (핫픽스 버전 순)
      *
-     * @param parentVersionId 원본 버전 ID
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @return 핫픽스 목록
      */
-    List<ReleaseVersion> findAllByParentVersion_ReleaseVersionIdOrderByHotfixVersionAsc(Long parentVersionId);
+    List<ReleaseVersion> findAllByHotfixBaseVersion_ReleaseVersionIdOrderByHotfixVersionAsc(Long hotfixBaseVersionId);
 
     /**
      * 프로젝트, 릴리즈 타입, 버전, 핫픽스 버전으로 조회
@@ -215,19 +215,19 @@ public interface ReleaseVersionRepository extends JpaRepository<ReleaseVersion, 
     /**
      * 핫픽스 버전 존재 여부 확인
      *
-     * @param parentVersionId 원본 버전 ID
-     * @param hotfixVersion   핫픽스 버전
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
+     * @param hotfixVersion       핫픽스 버전
      * @return 존재 여부
      */
-    boolean existsByParentVersion_ReleaseVersionIdAndHotfixVersion(Long parentVersionId, Integer hotfixVersion);
+    boolean existsByHotfixBaseVersion_ReleaseVersionIdAndHotfixVersion(Long hotfixBaseVersionId, Integer hotfixVersion);
 
     /**
      * 특정 버전에 핫픽스가 존재하는지 확인
      *
-     * @param parentVersionId 원본 버전 ID
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @return 핫픽스 존재 여부
      */
-    boolean existsByParentVersion_ReleaseVersionId(Long parentVersionId);
+    boolean existsByHotfixBaseVersion_ReleaseVersionId(Long hotfixBaseVersionId);
 
     /**
      * 일반 버전만 조회 (핫픽스 제외)

@@ -92,6 +92,14 @@ public class ReleaseVersion {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    @Column(name = "hotfix_version", nullable = false)
+    @Builder.Default
+    private Integer hotfixVersion = 0;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hotfix_base_version_id")
+    private ReleaseVersion hotfixBaseVersion;
+
     @Column(name = "custom_major_version")
     private Integer customMajorVersion;
 
@@ -102,16 +110,8 @@ public class ReleaseVersion {
     private Integer customPatchVersion;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "base_version_id")
-    private ReleaseVersion baseVersion;
-
-    @Column(name = "hotfix_version", nullable = false)
-    @Builder.Default
-    private Integer hotfixVersion = 0;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_version_id")
-    private ReleaseVersion parentVersion;
+    @JoinColumn(name = "custom_base_version_id")
+    private ReleaseVersion customBaseVersion;
 
     @OneToMany(mappedBy = "releaseVersion", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

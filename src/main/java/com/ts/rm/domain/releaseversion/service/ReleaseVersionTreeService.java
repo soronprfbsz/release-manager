@@ -101,11 +101,11 @@ public class ReleaseVersionTreeService {
                 String customerName = firstVersion.getCustomer().getCustomerName();
 
                 // 기준 표준본 정보 (고객사 내 모든 커스텀 버전은 동일한 기준 표준본 사용)
-                Long baseVersionId = firstVersion.getBaseVersion() != null
-                        ? firstVersion.getBaseVersion().getReleaseVersionId()
+                Long customBaseVersionId = firstVersion.getCustomBaseVersion() != null
+                        ? firstVersion.getCustomBaseVersion().getReleaseVersionId()
                         : null;
-                String baseVersion = firstVersion.getBaseVersion() != null
-                        ? firstVersion.getBaseVersion().getVersion()
+                String customBaseVersion = firstVersion.getCustomBaseVersion() != null
+                        ? firstVersion.getCustomBaseVersion().getVersion()
                         : null;
 
                 // 커스텀 버전의 majorMinor로 그룹화 (customMajorMinor 사용)
@@ -116,8 +116,8 @@ public class ReleaseVersionTreeService {
                         customerId,
                         customerCode,
                         customerName,
-                        baseVersionId,
-                        baseVersion,
+                        customBaseVersionId,
+                        customBaseVersion,
                         majorMinorGroups
                 ));
             }
@@ -271,9 +271,9 @@ public class ReleaseVersionTreeService {
 
         for (ReleaseVersion version : versions) {
             if (version.isHotfix()) {
-                // 핫픽스 버전: 부모 버전 ID로 그룹핑
-                Long parentId = version.getParentVersion() != null
-                        ? version.getParentVersion().getReleaseVersionId()
+                // 핫픽스 버전: 원본 버전 ID로 그룹핑
+                Long parentId = version.getHotfixBaseVersion() != null
+                        ? version.getHotfixBaseVersion().getReleaseVersionId()
                         : null;
                 if (parentId != null) {
                     hotfixesByParentId.computeIfAbsent(parentId, k -> new ArrayList<>())

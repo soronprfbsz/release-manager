@@ -235,8 +235,8 @@ public class ReleaseVersionUploadService {
     public ReleaseVersionDto.CreateCustomVersionResponse createCustomVersionWithZip(
             ReleaseVersionDto.CreateCustomVersionRequest request, MultipartFile zipFile, String createdBy) {
 
-        log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 시작 - projectId: {}, customerId: {}, baseVersionId: {}, customVersion: {}, createdBy: {}",
-                request.projectId(), request.customerId(), request.baseVersionId(), request.customVersion(), createdBy);
+        log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 시작 - projectId: {}, customerId: {}, customBaseVersionId: {}, customVersion: {}, createdBy: {}",
+                request.projectId(), request.customerId(), request.customBaseVersionId(), request.customVersion(), createdBy);
 
         // 0. 프로젝트 조회
         Project project = projectRepository.findById(request.projectId())
@@ -257,20 +257,20 @@ public class ReleaseVersionUploadService {
         validateNoUnapprovedCustomVersionExists(request.customerId());
 
         // 3. 기준 표준 버전 조회 및 검증
-        ReleaseVersion baseVersion = null;
-        if (request.baseVersionId() != null) {
-            baseVersion = releaseVersionRepository.findById(request.baseVersionId())
+        ReleaseVersion customBaseVersion = null;
+        if (request.customBaseVersionId() != null) {
+            customBaseVersion = releaseVersionRepository.findById(request.customBaseVersionId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
-                            "기준 버전을 찾을 수 없습니다: " + request.baseVersionId()));
+                            "기준 버전을 찾을 수 없습니다: " + request.customBaseVersionId()));
 
-            if (!"STANDARD".equals(baseVersion.getReleaseType())) {
+            if (!"STANDARD".equals(customBaseVersion.getReleaseType())) {
                 throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
                         "커스텀 버전의 기준 버전은 표준(STANDARD) 버전이어야 합니다.");
             }
         } else if (isFirstCustomVersion) {
-            // 최초 커스텀 버전 생성 시 baseVersionId 필수
+            // 최초 커스텀 버전 생성 시 customBaseVersionId 필수
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "해당 고객사의 최초 커스텀 버전 생성 시 기준 표준 버전 ID(baseVersionId)는 필수입니다.");
+                    "해당 고객사의 최초 커스텀 버전 생성 시 기준 표준 버전 ID(customBaseVersionId)는 필수입니다.");
         }
 
         // 4. 커스텀 버전 파싱
@@ -284,7 +284,7 @@ public class ReleaseVersionUploadService {
         // 시멘틱 버저닝 형식의 전체 버전 문자열 생성
         // 형식: {베이스버전}-{고객사코드}.{커스텀버전}
         // 예: 1.1.0-companyA.1.0.0
-        String fullVersion = baseVersion.getVersion() + "-" + customer.getCustomerCode() + "." + customVersionStr;
+        String fullVersion = customBaseVersion.getVersion() + "-" + customer.getCustomerCode() + "." + customVersionStr;
 
         // 5. 커스텀 버전 중복 검증 (같은 고객사 내에서)
         validateCustomVersionUnique(request.customerId(), customMajorVersion, customMinorVersion, customPatchVersion);
@@ -308,7 +308,7 @@ public class ReleaseVersionUploadService {
 
             // 10. 파일 복사 및 DB 저장 (커스텀 버전은 PATCH로 고정)
             ReleaseVersion savedVersion = copyFilesAndSaveToDbForCustomVersion(
-                    project, customer, baseVersion, tempDir, versionPath,
+                    project, customer, customBaseVersion, tempDir, versionPath,
                     customMajorVersion, customMinorVersion, customPatchVersion,
                     ReleaseCategory.PATCH, request.comment(), createdBy);
 
@@ -321,8 +321,8 @@ public class ReleaseVersionUploadService {
                     request.projectId(),
                     customer.getCustomerCode(),
                     customer.getCustomerName(),
-                    baseVersion != null ? baseVersion.getReleaseVersionId() : null,
-                    baseVersion != null ? baseVersion.getVersion() : null,
+                    customBaseVersion != null ? customBaseVersion.getReleaseVersionId() : null,
+                    customBaseVersion != null ? customBaseVersion.getVersion() : null,
                     customMajorVersion,
                     customMinorVersion,
                     customPatchVersion,
@@ -374,7 +374,7 @@ public class ReleaseVersionUploadService {
      * @return 저장된 ReleaseVersion 엔티티
      */
     private ReleaseVersion copyFilesAndSaveToDbForCustomVersion(
-            Project project, Customer customer, ReleaseVersion baseVersion,
+            Project project, Customer customer, ReleaseVersion customBaseVersion,
             Path tempDir, Path versionPath,
             int customMajorVersion, int customMinorVersion, int customPatchVersion,
             ReleaseCategory releaseCategory, String comment, String createdBy) throws IOException {
@@ -384,7 +384,7 @@ public class ReleaseVersionUploadService {
         // 시멘틱 버저닝 형식의 전체 버전 문자열 생성
         // 형식: {베이스버전}-{고객사코드}.{커스텀버전}
         // 예: 1.1.0-companyA.1.0.0
-        String fullVersion = baseVersion.getVersion() + "-" + customer.getCustomerCode() + "." + customVersionStr;
+        String fullVersion = customBaseVersion.getVersion() + "-" + customer.getCustomerCode() + "." + customVersionStr;
 
         // ReleaseVersion 생성 및 저장 (커스텀 버전 전용 필드 설정)
         // version 필드: 시멘틱 버저닝 형식의 전체 버전 문자열
@@ -396,11 +396,11 @@ public class ReleaseVersionUploadService {
                         .releaseType("CUSTOM")
                         .releaseCategory(releaseCategory)
                         .customer(customer)
-                        .baseVersion(baseVersion)
+                        .customBaseVersion(customBaseVersion)
                         .version(fullVersion)  // 시멘틱 버저닝 형식: 1.1.0-companyA.1.0.0
-                        .majorVersion(baseVersion.getMajorVersion())    // 베이스 버전 기준
-                        .minorVersion(baseVersion.getMinorVersion())    // 베이스 버전 기준
-                        .patchVersion(baseVersion.getPatchVersion())    // 베이스 버전 기준
+                        .majorVersion(customBaseVersion.getMajorVersion())    // 베이스 버전 기준
+                        .minorVersion(customBaseVersion.getMinorVersion())    // 베이스 버전 기준
+                        .patchVersion(customBaseVersion.getPatchVersion())    // 베이스 버전 기준
                         .customMajorVersion(customMajorVersion)
                         .customMinorVersion(customMinorVersion)
                         .customPatchVersion(customPatchVersion)
@@ -409,9 +409,9 @@ public class ReleaseVersionUploadService {
                         .build()
         );
 
-        log.info("커스텀 ReleaseVersion 저장 완료 - ID: {}, version: {}, customVersion: {}, baseVersion: {}",
+        log.info("커스텀 ReleaseVersion 저장 완료 - ID: {}, version: {}, customVersion: {}, customBaseVersion: {}",
                 savedVersion.getReleaseVersionId(), fullVersion, customVersionStr,
-                baseVersion.getVersion());
+                customBaseVersion.getVersion());
 
         // 클로저 테이블에 계층 구조 데이터 추가
         treeService.createHierarchyForNewVersion(savedVersion, "CUSTOM");
@@ -1081,25 +1081,25 @@ public class ReleaseVersionUploadService {
     /**
      * ZIP 파일로 핫픽스 버전 생성
      *
-     * @param parentVersionId 원본 버전 ID
-     * @param comment         패치 노트 내용
-     * @param zipFile         패치 파일이 포함된 ZIP 파일
-     * @param createdBy       생성자 이메일 (JWT에서 추출)
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
+     * @param comment             패치 노트 내용
+     * @param zipFile             패치 파일이 포함된 ZIP 파일
+     * @param createdBy           생성자 이메일 (JWT에서 추출)
      * @return 생성된 핫픽스 응답
      */
     @Transactional
     public ReleaseVersionDto.CreateHotfixResponse createHotfixWithZip(
-            Long parentVersionId, String comment, MultipartFile zipFile, String createdBy) {
+            Long hotfixBaseVersionId, String comment, MultipartFile zipFile, String createdBy) {
 
-        log.info("ZIP 파일로 핫픽스 버전 생성 시작 - parentVersionId: {}, createdBy: {}", parentVersionId, createdBy);
+        log.info("ZIP 파일로 핫픽스 버전 생성 시작 - hotfixBaseVersionId: {}, createdBy: {}", hotfixBaseVersionId, createdBy);
 
         // 1. 원본 버전 조회
-        ReleaseVersion parentVersion = releaseVersionRepository.findById(parentVersionId)
+        ReleaseVersion baseVersion = releaseVersionRepository.findById(hotfixBaseVersionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
-                        "원본 버전을 찾을 수 없습니다: " + parentVersionId));
+                        "원본 버전을 찾을 수 없습니다: " + hotfixBaseVersionId));
 
         // 2. 원본 버전이 핫픽스인지 확인 (핫픽스의 핫픽스는 불가)
-        if (parentVersion.isHotfix()) {
+        if (baseVersion.isHotfix()) {
             throw new BusinessException(ErrorCode.INVALID_HOTFIX_PARENT,
                     "핫픽스 버전에는 추가 핫픽스를 생성할 수 없습니다. 원본 버전에 핫픽스를 생성하세요.");
         }
@@ -1118,32 +1118,32 @@ public class ReleaseVersionUploadService {
             validateZipStructure(tempDir, ReleaseCategory.PATCH);
 
             // 6. 다음 핫픽스 버전 번호 결정
-            Integer maxHotfixVersion = releaseVersionRepository.findMaxHotfixVersionByParentVersionId(parentVersionId);
+            Integer maxHotfixVersion = releaseVersionRepository.findMaxHotfixVersionByHotfixBaseVersionId(hotfixBaseVersionId);
             int nextHotfixVersion = maxHotfixVersion + 1;
 
             // 7. 핫픽스 버전 엔티티 생성 및 저장
             ReleaseVersion hotfixVersion = copyFilesAndSaveToDbForHotfix(
-                    parentVersion, tempDir, nextHotfixVersion, comment, createdBy);
+                    baseVersion, tempDir, nextHotfixVersion, comment, createdBy);
 
             // 8. 핫픽스용 디렉토리 구조 생성
-            hotfixPath = createHotfixDirectory(hotfixVersion, parentVersion);
+            hotfixPath = createHotfixDirectory(hotfixVersion, baseVersion);
 
             // 9. 파일 복사 처리
             copyHotfixFiles(tempDir, hotfixPath, hotfixVersion);
 
-            log.info("ZIP 파일로 핫픽스 버전 생성 완료 - parentVersionId: {}, hotfixVersion: {}, ID: {}",
-                    parentVersionId, nextHotfixVersion, hotfixVersion.getReleaseVersionId());
+            log.info("ZIP 파일로 핫픽스 버전 생성 완료 - hotfixBaseVersionId: {}, hotfixVersion: {}, ID: {}",
+                    hotfixBaseVersionId, nextHotfixVersion, hotfixVersion.getReleaseVersionId());
 
             // 10. 응답 생성
-            String projectId = parentVersion.getProject() != null
-                    ? parentVersion.getProject().getProjectId()
+            String projectId = baseVersion.getProject() != null
+                    ? baseVersion.getProject().getProjectId()
                     : "infraeye2";
 
             return new ReleaseVersionDto.CreateHotfixResponse(
                     hotfixVersion.getReleaseVersionId(),
                     projectId,
-                    parentVersionId,
-                    parentVersion.getVersion(),
+                    hotfixBaseVersionId,
+                    baseVersion.getVersion(),
                     hotfixVersion.getMajorVersion(),
                     hotfixVersion.getMinorVersion(),
                     hotfixVersion.getPatchVersion(),
@@ -1167,7 +1167,7 @@ public class ReleaseVersionUploadService {
             if (hotfixPath != null) {
                 fileSystemService.deleteDirectory(hotfixPath);
             }
-            log.error("ZIP 파일로 핫픽스 버전 생성 실패: parentVersionId={}", parentVersionId, e);
+            log.error("ZIP 파일로 핫픽스 버전 생성 실패: hotfixBaseVersionId={}", hotfixBaseVersionId, e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
                     "핫픽스 버전 생성 중 오류가 발생했습니다: " + e.getMessage());
         } finally {
@@ -1181,42 +1181,42 @@ public class ReleaseVersionUploadService {
     /**
      * 핫픽스용 파일 복사 및 DB 저장
      *
-     * @param parentVersion    원본 버전
-     * @param tempDir          임시 디렉토리 (ZIP 압축 해제 경로)
-     * @param hotfixVersion    핫픽스 버전 번호
-     * @param comment          코멘트
-     * @param createdBy        생성자
+     * @param hotfixBaseVersion 핫픽스 원본 버전
+     * @param tempDir           임시 디렉토리 (ZIP 압축 해제 경로)
+     * @param hotfixVersion     핫픽스 버전 번호
+     * @param comment           코멘트
+     * @param createdBy         생성자
      * @return 저장된 ReleaseVersion 엔티티
      */
     private ReleaseVersion copyFilesAndSaveToDbForHotfix(
-            ReleaseVersion parentVersion, Path tempDir, int hotfixVersion,
+            ReleaseVersion hotfixBaseVersion, Path tempDir, int hotfixVersion,
             String comment, String createdBy) throws IOException {
 
-        // 핫픽스 버전은 부모 버전의 메타데이터를 상속
+        // 핫픽스 버전은 원본 버전의 메타데이터를 상속
         ReleaseVersion savedHotfix = releaseVersionRepository.save(
                 ReleaseVersion.builder()
-                        .project(parentVersion.getProject())
-                        .releaseType(parentVersion.getReleaseType())
+                        .project(hotfixBaseVersion.getProject())
+                        .releaseType(hotfixBaseVersion.getReleaseType())
                         .releaseCategory(ReleaseCategory.PATCH)  // 핫픽스는 항상 PATCH
-                        .customer(parentVersion.getCustomer())
-                        .version(parentVersion.getVersion())
-                        .majorVersion(parentVersion.getMajorVersion())
-                        .minorVersion(parentVersion.getMinorVersion())
-                        .patchVersion(parentVersion.getPatchVersion())
+                        .customer(hotfixBaseVersion.getCustomer())
+                        .version(hotfixBaseVersion.getVersion())
+                        .majorVersion(hotfixBaseVersion.getMajorVersion())
+                        .minorVersion(hotfixBaseVersion.getMinorVersion())
+                        .patchVersion(hotfixBaseVersion.getPatchVersion())
                         .hotfixVersion(hotfixVersion)
-                        .parentVersion(parentVersion)
+                        .hotfixBaseVersion(hotfixBaseVersion)
                         .createdBy(createdBy)
                         .comment(comment)
                         .isApproved(false)  // 핫픽스는 기본 미승인
                         .build()
         );
 
-        log.info("핫픽스 ReleaseVersion 저장 완료 - ID: {}, fullVersion: {}, parentVersion: {}",
+        log.info("핫픽스 ReleaseVersion 저장 완료 - ID: {}, fullVersion: {}, hotfixBaseVersion: {}",
                 savedHotfix.getReleaseVersionId(), savedHotfix.getFullVersion(),
-                parentVersion.getVersion());
+                hotfixBaseVersion.getVersion());
 
         // 클로저 테이블에 계층 구조 데이터 추가 (트리 조회에 필요)
-        treeService.createHierarchyForNewVersion(savedHotfix, parentVersion.getReleaseType());
+        treeService.createHierarchyForNewVersion(savedHotfix, hotfixBaseVersion.getReleaseType());
 
         return savedHotfix;
     }
@@ -1224,32 +1224,32 @@ public class ReleaseVersionUploadService {
     /**
      * 핫픽스 디렉토리 경로 생성
      *
-     * @param hotfixVersion 핫픽스 버전 엔티티
-     * @param parentVersion 원본 버전 엔티티
+     * @param hotfixVersion     핫픽스 버전 엔티티
+     * @param hotfixBaseVersion 핫픽스 원본 버전 엔티티
      * @return 생성된 핫픽스 디렉토리 경로
      */
-    private Path createHotfixDirectory(ReleaseVersion hotfixVersion, ReleaseVersion parentVersion) throws IOException {
-        String projectId = parentVersion.getProject() != null
-                ? parentVersion.getProject().getProjectId()
+    private Path createHotfixDirectory(ReleaseVersion hotfixVersion, ReleaseVersion hotfixBaseVersion) throws IOException {
+        String projectId = hotfixBaseVersion.getProject() != null
+                ? hotfixBaseVersion.getProject().getProjectId()
                 : "infraeye2";
         String basePath;
 
-        if ("STANDARD".equals(parentVersion.getReleaseType())) {
+        if ("STANDARD".equals(hotfixBaseVersion.getReleaseType())) {
             basePath = String.format("versions/%s/standard/%s/%s/hotfix/%d",
                     projectId,
-                    parentVersion.getMajorMinor(),
-                    parentVersion.getVersion(),
+                    hotfixBaseVersion.getMajorMinor(),
+                    hotfixBaseVersion.getVersion(),
                     hotfixVersion.getHotfixVersion());
         } else {
             // CUSTOM인 경우 고객사 코드 사용
-            String customerCode = parentVersion.getCustomer() != null
-                    ? parentVersion.getCustomer().getCustomerCode()
+            String customerCode = hotfixBaseVersion.getCustomer() != null
+                    ? hotfixBaseVersion.getCustomer().getCustomerCode()
                     : "unknown";
             basePath = String.format("versions/%s/custom/%s/%s/%s/hotfix/%d",
                     projectId,
                     customerCode,
-                    parentVersion.getMajorMinor(),
-                    parentVersion.getVersion(),
+                    hotfixBaseVersion.getMajorMinor(),
+                    hotfixBaseVersion.getVersion(),
                     hotfixVersion.getHotfixVersion());
         }
 

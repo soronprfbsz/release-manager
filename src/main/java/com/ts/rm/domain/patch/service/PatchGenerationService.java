@@ -78,14 +78,14 @@ public class PatchGenerationService {
             String fromVersion, String toVersion, String createdBy, String description,
             Long engineerId, String patchName, boolean includeAllBuildVersions) {
 
-        // 버전 조회 (프로젝트 내에서)
-        ReleaseVersion from = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersion(
-                        projectId, releaseType.toUpperCase(), fromVersion)
+        // 버전 조회 (프로젝트 내에서, 핫픽스 제외)
+        ReleaseVersion from = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersionAndHotfixVersion(
+                        projectId, releaseType.toUpperCase(), fromVersion, 0)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                         "From 버전을 찾을 수 없습니다: " + fromVersion));
 
-        ReleaseVersion to = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersion(
-                        projectId, releaseType.toUpperCase(), toVersion)
+        ReleaseVersion to = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersionAndHotfixVersion(
+                        projectId, releaseType.toUpperCase(), toVersion, 0)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                         "To 버전을 찾을 수 없습니다: " + toVersion));
 
@@ -128,9 +128,9 @@ public class PatchGenerationService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                             "From 커스텀 버전을 찾을 수 없습니다: " + fromVersion));
         } else {
-            // 베이스 버전(표준 버전)인 경우: 프로젝트 내 표준 버전에서 조회
-            from = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersion(
-                            projectId, "STANDARD", fromVersion)
+            // 베이스 버전(표준 버전)인 경우: 프로젝트 내 표준 버전에서 조회 (핫픽스 제외)
+            from = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersionAndHotfixVersion(
+                            projectId, "STANDARD", fromVersion, 0)
                     .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                             "From 베이스 버전을 찾을 수 없습니다: " + fromVersion));
         }
@@ -259,9 +259,9 @@ public class PatchGenerationService {
 
         if (isFromBaseVersion) {
             // 베이스 버전에서 시작하는 경우:
-            // - 베이스 버전이 toVersion의 baseVersion과 일치하는지 확인
-            if (toVersion.getBaseVersion() == null ||
-                    !fromVersion.getReleaseVersionId().equals(toVersion.getBaseVersion().getReleaseVersionId())) {
+            // - 베이스 버전이 toVersion의 customBaseVersion과 일치하는지 확인
+            if (toVersion.getCustomBaseVersion() == null ||
+                    !fromVersion.getReleaseVersionId().equals(toVersion.getCustomBaseVersion().getReleaseVersionId())) {
                 throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
                         String.format("From 베이스 버전(%s)은 To 버전(%s)의 기반 버전이어야 합니다.",
                                 fromVersion.getVersion(), toVersion.getVersion()));

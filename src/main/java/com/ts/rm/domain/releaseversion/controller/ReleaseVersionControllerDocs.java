@@ -84,11 +84,11 @@ public interface ReleaseVersionControllerDocs {
             summary = "커스텀 릴리즈 버전 생성",
             description = "ZIP 파일로 커스텀 릴리즈 버전을 생성합니다.\n\n"
                     + "**커스텀 버전 특징**:\n"
-                    + "- 특정 표준 버전(baseVersionId)을 기준으로 파생된 버전\n"
+                    + "- 특정 표준 버전(customBaseVersionId)을 기준으로 파생된 버전\n"
                     + "- 특정 고객사(customerId)를 위한 맞춤 릴리즈\n"
                     + "- 커스텀 버전 번호(customVersion)는 고객사별로 독립적으로 관리\n"
                     + "- **커스텀 버전은 PATCH 카테고리만 지원** (INSTALL 불가)\n\n"
-                    + "**baseVersionId 필수 조건**:\n"
+                    + "**customBaseVersionId 필수 조건**:\n"
                     + "- 해당 고객사의 **최초 커스텀 버전 생성 시 필수**\n"
                     + "- 이후 버전 생성 시에는 선택 (생략 시 null로 저장)\n\n"
                     + "**ZIP 파일 구조 규칙**: database/, web/, engine/ 폴더만 허용\n"
@@ -115,7 +115,7 @@ public interface ReleaseVersionControllerDocs {
             )
     )
     ResponseEntity<ApiResponse<ReleaseVersionDto.CreateCustomVersionResponse>> createCustomVersion(
-            @Parameter(description = "커스텀 버전 정보 (projectId, customerId, baseVersionId, customVersion, comment)", required = true)
+            @Parameter(description = "커스텀 버전 정보 (projectId, customerId, customBaseVersionId, customVersion, comment)", required = true)
             @Valid @ModelAttribute ReleaseVersionDto.CreateCustomVersionRequest request,
 
             @Parameter(description = "패치 파일 ZIP", required = true)
@@ -218,7 +218,7 @@ public interface ReleaseVersionControllerDocs {
                     + "1. customers: 고객사 목록\n"
                     + "2. majorMinorGroups: 각 고객사의 커스텀 메이저.마이너 그룹 목록 (예: 1.0.x, 1.1.x)\n"
                     + "3. versions: 각 그룹 내의 커스텀 버전 목록 (예: 1.0.0, 1.0.1)\n"
-                    + "4. 각 고객사에는 기준 표준본 정보(baseVersionId, baseVersion) 포함 (고객사별로 하나의 기준 표준본)",
+                    + "4. 각 고객사에는 기준 표준본 정보(customBaseVersionId, customBaseVersion) 포함 (고객사별로 하나의 기준 표준본)",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",
@@ -237,8 +237,8 @@ public interface ReleaseVersionControllerDocs {
                                                     "customerId": 1,
                                                     "customerCode": "companyA",
                                                     "customerName": "A회사",
-                                                    "baseVersionId": 5,
-                                                    "baseVersion": "1.1.0",
+                                                    "customBaseVersionId": 5,
+                                                    "customBaseVersion": "1.1.0",
                                                     "majorMinorGroups": [
                                                       {
                                                         "majorMinor": "1.0.x",
@@ -273,8 +273,8 @@ public interface ReleaseVersionControllerDocs {
                                                     "customerId": 2,
                                                     "customerCode": "companyB",
                                                     "customerName": "B회사",
-                                                    "baseVersionId": 8,
-                                                    "baseVersion": "1.2.0",
+                                                    "customBaseVersionId": 8,
+                                                    "customBaseVersion": "1.2.0",
                                                     "majorMinorGroups": [
                                                       {
                                                         "majorMinor": "1.4.x",
@@ -615,8 +615,8 @@ public interface ReleaseVersionControllerDocs {
             summary = "핫픽스 목록 조회",
             description = "특정 버전의 핫픽스 목록을 조회합니다.\n\n"
                     + "**응답 구조**:\n"
-                    + "- parentVersionId: 원본 버전 ID\n"
-                    + "- parentVersion: 원본 버전 번호 (예: 1.3.2)\n"
+                    + "- hotfixBaseVersionId: 핫픽스 원본 버전 ID\n"
+                    + "- hotfixBaseVersion: 핫픽스 원본 버전 번호 (예: 1.3.2)\n"
                     + "- hotfixes: 핫픽스 목록 (버전 순 정렬)",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -630,8 +630,8 @@ public interface ReleaseVersionControllerDocs {
                                             {
                                               "status": "success",
                                               "data": {
-                                                "parentVersionId": 15,
-                                                "parentVersion": "1.3.2",
+                                                "hotfixBaseVersionId": 15,
+                                                "hotfixBaseVersion": "1.3.2",
                                                 "hotfixes": [
                                                   {
                                                     "releaseVersionId": 25,

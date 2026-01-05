@@ -153,16 +153,16 @@ public final class ReleaseVersionDto {
             String customVersion,
 
             @Schema(description = "기준 표준 버전 ID (커스텀인 경우)", example = "2")
-            Long baseVersionId,
+            Long customBaseVersionId,
 
             @Schema(description = "기준 표준 버전 번호 (커스텀인 경우)", example = "1.1.0")
-            String baseVersionNumber,
+            String customBaseVersion,
 
             @Schema(description = "핫픽스 원본 버전 ID (핫픽스인 경우)", example = "5")
-            Long parentVersionId,
+            Long hotfixBaseVersionId,
 
             @Schema(description = "핫픽스 원본 버전 번호 (핫픽스인 경우)", example = "1.1.0")
-            String parentVersionNumber,
+            String hotfixBaseVersion,
 
             @Schema(description = "생성일시")
             LocalDateTime createdAt,
@@ -382,10 +382,10 @@ public final class ReleaseVersionDto {
             String customerName,
 
             @Schema(description = "기준 표준본 버전 ID", example = "5")
-            Long baseVersionId,
+            Long customBaseVersionId,
 
             @Schema(description = "기준 표준본 버전", example = "1.1.0")
-            String baseVersion,
+            String customBaseVersion,
 
             @Schema(description = "커스텀 메이저.마이너 그룹 목록")
             List<CustomMajorMinorNode> majorMinorGroups
@@ -489,7 +489,7 @@ public final class ReleaseVersionDto {
             Long customerId,
 
             @Schema(description = "기준 표준 버전 ID (파생 원본). 해당 고객사의 최초 커스텀 버전 생성 시 필수", example = "2")
-            Long baseVersionId,
+            Long customBaseVersionId,
 
             @Schema(description = "커스텀 버전 (예: 1.0.0)", example = "1.0.0", required = true)
             @NotBlank(message = "커스텀 버전은 필수입니다")
@@ -619,10 +619,10 @@ public final class ReleaseVersionDto {
             String customerName,
 
             @Schema(description = "기준 표준 버전 ID", example = "2")
-            Long baseVersionId,
+            Long customBaseVersionId,
 
             @Schema(description = "기준 표준 버전 번호", example = "1.1.0")
-            String baseVersionNumber,
+            String customBaseVersion,
 
             @Schema(description = "커스텀 메이저 버전", example = "1")
             Integer customMajorVersion,
@@ -688,7 +688,7 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "핫픽스 대상 버전 ID (예: 1.3.2 버전의 ID)", example = "15", required = true)
             @NotNull(message = "핫픽스 대상 버전 ID는 필수입니다")
-            Long parentVersionId,
+            Long hotfixBaseVersionId,
 
             @Schema(description = "패치 노트 내용", example = "특정 버그 수정", required = true)
             @NotBlank(message = "패치 노트 내용은 필수입니다")
@@ -709,11 +709,11 @@ public final class ReleaseVersionDto {
             @Schema(description = "프로젝트 ID", example = "infraeye2")
             String projectId,
 
-            @Schema(description = "핫픽스 대상 버전 ID", example = "15")
-            Long parentVersionId,
+            @Schema(description = "핫픽스 원본 버전 ID", example = "15")
+            Long hotfixBaseVersionId,
 
-            @Schema(description = "핫픽스 대상 버전", example = "1.3.2")
-            String parentVersion,
+            @Schema(description = "핫픽스 원본 버전", example = "1.3.2")
+            String hotfixBaseVersion,
 
             @Schema(description = "메이저 버전", example = "1")
             Integer majorVersion,
@@ -753,11 +753,11 @@ public final class ReleaseVersionDto {
      */
     @Schema(description = "핫픽스 목록 조회 응답")
     public record HotfixListResponse(
-            @Schema(description = "원본 버전 ID", example = "15")
-            Long parentVersionId,
+            @Schema(description = "핫픽스 원본 버전 ID", example = "15")
+            Long hotfixBaseVersionId,
 
-            @Schema(description = "원본 버전", example = "1.3.2")
-            String parentVersion,
+            @Schema(description = "핫픽스 원본 버전", example = "1.3.2")
+            String hotfixBaseVersion,
 
             @Schema(description = "핫픽스 목록")
             List<HotfixItem> hotfixes

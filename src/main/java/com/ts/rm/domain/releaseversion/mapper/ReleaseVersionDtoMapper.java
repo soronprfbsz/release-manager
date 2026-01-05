@@ -34,10 +34,10 @@ public interface ReleaseVersionDtoMapper {
     @Mapping(target = "isHotfix", expression = "java(releaseVersion.isHotfix())")
     @Mapping(target = "fullVersion", expression = "java(releaseVersion.getFullVersion())")
     @Mapping(target = "releaseFiles", source = "releaseFiles")
-    @Mapping(target = "baseVersionId", source = "baseVersion.releaseVersionId")
-    @Mapping(target = "baseVersionNumber", source = "baseVersion.version")
-    @Mapping(target = "parentVersionId", source = "parentVersion.releaseVersionId")
-    @Mapping(target = "parentVersionNumber", source = "parentVersion.version")
+    @Mapping(target = "customBaseVersionId", source = "customBaseVersion.releaseVersionId")
+    @Mapping(target = "customBaseVersion", source = "customBaseVersion.version")
+    @Mapping(target = "hotfixBaseVersionId", source = "hotfixBaseVersion.releaseVersionId")
+    @Mapping(target = "hotfixBaseVersion", source = "hotfixBaseVersion.version")
     ReleaseVersionDto.DetailResponse toDetailResponse(ReleaseVersion releaseVersion);
 
     List<ReleaseVersionDto.DetailResponse> toDetailResponseList(

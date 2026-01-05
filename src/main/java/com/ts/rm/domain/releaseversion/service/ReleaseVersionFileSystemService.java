@@ -223,30 +223,30 @@ public class ReleaseVersionFileSystemService {
      * versions/{projectId}/{type}/{majorMinor}.x/{version}/hotfix/{hotfixVersion}/cratedb/
      * </pre>
      *
-     * @param hotfixVersion 핫픽스 버전 엔티티
-     * @param parentVersion 원본 버전 엔티티
+     * @param hotfixVersion     핫픽스 버전 엔티티
+     * @param hotfixBaseVersion 핫픽스 원본 버전 엔티티
      */
-    public void createHotfixDirectoryStructure(ReleaseVersion hotfixVersion, ReleaseVersion parentVersion) {
+    public void createHotfixDirectoryStructure(ReleaseVersion hotfixVersion, ReleaseVersion hotfixBaseVersion) {
         try {
-            String projectId = parentVersion.getProject() != null ? parentVersion.getProject().getProjectId() : "infraeye2";
+            String projectId = hotfixBaseVersion.getProject() != null ? hotfixBaseVersion.getProject().getProjectId() : "infraeye2";
             String basePath;
 
-            if ("STANDARD".equals(parentVersion.getReleaseType())) {
+            if ("STANDARD".equals(hotfixBaseVersion.getReleaseType())) {
                 basePath = String.format("versions/%s/standard/%s/%s/hotfix/%d",
                         projectId,
-                        parentVersion.getMajorMinor(),
-                        parentVersion.getVersion(),
+                        hotfixBaseVersion.getMajorMinor(),
+                        hotfixBaseVersion.getVersion(),
                         hotfixVersion.getHotfixVersion());
             } else {
                 // CUSTOM인 경우 고객사 코드 사용
-                String customerCode = parentVersion.getCustomer() != null
-                        ? parentVersion.getCustomer().getCustomerCode()
+                String customerCode = hotfixBaseVersion.getCustomer() != null
+                        ? hotfixBaseVersion.getCustomer().getCustomerCode()
                         : "unknown";
                 basePath = String.format("versions/%s/custom/%s/%s/%s/hotfix/%d",
                         projectId,
                         customerCode,
-                        parentVersion.getMajorMinor(),
-                        parentVersion.getVersion(),
+                        hotfixBaseVersion.getMajorMinor(),
+                        hotfixBaseVersion.getVersion(),
                         hotfixVersion.getHotfixVersion());
             }
 
@@ -272,25 +272,25 @@ public class ReleaseVersionFileSystemService {
      * @param hotfixVersion 핫픽스 버전 엔티티
      */
     public void deleteHotfixDirectory(ReleaseVersion hotfixVersion) {
-        if (hotfixVersion.getParentVersion() == null) {
-            log.warn("핫픽스의 부모 버전이 없습니다: {}", hotfixVersion.getReleaseVersionId());
+        if (hotfixVersion.getHotfixBaseVersion() == null) {
+            log.warn("핫픽스의 원본 버전이 없습니다: {}", hotfixVersion.getReleaseVersionId());
             return;
         }
 
-        ReleaseVersion parentVersion = hotfixVersion.getParentVersion();
-        String projectId = parentVersion.getProject() != null ? parentVersion.getProject().getProjectId() : "infraeye2";
+        ReleaseVersion hotfixBaseVersion = hotfixVersion.getHotfixBaseVersion();
+        String projectId = hotfixBaseVersion.getProject() != null ? hotfixBaseVersion.getProject().getProjectId() : "infraeye2";
         Path hotfixPath;
 
-        if ("STANDARD".equals(parentVersion.getReleaseType())) {
+        if ("STANDARD".equals(hotfixBaseVersion.getReleaseType())) {
             hotfixPath = Paths.get(baseReleasePath, "versions", projectId, "standard",
-                    parentVersion.getMajorMinor(), parentVersion.getVersion(),
+                    hotfixBaseVersion.getMajorMinor(), hotfixBaseVersion.getVersion(),
                     "hotfix", String.valueOf(hotfixVersion.getHotfixVersion()));
         } else {
-            String customerCode = parentVersion.getCustomer() != null
-                    ? parentVersion.getCustomer().getCustomerCode()
+            String customerCode = hotfixBaseVersion.getCustomer() != null
+                    ? hotfixBaseVersion.getCustomer().getCustomerCode()
                     : "unknown";
             hotfixPath = Paths.get(baseReleasePath, "versions", projectId, "custom",
-                    customerCode, parentVersion.getMajorMinor(), parentVersion.getVersion(),
+                    customerCode, hotfixBaseVersion.getMajorMinor(), hotfixBaseVersion.getVersion(),
                     "hotfix", String.valueOf(hotfixVersion.getHotfixVersion()));
         }
 

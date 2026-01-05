@@ -79,7 +79,7 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
     /**
      * 커스텀 릴리즈 버전 생성 (ZIP 파일 업로드)
      *
-     * @param request       버전 생성 요청 (customerId, baseVersionId, customVersion, comment)
+     * @param request       버전 생성 요청 (customerId, customBaseVersionId, customVersion, comment)
      * @param patchFiles    패치 파일 ZIP
      * @param authorization JWT 토큰 (Bearer {token})
      * @return 생성된 버전 정보
@@ -91,8 +91,8 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
             @RequestPart("patchFiles") MultipartFile patchFiles,
             @RequestHeader("Authorization") String authorization) {
 
-        log.info("커스텀 릴리즈 버전 생성 요청 - projectId: {}, customerId: {}, baseVersionId: {}, customVersion: {}, comment: {}, fileSize: {}",
-                request.projectId(), request.customerId(), request.baseVersionId(),
+        log.info("커스텀 릴리즈 버전 생성 요청 - projectId: {}, customerId: {}, customBaseVersionId: {}, customVersion: {}, comment: {}, fileSize: {}",
+                request.projectId(), request.customerId(), request.customBaseVersionId(),
                 request.customVersion(), request.comment(), patchFiles.getSize());
 
         // JWT 토큰에서 이메일 추출
@@ -284,7 +284,7 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
             @RequestPart("patchFiles") MultipartFile patchFiles,
             @RequestHeader("Authorization") String authorization) {
 
-        log.info("핫픽스 생성 요청 - parentVersionId: {}, comment: {}, fileSize: {}",
+        log.info("핫픽스 생성 요청 - hotfixBaseVersionId: {}, comment: {}, fileSize: {}",
                 id, request.comment(), patchFiles.getSize());
 
         // JWT 토큰에서 이메일 추출
@@ -315,9 +315,9 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
     public ResponseEntity<ApiResponse<ReleaseVersionDto.HotfixListResponse>> getHotfixesByVersionId(
             @PathVariable Long id) {
 
-        log.info("핫픽스 목록 조회 요청 - parentVersionId: {}", id);
+        log.info("핫픽스 목록 조회 요청 - hotfixBaseVersionId: {}", id);
 
-        ReleaseVersionDto.HotfixListResponse response = releaseVersionService.getHotfixesByParentVersionId(id);
+        ReleaseVersionDto.HotfixListResponse response = releaseVersionService.getHotfixesByHotfixBaseVersionId(id);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

@@ -322,26 +322,26 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
     }
 
     @Override
-    public Integer findMaxHotfixVersionByParentVersionId(Long parentVersionId) {
+    public Integer findMaxHotfixVersionByHotfixBaseVersionId(Long hotfixBaseVersionId) {
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
 
         Integer maxHotfixVersion = queryFactory
                 .select(rv.hotfixVersion.max())
                 .from(rv)
-                .where(rv.parentVersion.releaseVersionId.eq(parentVersionId))
+                .where(rv.hotfixBaseVersion.releaseVersionId.eq(hotfixBaseVersionId))
                 .fetchOne();
 
         return maxHotfixVersion != null ? maxHotfixVersion : 0;
     }
 
     @Override
-    public Long countHotfixesByParentVersionId(Long parentVersionId) {
+    public Long countHotfixesByHotfixBaseVersionId(Long hotfixBaseVersionId) {
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
 
         Long count = queryFactory
                 .select(rv.count())
                 .from(rv)
-                .where(rv.parentVersion.releaseVersionId.eq(parentVersionId))
+                .where(rv.hotfixBaseVersion.releaseVersionId.eq(hotfixBaseVersionId))
                 .fetchOne();
 
         return count != null ? count : 0L;
@@ -352,12 +352,12 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
 
         return queryFactory
-                .select(rv.parentVersion.releaseVersionId)
+                .select(rv.hotfixBaseVersion.releaseVersionId)
                 .distinct()
                 .from(rv)
                 .where(rv.project.projectId.eq(projectId)
                         .and(rv.releaseType.eq(releaseType))
-                        .and(rv.parentVersion.isNotNull())
+                        .and(rv.hotfixBaseVersion.isNotNull())
                         .and(rv.hotfixVersion.gt(0)))
                 .fetch();
     }

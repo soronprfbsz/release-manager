@@ -355,53 +355,53 @@ public class ReleaseVersionService {
     /**
      * 핫픽스 생성
      *
-     * @param parentVersionId 원본 버전 ID
-     * @param comment         코멘트
-     * @param createdBy       생성자
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
+     * @param comment             코멘트
+     * @param createdBy           생성자
      * @return 생성된 핫픽스 버전 상세 정보
      */
     @Transactional
-    public ReleaseVersionDto.CreateHotfixResponse createHotfix(Long parentVersionId, String comment, String createdBy) {
-        log.info("핫픽스 생성 요청 - parentVersionId: {}, createdBy: {}", parentVersionId, createdBy);
+    public ReleaseVersionDto.CreateHotfixResponse createHotfix(Long hotfixBaseVersionId, String comment, String createdBy) {
+        log.info("핫픽스 생성 요청 - hotfixBaseVersionId: {}, createdBy: {}", hotfixBaseVersionId, createdBy);
 
         // 1. 원본 버전 조회
-        ReleaseVersion parentVersion = findVersionById(parentVersionId);
+        ReleaseVersion baseVersion = findVersionById(hotfixBaseVersionId);
 
         // 2. 원본 버전이 핫픽스인지 확인 (핫픽스의 핫픽스는 불가)
-        if (parentVersion.isHotfix()) {
+        if (baseVersion.isHotfix()) {
             throw new BusinessException(ErrorCode.INVALID_HOTFIX_PARENT,
                     "핫픽스 버전에는 추가 핫픽스를 생성할 수 없습니다.");
         }
 
         // 3. 다음 핫픽스 버전 번호 결정
-        Integer maxHotfixVersion = releaseVersionRepository.findMaxHotfixVersionByParentVersionId(parentVersionId);
+        Integer maxHotfixVersion = releaseVersionRepository.findMaxHotfixVersionByHotfixBaseVersionId(hotfixBaseVersionId);
         int nextHotfixVersion = maxHotfixVersion + 1;
 
         // 4. 핫픽스 버전 생성
         ReleaseVersion hotfixVersion = ReleaseVersion.builder()
-                .project(parentVersion.getProject())
-                .releaseType(parentVersion.getReleaseType())
-                .releaseCategory(parentVersion.getReleaseCategory())
-                .customer(parentVersion.getCustomer())
-                .version(parentVersion.getVersion())  // 기본 버전은 동일
-                .majorVersion(parentVersion.getMajorVersion())
-                .minorVersion(parentVersion.getMinorVersion())
-                .patchVersion(parentVersion.getPatchVersion())
+                .project(baseVersion.getProject())
+                .releaseType(baseVersion.getReleaseType())
+                .releaseCategory(baseVersion.getReleaseCategory())
+                .customer(baseVersion.getCustomer())
+                .version(baseVersion.getVersion())  // 기본 버전은 동일
+                .majorVersion(baseVersion.getMajorVersion())
+                .minorVersion(baseVersion.getMinorVersion())
+                .patchVersion(baseVersion.getPatchVersion())
                 .hotfixVersion(nextHotfixVersion)
-                .parentVersion(parentVersion)
+                .hotfixBaseVersion(baseVersion)
                 .createdBy(createdBy)
                 .comment(comment)
                 .isApproved(false)
-                .customMajorVersion(parentVersion.getCustomMajorVersion())
-                .customMinorVersion(parentVersion.getCustomMinorVersion())
-                .customPatchVersion(parentVersion.getCustomPatchVersion())
-                .baseVersion(parentVersion.getBaseVersion())
+                .customMajorVersion(baseVersion.getCustomMajorVersion())
+                .customMinorVersion(baseVersion.getCustomMinorVersion())
+                .customPatchVersion(baseVersion.getCustomPatchVersion())
+                .customBaseVersion(baseVersion.getCustomBaseVersion())
                 .build();
 
         ReleaseVersion savedHotfix = releaseVersionRepository.save(hotfixVersion);
 
         // 5. 핫픽스용 디렉토리 생성
-        fileSystemService.createHotfixDirectoryStructure(savedHotfix, parentVersion);
+        fileSystemService.createHotfixDirectoryStructure(savedHotfix, baseVersion);
 
         log.info("핫픽스 생성 완료 - hotfixVersionId: {}, fullVersion: {}",
                 savedHotfix.getReleaseVersionId(), savedHotfix.getFullVersion());
@@ -409,8 +409,8 @@ public class ReleaseVersionService {
         return new ReleaseVersionDto.CreateHotfixResponse(
                 savedHotfix.getReleaseVersionId(),
                 savedHotfix.getProject().getProjectId(),
-                parentVersionId,
-                parentVersion.getVersion(),
+                hotfixBaseVersionId,
+                baseVersion.getVersion(),
                 savedHotfix.getMajorVersion(),
                 savedHotfix.getMinorVersion(),
                 savedHotfix.getPatchVersion(),
@@ -427,18 +427,18 @@ public class ReleaseVersionService {
     /**
      * 특정 버전의 핫픽스 목록 조회
      *
-     * @param parentVersionId 원본 버전 ID
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @return 핫픽스 목록 응답
      */
-    public ReleaseVersionDto.HotfixListResponse getHotfixesByParentVersionId(Long parentVersionId) {
-        log.info("핫픽스 목록 조회 - parentVersionId: {}", parentVersionId);
+    public ReleaseVersionDto.HotfixListResponse getHotfixesByHotfixBaseVersionId(Long hotfixBaseVersionId) {
+        log.info("핫픽스 목록 조회 - hotfixBaseVersionId: {}", hotfixBaseVersionId);
 
         // 1. 원본 버전 조회
-        ReleaseVersion parentVersion = findVersionById(parentVersionId);
+        ReleaseVersion baseVersion = findVersionById(hotfixBaseVersionId);
 
         // 2. 핫픽스 목록 조회
         List<ReleaseVersion> hotfixes = releaseVersionRepository
-                .findAllByParentVersion_ReleaseVersionIdOrderByHotfixVersionAsc(parentVersionId);
+                .findAllByHotfixBaseVersion_ReleaseVersionIdOrderByHotfixVersionAsc(hotfixBaseVersionId);
 
         // 3. DTO 변환 및 카테고리 정보 추가
         List<ReleaseVersionDto.HotfixItem> hotfixItems = hotfixes.stream()
@@ -446,8 +446,8 @@ public class ReleaseVersionService {
                 .toList();
 
         return new ReleaseVersionDto.HotfixListResponse(
-                parentVersionId,
-                parentVersion.getVersion(),
+                hotfixBaseVersionId,
+                baseVersion.getVersion(),
                 hotfixItems
         );
     }
@@ -478,21 +478,21 @@ public class ReleaseVersionService {
     /**
      * 버전에 핫픽스가 존재하는지 확인
      *
-     * @param parentVersionId 원본 버전 ID
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @return 핫픽스 존재 여부
      */
-    public boolean hasHotfixes(Long parentVersionId) {
-        return releaseVersionRepository.existsByParentVersion_ReleaseVersionId(parentVersionId);
+    public boolean hasHotfixes(Long hotfixBaseVersionId) {
+        return releaseVersionRepository.existsByHotfixBaseVersion_ReleaseVersionId(hotfixBaseVersionId);
     }
 
     /**
      * 핫픽스 개수 조회
      *
-     * @param parentVersionId 원본 버전 ID
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @return 핫픽스 개수
      */
-    public Long getHotfixCount(Long parentVersionId) {
-        return releaseVersionRepository.countHotfixesByParentVersionId(parentVersionId);
+    public Long getHotfixCount(Long hotfixBaseVersionId) {
+        return releaseVersionRepository.countHotfixesByHotfixBaseVersionId(hotfixBaseVersionId);
     }
 
     /**

@@ -284,15 +284,15 @@ public class PatchService {
 
         List<PatchDto.CustomVersionSelectOption> result = new java.util.ArrayList<>();
 
-        // 베이스 버전 추가 (첫 번째 커스텀 버전의 baseVersion에서 가져옴)
+        // 베이스 버전 추가 (첫 번째 커스텀 버전의 customBaseVersion에서 가져옴)
         if (!customVersions.isEmpty()) {
             ReleaseVersion firstCustomVersion = customVersions.get(customVersions.size() - 1); // 가장 오래된 버전
-            ReleaseVersion baseVersion = firstCustomVersion.getBaseVersion();
+            ReleaseVersion customBaseVersion = firstCustomVersion.getCustomBaseVersion();
 
-            if (baseVersion != null) {
+            if (customBaseVersion != null) {
                 result.add(new PatchDto.CustomVersionSelectOption(
-                        baseVersion.getReleaseVersionId(),
-                        baseVersion.getVersion(),
+                        customBaseVersion.getReleaseVersionId(),
+                        customBaseVersion.getVersion(),
                         true, // 표준 버전은 항상 승인됨
                         true  // 베이스 버전
                 ));

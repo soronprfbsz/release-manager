@@ -103,18 +103,18 @@ public interface ReleaseVersionRepositoryCustom {
     /**
      * 특정 버전의 최대 핫픽스 버전 조회
      *
-     * @param parentVersionId 원본 버전 ID
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @return 최대 핫픽스 버전 (없으면 0)
      */
-    Integer findMaxHotfixVersionByParentVersionId(Long parentVersionId);
+    Integer findMaxHotfixVersionByHotfixBaseVersionId(Long hotfixBaseVersionId);
 
     /**
      * 특정 버전의 핫픽스 개수 조회
      *
-     * @param parentVersionId 원본 버전 ID
+     * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @return 핫픽스 개수
      */
-    Long countHotfixesByParentVersionId(Long parentVersionId);
+    Long countHotfixesByHotfixBaseVersionId(Long hotfixBaseVersionId);
 
     /**
      * 프로젝트별 핫픽스가 있는 버전 목록 조회
