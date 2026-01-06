@@ -183,8 +183,12 @@ public class ReleaseVersionService {
             releaseVersionRepository.delete(version);
             log.info("release_version 삭제 완료");
 
-            // 5. 파일 시스템 삭제
-            fileSystemService.deleteVersionDirectory(version);
+            // 5. 파일 시스템 삭제 (핫픽스인 경우 hotfix 디렉토리만 삭제)
+            if (version.isHotfix()) {
+                fileSystemService.deleteHotfixDirectory(version);
+            } else {
+                fileSystemService.deleteVersionDirectory(version);
+            }
 
             log.info("버전 삭제 완료 - version: {}", versionNumber);
 
