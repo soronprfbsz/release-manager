@@ -59,10 +59,7 @@ public final class ServiceDto {
             String serviceType,
 
             @Schema(description = "설명", example = "Infraeye 1 운영 환경 접속 정보")
-            String description,
-
-            @Schema(description = "활성 여부", example = "true")
-            Boolean isActive
+            String description
     ) {
     }
 
@@ -98,10 +95,7 @@ public final class ServiceDto {
             Integer sshPort,
 
             @Schema(description = "설명", example = "운영 데이터베이스 접속 정보")
-            String description,
-
-            @Schema(description = "활성 여부", example = "true")
-            Boolean isActive
+            String description
     ) {
     }
 
@@ -157,9 +151,6 @@ public final class ServiceDto {
             @Schema(description = "설명", example = "Infraeye 1 운영 환경 접속 정보")
             String description,
 
-            @Schema(description = "활성 여부", example = "true")
-            Boolean isActive,
-
             @Schema(description = "컴포넌트 목록")
             List<ComponentResponse> components,
 
@@ -193,9 +184,6 @@ public final class ServiceDto {
 
             @Schema(description = "서비스 분류명", example = "Infraeye 1")
             String serviceTypeName,
-
-            @Schema(description = "활성 여부", example = "true")
-            Boolean isActive,
 
             @Schema(description = "컴포넌트 개수", example = "3")
             Integer componentCount,
@@ -238,10 +226,7 @@ public final class ServiceDto {
             String description,
 
             @Schema(description = "정렬 순서", example = "1")
-            Integer sortOrder,
-
-            @Schema(description = "활성 여부", example = "true")
-            Boolean isActive
+            Integer sortOrder
     ) {
     }
 }

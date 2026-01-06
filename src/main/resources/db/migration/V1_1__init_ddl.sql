@@ -235,6 +235,58 @@ CREATE TABLE IF NOT EXISTS resource_link (
     INDEX idx_rl_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='리소스 링크 테이블';
 
+-- =========================================================
+-- Publishing Tables
+-- =========================================================
+-- 퍼블리싱(HTML, CSS, JS 등 웹 화면단 리소스) 관리
+-- ZIP 파일로 업로드하여 폴더 구조 유지
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS publishing (
+    publishing_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '퍼블리싱 ID',
+    publishing_name VARCHAR(255) NOT NULL COMMENT '퍼블리싱 명',
+    description TEXT COMMENT '퍼블리싱 설명',
+    publishing_category VARCHAR(50) NOT NULL COMMENT '카테고리 (code_type: PUBLISHING_CATEGORY)',
+    sub_category VARCHAR(50) COMMENT '서브 카테고리 (code_type: PUBLISHING_SUBCATEGORY_XXX)',
+    customer_id BIGINT COMMENT '고객사 ID (커스터마이징인 경우)',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
+    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    updated_by VARCHAR(100) COMMENT '수정자',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_pub_category (publishing_category),
+    INDEX idx_pub_sub_category (sub_category),
+    INDEX idx_pub_customer_id (customer_id),
+    INDEX idx_pub_sort_order (sort_order),
+    INDEX idx_pub_created_at (created_at),
+
+    CONSTRAINT fk_publishing_customer FOREIGN KEY (customer_id)
+        REFERENCES customer(customer_id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='퍼블리싱 테이블';
+
+CREATE TABLE IF NOT EXISTS publishing_file (
+    publishing_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '퍼블리싱 파일 ID',
+    publishing_id BIGINT NOT NULL COMMENT '퍼블리싱 ID',
+    file_type VARCHAR(20) NOT NULL COMMENT '파일 타입 (확장자 대문자: HTML, CSS, JS, PNG 등)',
+    file_name VARCHAR(255) NOT NULL COMMENT '파일명',
+    file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (publishing/ 하위 상대경로)',
+    file_size BIGINT COMMENT '파일 크기 (bytes)',
+    checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (publishing 내에서)',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_pf_publishing_id (publishing_id),
+    INDEX idx_pf_file_type (file_type),
+    INDEX idx_pf_file_name (file_name),
+    INDEX idx_pf_file_path (file_path),
+    INDEX idx_pf_sort_order (sort_order),
+
+    CONSTRAINT fk_publishing_file_publishing FOREIGN KEY (publishing_id)
+        REFERENCES publishing(publishing_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='퍼블리싱 파일 테이블';
+
 CREATE TABLE IF NOT EXISTS backup_file (
     backup_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '백업 파일 ID',
     file_category VARCHAR(20) NOT NULL COMMENT '파일 카테고리 (MARIADB, CRATEDB)',
@@ -410,7 +462,6 @@ CREATE TABLE IF NOT EXISTS service (
     service_type VARCHAR(50) NOT NULL COMMENT '서비스 분류 (SERVICE_TYPE 코드)',
     description TEXT COMMENT '설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (SERVICE_TYPE의 sort_order 값)',
-    is_active BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
     created_by VARCHAR(100) NOT NULL COMMENT '생성자',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_by VARCHAR(100) COMMENT '수정자',
@@ -419,7 +470,6 @@ CREATE TABLE IF NOT EXISTS service (
     INDEX idx_service_type (service_type),
     INDEX idx_service_name (service_name),
     INDEX idx_sort_order (sort_order),
-    INDEX idx_is_active (is_active),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='서비스 관리';
 
@@ -435,7 +485,6 @@ CREATE TABLE IF NOT EXISTS service_component (
     ssh_port INT COMMENT 'SSH 포트번호',
     description TEXT COMMENT '설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
-    is_active BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
     created_by VARCHAR(100) NOT NULL COMMENT '생성자',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_by VARCHAR(100) COMMENT '수정자',
@@ -445,7 +494,6 @@ CREATE TABLE IF NOT EXISTS service_component (
     INDEX idx_component_type (component_type),
     INDEX idx_component_name (component_name),
     INDEX idx_sort_order (sort_order),
-    INDEX idx_is_active (is_active),
 
     CONSTRAINT fk_component_service FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='서비스 컴포넌트 (접속 정보)';

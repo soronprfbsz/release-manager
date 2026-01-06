@@ -70,6 +70,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/resources/*/download").permitAll()  // 리소스 파일 다운로드
                         .requestMatchers("/api/jobs/backup-files/*/download").permitAll() // 백업 파일 다운로드
                         .requestMatchers("/api/jobs/backup-files/*/logs/download").permitAll() // 백업 로그 다운로드
+                        .requestMatchers("/api/publishing/*/serve/**").permitAll() // 퍼블리싱 파일 서빙 (브라우저 열기)
+                        .requestMatchers("/api/publishing/*/files/*/download").permitAll() // 퍼블리싱 파일 다운로드
+                        .requestMatchers("/api/publishing/*/download").permitAll() // 퍼블리싱 전체 다운로드
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )

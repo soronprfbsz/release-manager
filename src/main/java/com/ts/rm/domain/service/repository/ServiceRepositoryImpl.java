@@ -24,15 +24,14 @@ public class ServiceRepositoryImpl implements ServiceRepositoryCustom {
     private static final QServiceComponent component = QServiceComponent.serviceComponent;
 
     @Override
-    public List<Service> findAllWithFilters(String serviceType, String keyword, Boolean isActive) {
+    public List<Service> findAllWithFilters(String serviceType, String keyword) {
         return queryFactory
                 .selectDistinct(service)
                 .from(service)
                 .leftJoin(service.components, component).fetchJoin()
                 .where(
                         serviceTypeCondition(serviceType),
-                        keywordCondition(keyword),
-                        isActiveCondition(isActive)
+                        keywordCondition(keyword)
                 )
                 .orderBy(service.sortOrder.asc(), service.createdAt.desc())
                 .fetch();
@@ -45,13 +44,6 @@ public class ServiceRepositoryImpl implements ServiceRepositoryCustom {
         return (serviceType != null && !serviceType.trim().isEmpty())
                 ? service.serviceType.eq(serviceType.trim())
                 : null;
-    }
-
-    /**
-     * 활성 여부 조건
-     */
-    private BooleanExpression isActiveCondition(Boolean isActive) {
-        return isActive != null ? service.isActive.eq(isActive) : null;
     }
 
     /**

@@ -44,15 +44,6 @@ public interface ServiceRepository extends JpaRepository<Service, Long>, Service
     List<Service> findByServiceNameContainingWithComponents(@Param("serviceName") String serviceName);
 
     /**
-     * 활성 상태로 조회 (컴포넌트 포함 fetch join)
-     *
-     * @param isActive 활성 여부
-     * @return 서비스 목록
-     */
-    @Query("SELECT DISTINCT s FROM Service s LEFT JOIN FETCH s.components WHERE s.isActive = :isActive ORDER BY s.sortOrder ASC, s.createdAt DESC")
-    List<Service> findByIsActiveWithComponents(@Param("isActive") Boolean isActive);
-
-    /**
      * 전체 목록 조회 (컴포넌트 포함 fetch join, sortOrder 오름차순 → 생성일시 내림차순)
      *
      * @return 서비스 목록

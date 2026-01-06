@@ -71,10 +71,6 @@ public class ServiceComponent {
     @Builder.Default
     private Integer sortOrder = 0;
 
-    @Column(name = "is_active", nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
-
     @Column(name = "created_by", nullable = false, length = 100)
     private String createdBy;
 
@@ -109,12 +105,11 @@ public class ServiceComponent {
      * @param url           URL
      * @param description   설명
      * @param sshPort       SSH 포트
-     * @param isActive      활성 여부
      * @param updatedBy     수정자
      */
     public void update(ComponentType componentType, String componentName,
                        String host, Integer port, String url,
-                       String description, Integer sshPort, Boolean isActive,
+                       String description, Integer sshPort,
                        String updatedBy) {
         if (componentType != null) {
             this.componentType = componentType;
@@ -129,9 +124,6 @@ public class ServiceComponent {
         this.description = description;
         this.sshPort = sshPort;
 
-        if (isActive != null) {
-            this.isActive = isActive;
-        }
         if (updatedBy != null && !updatedBy.isBlank()) {
             this.updatedBy = updatedBy;
         }

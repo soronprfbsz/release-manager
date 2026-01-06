@@ -45,10 +45,6 @@ public class Service extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "is_active", nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
-
     @Column(name = "sort_order", nullable = false)
     @Builder.Default
     private Integer sortOrder = 0;
@@ -70,11 +66,10 @@ public class Service extends BaseEntity {
      * @param serviceName 서비스명
      * @param serviceType 서비스 분류
      * @param description 설명
-     * @param isActive    활성 여부
      * @param updatedBy   수정자
      */
     public void update(String serviceName, String serviceType,
-                       String description, Boolean isActive, String updatedBy) {
+                       String description, String updatedBy) {
         if (serviceName != null && !serviceName.isBlank()) {
             this.serviceName = serviceName;
         }
@@ -83,9 +78,6 @@ public class Service extends BaseEntity {
         }
         if (description != null) {
             this.description = description;
-        }
-        if (isActive != null) {
-            this.isActive = isActive;
         }
         if (updatedBy != null && !updatedBy.isBlank()) {
             this.updatedBy = updatedBy;

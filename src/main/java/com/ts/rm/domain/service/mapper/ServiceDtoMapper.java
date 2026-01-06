@@ -48,7 +48,6 @@ public interface ServiceDtoMapper {
     @Mapping(target = "service", ignore = true)
     @Mapping(target = "componentType", expression = "java(toComponentType(request.componentType()))")
     @Mapping(target = "sortOrder", ignore = true)
-    @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)

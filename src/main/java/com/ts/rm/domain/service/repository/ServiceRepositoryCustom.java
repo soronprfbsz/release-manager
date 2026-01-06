@@ -15,8 +15,7 @@ public interface ServiceRepositoryCustom {
      *
      * @param serviceType 서비스 타입 (null이면 전체)
      * @param keyword 검색 키워드 (서비스명, 서비스타입, 설명)
-     * @param isActive 활성 여부 (null이면 전체)
      * @return 서비스 목록 (컴포넌트 포함)
      */
-    List<Service> findAllWithFilters(String serviceType, String keyword, Boolean isActive);
+    List<Service> findAllWithFilters(String serviceType, String keyword);
 }

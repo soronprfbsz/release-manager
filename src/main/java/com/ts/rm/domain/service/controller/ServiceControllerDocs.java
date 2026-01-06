@@ -41,7 +41,6 @@ public interface ServiceControllerDocs {
                                                 "serviceType": "infraeye1",
                                                 "serviceTypeName": "Infraeye 1",
                                                 "description": "Infraeye 1 운영 환경 접속 정보",
-                                                "isActive": true,
                                                 "components": [
                                                   {
                                                     "componentId": 1,
@@ -53,8 +52,7 @@ public interface ServiceControllerDocs {
                                                     "url": null,
                                                     "sshPort": 22,
                                                     "description": "운영 데이터베이스",
-                                                    "sortOrder": 1,
-                                                    "isActive": true
+                                                    "sortOrder": 1
                                                   },
                                                   {
                                                     "componentId": 2,
@@ -66,8 +64,7 @@ public interface ServiceControllerDocs {
                                                     "url": "https://infraeye1.example.com",
                                                     "sshPort": null,
                                                     "description": "운영 웹 애플리케이션",
-                                                    "sortOrder": 2,
-                                                    "isActive": true
+                                                    "sortOrder": 2
                                                   }
                                                 ],
                                                 "createdAt": "2025-12-12T10:30:00",
@@ -105,7 +102,6 @@ public interface ServiceControllerDocs {
                                                 "serviceType": "infraeye1",
                                                 "serviceTypeName": "Infraeye 1",
                                                 "description": "Infraeye 1 운영 환경 접속 정보",
-                                                "isActive": true,
                                                 "components": [
                                                   {
                                                     "componentId": 1,
@@ -117,8 +113,7 @@ public interface ServiceControllerDocs {
                                                     "url": null,
                                                     "sshPort": 22,
                                                     "description": "운영 데이터베이스",
-                                                    "sortOrder": 1,
-                                                    "isActive": true
+                                                    "sortOrder": 1
                                                   }
                                                 ],
                                                 "createdAt": "2025-12-12T10:30:00",
@@ -156,7 +151,6 @@ public interface ServiceControllerDocs {
                                                   "serviceType": "infraeye1",
                                                   "serviceTypeName": "Infraeye 1",
                                                   "description": "Infraeye 1 운영 환경 접속 정보",
-                                                  "isActive": true,
                                                   "components": [
                                                     {
                                                       "componentId": 1,
@@ -168,8 +162,7 @@ public interface ServiceControllerDocs {
                                                       "url": null,
                                                       "sshPort": 22,
                                                       "description": "운영 데이터베이스",
-                                                      "sortOrder": 1,
-                                                      "isActive": true
+                                                      "sortOrder": 1
                                                     }
                                                   ],
                                                   "createdAt": "2025-12-12T10:30:00",
@@ -183,7 +176,6 @@ public interface ServiceControllerDocs {
                                                   "serviceType": "infraeye2",
                                                   "serviceTypeName": "Infraeye 2",
                                                   "description": "Infraeye 2 운영 환경 접속 정보",
-                                                  "isActive": true,
                                                   "components": [
                                                     {
                                                       "componentId": 3,
@@ -195,8 +187,7 @@ public interface ServiceControllerDocs {
                                                       "url": "https://infraeye2.example.com",
                                                       "sshPort": null,
                                                       "description": "운영 웹 애플리케이션",
-                                                      "sortOrder": 1,
-                                                      "isActive": true
+                                                      "sortOrder": 1
                                                     }
                                                   ],
                                                   "createdAt": "2025-12-12T11:00:00",
@@ -216,10 +207,7 @@ public interface ServiceControllerDocs {
             @RequestParam(required = false) String serviceType,
 
             @Parameter(description = "검색 키워드 (서비스명, 서비스타입, 설명 통합 검색)", example = "운영")
-            @RequestParam(required = false) String keyword,
-
-            @Parameter(description = "활성 상태 필터", example = "true")
-            @RequestParam(required = false) Boolean isActive);
+            @RequestParam(required = false) String keyword);
 
     @Operation(summary = "서비스 수정", description = "서비스 정보를 수정합니다")
     @ApiResponses({
@@ -240,7 +228,6 @@ public interface ServiceControllerDocs {
                                                 "serviceType": "infraeye1",
                                                 "serviceTypeName": "Infraeye 1",
                                                 "description": "수정된 설명",
-                                                "isActive": true,
                                                 "components": [
                                                   {
                                                     "componentId": 1,
@@ -252,8 +239,7 @@ public interface ServiceControllerDocs {
                                                     "url": null,
                                                     "sshPort": 22,
                                                     "description": "운영 데이터베이스",
-                                                    "sortOrder": 1,
-                                                    "isActive": true
+                                                    "sortOrder": 1
                                                   }
                                                 ],
                                                 "createdAt": "2025-12-12T10:30:00",
@@ -303,8 +289,7 @@ public interface ServiceControllerDocs {
                                                 "url": null,
                                                 "sshPort": 22,
                                                 "description": "데이터 분석 엔진",
-                                                "sortOrder": 3,
-                                                "isActive": true
+                                                "sortOrder": 3
                                               }
                                             }
                                             """
@@ -340,8 +325,7 @@ public interface ServiceControllerDocs {
                                                 "url": null,
                                                 "sshPort": 22,
                                                 "description": "수정된 데이터베이스 설명",
-                                                "sortOrder": 1,
-                                                "isActive": true
+                                                "sortOrder": 1
                                               }
                                             }
                                             """

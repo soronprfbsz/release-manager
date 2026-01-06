@@ -50,7 +50,6 @@ public class ServiceService {
                 .serviceName(request.serviceName())
                 .serviceType(request.serviceType())
                 .description(request.description())
-                .isActive(true)
                 .sortOrder(sortOrder)
                 .createdBy(createdBy)
                 .build();
@@ -92,13 +91,12 @@ public class ServiceService {
      *
      * @param serviceType 서비스 타입 필터 (null이면 전체)
      * @param keyword 검색 키워드 - 서비스명, 서비스타입, 설명 통합 검색 (null이면 전체)
-     * @param isActive 활성 여부 필터 (null이면 전체)
      * @return 서비스 목록
      */
     public List<ServiceDto.DetailResponse> getServices(
-            String serviceType, String keyword, Boolean isActive) {
+            String serviceType, String keyword) {
         // QueryDSL 기반 다중 필드 검색
-        List<Service> services = serviceRepository.findAllWithFilters(serviceType, keyword, isActive);
+        List<Service> services = serviceRepository.findAllWithFilters(serviceType, keyword);
 
         return services.stream()
                 .map(this::toDetailResponseWithNames)
@@ -125,7 +123,7 @@ public class ServiceService {
         }
 
         service.update(request.serviceName(), request.serviceType(),
-                request.description(), request.isActive(), updatedBy);
+                request.description(), updatedBy);
 
         log.info("Service updated successfully: {}", serviceId);
         return toDetailResponseWithNames(service);
@@ -189,7 +187,7 @@ public class ServiceService {
 
         component.update(componentType, request.componentName(),
                 request.host(), request.port(), request.url(),
-                request.description(), request.sshPort(), request.isActive(), updatedBy);
+                request.description(), request.sshPort(), updatedBy);
 
         log.info("Component updated successfully: {}", componentId);
         return toComponentResponseWithName(component);
@@ -342,7 +340,6 @@ public class ServiceService {
                 .sshPort(request.sshPort())
                 .description(request.description())
                 .sortOrder(0) // 임시값, 나중에 재계산됨
-                .isActive(request.isActive() != null ? request.isActive() : true)
                 .createdBy(createdBy)
                 .build();
     }
@@ -375,7 +372,7 @@ public class ServiceService {
         return new ServiceDto.DetailResponse(
                 response.serviceId(), response.serviceName(),
                 response.serviceType(), serviceTypeName,
-                response.description(), response.isActive(),
+                response.description(),
                 components,
                 response.createdAt(), response.createdBy(),
                 response.updatedAt(), response.updatedBy()
@@ -391,7 +388,6 @@ public class ServiceService {
         return new ServiceDto.SimpleResponse(
                 response.serviceId(), response.serviceName(),
                 response.serviceType(), serviceTypeName,
-                response.isActive(),
                 componentCount, response.createdAt()
         );
     }
@@ -406,7 +402,7 @@ public class ServiceService {
                 response.componentName(),
                 response.host(), response.port(), response.url(),
                 response.sshPort(),
-                response.description(), response.sortOrder(), response.isActive()
+                response.description(), response.sortOrder()
         );
     }
 

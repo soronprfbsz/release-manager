@@ -28,7 +28,11 @@ INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VA
 ('LINK_SUBCATEGORY', '링크 서브 카테고리', '리소스 링크 서브 카테고리', TRUE),
 ('FILE_SYNC_STATUS', '파일 동기화 상태', '파일시스템과 DB 메타데이터 간의 동기화 상태', TRUE),
 ('FILE_SYNC_TARGET', '파일 동기화 대상', '동기화 가능한 파일 유형', TRUE),
-('FILE_SYNC_ACTION', '파일 동기화 액션', '불일치 항목에 대해 수행할 수 있는 액션', TRUE);
+('FILE_SYNC_ACTION', '파일 동기화 액션', '불일치 항목에 대해 수행할 수 있는 액션', TRUE),
+('PUBLISHING_CATEGORY', '퍼블리싱 카테고리', '퍼블리싱 제품 분류', TRUE),
+('PUBLISHING_SUBCATEGORY_INFRAEYE1', 'Infraeye 1 퍼블리싱 서브 카테고리', 'Infraeye 1 퍼블리싱 기능 분류', TRUE),
+('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'Infraeye 2 퍼블리싱 서브 카테고리', 'Infraeye 2 퍼블리싱 기능 분류', TRUE),
+('PUBLISHING_SUBCATEGORY_COMMON', '공통 퍼블리싱 서브 카테고리', '공통 퍼블리싱 기능 분류', TRUE);
 
 -- =========================================================
 -- code 테이블 (모든 코드 데이터)
@@ -225,6 +229,32 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('LINK_SUBCATEGORY', 'NOTION', '노션', '노션 문서 링크', 1, TRUE),
 ('LINK_SUBCATEGORY', 'SHARED-EXCEL', '공유 엑셀', '공유 엑셀 문서 링크', 2, TRUE),
 ('LINK_SUBCATEGORY', 'ETC', '기타', '기타 링크', 99, TRUE);
+
+-- PUBLISHING_CATEGORY
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('PUBLISHING_CATEGORY', 'INFRAEYE1', 'Infraeye 1', 'Infraeye 1 제품 퍼블리싱', 1, TRUE),
+('PUBLISHING_CATEGORY', 'INFRAEYE2', 'Infraeye 2', 'Infraeye 2 제품 퍼블리싱', 2, TRUE),
+('PUBLISHING_CATEGORY', 'COMMON', '공통', '공통 퍼블리싱', 3, TRUE),
+('PUBLISHING_CATEGORY', 'ETC', '기타', '기타 퍼블리싱', 99, TRUE);
+
+-- PUBLISHING_SUBCATEGORY_INFRAEYE1
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('PUBLISHING_SUBCATEGORY_INFRAEYE1', 'DASHBOARD', '대시보드', '대시보드 관련 퍼블리싱', 1, TRUE),
+('PUBLISHING_SUBCATEGORY_INFRAEYE1', 'REPORT', '리포트', '리포트 관련 퍼블리싱', 2, TRUE),
+('PUBLISHING_SUBCATEGORY_INFRAEYE1', 'ETC', '기타', '기타 퍼블리싱', 99, TRUE);
+
+-- PUBLISHING_SUBCATEGORY_INFRAEYE2
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'DASHBOARD', '대시보드', '대시보드 관련 퍼블리싱', 1, TRUE),
+('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'REPORT', '리포트', '리포트 관련 퍼블리싱', 2, TRUE),
+('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'MONITORING', '모니터링', '모니터링 관련 퍼블리싱', 3, TRUE),
+('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'ETC', '기타', '기타 퍼블리싱', 99, TRUE);
+
+-- PUBLISHING_SUBCATEGORY_COMMON
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('PUBLISHING_SUBCATEGORY_COMMON', 'COMPONENT', '컴포넌트', '공통 컴포넌트 퍼블리싱', 1, TRUE),
+('PUBLISHING_SUBCATEGORY_COMMON', 'LAYOUT', '레이아웃', '공통 레이아웃 퍼블리싱', 2, TRUE),
+('PUBLISHING_SUBCATEGORY_COMMON', 'ETC', '기타', '기타 퍼블리싱', 99, TRUE);
 
 -- FILE_SYNC_STATUS
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
