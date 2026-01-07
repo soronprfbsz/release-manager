@@ -38,7 +38,7 @@ public class ResourceFileSyncAdapter implements FileSyncAdapter {
 
     @Override
     public String getBaseScanPath() {
-        return "resource";
+        return "resources/file";
     }
 
     @Override
@@ -63,10 +63,10 @@ public class ResourceFileSyncAdapter implements FileSyncAdapter {
         // 파일 확장자에서 fileType 추출
         String fileType = extractFileType(metadata.getFileName());
 
-        // 경로에서 카테고리/서브카테고리 추출 (resource/{category}/{subCategory}/...)
+        // 경로에서 카테고리/서브카테고리 추출 (resources/file/{category}/{subCategory}/...)
         String[] pathParts = metadata.getFilePath().split("/");
-        String fileCategory = pathParts.length > 1 ? pathParts[1].toUpperCase() : "ETC";
-        String subCategory = pathParts.length > 2 ? pathParts[2].toUpperCase() : null;
+        String fileCategory = pathParts.length > 2 ? pathParts[2].toUpperCase() : "ETC";
+        String subCategory = pathParts.length > 3 ? pathParts[3].toUpperCase() : null;
 
         // additionalData에서 오버라이드 가능
         fileCategory = extractStringOrDefault(additionalData, "fileCategory", fileCategory);
@@ -142,7 +142,7 @@ public class ResourceFileSyncAdapter implements FileSyncAdapter {
     /**
      * 유효한 동기화 경로인지 확인
      *
-     * <p>리소스 파일은 resource/{category}/{subCategory}/{fileName} 형식이어야 합니다.
+     * <p>리소스 파일은 resources/file/{category}/{subCategory}/{fileName} 형식이어야 합니다.
      * 올바른 경로가 아니면 DB 메타데이터를 생성할 수 없으므로 동기화 대상에서 제외합니다.
      *
      * @param filePath 파일 경로
@@ -154,23 +154,29 @@ public class ResourceFileSyncAdapter implements FileSyncAdapter {
             return false;
         }
 
-        // 경로 형식: resource/{category}/{subCategory}/{fileName}
-        // 최소 4개의 경로 부분이 필요: [resource, category, subCategory, fileName]
+        // 경로 형식: resources/file/{category}/{subCategory}/{fileName}
+        // 최소 5개의 경로 부분이 필요: [resources, file, category, subCategory, fileName]
         String[] pathParts = filePath.split("/");
-        if (pathParts.length < 4) {
-            log.debug("리소스 파일 경로 형식 불일치 (최소 4단계 필요): {}", filePath);
+        if (pathParts.length < 5) {
+            log.debug("리소스 파일 경로 형식 불일치 (최소 5단계 필요): {}", filePath);
             return false;
         }
 
-        // 첫 번째 부분이 "resource"인지 확인
-        if (!"resource".equalsIgnoreCase(pathParts[0])) {
-            log.debug("리소스 파일 경로는 'resource/'로 시작해야 합니다: {}", filePath);
+        // 첫 번째 부분이 "resources"인지 확인
+        if (!"resources".equalsIgnoreCase(pathParts[0])) {
+            log.debug("리소스 파일 경로는 'resources/'로 시작해야 합니다: {}", filePath);
+            return false;
+        }
+
+        // 두 번째 부분이 "file"인지 확인
+        if (!"file".equalsIgnoreCase(pathParts[1])) {
+            log.debug("리소스 파일 경로는 'resources/file/'로 시작해야 합니다: {}", filePath);
             return false;
         }
 
         // category와 subCategory가 비어있지 않은지 확인
-        String category = pathParts[1];
-        String subCategory = pathParts[2];
+        String category = pathParts[2];
+        String subCategory = pathParts[3];
         if (category.isBlank() || subCategory.isBlank()) {
             log.debug("리소스 파일 경로의 category/subCategory가 비어있습니다: {}", filePath);
             return false;

@@ -649,7 +649,7 @@ INSERT INTO service (service_name,service_type,description,sort_order,created_by
  ('NAS','infra','NAS 서버',3,'admin@tscientific.co.kr'),
  ('gitlab','infra','git 저장소 (release_manager)',4,'admin@tscientific.co.kr'),
  ('harbor','infra','도커 이미지 저장소 (private registry)',5,'admin@tscientific.co.kr'),
- ('infraeye 2 (common)','infraeye2','infraeye 2 공용 서비스',4,'admin@tscientific.co.kr'),
+ ('infraeye 2 (common)','infraeye2','infraeye 2 공용 서비스',1,'admin@tscientific.co.kr'),
  ('release-manager','infra','제품 관리 솔루션',6,'admin@tscientific.co.kr');
 
 INSERT INTO service_component (service_id,component_type,component_name,host,port,url,ssh_port,description,sort_order,created_by) VALUES
