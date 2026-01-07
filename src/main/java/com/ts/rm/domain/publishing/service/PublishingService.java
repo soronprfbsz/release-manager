@@ -52,7 +52,7 @@ public class PublishingService {
     @Value("${app.release.base-path:src/main/resources/release}")
     private String baseReleasePath;
 
-    private static final String PUBLISHING_DIR = "publishing";
+    private static final String PUBLISHING_DIR = "resource/publishing";
 
     /**
      * 퍼블리싱 생성 (ZIP 업로드)
