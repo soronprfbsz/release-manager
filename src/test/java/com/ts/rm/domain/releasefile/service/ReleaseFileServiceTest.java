@@ -73,7 +73,7 @@ class ReleaseFileServiceTest {
                 .fileCategory(FileCategory.DATABASE)
                 .subCategory("mariadb")
                 .fileName("001_create_users_table.sql")
-                .filePath("/release/1.1.0/patch/mariadb/001_create_users_table.sql")
+                .filePath("/release-manager/1.1.0/patch/mariadb/001_create_users_table.sql")
                 .fileSize(1024L)
                 .checksum("abc123def456")
                 .executionOrder(1)
@@ -85,7 +85,7 @@ class ReleaseFileServiceTest {
                 .fileCategory("DATABASE")
                 .subCategory("mariadb")
                 .fileName("001_create_users_table.sql")
-                .filePath("/release/1.1.0/patch/mariadb/001_create_users_table.sql")
+                .filePath("/release-manager/1.1.0/patch/mariadb/001_create_users_table.sql")
                 .fileSize(1024L)
                 .checksum("abc123def456")
                 .executionOrder(1)
@@ -99,7 +99,7 @@ class ReleaseFileServiceTest {
                 "database",
                 "mariadb",
                 "001_create_users_table.sql",
-                "/release/1.1.0/patch/mariadb/001_create_users_table.sql",
+                "/release-manager/1.1.0/patch/mariadb/001_create_users_table.sql",
                 1024L,
                 "abc123def456",
                 1,
@@ -232,7 +232,7 @@ class ReleaseFileServiceTest {
 
         // when
         ReleaseFileDto.DetailResponse result = releaseFileService.getReleaseFileByPath(
-                "/release/1.1.0/patch/mariadb/001_create_users_table.sql");
+                "/release-manager/1.1.0/patch/mariadb/001_create_users_table.sql");
 
         // then
         assertThat(result).isNotNull();

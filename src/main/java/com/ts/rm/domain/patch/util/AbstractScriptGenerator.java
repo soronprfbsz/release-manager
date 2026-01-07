@@ -32,7 +32,7 @@ public abstract class AbstractScriptGenerator implements ScriptGenerator {
     /**
      * 템플릿 파일 경로 반환 (구현체에서 정의)
      *
-     * @return 템플릿 파일 경로 (예: release/templates/MARIADB/mariadb_patch_template.sh)
+     * @return 템플릿 파일 경로 (예: release-manager/templates/MARIADB/mariadb_patch_template.sh)
      */
     protected abstract String getTemplatePath();
 

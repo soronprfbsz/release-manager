@@ -4,6 +4,7 @@ import com.ts.rm.domain.patch.dto.PatchDto;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.file.FileContentUtil;
 import com.ts.rm.global.file.StreamingZipUtil;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -242,81 +243,18 @@ public class PatchDownloadService {
                     "패치 디렉토리를 찾을 수 없습니다: " + patch.getOutputPath());
         }
 
-        // 상대 경로 검증 및 파일 경로 생성
-        Path filePath = validateAndResolvePath(patchDir, relativePath);
+        // 공통 유틸리티로 경로 검증 및 파일 내용 조회
+        Path filePath = FileContentUtil.validateAndResolvePath(patchDir, relativePath);
+        FileContentUtil.FileContentResult result = FileContentUtil.readFileContent(filePath);
 
-        // 파일 존재 확인
-        if (!Files.exists(filePath)) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                    "파일을 찾을 수 없습니다: " + relativePath);
-        }
-
-        if (!Files.isRegularFile(filePath)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "디렉토리는 조회할 수 없습니다: " + relativePath);
-        }
-
-        try {
-            // 파일 크기 확인 (10MB 제한)
-            long fileSize = Files.size(filePath);
-            if (fileSize > 10 * 1024 * 1024) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                        "파일 크기가 너무 큽니다 (최대 10MB): " + fileSize + " bytes");
-            }
-
-            // 파일 내용 읽기 (UTF-8)
-            String content = Files.readString(filePath);
-
-            String fileName = filePath.getFileName().toString();
-
-            return new PatchDto.FileContentResponse(
-                    patch.getPatchId(),
-                    relativePath,
-                    fileName,
-                    fileSize,
-                    content
-            );
-
-        } catch (IOException e) {
-            log.error("파일 읽기 실패: {}", filePath, e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "파일을 읽을 수 없습니다: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 경로 검증 및 해석 (경로 탐색 공격 방지)
-     *
-     * @param baseDir      기준 디렉토리
-     * @param relativePath 상대 경로
-     * @return 해석된 절대 경로
-     * @throws BusinessException 경로가 기준 디렉토리 외부를 가리키는 경우
-     */
-    private Path validateAndResolvePath(Path baseDir, String relativePath) {
-        if (relativePath == null || relativePath.trim().isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "파일 경로가 비어있습니다");
-        }
-
-        try {
-            // 상대 경로를 절대 경로로 변환
-            Path resolvedPath = baseDir.resolve(relativePath).normalize();
-
-            // 경로 탐색 공격 방지: 해석된 경로가 기준 디렉토리 내부에 있는지 확인
-            if (!resolvedPath.startsWith(baseDir)) {
-                log.warn("경로 탐색 공격 시도 감지: baseDir={}, relativePath={}, resolved={}",
-                        baseDir, relativePath, resolvedPath);
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                        "유효하지 않은 파일 경로입니다");
-            }
-
-            return resolvedPath;
-
-        } catch (Exception e) {
-            log.error("경로 해석 실패: baseDir={}, relativePath={}",
-                    baseDir, relativePath, e);
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "유효하지 않은 파일 경로입니다: " + e.getMessage());
-        }
+        return new PatchDto.FileContentResponse(
+                patch.getPatchId(),
+                relativePath,
+                result.fileName(),
+                result.size(),
+                result.mimeType(),
+                result.isBinary(),
+                result.content()
+        );
     }
 }

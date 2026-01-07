@@ -37,7 +37,7 @@ public final class ReleaseFileDto {
             @Schema(description = "파일명", example = "001_create_users_table.sql") @NotBlank(message = "파일명은 필수입니다") @Size(max = 255, message = "파일명은 255자 이하여야 합니다")
             String fileName,
 
-            @Schema(description = "파일 경로", example = "/release/1.1.0/mariadb/001_create_users_table.sql") @NotBlank(message = "파일 경로는 필수입니다") @Size(max = 500, message = "파일 경로는 500자 이하여야 합니다")
+            @Schema(description = "파일 경로", example = "/release-manager/versions/1.1.x/1.1.0/mariadb/001_create_users_table.sql") @NotBlank(message = "파일 경로는 필수입니다") @Size(max = 500, message = "파일 경로는 500자 이하여야 합니다")
             String filePath,
 
             @Schema(description = "파일 크기 (bytes)", example = "1024") @NotNull(message = "파일 크기는 필수입니다")
@@ -115,7 +115,7 @@ public final class ReleaseFileDto {
             @Schema(description = "파일명", example = "001_create_users_table.sql")
             String fileName,
 
-            @Schema(description = "파일 경로", example = "/release/1.1.0/mariadb/001_create_users_table.sql")
+            @Schema(description = "파일 경로", example = "/release-manager/1.1.0/mariadb/001_create_users_table.sql")
             String filePath,
 
             @Schema(description = "파일 크기 (bytes)", example = "1024")
@@ -170,6 +170,35 @@ public final class ReleaseFileDto {
 
             @Schema(description = "설명", example = "Create users table")
             String description
+    ) {
+
+    }
+
+    /**
+     * 파일 내용 응답
+     */
+    @Schema(description = "파일 내용 응답")
+    public record FileContentResponse(
+            @Schema(description = "릴리즈 파일 ID", example = "1")
+            Long releaseFileId,
+
+            @Schema(description = "파일 경로", example = "database/mariadb/001_create_users_table.sql")
+            String path,
+
+            @Schema(description = "파일명", example = "001_create_users_table.sql")
+            String fileName,
+
+            @Schema(description = "파일 크기 (bytes)", example = "1024")
+            long size,
+
+            @Schema(description = "MIME 타입", example = "text/x-sql")
+            String mimeType,
+
+            @Schema(description = "바이너리 파일 여부 (true면 content는 Base64 인코딩됨)", example = "false")
+            boolean isBinary,
+
+            @Schema(description = "파일 내용 (텍스트 또는 Base64)")
+            String content
     ) {
 
     }

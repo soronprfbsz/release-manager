@@ -10,6 +10,7 @@ import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.file.FileContentUtil;
 import com.ts.rm.global.file.StreamingZipUtil;
 import com.ts.rm.global.file.StreamingZipUtil.ZipFileEntry;
 import java.io.IOException;
@@ -178,6 +179,45 @@ public class ReleaseFileService {
 
         log.info("Release file downloaded successfully: {}", releaseFile.getFileName());
         return resource;
+    }
+
+    /**
+     * 릴리즈 파일 내용 조회
+     *
+     * <p>텍스트 파일은 UTF-8 문자열로, 바이너리 파일은 Base64 인코딩하여 반환합니다.
+     *
+     * @param releaseFileId 릴리즈 파일 ID
+     * @return 파일 내용 응답 (MIME 타입, 바이너리 여부, 내용 포함)
+     * @throws BusinessException 파일을 찾을 수 없거나 읽기 실패 시
+     */
+    public ReleaseFileDto.FileContentResponse getFileContent(Long releaseFileId) {
+        log.info("릴리즈 파일 내용 조회 - releaseFileId: {}", releaseFileId);
+
+        ReleaseFile releaseFile = findReleaseFileById(releaseFileId);
+
+        // 절대 경로 조회
+        Path filePath = fileStorageService.getAbsolutePath(releaseFile.getFilePath());
+
+        if (!Files.exists(filePath)) {
+            throw new BusinessException(ErrorCode.FILE_NOT_FOUND,
+                    "파일을 찾을 수 없습니다: " + releaseFile.getFileName());
+        }
+
+        // 공통 유틸리티로 파일 내용 조회
+        FileContentUtil.FileContentResult result = FileContentUtil.readFileContent(filePath);
+
+        log.info("릴리즈 파일 내용 조회 완료 - releaseFileId: {}, fileName: {}, size: {} bytes, isBinary: {}",
+                releaseFileId, result.fileName(), result.size(), result.isBinary());
+
+        return new ReleaseFileDto.FileContentResponse(
+                releaseFileId,
+                releaseFile.getFilePath(),
+                result.fileName(),
+                result.size(),
+                result.mimeType(),
+                result.isBinary(),
+                result.content()
+        );
     }
 
     /**

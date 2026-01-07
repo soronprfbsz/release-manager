@@ -314,7 +314,13 @@ public final class PatchDto {
             @Schema(description = "파일 크기 (bytes)", example = "4867")
             long size,
 
-            @Schema(description = "파일 내용 (텍스트)")
+            @Schema(description = "MIME 타입", example = "text/x-sql")
+            String mimeType,
+
+            @Schema(description = "바이너리 파일 여부 (true면 content는 Base64 인코딩됨)", example = "false")
+            boolean isBinary,
+
+            @Schema(description = "파일 내용 (텍스트 또는 Base64)")
             String content
     ) {
 

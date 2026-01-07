@@ -3,6 +3,7 @@ package com.ts.rm.domain.releasefile.controller;
 import com.ts.rm.domain.releasefile.dto.ReleaseFileDto;
 import com.ts.rm.domain.releasefile.service.ReleaseFileService;
 import com.ts.rm.global.file.HttpFileDownloadUtil;
+import com.ts.rm.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -66,5 +67,17 @@ public class ReleaseFileController implements ReleaseFileControllerDocs {
 
         log.info("버전별 파일 스트리밍 다운로드 완료 - versionId: {}, fileName: {}, uncompressedSize: {} bytes",
                 id, fileName, uncompressedSize);
+    }
+
+    @Override
+    @GetMapping("/files/{id}/file-content")
+    public ResponseEntity<ApiResponse<ReleaseFileDto.FileContentResponse>> getFileContent(
+            @PathVariable("id") Long fileId) {
+
+        log.info("릴리즈 파일 내용 조회 API 호출 - fileId: {}", fileId);
+
+        ReleaseFileDto.FileContentResponse response = releaseFileService.getFileContent(fileId);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

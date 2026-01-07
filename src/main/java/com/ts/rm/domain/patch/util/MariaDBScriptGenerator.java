@@ -19,7 +19,7 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
 
     @Override
     protected String getTemplatePath() {
-        return "release/templates/MARIADB/mariadb_patch_template.sh";
+        return "release-manager/templates/MARIADB/mariadb_patch_template.sh";
     }
 
     @Override
