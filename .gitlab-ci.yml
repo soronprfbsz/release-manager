@@ -6,7 +6,7 @@ default:
   image: docker:24-cli
 
 variables:
-  # 앱 환경변수 설정
+  # App
   SERVER_NAME: "release-manager-api"
   SERVER_HOST: "10.110.1.106"
   SERVER_PORT: "8081"
@@ -19,16 +19,17 @@ variables:
   REDIS_PORT: "16379"
   RELEASE_DIR: "/mnt/release-manager/resources"
 
-  # Docker 이미지 설정
+  # Docker Image
   DOCKER_IMAGE_NAME: "ts/${SERVER_NAME}"
   DOCKER_IMAGE_TAG: "latest"
 
-  # Harbor Registry 설정 (선택적)
+  # Harbor Registry
   HARBOR_IMAGE_NAME: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${SERVER_NAME}"
 
-  # Gradle 설정 (최적화)
+  # Gradle
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
   GRADLE_USER_HOME: $CI_PROJECT_DIR/.gradle
+
 stages:
   - build
   - test
@@ -57,9 +58,7 @@ stages:
     # Gradle 캐시 디렉토리 생성
     - mkdir -p .gradle
   script:
-    - echo "📦 프로젝트 빌드 시작..."
     - gradle build -x test --build-cache --no-daemon
-    - echo "✅ 빌드 완료"
   artifacts:
     paths:
       - build/libs/*.jar
@@ -76,9 +75,7 @@ stages:
       - .gradle/caches/
     policy: pull
   script:
-    - echo "🧪 테스트 실행 중..."
     - gradle test --build-cache --no-daemon
-    - echo "✅ 테스트 완료"
   artifacts:
     when: always
     reports:
@@ -165,185 +162,113 @@ stages:
 .deploy-template:
   stage: deploy
   before_script:
+    - apk add --no-cache curl rsync
     - |
-      echo "=== 필수 도구 설치 중 ==="
-      apk add --no-cache curl 2>/dev/null || apt-get update && apt-get install -y curl 2>/dev/null || yum install -y curl 2>/dev/null || true
-      command -v curl && echo "✓ curl 설치됨" || echo "✗ curl 설치 실패"
-    - |
-      echo "=== Gitlab Variables로 .env 파일 생성 중 ==="
-      env | \
-        grep -vE '^(CI_|GITLAB_|FF_|RUNNER_|DOCKER_|DIND_|PATH=|HOME=|HOSTNAME=|PWD=|OLDPWD=|SHELL=|SHLVL=|USER=|_=|LANG=|LC_|TERM=|DEBIAN_|GRADLE_|GIT_)' | \
-        grep -v '^CI=' | \
-        grep -E '^[A-Z_]+=.+$' > .env
-
-      # Docker 환경 설정 추가
-      echo "DOCKER_IMAGE=${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" >> .env
+      echo "SERVER_NAME=${SERVER_NAME}" > .env
+      echo "SERVER_HOST=${SERVER_HOST}" >> .env
+      echo "SERVER_PORT=${SERVER_PORT}" >> .env
+      echo "SERVER_EXTERNAL_PORT=${SERVER_EXTERNAL_PORT}" >> .env
+      echo "FLYWAY_ENABLED=${FLYWAY_ENABLED}" >> .env
+      echo "MARIADB_HOST=${MARIADB_HOST}" >> .env
+      echo "MARIADB_PORT=${MARIADB_PORT}" >> .env
+      echo "MARIADB_DATABASE=${MARIADB_DATABASE}" >> .env
+      echo "MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}" >> .env
+      echo "MARIADB_USERNAME=${MARIADB_USERNAME}" >> .env
+      echo "MARIADB_PASSWORD=${MARIADB_PASSWORD}" >> .env
+      echo "REDIS_HOST=${REDIS_HOST}" >> .env
+      echo "REDIS_PORT=${REDIS_PORT}" >> .env
+      echo "REDIS_PASSWORD=${REDIS_PASSWORD}" >> .env
+      echo "JWT_SECRET=${JWT_SECRET}" >> .env
+      echo "RELEASE_DIR=${RELEASE_DIR}" >> .env
       echo "RELEASE_BASE_PATH=/app/resources" >> .env
-
-      echo "✅ .env 파일 생성 완료:"
-      cat .env
-    - |
-      echo "=== Docker 네트워크 확인 ==="
-      docker network ls | grep -q network-ts && echo "✓ network-ts 존재" || (docker network create network-ts && echo "✓ network-ts 생성")
-    - |
-      echo "=== Harbor 로그인 ==="
-      echo "$HARBOR_PASSWORD" | docker login http://$HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin || echo "⚠️  Harbor 로그인 실패"
+      echo "DOCKER_IMAGE=${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" >> .env
+    - docker network ls | grep -q network-ts || docker network create network-ts
+    - echo "$HARBOR_PASSWORD" | docker login http://$HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin || true
   script:
     - |
-      # 1. 환경 변수 선언 (gitlab-ci variables -> docker-compose)
-      export RELEASE_DIR=${RELEASE_DIR}
-      export SERVER_NAME=${SERVER_NAME}
-      export SERVER_HOST=${SERVER_HOST}
-      export SERVER_PORT=${SERVER_PORT}
-      export SERVER_EXTERNAL_PORT=${SERVER_EXTERNAL_PORT}
-      export FLYWAY_ENABLED=${FLYWAY_ENABLED}
-      export MARIADB_HOST=${MARIADB_HOST}
-      export MARIADB_PORT=${MARIADB_PORT}
-      export MARIADB_DATABASE=${MARIADB_DATABASE}
-      export REDIS_HOST=${REDIS_HOST}
-      export REDIS_PORT=${REDIS_PORT}
-
-    - |
-      # JAR에서 리소스 파일 추출 및 복사 (최신 파일로 업데이트)
+      # JAR에서 리소스 파일 추출 및 동기화
       echo "=== 리소스 파일 동기화 ==="
-      JAR_FILE=$(ls build/libs/*.jar | head -1)
-      TEMP_EXTRACT_DIR="/tmp/release_extract_$$"
+      JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | head -1)
+      TEMP_DIR="/tmp/release_extract_$$"
 
       if [ -f "$JAR_FILE" ]; then
-        echo "📦 JAR 파일에서 리소스 추출 중: $JAR_FILE"
-        mkdir -p ${TEMP_EXTRACT_DIR}
+        mkdir -p ${TEMP_DIR}
+        unzip -q -o "$JAR_FILE" "BOOT-INF/classes/release-manager/*" -d ${TEMP_DIR} 2>/dev/null || true
 
-        # JAR에서 release 디렉토리만 추출
-        unzip -q -o "$JAR_FILE" "BOOT-INF/classes/release-manager/*" -d ${TEMP_EXTRACT_DIR} 2>/dev/null || true
-
-        if [ -d "${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release-manager" ]; then
-          echo "📂 리소스 파일 동기화 중 (최신 파일로 업데이트)..."
-
-          # rsync로 파일 동기화 (항상 소스로 덮어쓰기)
-          if command -v rsync > /dev/null 2>&1; then
-            rsync -av ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release-manager/ ${RELEASE_DIR}/
-          else
-            # rsync 없으면 cp로 대체 (디렉토리 구조 유지하며 복사, 항상 덮어쓰기)
-            cd ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release-manager
-            find . -type f | while read file; do
-              dest="${RELEASE_DIR}/${file}"
-              mkdir -p "$(dirname "$dest")"
-              cp -f "$file" "$dest"
-              echo "  복사: $file"
-            done
-            cd - > /dev/null
-          fi
-
-          echo "✅ 리소스 파일 동기화 완료"
-        else
-          echo "⚠️  JAR에서 release 디렉토리를 찾을 수 없습니다"
+        if [ -d "${TEMP_DIR}/BOOT-INF/classes/release-manager" ]; then
+          rsync -av ${TEMP_DIR}/BOOT-INF/classes/release-manager/ ${RELEASE_DIR}/
+          echo "✅ 리소스 동기화 완료"
         fi
-
-        # 임시 디렉토리 정리
-        rm -rf ${TEMP_EXTRACT_DIR}
-      else
-        echo "⚠️  JAR 파일을 찾을 수 없습니다"
+        rm -rf ${TEMP_DIR}
       fi
-
-      chmod -R 777 ${RELEASE_DIR}
-      echo "📁 최종 디렉토리 구조:"
-      ls -laR ${RELEASE_DIR}/ | head -50 || true
+      chmod -R 755 ${RELEASE_DIR}
 
     - |
       echo "=== 기존 컨테이너 정리 ==="
       docker-compose -p release_manager -f docker/docker-compose.yml rm -f mariadb redis app || true
 
     - |
-      echo "=== MariaDB 시작 ==="
-      if docker ps --format '{{.Names}}' | grep -q '^release-manager-mariadb$'; then
-        echo "✓ MariaDB 실행 중"
-      elif docker ps -a --format '{{.Names}}' | grep -q '^release-manager-mariadb$'; then
-        docker start release-manager-mariadb && echo "✓ MariaDB 재시작됨"
-      else
-        docker-compose -p release_manager -f docker/docker-compose.yml up -d mariadb && echo "✓ MariaDB 생성됨"
-      fi
+      # 컨테이너 시작 함수
+      start_service() {
+        local name=$1 container=$2 service=$3
+        echo "=== ${name} 시작 ==="
+        if docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
+          echo "✓ ${name} 실행 중"
+        elif docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+          docker start ${container} && echo "✓ ${name} 재시작됨"
+        else
+          docker-compose -p release_manager -f docker/docker-compose.yml up -d ${service} && echo "✓ ${name} 생성됨"
+        fi
+      }
+      start_service "MariaDB" "release-manager-mariadb" "mariadb"
+      start_service "Redis" "release-manager-redis" "redis"
 
     - |
-      echo "=== Redis 시작 ==="
-      if docker ps --format '{{.Names}}' | grep -q '^release-manager-redis$'; then
-        echo "✓ Redis 실행 중"
-      elif docker ps -a --format '{{.Names}}' | grep -q '^release-manager-redis$'; then
-        docker start release-manager-redis && echo "✓ Redis 재시작됨"
-      else
-        docker-compose -p release_manager -f docker/docker-compose.yml up -d redis && echo "✓ Redis 생성됨"
-      fi
-
-    - |
-      echo "=== MariaDB 헬스체크 ==="
-      max_attempts=60
-      attempt=0
-      until docker exec release-manager-mariadb healthcheck.sh --connect --innodb_initialized || [ $attempt -eq $max_attempts ]; do
-        attempt=$((attempt+1))
-        echo "  MariaDB 대기 중... ($attempt/$max_attempts)"
-        sleep 3
-      done
-      if [ $attempt -eq $max_attempts ]; then
-        echo "✗ MariaDB 헬스체크 실패"
-        docker logs --tail 20 release-manager-mariadb
-        exit 1
-      fi
-      echo "✓ MariaDB 준비 완료 (${attempt}회 시도)"
-
-    - |
-      echo "=== Redis 헬스체크 ==="
-      max_attempts=60
-      attempt=0
-      until docker exec release-manager-redis redis-cli -a "${REDIS_PASSWORD}" ping 2>/dev/null | grep -q PONG || [ $attempt -eq $max_attempts ]; do
-        attempt=$((attempt+1))
-        echo "  Redis 대기 중... ($attempt/$max_attempts)"
-        sleep 3
-      done
-      if [ $attempt -eq $max_attempts ]; then
-        echo "✗ Redis 헬스체크 실패"
-        echo "=== Redis 로그 ==="
-        docker logs --tail 20 release-manager-redis
-        echo "=== Redis 연결 테스트 ==="
-        docker exec release-manager-redis redis-cli -a "${REDIS_PASSWORD}" ping 2>&1 || true
-        exit 1
-      fi
-      echo "✓ Redis 준비 완료 (${attempt}회 시도)"
+      # 헬스체크 함수
+      health_check() {
+        local name=$1 container=$2 cmd=$3 max=${4:-60}
+        echo "=== ${name} 헬스체크 ==="
+        attempt=0
+        until eval "$cmd" || [ $attempt -eq $max ]; do
+          attempt=$((attempt+1))
+          echo "  ${name} 대기 중... ($attempt/$max)"
+          sleep 3
+        done
+        if [ $attempt -eq $max ]; then
+          echo "✗ ${name} 헬스체크 실패"
+          docker logs --tail 20 ${container}
+          exit 1
+        fi
+        echo "✓ ${name} 준비 완료 (${attempt}회 시도)"
+      }
+      health_check "MariaDB" "release-manager-mariadb" "docker exec release-manager-mariadb healthcheck.sh --connect --innodb_initialized"
+      health_check "Redis" "release-manager-redis" "docker exec release-manager-redis redis-cli -a '${REDIS_PASSWORD}' ping 2>/dev/null | grep -q PONG"
 
     - |
       echo "=== 애플리케이션 배포 ==="
       docker stop ${SERVER_NAME} || true
       docker rm -f ${SERVER_NAME} || true
       docker-compose -p release_manager -f docker/docker-compose.yml up -d --no-deps app
-      echo "✓ 컨테이너 시작됨"
       sleep 10
 
     - |
-      echo "=== 애플리케이션 헬스체크 ==="
-      max_attempts=60
-      attempt=0
-      until curl -sf http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}/actuator/health > /dev/null || [ $attempt -eq $max_attempts ]; do
+      # 앱 헬스체크
+      max=60; attempt=0
+      until curl -sf http://${SERVER_HOST}:${SERVER_EXTERNAL_PORT}/actuator/health > /dev/null || [ $attempt -eq $max ]; do
         attempt=$((attempt+1))
-        echo "  애플리케이션 대기 중... ($attempt/$max_attempts)"
+        echo "  App 대기 중... ($attempt/$max)"
         sleep 3
       done
-      if [ $attempt -eq $max_attempts ]; then
-        echo "✗ 애플리케이션 헬스체크 실패 (3분 타임아웃)"
-        echo "=== 컨테이너 로그 ==="
+      if [ $attempt -eq $max ]; then
+        echo "✗ App 헬스체크 실패"
         docker logs --tail 50 ${SERVER_NAME}
-        echo "=== 컨테이너 상태 ==="
-        docker ps -a --filter "name=${SERVER_NAME}"
         exit 1
       fi
-      echo "✅ 애플리케이션 준비 완료 (${attempt}회 시도, $((attempt * 3))초 소요)"
-      echo "=== 배포 성공 ==="
+      echo "✅ 배포 성공 (${attempt}회, $((attempt * 3))초)"
 
   after_script:
-    - echo "=== 정리 작업 ==="
-    - docker image prune -f --filter "label=project=${SERVER_NAME}" 2>/dev/null || true
-    - echo "✓ ${SERVER_NAME} Dangling 이미지 정리 완료"
-
-    - echo "=== 배포 상태 ==="
-    - docker ps --filter "name=${SERVER_NAME}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
-    - docker images --filter "reference=${DOCKER_IMAGE_NAME}" --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}"
+    - docker image prune -f 2>/dev/null || true
+    - docker ps --filter "name=${SERVER_NAME}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 # ========================================
 # Main 브랜치 전용 Job들
@@ -391,7 +316,6 @@ harbor-push-main:
 
 deploy-main:
   extends: .deploy-template
-  variables:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   tags:
