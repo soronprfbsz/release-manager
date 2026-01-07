@@ -42,7 +42,7 @@ public class PatchService {
     private final ReleaseVersionRepository releaseVersionRepository;
     private final CustomerRepository customerRepository;
 
-    @Value("${app.release.base-path:src/main/resources/release}")
+    @Value("${app.release.base-path:src/main/resources/release-manager}")
     private String releaseBasePath;
 
     /**

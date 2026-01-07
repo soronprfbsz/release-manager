@@ -34,7 +34,7 @@ public class ResourceFileService {
 
     private final ResourceFileRepository resourceFileRepository;
 
-    @Value("${app.release.base-path:src/main/resources/release}")
+    @Value("${app.release.base-path:src/main/resources/release-manager}")
     private String baseReleasePath;
 
     /**
@@ -58,7 +58,7 @@ public class ResourceFileService {
         // 파일 타입 추출 (확장자 대문자)
         String fileType = extractFileType(originalFileName);
 
-        // 저장 경로 생성 (resource/script/MARIADB 또는 resource/document 등)
+        // 저장 경로 생성 (resources/file/script/MARIADB 또는 resources/file/document 등)
         String relativePath = buildRelativePath(request.fileCategory(), request.subCategory(), originalFileName);
         Path targetPath = Paths.get(baseReleasePath, relativePath);
 
@@ -279,11 +279,11 @@ public class ResourceFileService {
      * @param category     카테고리 (script, document, docker 등)
      * @param subDirectory 서브 디렉토리 (MARIADB, CRATEDB, INFRAEYE1, INFRAEYE2 등)
      * @param fileName     파일명
-     * @return 상대 경로 (예: resource/file/script/MARIADB/backup.sh)
+     * @return 상대 경로 (예: resources/file/script/MARIADB/backup.sh)
      */
     private String buildRelativePath(String category, String subDirectory, String fileName) {
         StringBuilder pathBuilder = new StringBuilder();
-        pathBuilder.append("resource/file/");
+        pathBuilder.append("resources/file/");
         pathBuilder.append(category.toLowerCase());
 
         if (subDirectory != null && !subDirectory.isBlank()) {

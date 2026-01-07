@@ -4,13 +4,17 @@
 
 ## 주요 기능
 
-- ✅ 릴리즈 버전 관리 (표준/고객사별 커스텀 버전)
-- ✅ 패치 파일 관리 (MariaDB/CrateDB SQL 스크립트)
-- ✅ 누적 패치 생성 (버전 범위별)
-- ✅ JWT 기반 인증 시스템
-- ✅ RESTful API 설계
-- ✅ Swagger API 문서화
-- ✅ GitLab CI/CD + Harbor Registry
+- 릴리즈 버전 관리 (표준/고객사별 커스텀 버전)
+- 핫픽스 버전 관리
+- 패치 파일 관리 (MariaDB/CrateDB SQL 스크립트)
+- 누적 패치 생성 (버전 범위별)
+- 퍼블리싱 파일 관리 (ZIP 업로드/서빙)
+- 리소스 파일 관리 (스크립트, 문서 등)
+- JWT 기반 인증 시스템
+- SSH 터미널 (WebSocket)
+- RESTful API + gRPC
+- Swagger API 문서화
+- GitLab CI/CD + Harbor Registry
 
 ## 기술 스택
 
@@ -18,11 +22,12 @@
 |------|------|
 | Framework | Spring Boot 3.5.6, Spring Security |
 | Language | Java 17 |
-| Database | MariaDB 10.11.5, Redis |
+| Database | MariaDB 10.11.5, Redis 8.x |
 | Query | QueryDSL, JPA, p6spy |
 | Migration | Flyway |
 | API Docs | SpringDoc OpenAPI 3 |
-| Build | Gradle 8.5 |
+| RPC | gRPC, Protocol Buffers |
+| Build | Gradle 9.x |
 | Container | Docker, Docker Compose |
 | CI/CD | GitLab CI/CD, Harbor Registry |
 
@@ -43,84 +48,160 @@ cp .env.example .env
 ### 2. Docker로 실행 (권장)
 
 ```bash
+# Docker Network 생성 (최초 1회)
+docker network create network-ts
+
 # 전체 서비스 실행
-docker compose -f docker/docker-compose.yml --env-file .env up -d
+cd docker
+docker compose up -d
 
 # 로그 확인
-docker compose -f docker/docker-compose.yml logs -f app
+docker compose logs -f app
 
 # 중지
-docker compose -f docker/docker-compose.yml down
+docker compose down
 ```
 
 ### 3. 로컬 개발 모드
 
 ```bash
 # DB만 실행
-docker compose -f docker/docker-compose.yml --env-file .env up -d mariadb redis
+cd docker
+docker compose up -d mariadb redis
 
 # Application 로컬 실행
 ./gradlew bootRun
 ```
 
-### 4. API 문서
+### 4. API 접속
 
-- **Swagger UI**: http://localhost:8081/swagger
-- **Health Check**: http://localhost:8081/actuator/health
+| 서비스 | URL |
+|--------|-----|
+| Swagger UI | http://localhost:8081/swagger |
+| API Docs | http://localhost:8081/api-docs |
+| Health Check | http://localhost:8081/actuator/health |
+| gRPC | localhost:9090 |
 
 ## 프로젝트 구조
+
+### 소스 코드 구조
 
 ```
 src/main/java/com/ts/rm/
 ├── domain/                        # 도메인 계층
 │   ├── auth/                      # 인증 (로그인, 회원가입, 토큰)
+│   ├── account/                   # 계정 관리
 │   ├── releaseversion/            # 릴리즈 버전 관리
 │   ├── releasefile/               # 릴리즈 파일 관리
 │   ├── patch/                     # 패치 생성/조회
+│   ├── publishing/                # 퍼블리싱 파일 관리
+│   ├── resourcefile/              # 리소스 파일 관리
 │   ├── customer/                  # 고객사 관리
-│   └── script/                    # DB 백업/복원 스크립트
+│   ├── engineer/                  # 엔지니어 관리
+│   ├── project/                   # 프로젝트 관리
+│   ├── terminal/                  # SSH 터미널
+│   ├── job/                       # DB 백업/복원 작업
+│   └── common/                    # 공통 서비스
 └── global/                        # 공통 기능
-    ├── config/                    # 설정 (Security, Swagger, QueryDSL)
+    ├── config/                    # 설정 (Security, Swagger, QueryDSL, Redis)
     ├── security/                  # JWT 인증 필터
+    ├── file/                      # 파일 유틸리티
+    ├── ssh/                       # SSH 실행기
     └── exception/                 # 전역 예외 처리
+```
 
-src/main/resources/
-├── application.yml                # 애플리케이션 설정
-├── db/migration/                  # Flyway 마이그레이션
-└── release/                       # 릴리즈 파일 저장소
-    ├── patches/                   # 생성된 패치 파일 (git 제외)
-    ├── versions/                  # 버전별 SQL 스크립트
-    └── templates/                 # 패치 스크립트 템플릿
+### 릴리즈 파일 저장소 구조
+
+```
+src/main/resources/release-manager/    # 로컬 개발
+/data/release-manager/resources/       # Docker 배포
+
+├── resources/
+│   ├── publishing/                # 퍼블리싱 파일
+│   │   └── {publishingName}/      # ZIP 해제된 파일들
+│   │       ├── index.html
+│   │       ├── css/
+│   │       └── js/
+│   └── file/                      # 리소스 파일
+│       ├── script/                # 스크립트 파일
+│       │   ├── MARIADB/
+│       │   └── CRATEDB/
+│       └── document/              # 문서 파일
+│
+├── templates/                     # 패치 스크립트 템플릿
+│   ├── MARIADB/
+│   │   └── mariadb_patch_template.sh
+│   └── CRATEDB/
+│       └── cratedb_patch_template.sh
+│
+└── versions/                      # 릴리즈 버전별 패치 파일
+    └── {projectId}/
+        ├── standard/              # 표준 릴리즈
+        │   └── {major}.{minor}.x/
+        │       └── {version}/
+        │           ├── mariadb/
+        │           ├── cratedb/
+        │           └── hotfix/
+        │               └── {hotfixVersion}/
+        └── custom/                # 커스텀 릴리즈
+            └── {customerCode}/
+                └── {major}.{minor}.x/
+                    └── {version}/
 ```
 
 ## 주요 API
 
 ### 인증
+
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | POST | `/api/auth/signup` | 회원가입 |
 | POST | `/api/auth/login` | 로그인 |
 | POST | `/api/auth/refresh` | 토큰 갱신 |
+| POST | `/api/auth/logout` | 로그아웃 |
 
 ### 릴리즈 버전
+
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/api/releases/versions/{id}` | 버전 상세 조회 |
+| POST | `/api/releases/versions/standard` | 표준 버전 생성 |
+| POST | `/api/releases/versions/custom` | 커스텀 버전 생성 |
+| POST | `/api/releases/versions/{id}/hotfix` | 핫픽스 생성 |
+| DELETE | `/api/releases/versions/{id}` | 버전 삭제 |
 | GET | `/api/releases/standard/tree` | 표준 버전 트리 조회 |
-| GET | `/api/releases/custom/{customer-code}/tree` | 커스텀 버전 트리 조회 |
-
-### 릴리즈 파일
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| GET | `/api/releases/files/{id}/download` | 파일 다운로드 |
+| GET | `/api/releases/custom/{customerCode}/tree` | 커스텀 버전 트리 조회 |
 
 ### 패치
+
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | POST | `/api/patches` | 누적 패치 생성 |
+| POST | `/api/patches/hotfix` | 핫픽스 패치 생성 |
 | GET | `/api/patches` | 패치 목록 조회 |
 | GET | `/api/patches/{id}` | 패치 상세 조회 |
 | GET | `/api/patches/{id}/download` | 패치 다운로드 |
+
+### 퍼블리싱
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/publishing` | 퍼블리싱 목록 조회 |
+| POST | `/api/publishing` | 퍼블리싱 생성 (ZIP 업로드) |
+| GET | `/api/publishing/{id}` | 퍼블리싱 상세 조회 |
+| DELETE | `/api/publishing/{id}` | 퍼블리싱 삭제 |
+| GET | `/api/publishing/{id}/serve/{path}` | 파일 서빙 |
+| GET | `/api/publishing/{id}/download` | ZIP 다운로드 |
+| GET | `/api/publishing/{id}/tree` | 파일 트리 조회 |
+
+### 리소스 파일
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/resource-files` | 리소스 파일 목록 |
+| POST | `/api/resource-files` | 리소스 파일 업로드 |
+| GET | `/api/resource-files/{id}/download` | 리소스 파일 다운로드 |
+| DELETE | `/api/resource-files/{id}` | 리소스 파일 삭제 |
 
 자세한 API 명세는 Swagger UI를 참고하세요.
 
@@ -203,11 +284,6 @@ main 브랜치 push
 5. deploy-job         → GitLab Runner 호스트 배포
 ```
 
-### Harbor 이미지 관리
-
-- **Harbor**: `${HARBOR_REGISTRY}/ts/release-manager-api:latest`, `${HARBOR_REGISTRY}/ts/release-manager-api:{commit-sha}`
-- **호스트**: `ts/release-manager-api:latest` (실행용)
-
 ### GitLab Variables 설정
 
 Settings → CI/CD → Variables에 다음 변수 추가:
@@ -217,6 +293,7 @@ Settings → CI/CD → Variables에 다음 변수 추가:
 | `SERVER_NAME` | 애플리케이션 이름 |
 | `SERVER_HOST` | 배포 서버 IP |
 | `SERVER_EXTERNAL_PORT` | 외부 접근 포트 |
+| `RELEASE_BASE_PATH` | 릴리즈 파일 경로 (`/app/resources`) |
 | `MARIADB_*` | MariaDB 접속 정보 |
 | `REDIS_*` | Redis 접속 정보 |
 | `JWT_SECRET` | JWT 시크릿 키 (최소 256비트) |
@@ -224,20 +301,33 @@ Settings → CI/CD → Variables에 다음 변수 추가:
 
 **주의**: 특수문자 포함 변수는 "Expand variable reference" 비활성화
 
+## 포트 정보
+
+| 서비스 | 내부 포트 | 외부 포트 (기본값) |
+|--------|-----------|-------------------|
+| Application | 8081 | 18080 |
+| gRPC | 9090 | 9090 |
+| MariaDB | 3306 | 13306 |
+| Redis | 6379 | 16379 |
+
 ## Docker 명령어
 
 ```bash
 # 시작
-docker compose -f docker/docker-compose.yml --env-file .env up -d
+cd docker
+docker compose up -d
 
 # 로그
-docker compose -f docker/docker-compose.yml logs -f app
+docker compose logs -f app
 
 # 재시작
-docker compose -f docker/docker-compose.yml restart app
+docker compose restart app
 
 # 중지
-docker compose -f docker/docker-compose.yml down
+docker compose down
+
+# DB만 실행 (로컬 개발)
+docker compose up -d mariadb redis
 ```
 
 ## 문제 해결
@@ -267,6 +357,17 @@ docker compose logs --tail 100 app
 # 컨테이너 상태 확인
 docker compose ps
 ```
+
+### 파일 권한 문제
+```bash
+# 권한 수정 (Docker 배포 환경)
+sudo chown -R 1000:1000 /data/release-manager/resources
+```
+
+## 관련 문서
+
+- [배포 가이드](docker/DEPLOYMENT_GUIDE.md)
+- [API 문서](http://localhost:8081/swagger)
 
 ## 코드 스타일
 

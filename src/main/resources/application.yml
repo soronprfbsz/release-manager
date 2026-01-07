@@ -113,7 +113,7 @@ logging:
 # Application Configuration
 app:
   release:
-    # 로컬: src/main/resources/release, 도커: /app/resources
+    # 로컬: src/main/resources/release-manager, 도커: /app/resources
     base-path: ${RELEASE_BASE_PATH:/app/resources}
   jwt:
     secret: ${JWT_SECRET:your-secret-key-at-least-256-bits-long-for-hs256-algorithm}

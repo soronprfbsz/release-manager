@@ -191,17 +191,17 @@ stages:
         mkdir -p ${TEMP_EXTRACT_DIR}
 
         # JAR에서 release 디렉토리만 추출
-        unzip -q -o "$JAR_FILE" "BOOT-INF/classes/release/*" -d ${TEMP_EXTRACT_DIR} 2>/dev/null || true
+        unzip -q -o "$JAR_FILE" "BOOT-INF/classes/release-manager/*" -d ${TEMP_EXTRACT_DIR} 2>/dev/null || true
 
-        if [ -d "${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release" ]; then
+        if [ -d "${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release-manager" ]; then
           echo "📂 리소스 파일 동기화 중 (최신 파일로 업데이트)..."
 
           # rsync로 파일 동기화 (항상 소스로 덮어쓰기)
           if command -v rsync > /dev/null 2>&1; then
-            rsync -av ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release/ ${RELEASE_DIR}/
+            rsync -av ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release-manager/ ${RELEASE_DIR}/
           else
             # rsync 없으면 cp로 대체 (디렉토리 구조 유지하며 복사, 항상 덮어쓰기)
-            cd ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release
+            cd ${TEMP_EXTRACT_DIR}/BOOT-INF/classes/release-manager
             find . -type f | while read file; do
               dest="${RELEASE_DIR}/${file}"
               mkdir -p "$(dirname "$dest")"

@@ -97,7 +97,7 @@ public final class ResourceFileDto {
             @Schema(description = "파일명", example = "mariadb_backup.sh")
             String fileName,
 
-            @Schema(description = "파일 경로", example = "resource/script/MARIADB/mariadb_backup.sh")
+            @Schema(description = "파일 경로", example = "resources/file/script/MARIADB/mariadb_backup.sh")
             String filePath,
 
             @Schema(description = "파일 크기 (bytes)", example = "11025")
@@ -140,7 +140,7 @@ public final class ResourceFileDto {
             @Schema(description = "파일명", example = "mariadb_backup.sh")
             String fileName,
 
-            @Schema(description = "파일 경로", example = "resource/script/MARIADB/mariadb_backup.sh")
+            @Schema(description = "파일 경로", example = "resources/file/script/MARIADB/mariadb_backup.sh")
             String filePath,
 
             @Schema(description = "파일 크기 (bytes)", example = "11025")

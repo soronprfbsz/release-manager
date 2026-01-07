@@ -23,7 +23,7 @@ import org.springframework.core.io.ClassPathResource;
 @Slf4j
 public abstract class AbstractScriptGenerator implements ScriptGenerator {
 
-    @Value("${app.release.base-path:src/main/resources/release}")
+    @Value("${app.release.base-path:src/main/resources/release-manager}")
     protected String baseReleasePath;
 
     protected static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(
@@ -32,7 +32,7 @@ public abstract class AbstractScriptGenerator implements ScriptGenerator {
     /**
      * 템플릿 파일 경로 반환 (구현체에서 정의)
      *
-     * @return 템플릿 파일 경로 (예: release/script/MARIADB/mariadb_patch_template.sh)
+     * @return 템플릿 파일 경로 (예: release/templates/MARIADB/mariadb_patch_template.sh)
      */
     protected abstract String getTemplatePath();
 

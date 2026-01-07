@@ -49,10 +49,10 @@ public class PublishingService {
     private final CustomerRepository customerRepository;
     private final PublishingDtoMapper publishingDtoMapper;
 
-    @Value("${app.release.base-path:src/main/resources/release}")
+    @Value("${app.release.base-path:src/main/resources/release-manager}")
     private String baseReleasePath;
 
-    private static final String PUBLISHING_DIR = "resource/publishing";
+    private static final String PUBLISHING_DIR = "resources/publishing";
 
     /**
      * 퍼블리싱 생성 (ZIP 업로드)

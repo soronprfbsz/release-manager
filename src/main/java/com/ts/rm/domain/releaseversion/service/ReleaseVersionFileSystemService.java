@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReleaseVersionFileSystemService {
 
-    @Value("${app.release.base-path:src/main/resources/release}")
+    @Value("${app.release.base-path:src/main/resources/release-manager}")
     private String baseReleasePath;
 
     /**
@@ -80,7 +80,7 @@ public class ReleaseVersionFileSystemService {
      * @return 생성된 버전 경로
      */
     public Path createVersionDirectory(VersionInfo versionInfo, String projectId) throws IOException {
-        // 경로: resources/release/versions/{projectId}/standard/{major}.{minor}.x/{version}/
+        // 경로: release-manager/versions/{projectId}/standard/{major}.{minor}.x/{version}/
         String majorMinor = versionInfo.getMajorMinor();
         String version = versionInfo.getMajorVersion() + "." + versionInfo.getMinorVersion() + "." + versionInfo.getPatchVersion();
 
@@ -104,7 +104,7 @@ public class ReleaseVersionFileSystemService {
      */
     public Path createCustomVersionDirectory(String projectId, String customerCode,
                                               String customMajorMinor, String customVersion) throws IOException {
-        // 경로: resources/release/versions/{projectId}/custom/{customerCode}/{customMajorMinor}/{customVersion}/
+        // 경로: release-manager/versions/{projectId}/custom/{customerCode}/{customMajorMinor}/{customVersion}/
         Path versionPath = Paths.get(baseReleasePath, "versions", projectId, "custom",
                 customerCode, customMajorMinor, customVersion);
 

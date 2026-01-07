@@ -76,18 +76,16 @@ com[1-9]
 lpt[1-9]
 
 ### Release Files ###
-src/main/resources/release/patches/
-src/main/resources/release/resource/
-src/main/resources/release/versions/
-src/main/resources/release/publishing/
+src/main/resources/release-manager/patches/
+src/main/resources/release-manager/resources/
+src/main/resources/release-manager/versions/
+src/main/resources/release-manager/publishing/
 
 ### Backup Files ###
 **/backup_files/
 backup_files/
-src/main/resources/release/remote/backup_files/
 
 ### Logs ###
 logs/
 *.log
-src/main/resources/release/remote/logs/
 

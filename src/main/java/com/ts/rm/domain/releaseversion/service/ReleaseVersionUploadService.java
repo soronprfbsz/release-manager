@@ -57,7 +57,7 @@ public class ReleaseVersionUploadService {
     private final ScriptGenerator mariaDBScriptGenerator;
     private final ScriptGenerator crateDBScriptGenerator;
 
-    @Value("${app.release.base-path:src/main/resources/release}")
+    @Value("${app.release.base-path:src/main/resources/release-manager}")
     private String baseReleasePath;
 
     @Value("${spring.servlet.multipart.max-file-size:1GB}")

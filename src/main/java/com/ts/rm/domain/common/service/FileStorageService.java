@@ -26,7 +26,7 @@ public class FileStorageService {
     private final Path baseStorageLocation;
 
     public FileStorageService(
-            @Value("${app.release.base-path:src/main/resources/release}") String basePath) {
+            @Value("${app.release.base-path:src/main/resources/release-manager}") String basePath) {
         this.baseStorageLocation = Paths.get(basePath).toAbsolutePath().normalize();
 
         try {
