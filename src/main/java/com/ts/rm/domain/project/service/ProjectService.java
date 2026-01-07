@@ -42,6 +42,10 @@ public class ProjectService {
         }
 
         Project project = mapper.toEntity(request);
+
+        // isEnabled 기본값 처리 (null이면 true)
+        project.setIsEnabled(request.isEnabled() != null ? request.isEnabled() : true);
+
         Project savedProject = projectRepository.save(project);
 
         log.info("Project created successfully with id: {}", savedProject.getProjectId());

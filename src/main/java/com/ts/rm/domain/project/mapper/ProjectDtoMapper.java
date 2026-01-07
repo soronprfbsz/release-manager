@@ -12,7 +12,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ProjectDtoMapper {
 
-    @Mapping(target = "isEnabled", constant = "true")
+    @Mapping(target = "isEnabled", ignore = true)
     @Mapping(target = "createdBy", constant = "SYSTEM")
     Project toEntity(ProjectDto.CreateRequest request);
 

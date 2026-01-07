@@ -37,7 +37,10 @@ public final class ProjectDto {
             String projectName,
 
             @Schema(description = "설명", example = "Infraeye 1.0 - 레거시 NMS 솔루션")
-            String description
+            String description,
+
+            @Schema(description = "활성 여부 (미입력 시 true)", example = "true")
+            Boolean isEnabled
     ) {
 
     }
