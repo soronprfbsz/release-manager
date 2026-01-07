@@ -17,6 +17,8 @@ public final class MenuDto {
      * @param menuId               메뉴 ID
      * @param menuName             메뉴명
      * @param menuUrl              메뉴 URL
+     * @param icon                 메뉴 아이콘 (Lucide React 아이콘명)
+     * @param isIconVisible        아이콘 표시 여부
      * @param description          메뉴 설명
      * @param isDescriptionVisible 설명 표시 여부
      * @param isLineBreak          줄바꿈 여부
@@ -33,6 +35,12 @@ public final class MenuDto {
             @Schema(description = "메뉴 URL", example = "releases/standard")
             String menuUrl,
 
+            @Schema(description = "메뉴 아이콘 (Lucide React 아이콘명)", example = "tag")
+            String icon,
+
+            @Schema(description = "아이콘 표시 여부", example = "true")
+            Boolean isIconVisible,
+
             @Schema(description = "메뉴 설명", example = "릴리즈 버전 관리")
             String description,
 
@@ -48,15 +56,15 @@ public final class MenuDto {
         /**
          * 하위 메뉴가 없는 메뉴 생성
          */
-        public static MenuResponse of(String menuId, String menuName, String menuUrl, String description, Boolean isDescriptionVisible, Boolean isLineBreak) {
-            return new MenuResponse(menuId, menuName, menuUrl, description, isDescriptionVisible, isLineBreak, List.of());
+        public static MenuResponse of(String menuId, String menuName, String menuUrl, String icon, Boolean isIconVisible, String description, Boolean isDescriptionVisible, Boolean isLineBreak) {
+            return new MenuResponse(menuId, menuName, menuUrl, icon, isIconVisible, description, isDescriptionVisible, isLineBreak, List.of());
         }
 
         /**
          * 하위 메뉴가 있는 메뉴 생성
          */
-        public static MenuResponse of(String menuId, String menuName, String menuUrl, String description, Boolean isDescriptionVisible, Boolean isLineBreak, List<MenuResponse> children) {
-            return new MenuResponse(menuId, menuName, menuUrl, description, isDescriptionVisible, isLineBreak, children);
+        public static MenuResponse of(String menuId, String menuName, String menuUrl, String icon, Boolean isIconVisible, String description, Boolean isDescriptionVisible, Boolean isLineBreak, List<MenuResponse> children) {
+            return new MenuResponse(menuId, menuName, menuUrl, icon, isIconVisible, description, isDescriptionVisible, isLineBreak, children);
         }
     }
 }

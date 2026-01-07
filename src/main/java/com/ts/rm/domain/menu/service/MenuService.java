@@ -61,6 +61,8 @@ public class MenuService {
                     menu.getMenuId(),
                     menu.getMenuName(),
                     menu.getMenuUrl(),
+                    menu.getIcon(),
+                    menu.getIsIconVisible(),
                     menu.getDescription(),
                     menu.getIsDescriptionVisible(),
                     menu.getIsLineBreak()
@@ -78,6 +80,8 @@ public class MenuService {
                 menu.getMenuId(),
                 menu.getMenuName(),
                 menu.getMenuUrl(),
+                menu.getIcon(),
+                menu.getIsIconVisible(),
                 menu.getDescription(),
                 menu.getIsDescriptionVisible(),
                 menu.getIsLineBreak(),

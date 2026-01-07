@@ -33,6 +33,12 @@ public class Menu {
     @Column(name = "menu_url", length = 200)
     private String menuUrl;
 
+    @Column(name = "icon", length = 50)
+    private String icon;
+
+    @Column(name = "is_icon_visible", nullable = false)
+    private Boolean isIconVisible;
+
     @Column(name = "description", length = 500)
     private String description;
 

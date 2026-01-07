@@ -396,6 +396,8 @@ CREATE TABLE menu (
     menu_id VARCHAR(50) PRIMARY KEY COMMENT '메뉴 ID',
     menu_name VARCHAR(100) NOT NULL COMMENT '메뉴명',
     menu_url VARCHAR(200) COMMENT '메뉴 URL',
+    icon VARCHAR(50) COMMENT '메뉴 아이콘 (Lucide React 아이콘명)',
+    is_icon_visible BOOLEAN DEFAULT TRUE COMMENT '아이콘 표시 여부',
     description VARCHAR(500) COMMENT '메뉴 설명',
     is_description_visible BOOLEAN DEFAULT TRUE COMMENT '설명 표시 여부',
     is_line_break BOOLEAN DEFAULT FALSE COMMENT '줄바꿈 여부 (가로 배치 시 강제 줄바꿈)',

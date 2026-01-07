@@ -453,46 +453,43 @@ INSERT INTO resource_link (link_category,sub_category,link_name,link_url,descrip
 -- =========================================================
 -- menu 테이블
 -- =========================================================
-
--- 1depth 메뉴
-INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('version_management', '버전 관리', NULL, '릴리즈 버전 관리', TRUE, FALSE, 1),
-('patch_management', '패치 관리', NULL, '패치 파일 관리', TRUE, FALSE, 2),
-('operation_management', '운영 관리', NULL, '릴리즈 매니저 운영에 필요한 데이터를 관리합니다.', TRUE, FALSE, 3),
-('development_support', '개발 지원', NULL, '인프라 서비스 및 원격 작업 등의 편의 기능을 제공합니다.', TRUE, FALSE, 4);
+-- 1depth 메뉴 (루트 메뉴에 아이콘 포함)
+INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
+('version_management', '버전 관리', NULL, 'rocket', TRUE, '릴리즈 버전 관리', TRUE, FALSE, 1),-- 패치 관리: file-diff → package
+('patch_management', '패치 관리', NULL, 'package', TRUE, '패치 파일 관리', TRUE, FALSE, 2),
+('operation_management', '운영 관리', NULL, 'settings', TRUE, '릴리즈 매니저 운영에 필요한 데이터를 관리합니다.', TRUE, FALSE, 3),
+('development_support', '개발 지원', NULL, 'code', TRUE, '인프라 서비스 및 원격 작업 등의 편의 기능을 제공합니다.', TRUE, FALSE, 4);
 
 -- 2depth 메뉴 - 버전 관리
-INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('version_standard', 'Standard', 'releases/standard', '표준 버전을 관리합니다.', FALSE, TRUE, 1),
-('version_custom', 'Custom', 'releases/custom', '커스텀 사이트 버전을 관리합니다.', FALSE, TRUE, 2);
+INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
+('version_standard', 'Standard', 'releases/standard', 'tag', TRUE, '표준 버전을 관리합니다.', FALSE, TRUE, 1),
+('version_custom', 'Custom', 'releases/custom', 'git-branch', TRUE, '커스텀 사이트 버전을 관리합니다.', FALSE, TRUE, 2);
 
 -- 2depth 메뉴 - 패치 관리
-INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('patch_standard', 'Standard', 'patches/standard', '표준 패치를 관리합니다.', FALSE, TRUE, 1),
-('patch_custom', 'Custom', 'patches/custom', '커스텀 사이트 패치를 관리합니다.', FALSE, TRUE, 2);
+INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
+('patch_standard', 'Standard', 'patches/standard', 'tag', TRUE, '표준 패치를 관리합니다.', FALSE, TRUE, 1),
+('patch_custom', 'Custom', 'patches/custom', 'git-branch', TRUE, '커스텀 사이트 패치를 관리합니다.', FALSE, TRUE, 2);
 
 -- 2depth 메뉴 - 운영 관리
-INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('operation_customers', '고객사', 'operations/customers', '고객사 정보를 관리합니다.', TRUE, FALSE, 1),
-('operation_engineers', '엔지니어', 'operations/engineers', '엔지니어 정보를 관리합니다.', TRUE, FALSE, 2),
-('operation_filesync', '파일 동기화', 'operations/file-sync', '실제 파일과 DB 메타데이터 간 불일치를 분석하고 동기화합니다.', TRUE, FALSE, 3),
-('operation_projects', '프로젝트', 'operations/projects', '프로젝트 정보를 관리합니다.', TRUE, FALSE, 4),
-('operation_accounts', '계정', 'operations/accounts', '계정 정보를 관리합니다.', TRUE, FALSE, 5);
-
+INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
+('operation_customers', '고객사', 'operations/customers', 'building-2', TRUE, '고객사 정보를 관리합니다.', TRUE, FALSE, 1),
+('operation_engineers', '엔지니어', 'operations/engineers', 'users', TRUE, '엔지니어 정보를 관리합니다.', TRUE, FALSE, 2),
+('operation_filesync', '파일 동기화', 'operations/file-sync', 'file-diff', TRUE, '실제 파일과 DB 메타데이터 간 불일치를 분석하고 동기화합니다.', TRUE, FALSE, 3),
+('operation_projects', '프로젝트', 'operations/projects', 'folder-kanban', TRUE, '프로젝트 정보를 관리합니다.', TRUE, FALSE, 4),
+('operation_accounts', '계정', 'operations/accounts', 'user', TRUE, '계정 정보를 관리합니다.', TRUE, FALSE, 5);
 
 -- 2depth 메뉴 - 개발 지원
-INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('remote_jobs', '원격 작업', NULL, '원격 작업 서비스를 제공합니다.', FALSE, FALSE, 1),
-('infrastructure', '인프라', NULL, '개발 인프라 관련 정보를 관리 및 제공합니다.', FALSE, FALSE, 2);
+INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
+('remote_jobs', '원격 작업', NULL, NULL, FALSE, '원격 작업 서비스를 제공합니다.', FALSE, FALSE, 1),
+('infrastructure', '인프라', NULL, NULL, FALSE, '개발 인프라 관련 정보를 관리 및 제공합니다.', FALSE, FALSE, 2);
 
 -- 3depth 메뉴 - 원격 작업
-INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('remote_mariadb', 'MariaDB', 'development-support/remote-jobs/mariadb', 'MariaDB 백업 및 복원 기능을 제공합니다.', TRUE, FALSE, 1),
-('remote_terminal', '터미널', 'development-support/remote-jobs/terminal', 'SSH, SFTP 기능이 있는 웹 터미널을 제공합니다.', TRUE, FALSE, 2);
-
+INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
+('remote_mariadb', 'MariaDB', 'development-support/remote-jobs/mariadb', 'mariadb', TRUE, 'MariaDB 백업 및 복원 기능을 제공합니다.', TRUE, FALSE, 1),
+('remote_terminal', '터미널', 'development-support/remote-jobs/terminal', 'terminal', TRUE, 'SSH, SFTP 기능이 있는 웹 터미널을 제공합니다.', TRUE, FALSE, 2);
 -- 3depth 메뉴 - 인프라
-INSERT INTO menu (menu_id, menu_name, menu_url, description, is_description_visible, is_line_break, menu_order) VALUES
-('infrastructure_resources', '리소스', 'development-support/infrastructure/resources', '리소스 정보를 관리 및 제공합니다.', TRUE, FALSE, 1);
+INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
+('infrastructure_resources', '리소스', 'development-support/infrastructure/resources', 'layers', TRUE, '리소스 정보를 관리 및 제공합니다.', TRUE, FALSE, 1);
 
 -- =========================================================
 -- menu_hierarchy 테이블
