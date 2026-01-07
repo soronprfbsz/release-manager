@@ -116,7 +116,7 @@ app:
     # 로컬: src/main/resources/release-manager, 도커: /app/resources
     base-path: ${RELEASE_BASE_PATH:/app/resources}
   jwt:
-    secret: ${JWT_SECRET}
-    expiration: ${JWT_EXPIRATION:900000}  # 15분 (밀리초)
-    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7일 (밀리초)
-    issuer: ${JWT_ISSUER:release-manager}
+    secret: ${JWT_SECRET} # 토큰 서명 키
+    expiration: ${JWT_EXPIRATION:900000}  # Access Token 만료 15분 (밀리초)
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # Refresh Token 만료 7일 (밀리초)
+    issuer: ${JWT_ISSUER:release-manager} # 발급자 식별자
