@@ -18,6 +18,7 @@ variables:
   REDIS_HOST: "${SERVER_HOST}"
   REDIS_PORT: "16379"
   RELEASE_DIR: "/mnt/release-manager/resources"
+  JWT_SECRET: "your-secret-key-at-least-256-bits-long-for-hs256-algorithm"
 
   # Docker Image
   DOCKER_IMAGE_NAME: "ts/${SERVER_NAME}"
