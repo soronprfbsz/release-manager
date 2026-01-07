@@ -369,6 +369,16 @@ harbor-push-main:
 deploy-main:
   extends: .deploy-template
   variables:
+    SERVER_NAME: "release-manager-api"
+    SERVER_HOST: "10.110.1.106"
+    SERVER_PORT: "8081"
+    SERVER_EXTERNAL_PORT: "18080"
+    FLYWAY_ENABLED: "true"
+    MARIADB_HOST: "10.110.1.106"
+    MARIADB_PORT: "13306"
+    MARIADB_DATABASE: "release_manager"
+    REDIS_HOST: "10.110.1.106"
+    REDIS_PORT: "16379"
     RELEASE_DIR: "/mnt/release-manager/resources"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
