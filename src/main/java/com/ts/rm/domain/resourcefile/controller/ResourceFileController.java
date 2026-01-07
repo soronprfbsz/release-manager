@@ -225,4 +225,18 @@ public class ResourceFileController implements ResourceFileControllerDocs {
 
         return ApiResponse.success(null);
     }
+
+    /**
+     * 리소스 파일 내용 조회
+     */
+    @Override
+    @GetMapping("/{id}/file-content")
+    public ApiResponse<ResourceFileDto.FileContentResponse> getFileContent(@PathVariable Long id) {
+
+        log.info("리소스 파일 내용 조회 요청 - ID: {}", id);
+
+        ResourceFileDto.FileContentResponse response = resourceFileService.getFileContent(id);
+
+        return ApiResponse.success(response);
+    }
 }

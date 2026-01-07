@@ -205,4 +205,32 @@ public final class ResourceFileDto {
             List<Long> resourceFileIds
     ) {
     }
+
+    /**
+     * 파일 내용 응답
+     */
+    @Schema(description = "파일 내용 응답")
+    public record FileContentResponse(
+            @Schema(description = "리소스 파일 ID", example = "1")
+            Long resourceFileId,
+
+            @Schema(description = "파일 경로", example = "resources/file/script/MARIADB/backup.sh")
+            String path,
+
+            @Schema(description = "파일명", example = "backup.sh")
+            String fileName,
+
+            @Schema(description = "파일 크기 (bytes)", example = "1024")
+            long size,
+
+            @Schema(description = "MIME 타입", example = "application/x-sh")
+            String mimeType,
+
+            @Schema(description = "바이너리 파일 여부 (true면 content는 Base64 인코딩됨)", example = "false")
+            boolean isBinary,
+
+            @Schema(description = "파일 내용 (텍스트 또는 Base64)")
+            String content
+    ) {
+    }
 }

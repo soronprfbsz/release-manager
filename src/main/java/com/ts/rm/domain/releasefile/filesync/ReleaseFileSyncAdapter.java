@@ -139,7 +139,8 @@ public class ReleaseFileSyncAdapter implements FileSyncAdapter {
 
     @Override
     public List<String> getAllowedExtensions() {
-        return List.of(".sql", ".sh", ".md", ".txt", ".pdf", ".war", ".jar", ".tar", ".tar.gz", ".zip");
+        // 모든 파일 확장자 허용 (hotfix 등에 다양한 파일 형식 포함 가능)
+        return List.of();
     }
 
     /**

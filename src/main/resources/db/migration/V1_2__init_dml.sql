@@ -680,16 +680,16 @@ INSERT INTO service_component (service_id,component_type,component_name,host,por
 -- Publishing 초기 데이터
 -- =============================================
 INSERT INTO publishing (publishing_id, publishing_name, description, publishing_category, sub_category, customer_id, sort_order, created_by) VALUES
- (1, '경남은행', '경남은행 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 2, 'jhlee@tscientific.co.kr'),
- (2, '경산시청', '경산시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 3, 'jhlee@tscientific.co.kr'),
- (3, '경찰청 업무망', '경찰청 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 5, 'jhlee@tscientific.co.kr'),
- (4, '경찰청 인터넷망', '경찰청 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 6, 'jhlee@tscientific.co.kr'),
- (5, '광주광역시청', '광주광역시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 7, 'jhlee@tscientific.co.kr'),
- (6, '국시원 업무망', '국시원 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 8, 'jhlee@tscientific.co.kr'),
- (7, '국시원 인터넷망', '국시원 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 9, 'jhlee@tscientific.co.kr'),
- (8, '노원구청', '노원구청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 10, 'jhlee@tscientific.co.kr'),
- (9, '경찰청 FMS', '경찰청 FMS 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 11, 'jhlee@tscientific.co.kr'),
- (10, '경기남부경찰청', '경기남부경찰청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 12, 'jhlee@tscientific.co.kr');
+ (1, '경남은행', '경남은행 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 2, 'admin@tscientific.co.kr'),
+ (2, '경산시청', '경산시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 3, 'admin@tscientific.co.kr'),
+ (3, '경찰청 업무망', '경찰청 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 5, 'admin@tscientific.co.kr'),
+ (4, '경찰청 인터넷망', '경찰청 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 6, 'admin@tscientific.co.kr'),
+ (5, '광주광역시청', '광주광역시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 7, 'admin@tscientific.co.kr'),
+ (6, '국시원 업무망', '국시원 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 8, 'admin@tscientific.co.kr'),
+ (7, '국시원 인터넷망', '국시원 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 9, 'admin@tscientific.co.kr'),
+ (8, '노원구청', '노원구청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 10, 'admin@tscientific.co.kr'),
+ (9, '경찰청 FMS', '경찰청 FMS 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 11, 'admin@tscientific.co.kr'),
+ (10, '경기남부경찰청', '경기남부경찰청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 12, 'admin@tscientific.co.kr');
 
 -- =============================================
 -- Publishing File 초기 데이터
