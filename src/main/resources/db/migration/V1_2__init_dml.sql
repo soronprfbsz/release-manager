@@ -458,7 +458,7 @@ INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, descripti
 ('version_management', '버전 관리', NULL, 'rocket', TRUE, '릴리즈 버전 관리', TRUE, FALSE, 1),-- 패치 관리: file-diff → package
 ('patch_management', '패치 관리', NULL, 'package', TRUE, '패치 파일 관리', TRUE, FALSE, 2),
 ('operation_management', '운영 관리', NULL, 'settings', TRUE, '릴리즈 매니저 운영에 필요한 데이터를 관리합니다.', TRUE, FALSE, 3),
-('development_support', '개발 지원', NULL, 'code', TRUE, '인프라 서비스 및 원격 작업 등의 편의 기능을 제공합니다.', TRUE, FALSE, 4);
+('support', '업무 지원', NULL, 'keyboard', TRUE, '인프라 서비스 및 원격 작업 등의 편의 기능을 제공합니다.', TRUE, FALSE, 4);
 
 -- 2depth 메뉴 - 버전 관리
 INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
@@ -478,18 +478,18 @@ INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, descripti
 ('operation_projects', '프로젝트', 'operations/projects', 'folder-kanban', TRUE, '프로젝트 정보를 관리합니다.', TRUE, FALSE, 4),
 ('operation_accounts', '계정', 'operations/accounts', 'user', TRUE, '계정 정보를 관리합니다.', TRUE, FALSE, 5);
 
--- 2depth 메뉴 - 개발 지원
+-- 2depth 메뉴 - 업무 지원
 INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
 ('remote_jobs', '원격 작업', NULL, NULL, FALSE, '원격 작업 서비스를 제공합니다.', FALSE, FALSE, 1),
 ('infrastructure', '인프라', NULL, NULL, FALSE, '개발 인프라 관련 정보를 관리 및 제공합니다.', FALSE, FALSE, 2);
 
 -- 3depth 메뉴 - 원격 작업
 INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
-('remote_mariadb', 'MariaDB', 'development-support/remote-jobs/mariadb', 'mariadb', TRUE, 'MariaDB 백업 및 복원 기능을 제공합니다.', TRUE, FALSE, 1),
-('remote_terminal', '터미널', 'development-support/remote-jobs/terminal', 'terminal', TRUE, 'SSH, SFTP 기능이 있는 웹 터미널을 제공합니다.', TRUE, FALSE, 2);
+('remote_mariadb', 'MariaDB', 'support/remote-jobs/mariadb', 'mariadb', TRUE, 'MariaDB 백업 및 복원 기능을 제공합니다.', TRUE, FALSE, 1),
+('remote_terminal', '터미널', 'support/remote-jobs/terminal', 'terminal', TRUE, 'SSH, SFTP 기능이 있는 웹 터미널을 제공합니다.', TRUE, FALSE, 2);
 -- 3depth 메뉴 - 인프라
 INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
-('infrastructure_resources', '리소스', 'development-support/infrastructure/resources', 'layers', TRUE, '리소스 정보를 관리 및 제공합니다.', TRUE, FALSE, 1);
+('infrastructure_resources', '리소스', 'support/infrastructure/resources', 'layers', TRUE, '리소스 정보를 관리 및 제공합니다.', TRUE, FALSE, 1);
 
 -- =========================================================
 -- menu_hierarchy 테이블
@@ -500,7 +500,7 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('version_management', 'version_management', 0),
 ('patch_management', 'patch_management', 0),
 ('operation_management', 'operation_management', 0),
-('development_support', 'development_support', 0);
+('support', 'support', 0);
 
 -- 2depth 메뉴 (자기 자신)
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
@@ -540,10 +540,10 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('operation_management', 'operation_projects', 1),
 ('operation_management', 'operation_accounts', 1);
 
--- 부모-자식 관계 (depth=1) - 개발 지원
+-- 부모-자식 관계 (depth=1) - 업무 지원
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('development_support', 'remote_jobs', 1),
-('development_support', 'infrastructure', 1);
+('support', 'remote_jobs', 1),
+('support', 'infrastructure', 1);
 
 -- 부모-자식 관계 (depth=1) - 원격 작업
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
@@ -554,14 +554,14 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('infrastructure', 'infrastructure_resources', 1);
 
--- 조상-손자 관계 (depth=2) - 개발 지원 > 원격 작업 > MariaDB/터미널
+-- 조상-손자 관계 (depth=2) - 업무 지원 > 원격 작업 > MariaDB/터미널
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('development_support', 'remote_mariadb', 2),
-('development_support', 'remote_terminal', 2);
+('support', 'remote_mariadb', 2),
+('support', 'remote_terminal', 2);
 
--- 조상-손자 관계 (depth=2) - 개발 지원 > 인프라 > 리소스
+-- 조상-손자 관계 (depth=2) - 업무 지원 > 인프라 > 리소스
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('development_support', 'infrastructure_resources', 2);
+('support', 'infrastructure_resources', 2);
 
 -- =========================================================
 -- menu_role 테이블
@@ -573,7 +573,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('version_management', 'ADMIN'),
 ('patch_management', 'ADMIN'),
 ('operation_management', 'ADMIN'),
-('development_support', 'ADMIN'),
+('support', 'ADMIN'),
 -- 2depth - 버전 관리
 ('version_standard', 'ADMIN'),
 ('version_custom', 'ADMIN'),
@@ -601,7 +601,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('version_management', 'USER'),
 ('patch_management', 'USER'),
 ('operation_management', 'USER'),
-('development_support', 'USER'),
+('support', 'USER'),
 -- 2depth - 버전 관리
 ('version_standard', 'USER'),
 ('version_custom', 'USER'),
@@ -622,7 +622,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- 3depth - 인프라
 ('infrastructure_resources', 'USER');
 
--- GUEST: 제외 메뉴: [운영 관리, 개발지원]
+-- GUEST: 제외 메뉴: [운영 관리, 업무지원]
 INSERT INTO menu_role (menu_id, role) VALUES
 -- 1depth (버전관리, 패치관리 외 제외)
 ('version_management', 'GUEST'),
