@@ -259,7 +259,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 -- FILE_SYNC_STATUS
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('FILE_SYNC_STATUS', 'SYNCED', '동기화됨', '파일과 DB 데이터가 일치합니다', 1, TRUE),
-('FILE_SYNC_STATUS', 'UNREGISTERED', '미등록', '파일 정보가 DB에 존재하지 않습니다)', 2, TRUE),
+('FILE_SYNC_STATUS', 'UNREGISTERED', '미등록', '파일 정보가 DB에 존재하지 않습니다', 2, TRUE),
 ('FILE_SYNC_STATUS', 'FILE_MISSING', '파일 없음', 'DB에는 데이터가 존재하지만 실제 파일이 없습니다', 3, TRUE),
 ('FILE_SYNC_STATUS', 'SIZE_MISMATCH', '크기 불일치', '실제 파일 크기가 DB 데이터와 다릅니다', 4, TRUE),
 ('FILE_SYNC_STATUS', 'CHECKSUM_MISMATCH', '체크섬 불일치', '파일 체크섬이 DB 데이터와 다릅니다', 5, TRUE);
