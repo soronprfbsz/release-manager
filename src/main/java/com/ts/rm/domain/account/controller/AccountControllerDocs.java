@@ -20,9 +20,39 @@ import org.springframework.web.bind.annotation.RequestParam;
 /**
  * AccountController Swagger 문서화 인터페이스
  */
-@Tag(name = "계정", description = "계정 관리 API (ADMIN 전용)")
+@Tag(name = "계정", description = "계정 관리 API")
 @SwaggerResponse
 public interface AccountControllerDocs {
+
+    @Operation(
+            summary = "내 정보 조회",
+            description = "현재 로그인한 사용자의 계정 정보를 조회합니다. JWT 토큰 기반으로 본인 확인합니다.",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AccountDetailResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<AccountDto.DetailResponse>> getMyAccount();
+
+    @Operation(
+            summary = "내 정보 수정",
+            description = "현재 로그인한 사용자의 이름, 비밀번호를 수정합니다. JWT 토큰 기반으로 본인만 수정 가능합니다.",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AccountDetailResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<AccountDto.DetailResponse>> updateMyAccount(
+            @RequestBody AccountDto.UpdateRequest request
+    );
 
     @Operation(
             summary = "계정 목록 조회 (페이징)",

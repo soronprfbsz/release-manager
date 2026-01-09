@@ -36,6 +36,14 @@ public final class AccountDto {
             @Schema(description = "이름 (2~50자)", example = "홍길동") @NotBlank(message = "이름은 필수입니다") @Size(min = 2, max = 50, message = "이름은 2자 이상 50자 이하여야 합니다")
             String accountName,
 
+            @Schema(description = "아바타 스타일 (DiceBear 스타일명)", example = "adventurer")
+            @Size(max = 50, message = "아바타 스타일은 50자 이하여야 합니다")
+            String avatarStyle,
+
+            @Schema(description = "아바타 시드 (랜덤 문자열)", example = "abc123xyz")
+            @Size(max = 100, message = "아바타 시드는 100자 이하여야 합니다")
+            String avatarSeed,
+
             @Schema(description = "계정 권한", example = "USER", defaultValue = "USER")
             String role,
 
@@ -66,7 +74,15 @@ public final class AccountDto {
             String accountName,
 
             @Schema(description = "비밀번호 (8~100자)", example = "password1234") @Size(min = 8, max = 100, message = "비밀번호는 8자 이상 100자 이하여야 합니다")
-            String password
+            String password,
+
+            @Schema(description = "아바타 스타일 (DiceBear 스타일명)", example = "adventurer")
+            @Size(max = 50, message = "아바타 스타일은 50자 이하여야 합니다")
+            String avatarStyle,
+
+            @Schema(description = "아바타 시드 (랜덤 문자열)", example = "abc123xyz")
+            @Size(max = 100, message = "아바타 시드는 100자 이하여야 합니다")
+            String avatarSeed
     ) {
 
     }
@@ -107,6 +123,12 @@ public final class AccountDto {
 
             @Schema(description = "이름", example = "홍길동")
             String accountName,
+
+            @Schema(description = "아바타 스타일 (DiceBear 스타일명)", example = "adventurer")
+            String avatarStyle,
+
+            @Schema(description = "아바타 시드 (랜덤 문자열)", example = "abc123xyz")
+            String avatarSeed,
 
             @Schema(description = "권한", example = "USER")
             String role,
@@ -159,6 +181,12 @@ public final class AccountDto {
 
             @Schema(description = "이름", example = "홍길동")
             String accountName,
+
+            @Schema(description = "아바타 스타일 (DiceBear 스타일명)", example = "adventurer")
+            String avatarStyle,
+
+            @Schema(description = "아바타 시드 (랜덤 문자열)", example = "abc123xyz")
+            String avatarSeed,
 
             @Schema(description = "권한", example = "USER")
             String role,

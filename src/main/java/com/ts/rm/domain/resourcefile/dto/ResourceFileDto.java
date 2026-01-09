@@ -109,8 +109,8 @@ public final class ResourceFileDto {
             @Schema(description = "파일 설명", example = "MariaDB 백업 스크립트")
             String description,
 
-            @Schema(description = "생성자", example = "admin@company.com")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "admin@company.com")
+            String createdByEmail,
 
             @Schema(description = "생성일시", example = "2025-12-04T10:30:00")
             LocalDateTime createdAt

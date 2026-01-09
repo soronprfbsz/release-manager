@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS account (
     account_name VARCHAR(50) NOT NULL COMMENT '계정 이름',
     email VARCHAR(50) NOT NULL UNIQUE COMMENT '이메일',
     password VARCHAR(100) NOT NULL COMMENT '비밀번호',
+    avatar_style VARCHAR(50) COMMENT '아바타 스타일 (DiceBear 스타일명)',
+    avatar_seed VARCHAR(100) COMMENT '아바타 시드 (랜덤 문자열)',
     role VARCHAR(100) NOT NULL COMMENT '계정 권한',
     status VARCHAR(100) NOT NULL COMMENT '계정 상태 (ACTIVE, INACTIVE, SUSPENDED)',
     last_login_at DATETIME COMMENT '마지막 로그인 일시',
@@ -117,7 +119,7 @@ CREATE TABLE IF NOT EXISTS release_version (
     is_approved BOOLEAN NOT NULL DEFAULT FALSE COMMENT '승인 여부',
     approved_by VARCHAR(100) COMMENT '승인자 이메일',
     approved_at DATETIME COMMENT '승인일시',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
 
     INDEX idx_project_id (project_id),
@@ -131,6 +133,7 @@ CREATE TABLE IF NOT EXISTS release_version (
     INDEX idx_major_minor (major_version, minor_version),
     INDEX idx_is_approved (is_approved),
     INDEX idx_created_at (created_at),
+    INDEX idx_created_by (created_by),
 
     UNIQUE KEY uk_project_type_customer_version (project_id, release_type, customer_id, version),
     UNIQUE KEY uk_custom_version (customer_id, custom_major_version, custom_minor_version, custom_patch_version),
@@ -142,7 +145,9 @@ CREATE TABLE IF NOT EXISTS release_version (
     CONSTRAINT fk_release_version_hotfix_base FOREIGN KEY (hotfix_base_version_id)
         REFERENCES release_version(release_version_id) ON DELETE SET NULL,
     CONSTRAINT fk_release_version_custom_base FOREIGN KEY (custom_base_version_id)
-        REFERENCES release_version(release_version_id) ON DELETE SET NULL
+        REFERENCES release_version(release_version_id) ON DELETE SET NULL,
+    CONSTRAINT fk_release_version_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 버전 테이블';
 
 CREATE TABLE IF NOT EXISTS release_file (

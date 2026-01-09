@@ -36,4 +36,12 @@ public class SignUpRequest {
     @NotBlank(message = "계정 이름은 필수 입력 항목입니다.")
     @Size(max = 50, message = "계정 이름은 최대 50자까지 입력 가능합니다.")
     private String accountName;
+
+    @Schema(description = "아바타 스타일 (DiceBear 스타일명)", example = "adventurer")
+    @Size(max = 50, message = "아바타 스타일은 최대 50자까지 입력 가능합니다.")
+    private String avatarStyle;
+
+    @Schema(description = "아바타 시드 (랜덤 문자열)", example = "abc123xyz")
+    @Size(max = 100, message = "아바타 시드는 최대 100자까지 입력 가능합니다.")
+    private String avatarSeed;
 }

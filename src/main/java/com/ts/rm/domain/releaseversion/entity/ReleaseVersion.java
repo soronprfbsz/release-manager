@@ -1,5 +1,6 @@
 package com.ts.rm.domain.releaseversion.entity;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
@@ -76,8 +77,9 @@ public class ReleaseVersion {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "created_by", nullable = false, length = 100)
-    private String createdBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private Account creator;
 
     @Column(columnDefinition = "TEXT")
     private String comment;
@@ -216,5 +218,14 @@ public class ReleaseVersion {
     @Transient
     public String getBaseVersionString() {
         return majorVersion + "." + minorVersion + "." + patchVersion;
+    }
+
+    /**
+     * 생성자 이름 반환
+     * <p>creator 엔티티의 accountName 반환, null이면 null 반환
+     */
+    @Transient
+    public String getCreatedByName() {
+        return creator != null ? creator.getAccountName() : null;
     }
 }

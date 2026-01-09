@@ -15,6 +15,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,6 +36,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class AccountController implements AccountControllerDocs {
 
     private final AccountService accountService;
+
+    @Override
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<AccountDto.DetailResponse>> getMyAccount() {
+        log.info("GET /api/accounts/me");
+
+        AccountDto.DetailResponse response = accountService.getMyAccount();
+
+        log.info("My account retrieved successfully - accountId: {}", response.accountId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Override
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<AccountDto.DetailResponse>> updateMyAccount(
+            @Valid @RequestBody AccountDto.UpdateRequest request) {
+        log.info("PATCH /api/accounts/me - request: {}", request);
+
+        AccountDto.DetailResponse response = accountService.updateMyAccount(request);
+
+        log.info("My account updated successfully - accountId: {}", response.accountId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
     @Override
     @GetMapping

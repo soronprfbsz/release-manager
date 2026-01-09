@@ -21,6 +21,7 @@ public interface ReleaseVersionDtoMapper {
     @Mapping(target = "fullVersion", expression = "java(releaseVersion.getFullVersion())")
     @Mapping(target = "patchFileCount", expression = "java(releaseVersion.getReleaseFiles() != null ? releaseVersion.getReleaseFiles().size() : 0)")
     @Mapping(target = "fileCategories", ignore = true)
+    @Mapping(target = "createdBy", source = "creator.accountName")
     ReleaseVersionDto.SimpleResponse toSimpleResponse(ReleaseVersion releaseVersion);
 
     List<ReleaseVersionDto.SimpleResponse> toSimpleResponseList(
@@ -38,6 +39,7 @@ public interface ReleaseVersionDtoMapper {
     @Mapping(target = "customBaseVersion", source = "customBaseVersion.version")
     @Mapping(target = "hotfixBaseVersionId", source = "hotfixBaseVersion.releaseVersionId")
     @Mapping(target = "hotfixBaseVersion", source = "hotfixBaseVersion.version")
+    @Mapping(target = "createdBy", source = "creator.accountName")
     ReleaseVersionDto.DetailResponse toDetailResponse(ReleaseVersion releaseVersion);
 
     List<ReleaseVersionDto.DetailResponse> toDetailResponseList(
@@ -50,6 +52,7 @@ public interface ReleaseVersionDtoMapper {
     @Mapping(target = "fullVersion", expression = "java(releaseVersion.getFullVersion())")
     @Mapping(target = "createdAt", expression = "java(releaseVersion.getCreatedAt() != null ? releaseVersion.getCreatedAt().toLocalDate().toString() : null)")
     @Mapping(target = "fileCategories", ignore = true)
+    @Mapping(target = "createdBy", source = "creator.accountName")
     ReleaseVersionDto.HotfixItem toHotfixItem(ReleaseVersion releaseVersion);
 
     List<ReleaseVersionDto.HotfixItem> toHotfixItemList(List<ReleaseVersion> releaseVersions);

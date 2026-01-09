@@ -9,9 +9,10 @@ import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.pagination.PageRowNumberUtil;
-import java.util.List;
+import com.ts.rm.global.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final AccountDtoMapper mapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public AccountDto.DetailResponse createAccount(
@@ -73,6 +75,8 @@ public class AccountService {
                         account.getAccountId(),
                         account.getEmail(),
                         account.getAccountName(),
+                        account.getAvatarStyle(),
+                        account.getAvatarSeed(),
                         account.getRole(),
                         account.getStatus(),
                         account.getLastLoginAt(),
@@ -197,9 +201,73 @@ public class AccountService {
         return mapper.toDetailResponse(account);
     }
 
+    /**
+     * 내 정보 조회
+     *
+     * @return 현재 로그인한 사용자의 계정 상세 정보
+     */
+    public AccountDto.DetailResponse getMyAccount() {
+        String email = SecurityUtil.getTokenInfo().email();
+        log.info("Getting my account info - email: {}", email);
+
+        Account account = findAccountByEmail(email);
+        return mapper.toDetailResponse(account);
+    }
+
+    /**
+     * 내 정보 수정 (본인만 가능)
+     *
+     * @param request 수정 요청 (이름, 비밀번호)
+     * @return 수정된 계정 상세 정보
+     */
+    @Transactional
+    public AccountDto.DetailResponse updateMyAccount(AccountDto.UpdateRequest request) {
+        // JWT에서 현재 로그인한 사용자 이메일 추출
+        String email = SecurityUtil.getTokenInfo().email();
+        log.info("Updating my account - email: {}", email);
+
+        // 이메일로 계정 조회
+        Account account = findAccountByEmail(email);
+
+        // 이름 수정
+        if (request.accountName() != null && !request.accountName().isBlank()) {
+            account.setAccountName(request.accountName());
+            log.debug("Account name updated to {} for email: {}", request.accountName(), email);
+        }
+
+        // 비밀번호 수정 (암호화 처리)
+        if (request.password() != null && !request.password().isBlank()) {
+            account.setPassword(passwordEncoder.encode(request.password()));
+            log.debug("Password updated for email: {}", email);
+        }
+
+        // 아바타 스타일 수정
+        if (request.avatarStyle() != null) {
+            account.setAvatarStyle(request.avatarStyle());
+            log.debug("Avatar style updated to {} for email: {}", request.avatarStyle(), email);
+        }
+
+        // 아바타 시드 수정
+        if (request.avatarSeed() != null) {
+            account.setAvatarSeed(request.avatarSeed());
+            log.debug("Avatar seed updated for email: {}", email);
+        }
+
+        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
+        log.info("My account updated successfully - email: {}", email);
+        return mapper.toDetailResponse(account);
+    }
+
     private Account findAccountByAccountId(Long accountId) {
         return accountRepository
                 .findByAccountId(accountId)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.ACCOUNT_NOT_FOUND));
+    }
+
+    private Account findAccountByEmail(String email) {
+        return accountRepository
+                .findByEmail(email)
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.ACCOUNT_NOT_FOUND));
     }

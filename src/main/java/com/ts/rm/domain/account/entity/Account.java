@@ -34,6 +34,12 @@ public class Account extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String password;
 
+    @Column(name = "avatar_style", length = 50)
+    private String avatarStyle;
+
+    @Column(name = "avatar_seed", length = 100)
+    private String avatarSeed;
+
     @Column(name = "account_name", nullable = false, length = 50)
     private String accountName;
 
