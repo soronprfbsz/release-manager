@@ -14,11 +14,13 @@ public interface ProjectDtoMapper {
 
     @Mapping(target = "isEnabled", ignore = true)
     @Mapping(target = "creator", ignore = true)
+    @Mapping(target = "createdByEmail", ignore = true)
     Project toEntity(ProjectDto.CreateRequest request);
 
-    @Mapping(target = "createdByEmail", expression = "java(project.getCreatedByName())")
+    @Mapping(target = "createdByEmail", source = "createdByEmail")
     @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
     @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
+    @Mapping(target = "isDeletedCreator", expression = "java(project.getCreator() == null)")
     ProjectDto.DetailResponse toDetailResponse(Project project);
 
     List<ProjectDto.DetailResponse> toDetailResponseList(List<Project> projects);

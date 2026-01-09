@@ -234,6 +234,7 @@ public class PatchGenerationService {
                     .patchName(resolvedPatchName)
                     .outputPath(outputPath)
                     .creator(creator)
+                    .createdByEmail(creator.getEmail())
                     .description(description)
                     .engineer(engineer)
                     .build();
@@ -513,6 +514,7 @@ public class PatchGenerationService {
                     .patchName(resolvedPatchName)
                     .outputPath(outputPath)
                     .creator(creator)
+                    .createdByEmail(creator.getEmail())
                     .description(description)
                     .engineer(engineer)
                     .build();

@@ -61,7 +61,9 @@ public class CustomerService {
 
         Customer customer = mapper.toEntity(request);
         customer.setCreator(creator);
+        customer.setCreatedByEmail(creator.getEmail());
         customer.setUpdater(creator);
+        customer.setUpdatedByEmail(creator.getEmail());
 
         Customer savedCustomer = customerRepository.save(customer);
 
@@ -194,6 +196,7 @@ public class CustomerService {
         }
         // updater는 항상 설정 (JWT에서 추출)
         customer.setUpdater(updater);
+        customer.setUpdatedByEmail(updater.getEmail());
 
         // 기존 프로젝트 정보 조회 (프로젝트는 수정 불가)
         CustomerDto.ProjectInfo projectInfo = getProjectInfoByCustomerId(customerId);
@@ -300,13 +303,15 @@ public class CustomerService {
                 hasCustomVersion,
                 projectInfo,
                 customer.getCreatedAt(),
-                customer.getCreatedByName(),
+                customer.getCreatedByEmail(),
                 customer.getCreator() != null ? customer.getCreator().getAvatarStyle() : null,
                 customer.getCreator() != null ? customer.getCreator().getAvatarSeed() : null,
+                customer.getCreator() == null,
                 customer.getUpdatedAt(),
-                customer.getUpdatedByName(),
+                customer.getUpdatedByEmail(),
                 customer.getUpdater() != null ? customer.getUpdater().getAvatarStyle() : null,
-                customer.getUpdater() != null ? customer.getUpdater().getAvatarSeed() : null
+                customer.getUpdater() != null ? customer.getUpdater().getAvatarSeed() : null,
+                customer.getUpdater() == null
         );
     }
 }

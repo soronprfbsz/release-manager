@@ -137,17 +137,23 @@ public final class EngineerDto {
             @Schema(description = "생성자 아바타 시드", example = "abc123")
             String createdByAvatarSeed,
 
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator,
+
             @Schema(description = "수정일시")
             LocalDateTime updatedAt,
 
-            @Schema(description = "수정자")
-            String updatedBy,
+            @Schema(description = "수정자 이메일")
+            String updatedByEmail,
 
             @Schema(description = "수정자 아바타 스타일", example = "lorelei")
             String updatedByAvatarStyle,
 
             @Schema(description = "수정자 아바타 시드", example = "def456")
-            String updatedByAvatarSeed
+            String updatedByAvatarSeed,
+
+            @Schema(description = "수정자 탈퇴 여부", example = "false")
+            Boolean isDeletedUpdater
     ) {
     }
 

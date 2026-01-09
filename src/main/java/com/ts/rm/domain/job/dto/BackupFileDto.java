@@ -50,6 +50,9 @@ public final class BackupFileDto {
             @Schema(description = "생성자 아바타 시드", example = "abc123")
             String createdByAvatarSeed,
 
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator,
+
             @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             @Schema(description = "생성일시", example = "2025-12-03 17:15:00")
             LocalDateTime createdAt
@@ -93,6 +96,9 @@ public final class BackupFileDto {
 
             @Schema(description = "생성자 아바타 시드", example = "abc123")
             String createdByAvatarSeed,
+
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator,
 
             @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             @Schema(description = "생성일시", example = "2025-12-03 17:15:00")

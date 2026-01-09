@@ -50,6 +50,12 @@ public class Project extends BaseEntity {
     private Account creator;
 
     /**
+     * 생성자 이메일 (계정 삭제 시에도 유지)
+     */
+    @Column(name = "created_by_email", length = 100)
+    private String createdByEmail;
+
+    /**
      * 생성자 이름 반환 헬퍼 메서드
      */
     @Transient

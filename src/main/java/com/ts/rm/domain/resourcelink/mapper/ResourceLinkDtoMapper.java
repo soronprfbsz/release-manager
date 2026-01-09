@@ -15,9 +15,10 @@ public interface ResourceLinkDtoMapper {
     /**
      * Entity → DetailResponse
      */
-    @Mapping(target = "createdByEmail", expression = "java(resourceLink.getCreatedByName())")
+    @Mapping(target = "createdByEmail", source = "createdByEmail")
     @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
     @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
+    @Mapping(target = "isDeletedCreator", expression = "java(resourceLink.getCreator() == null)")
     ResourceLinkDto.DetailResponse toDetailResponse(ResourceLink resourceLink);
 
     /**

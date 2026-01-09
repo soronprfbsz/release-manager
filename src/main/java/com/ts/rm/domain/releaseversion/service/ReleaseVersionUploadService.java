@@ -418,6 +418,7 @@ public class ReleaseVersionUploadService {
                         .customMinorVersion(customMinorVersion)
                         .customPatchVersion(customPatchVersion)
                         .creator(creator)
+                        .createdByEmail(createdByEmail)
                         .comment(comment)
                         .build()
         );
@@ -739,12 +740,14 @@ public class ReleaseVersionUploadService {
                 .minorVersion(versionInfo.getMinorVersion())
                 .patchVersion(versionInfo.getPatchVersion())
                 .creator(creator)
+                .createdByEmail(createdByEmail)
                 .comment(comment)
                 .isApproved(approved);
 
         // 승인된 경우 승인자와 승인일시 설정
         if (approved) {
-            builder.approvedBy(createdByEmail)
+            builder.approver(creator)
+                   .approvedByEmail(createdByEmail)
                    .approvedAt(java.time.LocalDateTime.now());
         }
 
@@ -1231,6 +1234,7 @@ public class ReleaseVersionUploadService {
                         .hotfixVersion(hotfixVersion)
                         .hotfixBaseVersion(hotfixBaseVersion)
                         .creator(creator)
+                        .createdByEmail(createdByEmail)
                         .comment(comment)
                         .isApproved(false)  // 핫픽스는 기본 미승인
                         .build()

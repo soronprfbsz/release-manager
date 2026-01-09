@@ -12,9 +12,10 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ResourceFileDtoMapper {
 
-    @Mapping(target = "createdByEmail", expression = "java(resourceFile.getCreatedByEmail())")
+    @Mapping(target = "createdByEmail", source = "createdByEmail")
     @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
     @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
+    @Mapping(target = "isDeletedCreator", expression = "java(resourceFile.getCreator() == null)")
     ResourceFileDto.DetailResponse toDetailResponse(ResourceFile resourceFile);
 
     ResourceFileDto.SimpleResponse toSimpleResponse(ResourceFile resourceFile);

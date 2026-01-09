@@ -118,6 +118,9 @@ public final class ResourceFileDto {
             @Schema(description = "생성자 아바타 시드", example = "abc123")
             String createdByAvatarSeed,
 
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator,
+
             @Schema(description = "생성일시", example = "2025-12-04T10:30:00")
             LocalDateTime createdAt
     ) {

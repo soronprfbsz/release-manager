@@ -95,7 +95,10 @@ public final class ProjectDto {
             String createdByAvatarStyle,
 
             @Schema(description = "생성자 아바타 시드", example = "abc123")
-            String createdByAvatarSeed
+            String createdByAvatarSeed,
+
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator
     ) {
 
     }

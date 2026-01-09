@@ -71,6 +71,12 @@ public class Patch extends BaseEntity {
     @JoinColumn(name = "created_by")
     private Account creator;
 
+    /**
+     * 생성자 이메일 (계정 삭제 시에도 유지)
+     */
+    @Column(name = "created_by_email", length = 100)
+    private String createdByEmail;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

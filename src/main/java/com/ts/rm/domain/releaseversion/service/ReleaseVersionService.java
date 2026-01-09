@@ -241,6 +241,7 @@ public class ReleaseVersionService {
                 .minorVersion(versionInfo.getMinorVersion())
                 .patchVersion(versionInfo.getPatchVersion())
                 .creator(creator)
+                .createdByEmail(request.createdByEmail())
                 .comment(request.comment())
                 .isApproved(request.isApproved() != null ? request.isApproved() : false)
                 .customMajorVersion(request.customMajorVersion())
@@ -304,9 +305,11 @@ public class ReleaseVersionService {
                 response.createdByEmail(),
                 response.createdByAvatarStyle(),
                 response.createdByAvatarSeed(),
+                response.isDeletedCreator(),   // 생성자 탈퇴 여부
                 response.comment(),
                 response.isApproved(),
                 response.approvedBy(),
+                response.isDeletedApprover(),  // 승인자 탈퇴 여부
                 response.approvedAt(),
                 fileCategories,
                 response.createdAt(),
@@ -338,25 +341,29 @@ public class ReleaseVersionService {
     /**
      * 릴리즈 버전 승인
      *
-     * @param versionId  버전 ID
-     * @param approvedBy 승인자 이메일
+     * @param versionId       버전 ID
+     * @param approvedByEmail 승인자 이메일
      * @return 승인된 버전 상세 정보
      */
     @Transactional
-    public ReleaseVersionDto.DetailResponse approveReleaseVersion(Long versionId, String approvedBy) {
-        log.info("릴리즈 버전 승인 요청 - versionId: {}, approvedBy: {}", versionId, approvedBy);
+    public ReleaseVersionDto.DetailResponse approveReleaseVersion(Long versionId, String approvedByEmail) {
+        log.info("릴리즈 버전 승인 요청 - versionId: {}, approvedByEmail: {}", versionId, approvedByEmail);
 
         // 엔티티 조회
         ReleaseVersion releaseVersion = findVersionById(versionId);
 
+        // 승인자(Account) 조회 - 이메일로 조회
+        Account approver = accountLookupService.findByEmail(approvedByEmail);
+
         // 승인 처리
         releaseVersion.setIsApproved(true);
-        releaseVersion.setApprovedBy(approvedBy);
+        releaseVersion.setApprover(approver);
+        releaseVersion.setApprovedByEmail(approvedByEmail);
         releaseVersion.setApprovedAt(LocalDateTime.now());
 
         // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
-        log.info("릴리즈 버전 승인 완료 - versionId: {}, approvedBy: {}, approvedAt: {}",
-                versionId, approvedBy, releaseVersion.getApprovedAt());
+        log.info("릴리즈 버전 승인 완료 - versionId: {}, approvedByEmail: {}, approvedAt: {}",
+                versionId, approvedByEmail, releaseVersion.getApprovedAt());
         return mapper.toDetailResponse(releaseVersion);
     }
 
@@ -405,6 +412,7 @@ public class ReleaseVersionService {
                 .hotfixVersion(nextHotfixVersion)
                 .hotfixBaseVersion(baseVersion)
                 .creator(creator)
+                .createdByEmail(createdByEmail)
                 .comment(comment)
                 .isApproved(false)
                 .customMajorVersion(baseVersion.getCustomMajorVersion())

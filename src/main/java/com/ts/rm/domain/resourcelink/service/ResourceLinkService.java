@@ -61,6 +61,7 @@ public class ResourceLinkService {
                 .description(request.description())
                 .sortOrder(sortOrder)
                 .creator(creator)
+                .createdByEmail(creator.getEmail())
                 .build();
 
         ResourceLink saved = resourceLinkRepository.save(resourceLink);

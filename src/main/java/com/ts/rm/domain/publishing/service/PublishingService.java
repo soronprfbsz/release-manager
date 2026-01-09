@@ -102,6 +102,7 @@ public class PublishingService {
                 .customer(customer)
                 .sortOrder(sortOrder)
                 .creator(creator)
+                .createdByEmail(creator.getEmail())
                 .build();
 
         Publishing savedPublishing = publishingRepository.save(publishing);
@@ -145,7 +146,7 @@ public class PublishingService {
         }
 
         // 수정자 Account 조회
-        Account updater = accountLookupService.findByEmail(request.updatedBy());
+        Account updater = accountLookupService.findByEmail(request.updatedByEmail());
 
         // 퍼블리싱 정보 업데이트
         publishing.setPublishingName(request.publishingName());
@@ -154,6 +155,7 @@ public class PublishingService {
         publishing.setSubCategory(request.subCategory() != null ? request.subCategory().toUpperCase() : null);
         publishing.setCustomer(customer);
         publishing.setUpdater(updater);
+        publishing.setUpdatedByEmail(updater.getEmail());
 
         log.info("퍼블리싱 수정 완료 - ID: {}", id);
 
@@ -659,8 +661,10 @@ public class PublishingService {
                 totalFileSize,
                 files,
                 htmlFiles,
-                publishing.getCreatedByName(),
-                publishing.getUpdatedByName(),
+                publishing.getCreatedByEmail(),
+                publishing.getCreator() == null,
+                publishing.getUpdatedByEmail(),
+                publishing.getUpdater() == null,
                 publishing.getCreatedAt(),
                 publishing.getUpdatedAt()
         );

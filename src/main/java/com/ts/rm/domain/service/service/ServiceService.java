@@ -57,6 +57,7 @@ public class ServiceService {
                 .description(request.description())
                 .sortOrder(sortOrder)
                 .creator(creator)
+                .createdByEmail(creator.getEmail())
                 .build();
 
         // 컴포넌트 추가
@@ -132,6 +133,7 @@ public class ServiceService {
 
         service.update(request.serviceName(), request.serviceType(),
                 request.description(), updater);
+        service.setUpdatedByEmail(updater.getEmail());
 
         log.info("Service updated successfully: {}", serviceId);
         return toDetailResponseWithNames(service);
@@ -202,6 +204,7 @@ public class ServiceService {
         component.update(componentType, request.componentName(),
                 request.host(), request.port(), request.url(),
                 request.description(), request.sshPort(), updater);
+        component.setUpdatedByEmail(updater.getEmail());
 
         log.info("Component updated successfully: {}", componentId);
         return toComponentResponseWithName(component);
@@ -355,6 +358,7 @@ public class ServiceService {
                 .description(request.description())
                 .sortOrder(0) // 임시값, 나중에 재계산됨
                 .creator(creator)
+                .createdByEmail(creator.getEmail())
                 .build();
     }
 
@@ -390,8 +394,10 @@ public class ServiceService {
                 components,
                 response.createdAt(), response.createdByEmail(),
                 response.createdByAvatarStyle(), response.createdByAvatarSeed(),
-                response.updatedAt(), response.updatedBy(),
-                response.updatedByAvatarStyle(), response.updatedByAvatarSeed()
+                response.isDeletedCreator(),
+                response.updatedAt(), response.updatedByEmail(),
+                response.updatedByAvatarStyle(), response.updatedByAvatarSeed(),
+                response.isDeletedUpdater()
         );
     }
 

@@ -74,7 +74,9 @@ public class EngineerService {
         }
 
         engineer.setCreator(creator);
+        engineer.setCreatedByEmail(creator.getEmail());
         engineer.setUpdater(creator);
+        engineer.setUpdatedByEmail(creator.getEmail());
 
         Engineer savedEngineer = engineerRepository.save(engineer);
 
@@ -172,6 +174,7 @@ public class EngineerService {
         }
 
         engineer.setUpdater(updater);
+        engineer.setUpdatedByEmail(updater.getEmail());
 
         log.info("엔지니어 수정 완료 - id: {}", engineerId);
         return toDetailResponseWithPositionName(engineer);
@@ -255,10 +258,12 @@ public class EngineerService {
                 response.createdByEmail(),
                 response.createdByAvatarStyle(),
                 response.createdByAvatarSeed(),
+                response.isDeletedCreator(),
                 response.updatedAt(),
-                response.updatedBy(),
+                response.updatedByEmail(),
                 response.updatedByAvatarStyle(),
-                response.updatedByAvatarSeed()
+                response.updatedByAvatarSeed(),
+                response.isDeletedUpdater()
         );
     }
 }

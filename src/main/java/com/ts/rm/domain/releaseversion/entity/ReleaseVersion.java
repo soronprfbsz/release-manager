@@ -81,6 +81,9 @@ public class ReleaseVersion {
     @JoinColumn(name = "created_by")
     private Account creator;
 
+    @Column(name = "created_by_email", length = 100)
+    private String createdByEmail;
+
     @Column(columnDefinition = "TEXT")
     private String comment;
 
@@ -88,8 +91,12 @@ public class ReleaseVersion {
     @Builder.Default
     private Boolean isApproved = false;
 
-    @Column(name = "approved_by", length = 100)
-    private String approvedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by")
+    private Account approver;
+
+    @Column(name = "approved_by_email", length = 100)
+    private String approvedByEmail;
 
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
@@ -230,11 +237,47 @@ public class ReleaseVersion {
     }
 
     /**
-     * 생성자 이메일 반환
-     * <p>creator 엔티티의 email 반환, null이면 null 반환
+     * 생성자 아바타 스타일 반환
+     * <p>creator 엔티티의 avatarStyle 반환, null이면 null 반환
      */
     @Transient
-    public String getCreatedByEmail() {
-        return creator != null ? creator.getEmail() : null;
+    public String getCreatedByAvatarStyle() {
+        return creator != null ? creator.getAvatarStyle() : null;
+    }
+
+    /**
+     * 생성자 아바타 시드 반환
+     * <p>creator 엔티티의 avatarSeed 반환, null이면 null 반환
+     */
+    @Transient
+    public String getCreatedByAvatarSeed() {
+        return creator != null ? creator.getAvatarSeed() : null;
+    }
+
+    /**
+     * 승인자 이름 반환
+     * <p>approver 엔티티의 accountName 반환, null이면 null 반환
+     */
+    @Transient
+    public String getApprovedByName() {
+        return approver != null ? approver.getAccountName() : null;
+    }
+
+    /**
+     * 승인자 아바타 스타일 반환
+     * <p>approver 엔티티의 avatarStyle 반환, null이면 null 반환
+     */
+    @Transient
+    public String getApprovedByAvatarStyle() {
+        return approver != null ? approver.getAvatarStyle() : null;
+    }
+
+    /**
+     * 승인자 아바타 시드 반환
+     * <p>approver 엔티티의 avatarSeed 반환, null이면 null 반환
+     */
+    @Transient
+    public String getApprovedByAvatarSeed() {
+        return approver != null ? approver.getAvatarSeed() : null;
     }
 }

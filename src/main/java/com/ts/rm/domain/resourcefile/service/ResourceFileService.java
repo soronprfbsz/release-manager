@@ -102,6 +102,7 @@ public class ResourceFileService {
                     .description(request.description())
                     .sortOrder(sortOrder)
                     .creator(creator)
+                    .createdByEmail(creator.getEmail())
                     .build();
 
             ResourceFile saved = resourceFileRepository.save(resourceFile);

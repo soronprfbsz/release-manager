@@ -121,6 +121,9 @@ public final class PatchDto {
             @Schema(description = "생성자 아바타 시드", example = "abc123")
             String createdByAvatarSeed,
 
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator,
+
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
 
@@ -177,6 +180,9 @@ public final class PatchDto {
             @Schema(description = "생성자 아바타 시드", example = "abc123")
             String createdByAvatarSeed,
 
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator,
+
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
 
@@ -232,6 +238,9 @@ public final class PatchDto {
 
             @Schema(description = "생성자 아바타 시드", example = "abc123")
             String createdByAvatarSeed,
+
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator,
 
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,

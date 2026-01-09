@@ -201,15 +201,23 @@ public class ReleaseVersionTreeService {
                 ? version.getApprovedAt().toLocalDate().toString()
                 : null;
 
+        // 승인자 아바타 정보 (approver FK 직접 사용)
+        String approvedByAvatarStyle = version.getApprovedByAvatarStyle();
+        String approvedByAvatarSeed = version.getApprovedByAvatarSeed();
+
         return new ReleaseVersionDto.CustomVersionNode(
                 version.getReleaseVersionId(),
                 version.getVersion(),  // 전체 버전 문자열 (예: 1.1.0-companyA.1.0.0)
                 createdAt,
                 version.getCreatedByName(),
                 version.getCreatedByEmail(),
+                version.getCreatedByAvatarStyle(),
+                version.getCreatedByAvatarSeed(),
                 version.getComment(),
                 version.getIsApproved(),
-                version.getApprovedBy(),
+                version.getApprovedByEmail(),
+                approvedByAvatarStyle,
+                approvedByAvatarSeed,
                 approvedAt,
                 fileCategories
         );
@@ -342,6 +350,10 @@ public class ReleaseVersionTreeService {
                 ? version.getApprovedAt().toLocalDate().toString()
                 : null;
 
+        // 승인자 아바타 정보 (approver FK 직접 사용)
+        String approvedByAvatarStyle = version.getApprovedByAvatarStyle();
+        String approvedByAvatarSeed = version.getApprovedByAvatarSeed();
+
         // 핫픽스 목록 조회 및 정렬
         List<ReleaseVersionDto.HotfixNode> hotfixNodes = new ArrayList<>();
         List<ReleaseVersion> hotfixes = hotfixesByParentId.get(version.getReleaseVersionId());
@@ -359,9 +371,15 @@ public class ReleaseVersionTreeService {
                 createdAt,
                 version.getCreatedByName(),
                 version.getCreatedByEmail(),
+                version.getCreatedByAvatarStyle(),
+                version.getCreatedByAvatarSeed(),
+                version.getCreator() == null,  // isDeletedCreator
                 version.getComment(),
                 version.getIsApproved(),
-                version.getApprovedBy(),
+                version.getApprovedByEmail(),
+                approvedByAvatarStyle,
+                approvedByAvatarSeed,
+                version.getApprover() == null && version.getApprovedByEmail() != null,  // isDeletedApprover
                 approvedAt,
                 fileCategories,
                 hotfixNodes
@@ -394,6 +412,10 @@ public class ReleaseVersionTreeService {
                 ? version.getApprovedAt().toLocalDate().toString()
                 : null;
 
+        // 승인자 아바타 정보 (approver FK 직접 사용)
+        String approvedByAvatarStyle = version.getApprovedByAvatarStyle();
+        String approvedByAvatarSeed = version.getApprovedByAvatarSeed();
+
         return new ReleaseVersionDto.HotfixNode(
                 version.getReleaseVersionId(),
                 version.getHotfixVersion(),
@@ -401,9 +423,15 @@ public class ReleaseVersionTreeService {
                 createdAt,
                 version.getCreatedByName(),
                 version.getCreatedByEmail(),
+                version.getCreatedByAvatarStyle(),
+                version.getCreatedByAvatarSeed(),
+                version.getCreator() == null,  // isDeletedCreator
                 version.getComment(),
                 version.getIsApproved(),
-                version.getApprovedBy(),
+                version.getApprovedByEmail(),
+                approvedByAvatarStyle,
+                approvedByAvatarSeed,
+                version.getApprover() == null && version.getApprovedByEmail() != null,  // isDeletedApprover
                 approvedAt,
                 fileCategories
         );

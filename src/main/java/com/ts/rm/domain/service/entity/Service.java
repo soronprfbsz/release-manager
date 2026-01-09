@@ -62,11 +62,23 @@ public class Service extends BaseEntity {
     private Account creator;
 
     /**
+     * 생성자 이메일 (계정 삭제 시에도 유지)
+     */
+    @Column(name = "created_by_email", length = 100)
+    private String createdByEmail;
+
+    /**
      * 수정자
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "updated_by")
     private Account updater;
+
+    /**
+     * 수정자 이메일 (계정 삭제 시에도 유지)
+     */
+    @Column(name = "updated_by_email", length = 100)
+    private String updatedByEmail;
 
     @OneToMany(mappedBy = "service", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
@@ -156,5 +168,14 @@ public class Service extends BaseEntity {
      */
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
+    }
+
+    /**
+     * 수정자 이메일 설정
+     *
+     * @param updatedByEmail 수정자 이메일
+     */
+    public void setUpdatedByEmail(String updatedByEmail) {
+        this.updatedByEmail = updatedByEmail;
     }
 }

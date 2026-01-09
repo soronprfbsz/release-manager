@@ -73,7 +73,7 @@ public final class PublishingDto {
             Long customerId,
 
             @Schema(description = "수정자 이메일 (서버에서 JWT 토큰으로 자동 설정)", hidden = true)
-            String updatedBy
+            String updatedByEmail
     ) {
     }
 
@@ -121,8 +121,14 @@ public final class PublishingDto {
             @Schema(description = "생성자 이메일", example = "admin@company.com")
             String createdByEmail,
 
-            @Schema(description = "수정자", example = "admin@company.com")
-            String updatedBy,
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator,
+
+            @Schema(description = "수정자 이메일", example = "admin@company.com")
+            String updatedByEmail,
+
+            @Schema(description = "수정자 탈퇴 여부", example = "false")
+            Boolean isDeletedUpdater,
 
             @Schema(description = "생성일시", example = "2025-12-04T10:30:00")
             LocalDateTime createdAt,

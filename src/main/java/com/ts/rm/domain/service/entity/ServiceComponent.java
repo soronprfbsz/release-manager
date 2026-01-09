@@ -80,6 +80,12 @@ public class ServiceComponent {
     @JoinColumn(name = "created_by")
     private Account creator;
 
+    /**
+     * 생성자 이메일 (계정 삭제 시에도 유지)
+     */
+    @Column(name = "created_by_email", length = 100)
+    private String createdByEmail;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -89,6 +95,12 @@ public class ServiceComponent {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "updated_by")
     private Account updater;
+
+    /**
+     * 수정자 이메일 (계정 삭제 시에도 유지)
+     */
+    @Column(name = "updated_by_email", length = 100)
+    private String updatedByEmail;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;

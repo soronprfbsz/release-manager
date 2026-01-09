@@ -131,6 +131,7 @@ public class PatchService {
                     response.createdByEmail(),
                     response.createdByAvatarStyle(),
                     response.createdByAvatarSeed(),
+                    response.isDeletedCreator(),
                     response.description(),
                     response.engineerId(),
                     response.engineerName(),

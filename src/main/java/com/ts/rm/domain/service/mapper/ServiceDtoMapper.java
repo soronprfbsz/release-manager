@@ -20,12 +20,14 @@ public interface ServiceDtoMapper {
 
     @Mapping(target = "serviceTypeName", ignore = true)
     @Mapping(target = "components", ignore = true)
-    @Mapping(target = "createdByEmail", expression = "java(service.getCreatedByName())")
+    @Mapping(target = "createdByEmail", source = "createdByEmail")
     @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
     @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
-    @Mapping(target = "updatedBy", expression = "java(service.getUpdatedByName())")
+    @Mapping(target = "isDeletedCreator", expression = "java(service.getCreator() == null)")
+    @Mapping(target = "updatedByEmail", source = "updatedByEmail")
     @Mapping(target = "updatedByAvatarStyle", source = "updater.avatarStyle")
     @Mapping(target = "updatedByAvatarSeed", source = "updater.avatarSeed")
+    @Mapping(target = "isDeletedUpdater", expression = "java(service.getUpdater() == null)")
     ServiceDto.DetailResponse toDetailResponse(Service service);
 
     @Mapping(target = "serviceTypeName", ignore = true)
@@ -55,8 +57,10 @@ public interface ServiceDtoMapper {
     @Mapping(target = "componentType", expression = "java(toComponentType(request.componentType()))")
     @Mapping(target = "sortOrder", ignore = true)
     @Mapping(target = "creator", ignore = true)
+    @Mapping(target = "createdByEmail", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updater", ignore = true)
+    @Mapping(target = "updatedByEmail", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     ServiceComponent toEntity(ServiceDto.ComponentRequest request);
 

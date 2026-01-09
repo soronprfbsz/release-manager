@@ -14,17 +14,21 @@ public interface CustomerDtoMapper {
 
     @Mapping(target = "customerId", ignore = true)
     @Mapping(target = "creator", ignore = true)
+    @Mapping(target = "createdByEmail", ignore = true)
     @Mapping(target = "updater", ignore = true)
+    @Mapping(target = "updatedByEmail", ignore = true)
     Customer toEntity(CustomerDto.CreateRequest request);
 
     @Mapping(target = "project", ignore = true)
     @Mapping(target = "hasCustomVersion", ignore = true)
-    @Mapping(target = "createdByEmail", expression = "java(customer.getCreatedByName())")
+    @Mapping(target = "createdByEmail", source = "createdByEmail")
     @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
     @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
-    @Mapping(target = "updatedBy", expression = "java(customer.getUpdatedByName())")
+    @Mapping(target = "isDeletedCreator", expression = "java(customer.getCreator() == null)")
+    @Mapping(target = "updatedByEmail", source = "updatedByEmail")
     @Mapping(target = "updatedByAvatarStyle", source = "updater.avatarStyle")
     @Mapping(target = "updatedByAvatarSeed", source = "updater.avatarSeed")
+    @Mapping(target = "isDeletedUpdater", expression = "java(customer.getUpdater() == null)")
     CustomerDto.DetailResponse toDetailResponse(Customer customer);
 
     List<CustomerDto.DetailResponse> toDetailResponseList(List<Customer> customers);

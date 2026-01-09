@@ -200,6 +200,7 @@ public class BackupFileService {
                     response.createdByEmail(),
                     response.createdByAvatarStyle(),
                     response.createdByAvatarSeed(),
+                    response.isDeletedCreator(),
                     response.createdAt()
             );
         });

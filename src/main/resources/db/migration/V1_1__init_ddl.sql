@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS project (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
 
     INDEX idx_project_name (project_name),
     INDEX idx_project_is_enabled (is_enabled),
@@ -76,7 +77,9 @@ CREATE TABLE IF NOT EXISTS customer (
     description VARCHAR(255) COMMENT '설명',
     is_active BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
+    updated_by_email VARCHAR(100) COMMENT '수정자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -128,9 +131,11 @@ CREATE TABLE IF NOT EXISTS release_version (
     custom_base_version_id BIGINT COMMENT '기준 표준 버전 ID (커스텀 릴리즈인 경우)',
     comment TEXT COMMENT '버전 설명',
     is_approved BOOLEAN NOT NULL DEFAULT FALSE COMMENT '승인 여부',
-    approved_by VARCHAR(100) COMMENT '승인자 이메일',
+    approved_by BIGINT COMMENT '승인자 계정 ID (account.account_id FK)',
+    approved_by_email VARCHAR(100) COMMENT '승인자 이메일 (계정 삭제 시에도 유지)',
     approved_at DATETIME COMMENT '승인일시',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
 
     INDEX idx_project_id (project_id),
@@ -145,6 +150,7 @@ CREATE TABLE IF NOT EXISTS release_version (
     INDEX idx_is_approved (is_approved),
     INDEX idx_created_at (created_at),
     INDEX idx_created_by (created_by),
+    INDEX idx_approved_by (approved_by),
 
     UNIQUE KEY uk_project_type_customer_version (project_id, release_type, customer_id, version),
     UNIQUE KEY uk_custom_version (customer_id, custom_major_version, custom_minor_version, custom_patch_version),
@@ -158,6 +164,8 @@ CREATE TABLE IF NOT EXISTS release_version (
     CONSTRAINT fk_release_version_custom_base FOREIGN KEY (custom_base_version_id)
         REFERENCES release_version(release_version_id) ON DELETE SET NULL,
     CONSTRAINT fk_release_version_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL,
+    CONSTRAINT fk_release_version_approved_by FOREIGN KEY (approved_by)
         REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='릴리즈 버전 테이블';
 
@@ -219,6 +227,7 @@ CREATE TABLE IF NOT EXISTS resource_file (
     description TEXT COMMENT '파일 설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (file_category 내에서 정렬)',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -245,6 +254,7 @@ CREATE TABLE IF NOT EXISTS resource_link (
     description TEXT COMMENT '링크 설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (link_category 내에서 정렬)',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -275,7 +285,9 @@ CREATE TABLE IF NOT EXISTS publishing (
     customer_id BIGINT COMMENT '고객사 ID (커스터마이징인 경우)',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
+    updated_by_email VARCHAR(100) COMMENT '수정자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -327,6 +339,7 @@ CREATE TABLE IF NOT EXISTS backup_file (
     checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
     description TEXT COMMENT '파일 설명',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -351,6 +364,7 @@ CREATE TABLE IF NOT EXISTS backup_file_log (
     checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
     description TEXT COMMENT '로그 설명',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -386,8 +400,10 @@ CREATE TABLE IF NOT EXISTS engineer (
     description VARCHAR(500) COMMENT '설명',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
+    updated_by_email VARCHAR(100) COMMENT '수정자 이메일 (계정 삭제 시에도 유지)',
 
     INDEX idx_engineer_name (engineer_name),
     INDEX idx_engineer_email (engineer_email),
@@ -416,6 +432,7 @@ CREATE TABLE IF NOT EXISTS patch_file (
     description TEXT COMMENT '설명',
     engineer_id BIGINT COMMENT '패치 담당자 (엔지니어 ID)',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -511,8 +528,10 @@ CREATE TABLE IF NOT EXISTS service (
     description TEXT COMMENT '설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (SERVICE_TYPE의 sort_order 값)',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
+    updated_by_email VARCHAR(100) COMMENT '수정자 이메일 (계정 삭제 시에도 유지)',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
     INDEX idx_service_type (service_type),
@@ -541,8 +560,10 @@ CREATE TABLE IF NOT EXISTS service_component (
     description TEXT COMMENT '설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
+    updated_by_email VARCHAR(100) COMMENT '수정자 이메일 (계정 삭제 시에도 유지)',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
     INDEX idx_service_id (service_id),
