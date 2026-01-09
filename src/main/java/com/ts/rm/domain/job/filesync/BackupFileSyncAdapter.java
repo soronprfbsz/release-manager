@@ -90,6 +90,7 @@ public class BackupFileSyncAdapter implements FileSyncAdapter {
                 .checksum(metadata.getChecksum())
                 .description(description)
                 .creator(creator)
+                .createdByEmail(createdByEmail)
                 .build();
 
         BackupFile saved = backupFileRepository.save(backupFile);

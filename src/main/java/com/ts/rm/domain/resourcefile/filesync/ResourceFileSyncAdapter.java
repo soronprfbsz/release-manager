@@ -96,6 +96,7 @@ public class ResourceFileSyncAdapter implements FileSyncAdapter {
                 .sortOrder(sortOrder)
                 .description(description)
                 .creator(creator)
+                .createdByEmail(createdByEmail)
                 .build();
 
         ResourceFile saved = resourceFileRepository.save(resourceFile);

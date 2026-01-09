@@ -898,7 +898,7 @@ public class FileSyncService {
             if (item.getDescription() != null) {
                 additionalData.put("description", item.getDescription());
             }
-            additionalData.put("createdBy", SecurityUtil.getTokenInfo().email());
+            additionalData.put("createdByEmail", SecurityUtil.getTokenInfo().email());
 
             Long newId = adapter.registerFile(metadata, additionalData);
 
@@ -968,7 +968,7 @@ public class FileSyncService {
             if (item.getDescription() != null) {
                 additionalData.put("description", item.getDescription());
             }
-            additionalData.put("createdBy", SecurityUtil.getTokenInfo().email());
+            additionalData.put("createdByEmail", SecurityUtil.getTokenInfo().email());
 
             Long newId = adapter.registerFile(metadata, additionalData);
 
@@ -1038,7 +1038,7 @@ public class FileSyncService {
             if (item.getDescription() != null) {
                 additionalData.put("description", item.getDescription());
             }
-            additionalData.put("createdBy", SecurityUtil.getTokenInfo().email());
+            additionalData.put("createdByEmail", SecurityUtil.getTokenInfo().email());
 
             Long newId = adapter.registerFile(metadata, additionalData);
 

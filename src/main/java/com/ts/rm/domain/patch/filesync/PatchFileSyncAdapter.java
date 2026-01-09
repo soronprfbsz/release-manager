@@ -174,6 +174,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
                 .outputPath(metadata.getFilePath())
                 .description(description)
                 .creator(creator)
+                .createdByEmail(createdByEmail)
                 .build();
 
         Patch saved = patchRepository.save(patch);
