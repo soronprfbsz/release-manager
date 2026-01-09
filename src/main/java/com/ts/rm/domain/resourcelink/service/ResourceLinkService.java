@@ -1,8 +1,10 @@
 package com.ts.rm.domain.resourcelink.service;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.resourcelink.dto.ResourceLinkDto;
 import com.ts.rm.domain.resourcelink.entity.ResourceLink;
 import com.ts.rm.domain.resourcelink.repository.ResourceLinkRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import java.util.List;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ResourceLinkService {
 
     private final ResourceLinkRepository resourceLinkRepository;
+    private final AccountLookupService accountLookupService;
 
     /**
      * 리소스 링크 생성
@@ -46,6 +49,9 @@ public class ResourceLinkService {
                 request.linkCategory().toUpperCase());
         Integer sortOrder = maxSortOrder + 1;
 
+        // 생성자 Account 조회
+        Account creator = accountLookupService.findByEmail(request.createdByEmail());
+
         // 엔티티 생성 및 저장
         ResourceLink resourceLink = ResourceLink.builder()
                 .linkCategory(request.linkCategory().toUpperCase())
@@ -54,7 +60,7 @@ public class ResourceLinkService {
                 .linkUrl(request.linkUrl())
                 .description(request.description())
                 .sortOrder(sortOrder)
-                .createdBy(request.createdBy())
+                .creator(creator)
                 .build();
 
         ResourceLink saved = resourceLinkRepository.save(resourceLink);

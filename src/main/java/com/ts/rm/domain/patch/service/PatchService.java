@@ -52,11 +52,11 @@ public class PatchService {
      */
     @Transactional
     public Patch generatePatchByVersion(String projectId, String releaseType, Long customerId,
-            String fromVersion, String toVersion, String createdBy, String description,
+            String fromVersion, String toVersion, String createdByEmail, String description,
             Long engineerId, String patchName, boolean includeAllBuildVersions) {
         return patchGenerationService.generatePatchByVersion(
                 projectId, releaseType, customerId, fromVersion, toVersion,
-                createdBy, description, engineerId, patchName, includeAllBuildVersions);
+                createdByEmail, description, engineerId, patchName, includeAllBuildVersions);
     }
 
     /**
@@ -66,11 +66,11 @@ public class PatchService {
      */
     @Transactional
     public Patch generatePatch(String projectId, Long fromVersionId, Long toVersionId, Long customerId,
-            String createdBy, String description, Long engineerId, String patchName,
+            String createdByEmail, String description, Long engineerId, String patchName,
             boolean includeAllBuildVersions) {
         return patchGenerationService.generatePatch(
                 projectId, fromVersionId, toVersionId, customerId,
-                createdBy, description, engineerId, patchName, includeAllBuildVersions);
+                createdByEmail, description, engineerId, patchName, includeAllBuildVersions);
     }
 
     /**
@@ -128,7 +128,9 @@ public class PatchService {
                     response.fromVersion(),
                     response.toVersion(),
                     response.patchName(),
-                    response.createdBy(),
+                    response.createdByEmail(),
+                    response.createdByAvatarStyle(),
+                    response.createdByAvatarSeed(),
                     response.description(),
                     response.engineerId(),
                     response.engineerName(),
@@ -316,10 +318,10 @@ public class PatchService {
      */
     @Transactional
     public Patch generateCustomPatchByVersion(String projectId, Long customerId,
-            String fromVersion, String toVersion, String createdBy, String description,
+            String fromVersion, String toVersion, String createdByEmail, String description,
             Long engineerId, String patchName) {
         return patchGenerationService.generateCustomPatchByVersion(
                 projectId, customerId, fromVersion, toVersion,
-                createdBy, description, engineerId, patchName);
+                createdByEmail, description, engineerId, patchName);
     }
 }

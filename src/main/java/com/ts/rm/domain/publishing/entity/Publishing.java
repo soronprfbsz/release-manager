@@ -1,5 +1,6 @@
 package com.ts.rm.domain.publishing.entity;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.common.entity.BaseEntity;
 import com.ts.rm.domain.customer.entity.Customer;
 import jakarta.persistence.CascadeType;
@@ -13,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -84,14 +86,32 @@ public class Publishing extends BaseEntity {
     /**
      * 생성자
      */
-    @Column(name = "created_by", nullable = false, length = 100)
-    private String createdBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private Account creator;
 
     /**
      * 수정자
      */
-    @Column(name = "updated_by", length = 100)
-    private String updatedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by")
+    private Account updater;
+
+    /**
+     * 생성자 이름 반환 헬퍼 메서드
+     */
+    @Transient
+    public String getCreatedByName() {
+        return creator != null ? creator.getAccountName() : null;
+    }
+
+    /**
+     * 수정자 이름 반환 헬퍼 메서드
+     */
+    @Transient
+    public String getUpdatedByName() {
+        return updater != null ? updater.getAccountName() : null;
+    }
 
     /**
      * 퍼블리싱 파일 목록

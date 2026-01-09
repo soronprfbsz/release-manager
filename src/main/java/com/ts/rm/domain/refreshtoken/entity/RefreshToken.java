@@ -35,6 +35,10 @@ public class RefreshToken implements Serializable {
 
     private String role;
 
+    private String avatarStyle;
+
+    private String avatarSeed;
+
     private LocalDateTime createdAt;
 
     @TimeToLive

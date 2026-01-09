@@ -1,5 +1,6 @@
 package com.ts.rm.domain.publishing.service;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.publishing.dto.PublishingDto;
@@ -9,6 +10,7 @@ import com.ts.rm.domain.publishing.entity.PublishingFile;
 import com.ts.rm.domain.publishing.mapper.PublishingDtoMapper;
 import com.ts.rm.domain.publishing.repository.PublishingFileRepository;
 import com.ts.rm.domain.publishing.repository.PublishingRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.file.FileChecksumUtil;
@@ -49,6 +51,7 @@ public class PublishingService {
     private final PublishingFileRepository publishingFileRepository;
     private final CustomerRepository customerRepository;
     private final PublishingDtoMapper publishingDtoMapper;
+    private final AccountLookupService accountLookupService;
 
     @Value("${app.release.base-path:src/main/resources/release-manager}")
     private String baseReleasePath;
@@ -87,6 +90,9 @@ public class PublishingService {
                 request.publishingCategory().toUpperCase());
         Integer sortOrder = maxSortOrder + 1;
 
+        // 생성자 Account 조회
+        Account creator = accountLookupService.findByEmail(request.createdByEmail());
+
         // Publishing 엔티티 생성
         Publishing publishing = Publishing.builder()
                 .publishingName(request.publishingName())
@@ -95,7 +101,7 @@ public class PublishingService {
                 .subCategory(request.subCategory() != null ? request.subCategory().toUpperCase() : null)
                 .customer(customer)
                 .sortOrder(sortOrder)
-                .createdBy(request.createdBy())
+                .creator(creator)
                 .build();
 
         Publishing savedPublishing = publishingRepository.save(publishing);
@@ -138,13 +144,16 @@ public class PublishingService {
                             "고객사를 찾을 수 없습니다: " + request.customerId()));
         }
 
+        // 수정자 Account 조회
+        Account updater = accountLookupService.findByEmail(request.updatedBy());
+
         // 퍼블리싱 정보 업데이트
         publishing.setPublishingName(request.publishingName());
         publishing.setDescription(request.description());
         publishing.setPublishingCategory(request.publishingCategory().toUpperCase());
         publishing.setSubCategory(request.subCategory() != null ? request.subCategory().toUpperCase() : null);
         publishing.setCustomer(customer);
-        publishing.setUpdatedBy(request.updatedBy());
+        publishing.setUpdater(updater);
 
         log.info("퍼블리싱 수정 완료 - ID: {}", id);
 
@@ -650,8 +659,8 @@ public class PublishingService {
                 totalFileSize,
                 files,
                 htmlFiles,
-                publishing.getCreatedBy(),
-                publishing.getUpdatedBy(),
+                publishing.getCreatedByName(),
+                publishing.getUpdatedByName(),
                 publishing.getCreatedAt(),
                 publishing.getUpdatedAt()
         );

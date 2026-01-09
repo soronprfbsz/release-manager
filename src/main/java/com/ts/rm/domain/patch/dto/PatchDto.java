@@ -47,10 +47,10 @@ public final class PatchDto {
             @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+$", message = "버전 형식이 올바르지 않습니다 (예: 1.1.1)")
             String toVersion,
 
-            @Schema(description = "생성자", example = "admin@tscientific")
-            @NotBlank(message = "생성자는 필수입니다")
-            @Size(max = 100, message = "생성자는 100자 이하여야 합니다")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "admin@tscientific")
+            @NotBlank(message = "생성자 이메일은 필수입니다")
+            @Size(max = 100, message = "생성자 이메일은 100자 이하여야 합니다")
+            String createdByEmail,
 
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
@@ -112,8 +112,14 @@ public final class PatchDto {
             @Schema(description = "출력 경로", example = "patches/202511271430_1.0.0_1.1.1")
             String outputPath,
 
-            @Schema(description = "생성자", example = "admin@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "admin@tscientific")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
@@ -162,8 +168,14 @@ public final class PatchDto {
             @Schema(description = "패치 이름", example = "20251125_1.0.0_1.1.1")
             String patchName,
 
-            @Schema(description = "생성자", example = "admin@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "admin@tscientific")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
@@ -212,8 +224,14 @@ public final class PatchDto {
             @Schema(description = "패치 이름", example = "20251125_1.0.0_1.1.1")
             String patchName,
 
-            @Schema(description = "생성자", example = "admin@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "admin@tscientific")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @Schema(description = "설명", example = "1.0.0에서 1.1.1로 업그레이드용 누적 패치")
             String description,
@@ -357,10 +375,10 @@ public final class PatchDto {
                     message = "버전 형식이 올바르지 않습니다 (예: 1.1.0-companyA.1.0.0)")
             String toVersion,
 
-            @Schema(description = "생성자", example = "admin@tscientific")
-            @NotBlank(message = "생성자는 필수입니다")
+            @Schema(description = "생성자 이메일", example = "admin@tscientific")
+            @NotBlank(message = "생성자 이메일은 필수입니다")
             @Size(max = 100, message = "생성자는 100자 이하여야 합니다")
-            String createdBy,
+            String createdByEmail,
 
             @Schema(description = "설명", example = "A사 1.0.0에서 1.0.2로 업그레이드용 커스텀 패치")
             String description,

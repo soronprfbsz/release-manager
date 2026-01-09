@@ -57,5 +57,11 @@ public class SignInResponse {
 
         @Schema(description = "권한", example = "USER")
         private String role;
+
+        @Schema(description = "아바타 스타일", example = "bottts")
+        private String avatarStyle;
+
+        @Schema(description = "아바타 시드", example = "default-seed")
+        private String avatarSeed;
     }
 }

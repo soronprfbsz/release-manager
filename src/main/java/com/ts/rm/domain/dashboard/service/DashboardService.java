@@ -81,7 +81,7 @@ public class DashboardService {
                 rv.getReleaseType(),
                 rv.getReleaseCategory().name(),
                 rv.getCreatedAt(),
-                rv.getCreatedBy(),
+                rv.getCreatedByName(),
                 rv.getComment()
         );
     }
@@ -90,8 +90,9 @@ public class DashboardService {
      * ReleaseVersion -> RecentVersion 변환
      */
     private RecentVersion toRecentVersion(ReleaseVersion rv) {
-        // 해당 버전의 파일 카테고리 목록 조회
+        // 해당 버전의 파일 카테고리 목록 조회 (fileCategory가 null인 경우 제외)
         List<String> fileCategories = rv.getReleaseFiles().stream()
+                .filter(rf -> rf.getFileCategory() != null)
                 .map(rf -> rf.getFileCategory().name())
                 .distinct()
                 .sorted()
@@ -103,7 +104,7 @@ public class DashboardService {
                 rv.getReleaseType(),
                 rv.getReleaseCategory().name(),
                 rv.getCreatedAt(),
-                rv.getCreatedBy(),
+                rv.getCreatedByName(),
                 rv.getComment(),
                 fileCategories
         );
@@ -120,7 +121,7 @@ public class DashboardService {
                 patch.getToVersion(),
                 patch.getReleaseType(),
                 patch.getCreatedAt(),
-                patch.getCreatedBy(),
+                patch.getCreatedByName(),
                 patch.getDescription()
         );
     }

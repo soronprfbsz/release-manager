@@ -1,5 +1,6 @@
 package com.ts.rm.domain.service.service;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.common.entity.Code;
 import com.ts.rm.domain.common.repository.CodeRepository;
 import com.ts.rm.domain.service.dto.ServiceDto;
@@ -9,9 +10,9 @@ import com.ts.rm.domain.service.enums.ComponentType;
 import com.ts.rm.domain.service.mapper.ServiceDtoMapper;
 import com.ts.rm.domain.service.repository.ServiceComponentRepository;
 import com.ts.rm.domain.service.repository.ServiceRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -33,13 +34,17 @@ public class ServiceService {
     private final ServiceComponentRepository componentRepository;
     private final CodeRepository codeRepository;
     private final ServiceDtoMapper mapper;
+    private final AccountLookupService accountLookupService;
 
     /**
      * 서비스 생성
      */
     @Transactional
-    public ServiceDto.DetailResponse createService(ServiceDto.CreateRequest request, String createdBy) {
+    public ServiceDto.DetailResponse createService(ServiceDto.CreateRequest request, String createdByEmail) {
         log.info("Creating service: {}", request.serviceName());
+
+        // 생성자 Account 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
 
         // 서비스 타입 검증 및 다음 sortOrder 계산
         validateServiceType(request.serviceType());
@@ -51,14 +56,14 @@ public class ServiceService {
                 .serviceType(request.serviceType())
                 .description(request.description())
                 .sortOrder(sortOrder)
-                .createdBy(createdBy)
+                .creator(creator)
                 .build();
 
         // 컴포넌트 추가
         if (request.components() != null && !request.components().isEmpty()) {
             for (ServiceDto.ComponentRequest compReq : request.components()) {
                 validateComponentType(compReq.componentType());
-                ServiceComponent component = createComponentFromRequest(compReq, createdBy);
+                ServiceComponent component = createComponentFromRequest(compReq, creator);
                 service.addComponent(component);
             }
         }
@@ -110,6 +115,9 @@ public class ServiceService {
     public ServiceDto.DetailResponse updateService(Long serviceId, ServiceDto.UpdateRequest request, String updatedBy) {
         log.info("Updating service: {}", serviceId);
 
+        // 수정자 Account 조회
+        Account updater = accountLookupService.findByEmail(updatedBy);
+
         Service service = findServiceById(serviceId);
 
         // 서비스 타입 검증 및 sortOrder 업데이트
@@ -123,7 +131,7 @@ public class ServiceService {
         }
 
         service.update(request.serviceName(), request.serviceType(),
-                request.description(), updatedBy);
+                request.description(), updater);
 
         log.info("Service updated successfully: {}", serviceId);
         return toDetailResponseWithNames(service);
@@ -144,13 +152,16 @@ public class ServiceService {
      * 컴포넌트 추가
      */
     @Transactional
-    public ServiceDto.ComponentResponse addComponent(Long serviceId, ServiceDto.ComponentRequest request, String createdBy) {
+    public ServiceDto.ComponentResponse addComponent(Long serviceId, ServiceDto.ComponentRequest request, String createdByEmail) {
         log.info("Adding component to service: {}", serviceId);
+
+        // 생성자 Account 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
 
         Service service = findServiceById(serviceId);
         validateComponentType(request.componentType());
 
-        ServiceComponent component = createComponentFromRequest(request, createdBy);
+        ServiceComponent component = createComponentFromRequest(request, creator);
         service.addComponent(component);
 
         ServiceComponent savedComponent = componentRepository.save(component);
@@ -171,6 +182,9 @@ public class ServiceService {
                                                          ServiceDto.ComponentRequest request, String updatedBy) {
         log.info("Updating component: {} in service: {}", componentId, serviceId);
 
+        // 수정자 Account 조회
+        Account updater = accountLookupService.findByEmail(updatedBy);
+
         ServiceComponent component = findComponentById(componentId);
 
         if (!component.getService().getServiceId().equals(serviceId)) {
@@ -187,7 +201,7 @@ public class ServiceService {
 
         component.update(componentType, request.componentName(),
                 request.host(), request.port(), request.url(),
-                request.description(), request.sshPort(), updatedBy);
+                request.description(), request.sshPort(), updater);
 
         log.info("Component updated successfully: {}", componentId);
         return toComponentResponseWithName(component);
@@ -330,7 +344,7 @@ public class ServiceService {
         }
     }
 
-    private ServiceComponent createComponentFromRequest(ServiceDto.ComponentRequest request, String createdBy) {
+    private ServiceComponent createComponentFromRequest(ServiceDto.ComponentRequest request, Account creator) {
         return ServiceComponent.builder()
                 .componentType(ComponentType.fromCode(request.componentType()))
                 .componentName(request.componentName())
@@ -340,7 +354,7 @@ public class ServiceService {
                 .sshPort(request.sshPort())
                 .description(request.description())
                 .sortOrder(0) // 임시값, 나중에 재계산됨
-                .createdBy(createdBy)
+                .creator(creator)
                 .build();
     }
 
@@ -374,8 +388,10 @@ public class ServiceService {
                 response.serviceType(), serviceTypeName,
                 response.description(),
                 components,
-                response.createdAt(), response.createdBy(),
-                response.updatedAt(), response.updatedBy()
+                response.createdAt(), response.createdByEmail(),
+                response.createdByAvatarStyle(), response.createdByAvatarSeed(),
+                response.updatedAt(), response.updatedBy(),
+                response.updatedByAvatarStyle(), response.updatedByAvatarSeed()
         );
     }
 

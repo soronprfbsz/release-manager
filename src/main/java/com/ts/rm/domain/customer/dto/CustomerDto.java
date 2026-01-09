@@ -120,14 +120,26 @@ public final class CustomerDto {
             @Schema(description = "생성일시")
             LocalDateTime createdAt,
 
-            @Schema(description = "생성자", example = "admin@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "홍길동")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @Schema(description = "수정일시")
             LocalDateTime updatedAt,
 
-            @Schema(description = "수정자", example = "admin@tscientific")
-            String updatedBy
+            @Schema(description = "수정자", example = "홍길동")
+            String updatedBy,
+
+            @Schema(description = "수정자 아바타 스타일", example = "lorelei")
+            String updatedByAvatarStyle,
+
+            @Schema(description = "수정자 아바타 시드", example = "def456")
+            String updatedByAvatarSeed
     ) {
 
     }

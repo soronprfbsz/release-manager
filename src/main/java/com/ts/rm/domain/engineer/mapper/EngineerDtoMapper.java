@@ -21,15 +21,21 @@ public interface EngineerDtoMapper {
     @Mapping(target = "department", ignore = true)
     @Mapping(target = "position", source = "positionCode")
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "creator", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "updater", ignore = true)
     Engineer toEntity(EngineerDto.CreateRequest request);
 
     @Mapping(target = "positionCode", source = "position")
     @Mapping(target = "position", ignore = true)
     @Mapping(target = "departmentId", source = "department.departmentId")
     @Mapping(target = "departmentName", source = "department.departmentName")
+    @Mapping(target = "createdByEmail", expression = "java(engineer.getCreatedByName())")
+    @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
+    @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
+    @Mapping(target = "updatedBy", expression = "java(engineer.getUpdatedByName())")
+    @Mapping(target = "updatedByAvatarStyle", source = "updater.avatarStyle")
+    @Mapping(target = "updatedByAvatarSeed", source = "updater.avatarSeed")
     EngineerDto.DetailResponse toDetailResponse(Engineer engineer);
 
     List<EngineerDto.DetailResponse> toDetailResponseList(List<Engineer> engineers);

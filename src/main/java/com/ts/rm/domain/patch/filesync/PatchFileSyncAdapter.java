@@ -4,6 +4,7 @@ import static com.ts.rm.global.util.MapExtractUtil.extractLong;
 import static com.ts.rm.global.util.MapExtractUtil.extractString;
 import static com.ts.rm.global.util.MapExtractUtil.extractStringOrDefault;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.engineer.entity.Engineer;
@@ -15,6 +16,7 @@ import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.repository.PatchRepository;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.project.repository.ProjectRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import java.util.List;
@@ -46,6 +48,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
     private final ProjectRepository projectRepository;
     private final CustomerRepository customerRepository;
     private final EngineerRepository engineerRepository;
+    private final AccountLookupService accountLookupService;
 
     /**
      * 패치 폴더명 파싱 패턴
@@ -127,7 +130,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
         String toVersion = extractStringOrDefault(additionalData, "toVersion", folderInfo.toVersion);
         String customerCode = extractStringOrDefault(additionalData, "customerCode", folderInfo.customerCode);
         String description = extractString(additionalData, "description");
-        String createdBy = extractStringOrDefault(additionalData, "createdBy", "SYSTEM_SYNC");
+        String createdByEmail = extractStringOrDefault(additionalData, "createdByEmail", "SYSTEM_SYNC");
         Long engineerId = extractLong(additionalData, "engineerId");
 
         // 프로젝트 조회
@@ -157,6 +160,9 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
         // 패치명 생성
         String patchName = folderName;
 
+        // 생성자 Account 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
+
         Patch patch = Patch.builder()
                 .project(project)
                 .releaseType(releaseType.toUpperCase())
@@ -167,7 +173,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
                 .patchName(patchName)
                 .outputPath(metadata.getFilePath())
                 .description(description)
-                .createdBy(createdBy)
+                .creator(creator)
                 .build();
 
         Patch saved = patchRepository.save(patch);

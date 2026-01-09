@@ -41,8 +41,14 @@ public final class BackupFileDto {
             @Schema(description = "파일 설명", example = "월간 정기 백업")
             String description,
 
-            @Schema(description = "생성자", example = "admin@company.com")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "admin@company.com")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             @Schema(description = "생성일시", example = "2025-12-03 17:15:00")
@@ -79,8 +85,14 @@ public final class BackupFileDto {
             @Schema(description = "파일 설명", example = "월간 정기 백업")
             String description,
 
-            @Schema(description = "생성자", example = "admin@company.com")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "admin@company.com")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
             @Schema(description = "생성일시", example = "2025-12-03 17:15:00")

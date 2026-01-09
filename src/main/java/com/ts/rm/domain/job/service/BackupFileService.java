@@ -197,7 +197,9 @@ public class BackupFileService {
                     response.fileSize(),
                     response.fileSizeFormatted(),
                     response.description(),
-                    response.createdBy(),
+                    response.createdByEmail(),
+                    response.createdByAvatarStyle(),
+                    response.createdByAvatarSeed(),
                     response.createdAt()
             );
         });

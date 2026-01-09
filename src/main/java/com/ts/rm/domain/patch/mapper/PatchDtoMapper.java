@@ -16,6 +16,9 @@ public interface PatchDtoMapper {
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "customerName", source = "customer.customerName")
+    @Mapping(target = "createdByEmail", expression = "java(patch.getCreatedByName())")
+    @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
+    @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
     @Mapping(target = "engineerId", source = "engineer.engineerId")
     @Mapping(target = "engineerName", source = "engineer.engineerName")
     PatchDto.SimpleResponse toSimpleResponse(Patch patch);
@@ -27,6 +30,9 @@ public interface PatchDtoMapper {
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "customerName", source = "customer.customerName")
+    @Mapping(target = "createdByEmail", expression = "java(patch.getCreatedByName())")
+    @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
+    @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
     @Mapping(target = "engineerId", source = "engineer.engineerId")
     @Mapping(target = "engineerName", source = "engineer.engineerName")
     PatchDto.DetailResponse toDetailResponse(Patch patch);
@@ -38,6 +44,9 @@ public interface PatchDtoMapper {
     @Mapping(target = "releaseType", source = "releaseType")
     @Mapping(target = "customerCode", source = "customer.customerCode")
     @Mapping(target = "customerName", source = "customer.customerName")
+    @Mapping(target = "createdByEmail", expression = "java(patch.getCreatedByName())")
+    @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
+    @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
     @Mapping(target = "engineerId", source = "engineer.engineerId")
     @Mapping(target = "engineerName", source = "engineer.engineerName")
     PatchDto.ListResponse toListResponse(Patch patch);

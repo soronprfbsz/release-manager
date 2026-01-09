@@ -102,7 +102,7 @@ public abstract class AbstractScriptGenerator implements ScriptGenerator {
                 .map(v -> String.format("    \"%s:%s:%s:%s\"",
                         v.getVersion(),
                         v.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
-                        v.getCreatedBy(),
+                        v.getCreatedByName(),
                         v.getComment() != null ? v.getComment().replace("\"", "\\\"") : ""))
                 .collect(Collectors.joining("\n"));
     }

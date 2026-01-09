@@ -1,5 +1,6 @@
 package com.ts.rm.domain.releaseversion.service;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.project.entity.Project;
@@ -14,6 +15,7 @@ import com.ts.rm.domain.releaseversion.repository.ReleaseVersionHierarchyReposit
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.domain.releaseversion.util.VersionParser;
 import com.ts.rm.domain.releaseversion.util.VersionParser.VersionInfo;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import java.time.LocalDateTime;
@@ -39,6 +41,7 @@ public class ReleaseVersionService {
     private final ReleaseVersionHierarchyRepository hierarchyRepository;
     private final CustomerRepository customerRepository;
     private final ProjectRepository projectRepository;
+    private final AccountLookupService accountLookupService;
     private final ReleaseVersionDtoMapper mapper;
 
     // 분리된 서비스들
@@ -216,6 +219,9 @@ public class ReleaseVersionService {
         Project project = projectRepository.findById(request.projectId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
 
+        // 생성자(Account) 조회 - 이메일로 조회
+        Account creator = accountLookupService.findByEmail(request.createdByEmail());
+
         // 버전 파싱
         VersionInfo versionInfo = VersionParser.parse(request.version());
 
@@ -234,7 +240,7 @@ public class ReleaseVersionService {
                 .majorVersion(versionInfo.getMajorVersion())
                 .minorVersion(versionInfo.getMinorVersion())
                 .patchVersion(versionInfo.getPatchVersion())
-                .createdBy(request.createdBy())
+                .creator(creator)
                 .comment(request.comment())
                 .isApproved(request.isApproved() != null ? request.isApproved() : false)
                 .customMajorVersion(request.customMajorVersion())
@@ -295,7 +301,9 @@ public class ReleaseVersionService {
                 response.isHotfix(),           // isHotfix
                 response.fullVersion(),        // fullVersion
                 response.majorMinor(),
-                response.createdBy(),
+                response.createdByEmail(),
+                response.createdByAvatarStyle(),
+                response.createdByAvatarSeed(),
                 response.comment(),
                 response.isApproved(),
                 response.approvedBy(),
@@ -361,12 +369,12 @@ public class ReleaseVersionService {
      *
      * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @param comment             코멘트
-     * @param createdBy           생성자
+     * @param createdByEmail      생성자 이메일
      * @return 생성된 핫픽스 버전 상세 정보
      */
     @Transactional
-    public ReleaseVersionDto.CreateHotfixResponse createHotfix(Long hotfixBaseVersionId, String comment, String createdBy) {
-        log.info("핫픽스 생성 요청 - hotfixBaseVersionId: {}, createdBy: {}", hotfixBaseVersionId, createdBy);
+    public ReleaseVersionDto.CreateHotfixResponse createHotfix(Long hotfixBaseVersionId, String comment, String createdByEmail) {
+        log.info("핫픽스 생성 요청 - hotfixBaseVersionId: {}, createdByEmail: {}", hotfixBaseVersionId, createdByEmail);
 
         // 1. 원본 버전 조회
         ReleaseVersion baseVersion = findVersionById(hotfixBaseVersionId);
@@ -377,11 +385,14 @@ public class ReleaseVersionService {
                     "핫픽스 버전에는 추가 핫픽스를 생성할 수 없습니다.");
         }
 
-        // 3. 다음 핫픽스 버전 번호 결정
+        // 3. 생성자(Account) 조회 - 이메일로 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
+
+        // 4. 다음 핫픽스 버전 번호 결정
         Integer maxHotfixVersion = releaseVersionRepository.findMaxHotfixVersionByHotfixBaseVersionId(hotfixBaseVersionId);
         int nextHotfixVersion = maxHotfixVersion + 1;
 
-        // 4. 핫픽스 버전 생성
+        // 5. 핫픽스 버전 생성
         ReleaseVersion hotfixVersion = ReleaseVersion.builder()
                 .project(baseVersion.getProject())
                 .releaseType(baseVersion.getReleaseType())
@@ -393,7 +404,7 @@ public class ReleaseVersionService {
                 .patchVersion(baseVersion.getPatchVersion())
                 .hotfixVersion(nextHotfixVersion)
                 .hotfixBaseVersion(baseVersion)
-                .createdBy(createdBy)
+                .creator(creator)
                 .comment(comment)
                 .isApproved(false)
                 .customMajorVersion(baseVersion.getCustomMajorVersion())
@@ -404,7 +415,7 @@ public class ReleaseVersionService {
 
         ReleaseVersion savedHotfix = releaseVersionRepository.save(hotfixVersion);
 
-        // 5. 핫픽스용 디렉토리 생성
+        // 6. 핫픽스용 디렉토리 생성
         fileSystemService.createHotfixDirectoryStructure(savedHotfix, baseVersion);
 
         log.info("핫픽스 생성 완료 - hotfixVersionId: {}, fullVersion: {}",
@@ -421,7 +432,7 @@ public class ReleaseVersionService {
                 savedHotfix.getHotfixVersion(),
                 savedHotfix.getFullVersion(),
                 savedHotfix.getMajorMinor(),
-                savedHotfix.getCreatedBy(),
+                savedHotfix.getCreatedByName(),
                 savedHotfix.getComment(),
                 savedHotfix.getCreatedAt(),
                 List.of()  // 아직 파일이 없음
@@ -472,7 +483,7 @@ public class ReleaseVersionService {
                 hotfix.getHotfixVersion(),
                 hotfix.getFullVersion(),
                 hotfix.getCreatedAt() != null ? hotfix.getCreatedAt().toLocalDate().toString() : null,
-                hotfix.getCreatedBy(),
+                hotfix.getCreatedByName(),
                 hotfix.getComment(),
                 hotfix.getIsApproved(),
                 fileCategories
@@ -516,4 +527,5 @@ public class ReleaseVersionService {
         List<ReleaseVersionDto.SimpleResponse> responses = mapper.toSimpleResponseList(versions);
         return enrichWithCategories(responses);
     }
+
 }

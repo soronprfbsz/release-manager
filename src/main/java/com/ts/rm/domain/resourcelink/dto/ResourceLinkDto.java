@@ -43,9 +43,9 @@ public final class ResourceLinkDto {
             @Schema(description = "링크 설명", example = "Infraeye2 프로젝트 요구사항 정의서")
             String description,
 
-            @Schema(description = "생성자", example = "admin@company.com")
-            @NotBlank(message = "생성자는 필수입니다")
-            String createdBy
+            @Schema(description = "생성자 이메일", example = "admin@company.com")
+            @NotBlank(message = "생성자 이메일은 필수입니다")
+            String createdByEmail
     ) {
     }
 
@@ -102,8 +102,14 @@ public final class ResourceLinkDto {
             @Schema(description = "정렬 순서", example = "1")
             Integer sortOrder,
 
-            @Schema(description = "생성자", example = "admin@company.com")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "admin@company.com")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @Schema(description = "생성일시", example = "2025-12-19T10:30:00")
             LocalDateTime createdAt,

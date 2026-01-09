@@ -1,5 +1,6 @@
 package com.ts.rm.domain.patch.entity;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.engineer.entity.Engineer;
 import com.ts.rm.domain.project.entity.Project;
@@ -13,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -62,8 +64,12 @@ public class Patch extends BaseEntity {
     @Column(name = "output_path", nullable = false, length = 500)
     private String outputPath;
 
-    @Column(name = "created_by", nullable = false, length = 100)
-    private String createdBy;
+    /**
+     * 생성자
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private Account creator;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -74,4 +80,12 @@ public class Patch extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "engineer_id")
     private Engineer engineer;
+
+    /**
+     * 생성자 이름 반환 헬퍼 메서드
+     */
+    @Transient
+    public String getCreatedByName() {
+        return creator != null ? creator.getAccountName() : null;
+    }
 }

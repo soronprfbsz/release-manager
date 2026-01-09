@@ -37,6 +37,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .email(account.getEmail())
                 .accountName(account.getAccountName())
                 .role(account.getRole())
+                .avatarStyle(account.getAvatarStyle())
+                .avatarSeed(account.getAvatarSeed())
                 .createdAt(LocalDateTime.now())
                 .ttl(ttlInSeconds)
                 .build();
@@ -63,6 +65,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         String accountName = refreshToken.getAccountName();
         String role = refreshToken.getRole();
         Long accountId = refreshToken.getAccountId();
+        String avatarStyle = refreshToken.getAvatarStyle();
+        String avatarSeed = refreshToken.getAvatarSeed();
 
         // 4. 새로운 Access Token 생성
         String newAccessToken = jwtTokenProvider.generateToken(email, role);
@@ -75,6 +79,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .email(email)
                 .accountName(accountName)
                 .role(role)
+                .avatarStyle(avatarStyle)
+                .avatarSeed(avatarSeed)
                 .build();
         account.setAccountId(accountId);
 
@@ -94,6 +100,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                         .email(email)
                         .accountName(accountName)
                         .role(role)
+                        .avatarStyle(avatarStyle)
+                        .avatarSeed(avatarSeed)
                         .build())
                 .build();
     }

@@ -43,8 +43,8 @@ public final class PublishingDto {
             Long customerId,
 
             @Schema(description = "생성자 이메일", example = "admin@company.com")
-            @NotBlank(message = "생성자는 필수입니다")
-            String createdBy
+            @NotBlank(message = "생성자 이메일은 필수입니다")
+            String createdByEmail
     ) {
     }
 
@@ -118,8 +118,8 @@ public final class PublishingDto {
             @Schema(description = "HTML 파일 목록 (브라우저에서 열 수 있는 파일)")
             List<HtmlFileInfo> htmlFiles,
 
-            @Schema(description = "생성자", example = "admin@company.com")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "admin@company.com")
+            String createdByEmail,
 
             @Schema(description = "수정자", example = "admin@company.com")
             String updatedBy,

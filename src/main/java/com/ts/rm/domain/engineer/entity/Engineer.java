@@ -1,5 +1,6 @@
 package com.ts.rm.domain.engineer.entity;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.department.entity.Department;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -59,13 +61,31 @@ public class Engineer {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "created_by", nullable = false, length = 100)
-    private String createdBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private Account creator;
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "updated_by", nullable = false, length = 100)
-    private String updatedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by")
+    private Account updater;
+
+    /**
+     * 생성자 이름 반환 헬퍼 메서드
+     */
+    @Transient
+    public String getCreatedByName() {
+        return creator != null ? creator.getAccountName() : null;
+    }
+
+    /**
+     * 수정자 이름 반환 헬퍼 메서드
+     */
+    @Transient
+    public String getUpdatedByName() {
+        return updater != null ? updater.getAccountName() : null;
+    }
 }

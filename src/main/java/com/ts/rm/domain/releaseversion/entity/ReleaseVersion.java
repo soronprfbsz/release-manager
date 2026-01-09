@@ -228,4 +228,13 @@ public class ReleaseVersion {
     public String getCreatedByName() {
         return creator != null ? creator.getAccountName() : null;
     }
+
+    /**
+     * 생성자 이메일 반환
+     * <p>creator 엔티티의 email 반환, null이면 null 반환
+     */
+    @Transient
+    public String getCreatedByEmail() {
+        return creator != null ? creator.getEmail() : null;
+    }
 }

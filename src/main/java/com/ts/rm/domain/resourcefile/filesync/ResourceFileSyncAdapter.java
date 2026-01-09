@@ -4,8 +4,10 @@ import static com.ts.rm.global.util.FileTypeExtractor.extractFileType;
 import static com.ts.rm.global.util.MapExtractUtil.extractString;
 import static com.ts.rm.global.util.MapExtractUtil.extractStringOrDefault;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.resourcefile.entity.ResourceFile;
 import com.ts.rm.domain.resourcefile.repository.ResourceFileRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.domain.filesync.adapter.FileSyncAdapter;
@@ -30,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ResourceFileSyncAdapter implements FileSyncAdapter {
 
     private final ResourceFileRepository resourceFileRepository;
+    private final AccountLookupService accountLookupService;
 
     @Override
     public FileSyncTarget getTarget() {
@@ -73,10 +76,13 @@ public class ResourceFileSyncAdapter implements FileSyncAdapter {
         subCategory = extractStringOrDefault(additionalData, "subCategory", subCategory);
         String resourceFileName = extractStringOrDefault(additionalData, "resourceFileName", metadata.getFileName());
         String description = extractString(additionalData, "description");
-        String createdBy = extractStringOrDefault(additionalData, "createdBy", "SYSTEM_SYNC");
+        String createdByEmail = extractStringOrDefault(additionalData, "createdByEmail", "SYSTEM_SYNC");
 
         // sortOrder 자동 채번
         Integer sortOrder = resourceFileRepository.findMaxSortOrderByFileCategory(fileCategory) + 1;
+
+        // 생성자 Account 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
 
         ResourceFile resourceFile = ResourceFile.builder()
                 .fileType(fileType)
@@ -89,7 +95,7 @@ public class ResourceFileSyncAdapter implements FileSyncAdapter {
                 .checksum(metadata.getChecksum())
                 .sortOrder(sortOrder)
                 .description(description)
-                .createdBy(createdBy)
+                .creator(creator)
                 .build();
 
         ResourceFile saved = resourceFileRepository.save(resourceFile);

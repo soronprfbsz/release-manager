@@ -108,6 +108,8 @@ public class AuthServiceImpl implements AuthService {
                         .email(account.getEmail())
                         .accountName(account.getAccountName())
                         .role(account.getRole())
+                        .avatarStyle(account.getAvatarStyle())
+                        .avatarSeed(account.getAvatarSeed())
                         .build())
                 .build();
     }

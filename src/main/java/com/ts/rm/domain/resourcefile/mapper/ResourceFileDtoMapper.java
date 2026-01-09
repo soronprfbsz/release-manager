@@ -4,6 +4,7 @@ import com.ts.rm.domain.resourcefile.dto.ResourceFileDto;
 import com.ts.rm.domain.resourcefile.entity.ResourceFile;
 import java.util.List;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 /**
  * ResourceFile DTO Mapper
@@ -11,6 +12,9 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface ResourceFileDtoMapper {
 
+    @Mapping(target = "createdByEmail", expression = "java(resourceFile.getCreatedByEmail())")
+    @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
+    @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
     ResourceFileDto.DetailResponse toDetailResponse(ResourceFile resourceFile);
 
     ResourceFileDto.SimpleResponse toSimpleResponse(ResourceFile resourceFile);

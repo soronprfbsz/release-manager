@@ -1,9 +1,11 @@
 package com.ts.rm.domain.job.service;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.job.dto.MariaDBBackupRequest;
 import com.ts.rm.domain.job.dto.JobResponse;
 import com.ts.rm.domain.job.entity.BackupFile;
 import com.ts.rm.domain.job.repository.BackupFileRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.file.FileChecksumUtil;
@@ -44,19 +46,20 @@ public class MariaDBBackupService {
     private final JobStatusManager jobStatusManager;
     private final BackupFileRepository backupFileRepository;
     private final BackupLogService backupLogService;
+    private final AccountLookupService accountLookupService;
 
     /**
      * MariaDB 백업 비동기 실행
      *
      * @param request        백업 요청 정보
-     * @param createdBy      생성자
+     * @param createdByEmail      생성자
      * @param jobId          작업 ID
      * @param logFileName    로그 파일명
      * @param backupFileName 백업 파일명 (Controller에서 결정됨)
      */
     @Async("backupTaskExecutor")
     @Transactional
-    public void executeBackupAsync(MariaDBBackupRequest request, String createdBy,
+    public void executeBackupAsync(MariaDBBackupRequest request, String createdByEmail,
             String jobId, String logFileName, String backupFileName) {
 
         String timestamp = jobId.replace("backup_", "");
@@ -94,6 +97,9 @@ public class MariaDBBackupService {
             long fileSize = Files.size(backupFilePath);
             String checksum = FileChecksumUtil.calculateChecksum(backupFilePath);
 
+            // 생성자 Account 조회
+            Account creator = accountLookupService.findByEmail(createdByEmail);
+
             // DB에 백업 파일 정보 저장
             BackupFile backupFile = BackupFile.builder()
                     .fileCategory(FILE_CATEGORY)
@@ -103,7 +109,7 @@ public class MariaDBBackupService {
                     .fileSize(fileSize)
                     .checksum(checksum)
                     .description(request.getDescription())
-                    .createdBy(createdBy)
+                    .creator(creator)
                     .build();
 
             backupFileRepository.save(backupFile);
@@ -129,7 +135,7 @@ public class MariaDBBackupService {
 
             // BackupFileLog 테이블에 로그 파일 정보 저장
             backupLogService.createLogFile(backupFile, newLogFileName, LOG_TYPE_BACKUP,
-                    createdBy, logFileSize, logChecksum);
+                    createdByEmail, logFileSize, logChecksum);
             log.info("백업 로그 DB 저장 완료 - logFileName: {}", newLogFileName);
 
             // 작업 상태 업데이트 (성공) - 새 로그 파일명 반영

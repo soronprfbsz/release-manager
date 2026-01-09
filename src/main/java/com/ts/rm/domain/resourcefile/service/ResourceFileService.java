@@ -1,8 +1,10 @@
 package com.ts.rm.domain.resourcefile.service;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.resourcefile.dto.ResourceFileDto;
 import com.ts.rm.domain.resourcefile.entity.ResourceFile;
 import com.ts.rm.domain.resourcefile.repository.ResourceFileRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.file.FileChecksumUtil;
@@ -34,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ResourceFileService {
 
     private final ResourceFileRepository resourceFileRepository;
+    private final AccountLookupService accountLookupService;
 
     @Value("${app.release.base-path:src/main/resources/release-manager}")
     private String baseReleasePath;
@@ -83,6 +86,9 @@ public class ResourceFileService {
             // 체크섬 계산
             String checksum = FileChecksumUtil.calculateChecksum(targetPath);
 
+            // 생성자 Account 조회
+            Account creator = accountLookupService.findByEmail(request.createdByEmail());
+
             // 엔티티 생성 및 저장
             ResourceFile resourceFile = ResourceFile.builder()
                     .fileType(fileType)
@@ -95,7 +101,7 @@ public class ResourceFileService {
                     .checksum(checksum)
                     .description(request.description())
                     .sortOrder(sortOrder)
-                    .createdBy(request.createdBy())
+                    .creator(creator)
                     .build();
 
             ResourceFile saved = resourceFileRepository.save(resourceFile);

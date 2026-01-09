@@ -88,8 +88,14 @@ public final class ProjectDto {
             @Schema(description = "생성일시")
             LocalDateTime createdAt,
 
-            @Schema(description = "생성자", example = "SYSTEM")
-            String createdBy
+            @Schema(description = "생성자 이메일", example = "홍길동")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed
     ) {
 
     }

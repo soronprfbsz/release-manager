@@ -14,10 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,7 +56,7 @@ public class PatchController implements PatchControllerDocs {
                 request.customerId(),
                 request.fromVersion(),
                 request.toVersion(),
-                request.createdBy(),
+                request.createdByEmail(),
                 request.description(),
                 request.engineerId(),
                 request.patchName(),
@@ -240,7 +238,7 @@ public class PatchController implements PatchControllerDocs {
                 request.customerId(),
                 request.fromVersion(),
                 request.toVersion(),
-                request.createdBy(),
+                request.createdByEmail(),
                 request.description(),
                 request.engineerId(),
                 request.patchName()

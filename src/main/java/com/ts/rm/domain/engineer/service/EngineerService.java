@@ -1,5 +1,6 @@
 package com.ts.rm.domain.engineer.service;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.common.entity.Code;
 import com.ts.rm.domain.common.repository.CodeRepository;
 import com.ts.rm.domain.department.entity.Department;
@@ -8,6 +9,7 @@ import com.ts.rm.domain.engineer.dto.EngineerDto;
 import com.ts.rm.domain.engineer.entity.Engineer;
 import com.ts.rm.domain.engineer.mapper.EngineerDtoMapper;
 import com.ts.rm.domain.engineer.repository.EngineerRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.pagination.PageRowNumberUtil;
@@ -36,16 +38,17 @@ public class EngineerService {
     private final DepartmentRepository departmentRepository;
     private final CodeRepository codeRepository;
     private final EngineerDtoMapper mapper;
+    private final AccountLookupService accountLookupService;
 
     /**
      * 엔지니어 생성
      *
      * @param request 생성 요청
-     * @param createdBy 생성자 (로그인 사용자 이메일)
+     * @param createdByEmail 생성자 (로그인 사용자 이메일)
      * @return 생성된 엔지니어 정보
      */
     @Transactional
-    public EngineerDto.DetailResponse createEngineer(EngineerDto.CreateRequest request, String createdBy) {
+    public EngineerDto.DetailResponse createEngineer(EngineerDto.CreateRequest request, String createdByEmail) {
         log.info("엔지니어 생성 요청 - email: {}", request.engineerEmail());
 
         // 이메일 중복 체크
@@ -60,6 +63,9 @@ public class EngineerService {
 
         Engineer engineer = mapper.toEntity(request);
 
+        // 생성자/수정자 Account 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
+
         // 부서 설정
         if (request.departmentId() != null) {
             Department department = departmentRepository.findById(request.departmentId())
@@ -67,8 +73,8 @@ public class EngineerService {
             engineer.setDepartment(department);
         }
 
-        engineer.setCreatedBy(createdBy);
-        engineer.setUpdatedBy(createdBy);
+        engineer.setCreator(creator);
+        engineer.setUpdater(creator);
 
         Engineer savedEngineer = engineerRepository.save(engineer);
 
@@ -132,6 +138,9 @@ public class EngineerService {
     public EngineerDto.DetailResponse updateEngineer(Long engineerId, EngineerDto.UpdateRequest request, String updatedBy) {
         log.info("엔지니어 수정 요청 - id: {}", engineerId);
 
+        // 수정자 Account 조회
+        Account updater = accountLookupService.findByEmail(updatedBy);
+
         Engineer engineer = findEngineerById(engineerId);
 
         // 이메일 변경 시 중복 체크
@@ -162,7 +171,7 @@ public class EngineerService {
             engineer.setDescription(request.description());
         }
 
-        engineer.setUpdatedBy(updatedBy);
+        engineer.setUpdater(updater);
 
         log.info("엔지니어 수정 완료 - id: {}", engineerId);
         return toDetailResponseWithPositionName(engineer);
@@ -243,9 +252,13 @@ public class EngineerService {
                 response.departmentName(),
                 response.description(),
                 response.createdAt(),
-                response.createdBy(),
+                response.createdByEmail(),
+                response.createdByAvatarStyle(),
+                response.createdByAvatarSeed(),
                 response.updatedAt(),
-                response.updatedBy()
+                response.updatedBy(),
+                response.updatedByAvatarStyle(),
+                response.updatedByAvatarSeed()
         );
     }
 }

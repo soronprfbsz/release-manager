@@ -40,9 +40,9 @@ public final class ResourceFileDto {
             @Schema(description = "파일 설명", example = "MariaDB 백업 스크립트")
             String description,
 
-            @Schema(description = "업로드 담당자", example = "admin@company.com")
-            @NotBlank(message = "업로드 담당자는 필수입니다")
-            String createdBy
+            @Schema(description = "생성자 이메일 ", example = "admin@company.com")
+            @NotBlank(message = "생성자 이메일은 필수입니다")
+            String createdByEmail
     ) {
     }
 
@@ -111,6 +111,12 @@ public final class ResourceFileDto {
 
             @Schema(description = "생성자 이메일", example = "admin@company.com")
             String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @Schema(description = "생성일시", example = "2025-12-04T10:30:00")
             LocalDateTime createdAt

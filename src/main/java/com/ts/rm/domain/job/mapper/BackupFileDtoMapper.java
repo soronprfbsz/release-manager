@@ -16,6 +16,9 @@ public interface BackupFileDtoMapper {
     /**
      * Entity → DetailResponse
      */
+    @Mapping(target = "createdByEmail", expression = "java(backupFile.getCreatedByName())")
+    @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
+    @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
     BackupFileDto.DetailResponse toDetailResponse(BackupFile backupFile);
 
     /**
@@ -23,6 +26,9 @@ public interface BackupFileDtoMapper {
      */
     @Mapping(target = "rowNumber", ignore = true)
     @Mapping(target = "fileSizeFormatted", source = "fileSize", qualifiedByName = "formatFileSize")
+    @Mapping(target = "createdByEmail", expression = "java(backupFile.getCreatedByName())")
+    @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
+    @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
     BackupFileDto.ListResponse toListResponse(BackupFile backupFile);
 
     /**

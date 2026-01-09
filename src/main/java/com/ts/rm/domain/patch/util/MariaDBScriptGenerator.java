@@ -213,7 +213,7 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
         return String.format("    \"%s:%s:%s:%s\"",
                 hotfixVersion.getFullVersion(),
                 hotfixVersion.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
-                hotfixVersion.getCreatedBy(),
+                hotfixVersion.getCreatedByName(),
                 hotfixVersion.getComment() != null ? hotfixVersion.getComment().replace("\"", "\\\"") : "핫픽스");
     }
 
@@ -293,7 +293,7 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
         command.append("'").append(escapeForSql(hotfixVersion.getVersion())).append("', ");  // 베이스 버전
         command.append(customVersionValue).append(", ");
         command.append(createdAtValue).append(", ");
-        command.append("'").append(escapeForSql(hotfixVersion.getCreatedBy())).append("', ");
+        command.append("'").append(escapeForSql(hotfixVersion.getCreatedByName())).append("', ");
         command.append("'$APPLIED_BY', ");
         command.append(commentValue);
         command.append(") ON DUPLICATE KEY UPDATE ");
@@ -342,7 +342,7 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
         command.append("'").append(escapeForSql(releaseVersion.getVersion())).append("', ");
         command.append(customVersionValue).append(", ");
         command.append(createdAtValue).append(", ");
-        command.append("'").append(escapeForSql(releaseVersion.getCreatedBy())).append("', ");
+        command.append("'").append(escapeForSql(releaseVersion.getCreatedByName())).append("', ");
         command.append("'$APPLIED_BY', ");  // 스크립트 실행 시 입력받은 값 사용
         command.append(commentValue);
         command.append(") ON DUPLICATE KEY UPDATE ");

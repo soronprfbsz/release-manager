@@ -331,40 +331,40 @@ INSERT INTO engineer (engineer_email, position, engineer_name, department_id) VA
 -- =========================================================
 
 INSERT INTO customer (created_by, customer_code, customer_name, description, is_active, updated_by) VALUES
-('m_user@tscientific.co.kr', 'customerA', 'A회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerB', 'B회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerC', 'C회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerD', 'D회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerE', 'E회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerF', 'F회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerG', 'G회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerH', 'H회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerI', 'I회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerJ', 'J회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerK', 'K회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerL', 'L회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerM', 'M회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerN', 'N회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerO', 'O회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerP', 'P회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerQ', 'Q회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerR', 'R회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerS', 'S회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerT', 'T회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerU', 'U회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerV', 'V회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerW', 'W회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerX', 'X회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerY', 'Y회사', NULL, true, 'm_user@tscientific.co.kr'),
-('m_user@tscientific.co.kr', 'customerZ', 'Z회사', NULL, true, 'm_user@tscientific.co.kr');
+(1, 'customerA', 'A회사', NULL, true, 1),
+(1, 'customerB', 'B회사', NULL, true, 1),
+(1, 'customerC', 'C회사', NULL, true, 1),
+(1, 'customerD', 'D회사', NULL, true, 1),
+(1, 'customerE', 'E회사', NULL, true, 1),
+(1, 'customerF', 'F회사', NULL, true, 1),
+(1, 'customerG', 'G회사', NULL, true, 1),
+(1, 'customerH', 'H회사', NULL, true, 1),
+(1, 'customerI', 'I회사', NULL, true, 1),
+(1, 'customerJ', 'J회사', NULL, true, 1),
+(1, 'customerK', 'K회사', NULL, true, 1),
+(1, 'customerL', 'L회사', NULL, true, 1),
+(1, 'customerM', 'M회사', NULL, true, 1),
+(1, 'customerN', 'N회사', NULL, true, 1),
+(1, 'customerO', 'O회사', NULL, true, 1),
+(1, 'customerP', 'P회사', NULL, true, 1),
+(1, 'customerQ', 'Q회사', NULL, true, 1),
+(1, 'customerR', 'R회사', NULL, true, 1),
+(1, 'customerS', 'S회사', NULL, true, 1),
+(1, 'customerT', 'T회사', NULL, true, 1),
+(1, 'customerU', 'U회사', NULL, true, 1),
+(1, 'customerV', 'V회사', NULL, true, 1),
+(1, 'customerW', 'W회사', NULL, true, 1),
+(1, 'customerX', 'X회사', NULL, true, 1),
+(1, 'customerY', 'Y회사', NULL, true, 1),
+(1, 'customerZ', 'Z회사', NULL, true, 1);
 
 -- =========================================================
 -- project 테이블
 -- =========================================================
 
 INSERT INTO project (project_id, project_name, description, created_by) VALUES
-('infraeye1', 'Infraeye 1', 'Infraeye 1.0', 'SYSTEM'),
-('infraeye2', 'Infraeye 2', 'Infraeye 2.0', 'SYSTEM');
+('infraeye1', 'Infraeye 1', 'Infraeye 1.0', 1),
+('infraeye2', 'Infraeye 2', 'Infraeye 2.0', 1);
 
 -- =========================================================
 -- customer_project 테이블
@@ -434,20 +434,20 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 
 INSERT INTO resource_file (file_type, file_category, sub_category, resource_file_name, file_name, file_path, file_size, description, sort_order, created_by) VALUES
 -- SCRIPT - MARIADB (sort_order: 1, 2)
-('SH', 'SCRIPT', 'MARIADB', 'MariaDB 백업', 'mariadb_backup.sh', 'resources/file/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 데이터베이스 백업 수행 셸 스크립트', 1, 'system'),
-('SH', 'SCRIPT', 'MARIADB', 'MariaDB 복원', 'mariadb_restore.sh', 'resources/file/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 데이터베이스 복원 수행 셸 스크립트', 2, 'system'),
-('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치 가이드 문서', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resources/file/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 상세 가이드 문서', 1, 'system');
+('SH', 'SCRIPT', 'MARIADB', 'MariaDB 백업', 'mariadb_backup.sh', 'resources/file/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 데이터베이스 백업 수행 셸 스크립트', 1, 1),
+('SH', 'SCRIPT', 'MARIADB', 'MariaDB 복원', 'mariadb_restore.sh', 'resources/file/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 데이터베이스 복원 수행 셸 스크립트', 2, 1),
+('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치 가이드 문서', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resources/file/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 상세 가이드 문서', 1, 1);
 
 -- =========================================================
 -- resource_link 테이블
 -- =========================================================
 
 INSERT INTO resource_link (link_category,sub_category,link_name,link_url,description,sort_order,created_by) VALUES
-('TEAM-MANAGEMENT','NOTION','개발 2팀 페이지','https://www.notion.so/tscientific/2-c32cc14be7904787a6acb88e8106edaf?source=copy_link','개발 2팀 노션 페이지',1,'admin@tscientific.co.kr'),
-('INFRAEYE2','SHARED-EXCEL','Infraeye 2 메뉴관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7B205c004f-cbe4-4296-8a32-3c39bf08e8af%7D&wdOrigin=TEAMS-MAGLEV.undefined_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1748848209807&web=1','관리대상: 메뉴, 역할별메뉴, 메뉴기능 기초데이터',1,'admin@tscientific.co.kr'),
-('INFRAEYE2','SHARED-EXCEL','Infraeye 2 이벤트코드 관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7B11a03087-ecbc-4ae0-8b3e-4352edbdfc55%7D&wdOrigin=TEAMS-MAGLEV.teamsSdk_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1754539574091&web=1','관리대상: 이벤트코드종류, 이벤트코드, 성능지표, 성능지표(SMS)',2,'admin@tscientific.co.kr'),
-('INFRAEYE2','SHARED-EXCEL','Infraeye 2 데이터코드 관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7Be486a6da-e310-41a8-8df4-5ac94669f595%7D&wdOrigin=TEAMS-MAGLEV.teamsSdk_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1754539517973&web=1','관리대상: 데이터코드분류, 데이터코드',3,'admin@tscientific.co.kr'),
-('INFRAEYE2','NOTION','SMS 개발 공유 문서','https://www.notion.so/tscientific/RnD-InfraEye-SMS-PJT-17e23133945280bf887dc363f43851b9','',4,'admin@tscientific.co.kr');
+('TEAM-MANAGEMENT','NOTION','개발 2팀 페이지','https://www.notion.so/tscientific/2-c32cc14be7904787a6acb88e8106edaf?source=copy_link','개발 2팀 노션 페이지',1,1),
+('INFRAEYE2','SHARED-EXCEL','Infraeye 2 메뉴관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7B205c004f-cbe4-4296-8a32-3c39bf08e8af%7D&wdOrigin=TEAMS-MAGLEV.undefined_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1748848209807&web=1','관리대상: 메뉴, 역할별메뉴, 메뉴기능 기초데이터',1,1),
+('INFRAEYE2','SHARED-EXCEL','Infraeye 2 이벤트코드 관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7B11a03087-ecbc-4ae0-8b3e-4352edbdfc55%7D&wdOrigin=TEAMS-MAGLEV.teamsSdk_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1754539574091&web=1','관리대상: 이벤트코드종류, 이벤트코드, 성능지표, 성능지표(SMS)',2,1),
+('INFRAEYE2','SHARED-EXCEL','Infraeye 2 데이터코드 관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7Be486a6da-e310-41a8-8df4-5ac94669f595%7D&wdOrigin=TEAMS-MAGLEV.teamsSdk_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1754539517973&web=1','관리대상: 데이터코드분류, 데이터코드',3,1),
+('INFRAEYE2','NOTION','SMS 개발 공유 문서','https://www.notion.so/tscientific/RnD-InfraEye-SMS-PJT-17e23133945280bf887dc363f43851b9','',4,1);
 
 
 -- =========================================================
@@ -638,55 +638,55 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- service 테이블
 -- =========================================================
 INSERT INTO service (service_name,service_type,description,sort_order,created_by) VALUES
- ('infraeye 1 (common)','infraeye1','infraeye 1 공용 서비스',1,'admin@tscientific.co.kr'),
- ('infraeye 2 (dev)','infraeye2','infraeye 2 개발',2,'admin@tscientific.co.kr'),
- ('infraeye 2 (test)','infraeye2','infraeye 2 테스트',3,'admin@tscientific.co.kr'),
- ('gitea','infra','git 저장소',1,'admin@tscientific.co.kr'),
- ('jenkins','infra','gitea 연동 CI/CD',2,'admin@tscientific.co.kr'),
- ('NAS','infra','NAS 서버',3,'admin@tscientific.co.kr'),
- ('gitlab','infra','git 저장소 (release_manager)',4,'admin@tscientific.co.kr'),
- ('harbor','infra','도커 이미지 저장소 (private registry)',5,'admin@tscientific.co.kr'),
- ('infraeye 2 (common)','infraeye2','infraeye 2 공용 서비스',1,'admin@tscientific.co.kr'),
- ('release-manager','infra','제품 관리 솔루션',6,'admin@tscientific.co.kr');
+ ('infraeye 1 (common)','infraeye1','infraeye 1 공용 서비스',1,1),
+ ('infraeye 2 (dev)','infraeye2','infraeye 2 개발',2,1),
+ ('infraeye 2 (test)','infraeye2','infraeye 2 테스트',3,1),
+ ('gitea','infra','git 저장소',1,1),
+ ('jenkins','infra','gitea 연동 CI/CD',2,1),
+ ('NAS','infra','NAS 서버',3,1),
+ ('gitlab','infra','git 저장소 (release_manager)',4,1),
+ ('harbor','infra','도커 이미지 저장소 (private registry)',5,1),
+ ('infraeye 2 (common)','infraeye2','infraeye 2 공용 서비스',1,1),
+ ('release-manager','infra','제품 관리 솔루션',6,1);
 
 INSERT INTO service_component (service_id,component_type,component_name,host,port,url,ssh_port,description,sort_order,created_by) VALUES
- (6,'WEB','nas - web','10.110.1.99',5000,'http://10.110.1.99',NULL,'NAS 서버',1,'admin@tscientific.co.kr'),
- (5,'WEB','jenkins - web','10.110.1.105',38080,'http://10.110.1.105:38080',NULL,'Jenkins - web',1,'admin@tscientific.co.kr'),
- (4,'WEB','gitea - web','10.110.1.99',3000,'http://10.110.1.99:3000',NULL,'gitea - web',1,'admin@tscientific.co.kr'),
- (1,'WEB','infraeye1 - web','10.110.1.104',60000,'https://10.110.1.104:60000',20022,'infraeye 1 개발',1,'admin@tscientific.co.kr'),
- (2,'WEB','infraeye2 - web','10.110.1.103',60000,'http://10.110.1.103:60000',20022,'infraeye2 개발 서버',1,'admin@tscientific.co.kr'),
- (2,'DATABASE','infraeye2 - mariadb','10.110.1.103',13306,NULL,NULL,'infraeye 2 개발서버 MariaDB',2,'admin@tscientific.co.kr'),
- (1,'DATABASE','infraeye1 - mariadb','10.110.1.104',3306,NULL,NULL,'infraeye 1 개발 서버 MariaDB',2,'admin@tscientific.co.kr'),
- (3,'WEB','infraeye 2 (test) - web','10.140.1.21',60000,'http://10.140.1.21:60000',22,'infraeye 2 Test서버 - Web',1,'admin@tscientific.co.kr'),
- (3,'DATABASE','infraeye2 (test) - mariadb','10.140.1.21',13306,NULL,NULL,'infraeye2 Test서버 - MariaDB',2,'admin@tscientific.co.kr'),
- (3,'DATABASE','infraeye2 - cratedb','10.140.1.21',15432,NULL,NULL,'infraeye2 Test서버 - cratedb',3,'admin@tscientific.co.kr'),
- (3,'DATABASE','infraeye2 (test) - redis','10.140.1.21',55501,NULL,NULL,'infraeye 2 Test서버 - redis',4,'admin@tscientific.co.kr'),
- (7,'WEB','gitlab - web','10.230.1.17',20080,'http://10.230.1.17:20080',22,NULL,1,'admin@tscientific.co.kr'),
- (8,'WEB','harbor - web','10.230.1.17',20081,'http://10.230.1.17:20081',22,NULL,1,'admin@tscientific.co.kr'),
- (9,'WEB','infraeye2 - web','10.110.1.101',60000,'http://10.110.1.101:60000',20022,NULL,1,'admin@tscientific.co.kr'),
- (9,'DATABASE','infraeye2 - mariadb','10.110.1.101',3306,NULL,NULL,NULL,2,'admin@tscientific.co.kr'),
- (9,'DATABASE','infraeye2 - cratedb','10.110.1.101',5432,NULL,NULL,NULL,3,'admin@tscientific.co.kr'),
- (2,'DATABASE','infraeye2 - cratedb','10.110.1.103',15432,NULL,NULL,NULL,3,'admin@tscientific.co.kr'),
- (2,'DATABASE','infraeye2 - redis','10.110.1.103',55501,NULL,NULL,NULL,4,'admin@tscientific.co.kr'),
- (10,'WEB','release-manager - web','10.110.1.106',13000,'http://10.110.1.106:13000',20022,'release-manager - web',1,'admin@tscientific.co.kr'),
- (10,'WEB','release-manager - api','10.110.1.106',18080,'http://10.110.1.106:18080/swagger',NULL,'release-manager - api',2,'admin@tscientific.co.kr'),
- (10,'DATABASE','release-manager - mariadb','10.110.1.106',13306,NULL,NULL,'release-manager - mariadb',3,'admin@tscientific.co.kr'),
- (10,'DATABASE','release-manager - redis','10.110.1.106',16379,NULL,NULL,'release-manager - redis',4,'admin@tscientific.co.kr');
+ (6,'WEB','nas - web','10.110.1.99',5000,'http://10.110.1.99',NULL,'NAS 서버',1,1),
+ (5,'WEB','jenkins - web','10.110.1.105',38080,'http://10.110.1.105:38080',NULL,'Jenkins - web',1,1),
+ (4,'WEB','gitea - web','10.110.1.99',3000,'http://10.110.1.99:3000',NULL,'gitea - web',1,1),
+ (1,'WEB','infraeye1 - web','10.110.1.104',60000,'https://10.110.1.104:60000',20022,'infraeye 1 개발',1,1),
+ (2,'WEB','infraeye2 - web','10.110.1.103',60000,'http://10.110.1.103:60000',20022,'infraeye2 개발 서버',1,1),
+ (2,'DATABASE','infraeye2 - mariadb','10.110.1.103',13306,NULL,NULL,'infraeye 2 개발서버 MariaDB',2,1),
+ (1,'DATABASE','infraeye1 - mariadb','10.110.1.104',3306,NULL,NULL,'infraeye 1 개발 서버 MariaDB',2,1),
+ (3,'WEB','infraeye 2 (test) - web','10.140.1.21',60000,'http://10.140.1.21:60000',22,'infraeye 2 Test서버 - Web',1,1),
+ (3,'DATABASE','infraeye2 (test) - mariadb','10.140.1.21',13306,NULL,NULL,'infraeye2 Test서버 - MariaDB',2,1),
+ (3,'DATABASE','infraeye2 - cratedb','10.140.1.21',15432,NULL,NULL,'infraeye2 Test서버 - cratedb',3,1),
+ (3,'DATABASE','infraeye2 (test) - redis','10.140.1.21',55501,NULL,NULL,'infraeye 2 Test서버 - redis',4,1),
+ (7,'WEB','gitlab - web','10.230.1.17',20080,'http://10.230.1.17:20080',22,NULL,1,1),
+ (8,'WEB','harbor - web','10.230.1.17',20081,'http://10.230.1.17:20081',22,NULL,1,1),
+ (9,'WEB','infraeye2 - web','10.110.1.101',60000,'http://10.110.1.101:60000',20022,NULL,1,1),
+ (9,'DATABASE','infraeye2 - mariadb','10.110.1.101',3306,NULL,NULL,NULL,2,1),
+ (9,'DATABASE','infraeye2 - cratedb','10.110.1.101',5432,NULL,NULL,NULL,3,1),
+ (2,'DATABASE','infraeye2 - cratedb','10.110.1.103',15432,NULL,NULL,NULL,3,1),
+ (2,'DATABASE','infraeye2 - redis','10.110.1.103',55501,NULL,NULL,NULL,4,1),
+ (10,'WEB','release-manager - web','10.110.1.106',13000,'http://10.110.1.106:13000',20022,'release-manager - web',1,1),
+ (10,'WEB','release-manager - api','10.110.1.106',18080,'http://10.110.1.106:18080/swagger',NULL,'release-manager - api',2,1),
+ (10,'DATABASE','release-manager - mariadb','10.110.1.106',13306,NULL,NULL,'release-manager - mariadb',3,1),
+ (10,'DATABASE','release-manager - redis','10.110.1.106',16379,NULL,NULL,'release-manager - redis',4,1);
 
 -- =============================================
 -- Publishing 초기 데이터
 -- =============================================
 INSERT INTO publishing (publishing_id, publishing_name, description, publishing_category, sub_category, customer_id, sort_order, created_by) VALUES
- (1, '경남은행', '경남은행 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 2, 'admin@tscientific.co.kr'),
- (2, '경산시청', '경산시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 3, 'admin@tscientific.co.kr'),
- (3, '경찰청 업무망', '경찰청 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 5, 'admin@tscientific.co.kr'),
- (4, '경찰청 인터넷망', '경찰청 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 6, 'admin@tscientific.co.kr'),
- (5, '광주광역시청', '광주광역시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 7, 'admin@tscientific.co.kr'),
- (6, '국시원 업무망', '국시원 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 8, 'admin@tscientific.co.kr'),
- (7, '국시원 인터넷망', '국시원 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 9, 'admin@tscientific.co.kr'),
- (8, '노원구청', '노원구청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 10, 'admin@tscientific.co.kr'),
- (9, '경찰청 FMS', '경찰청 FMS 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 11, 'admin@tscientific.co.kr'),
- (10, '경기남부경찰청', '경기남부경찰청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 12, 'admin@tscientific.co.kr');
+ (1, '경남은행', '경남은행 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 2, 1),
+ (2, '경산시청', '경산시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 3, 1),
+ (3, '경찰청 업무망', '경찰청 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 5, 1),
+ (4, '경찰청 인터넷망', '경찰청 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 6, 1),
+ (5, '광주광역시청', '광주광역시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 7, 1),
+ (6, '국시원 업무망', '국시원 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 8, 1),
+ (7, '국시원 인터넷망', '국시원 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 9, 1),
+ (8, '노원구청', '노원구청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 10, 1),
+ (9, '경찰청 FMS', '경찰청 FMS 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 11, 1),
+ (10, '경기남부경찰청', '경기남부경찰청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 12, 1);
 
 -- =============================================
 -- Publishing File 초기 데이터

@@ -59,10 +59,14 @@ CREATE TABLE IF NOT EXISTS project (
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    created_by VARCHAR(100) NOT NULL DEFAULT 'SYSTEM' COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
 
     INDEX idx_project_name (project_name),
-    INDEX idx_project_is_enabled (is_enabled)
+    INDEX idx_project_is_enabled (is_enabled),
+    INDEX idx_project_created_by (created_by),
+
+    CONSTRAINT fk_project_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='프로젝트 테이블';
 
 CREATE TABLE IF NOT EXISTS customer (
@@ -71,14 +75,21 @@ CREATE TABLE IF NOT EXISTS customer (
     customer_name VARCHAR(100) NOT NULL COMMENT '고객사 명',
     description VARCHAR(255) COMMENT '설명',
     is_active BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
-    updated_by VARCHAR(100) NOT NULL COMMENT '수정자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
     INDEX idx_customer_code (customer_code),
     INDEX idx_customer_name (customer_name),
-    INDEX idx_is_active (is_active)
+    INDEX idx_is_active (is_active),
+    INDEX idx_customer_created_by (created_by),
+    INDEX idx_customer_updated_by (updated_by),
+
+    CONSTRAINT fk_customer_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL,
+    CONSTRAINT fk_customer_updated_by FOREIGN KEY (updated_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사 테이블';
 
 CREATE TABLE IF NOT EXISTS customer_project (
@@ -207,7 +218,7 @@ CREATE TABLE IF NOT EXISTS resource_file (
     checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
     description TEXT COMMENT '파일 설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (file_category 내에서 정렬)',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -218,7 +229,11 @@ CREATE TABLE IF NOT EXISTS resource_file (
     INDEX idx_rf_file_name (file_name),
     INDEX idx_rf_file_path (file_path),
     INDEX idx_rf_sort_order (sort_order),
-    INDEX idx_rf_created_at (created_at)
+    INDEX idx_rf_created_at (created_at),
+    INDEX idx_rf_created_by (created_by),
+
+    CONSTRAINT fk_resource_file_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='리소스 파일 테이블';
 
 CREATE TABLE IF NOT EXISTS resource_link (
@@ -229,7 +244,7 @@ CREATE TABLE IF NOT EXISTS resource_link (
     link_url VARCHAR(1000) NOT NULL COMMENT '링크 주소',
     description TEXT COMMENT '링크 설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (link_category 내에서 정렬)',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -237,7 +252,11 @@ CREATE TABLE IF NOT EXISTS resource_link (
     INDEX idx_rl_sub_category (sub_category),
     INDEX idx_rl_link_name (link_name),
     INDEX idx_rl_sort_order (sort_order),
-    INDEX idx_rl_created_at (created_at)
+    INDEX idx_rl_created_at (created_at),
+    INDEX idx_rl_created_by (created_by),
+
+    CONSTRAINT fk_resource_link_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='리소스 링크 테이블';
 
 -- =========================================================
@@ -255,8 +274,8 @@ CREATE TABLE IF NOT EXISTS publishing (
     sub_category VARCHAR(50) COMMENT '서브 카테고리 (code_type: PUBLISHING_SUBCATEGORY_XXX)',
     customer_id BIGINT COMMENT '고객사 ID (커스터마이징인 경우)',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
-    updated_by VARCHAR(100) COMMENT '수정자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -265,9 +284,15 @@ CREATE TABLE IF NOT EXISTS publishing (
     INDEX idx_pub_customer_id (customer_id),
     INDEX idx_pub_sort_order (sort_order),
     INDEX idx_pub_created_at (created_at),
+    INDEX idx_pub_created_by (created_by),
+    INDEX idx_pub_updated_by (updated_by),
 
     CONSTRAINT fk_publishing_customer FOREIGN KEY (customer_id)
-        REFERENCES customer(customer_id) ON DELETE SET NULL
+        REFERENCES customer(customer_id) ON DELETE SET NULL,
+    CONSTRAINT fk_publishing_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL,
+    CONSTRAINT fk_publishing_updated_by FOREIGN KEY (updated_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='퍼블리싱 테이블';
 
 CREATE TABLE IF NOT EXISTS publishing_file (
@@ -301,7 +326,7 @@ CREATE TABLE IF NOT EXISTS backup_file (
     file_size BIGINT COMMENT '파일 크기 (bytes)',
     checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
     description TEXT COMMENT '파일 설명',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -309,7 +334,11 @@ CREATE TABLE IF NOT EXISTS backup_file (
     INDEX idx_bf_file_type (file_type),
     INDEX idx_bf_file_name (file_name),
     UNIQUE INDEX uk_bf_file_path (file_path) COMMENT '파일 경로 중복 방지',
-    INDEX idx_bf_created_at (created_at)
+    INDEX idx_bf_created_at (created_at),
+    INDEX idx_bf_created_by (created_by),
+
+    CONSTRAINT fk_backup_file_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 테이블';
 
 CREATE TABLE IF NOT EXISTS backup_file_log (
@@ -321,7 +350,7 @@ CREATE TABLE IF NOT EXISTS backup_file_log (
     file_size BIGINT COMMENT '파일 크기 (bytes)',
     checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
     description TEXT COMMENT '로그 설명',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -329,9 +358,12 @@ CREATE TABLE IF NOT EXISTS backup_file_log (
     INDEX idx_bfl_log_type (log_type),
     INDEX idx_bfl_log_file_name (log_file_name),
     INDEX idx_bfl_created_at (created_at),
+    INDEX idx_bfl_created_by (created_by),
 
     CONSTRAINT fk_backup_file_log_backup_file FOREIGN KEY (backup_file_id)
-        REFERENCES backup_file(backup_file_id) ON DELETE CASCADE
+        REFERENCES backup_file(backup_file_id) ON DELETE CASCADE,
+    CONSTRAINT fk_backup_file_log_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 로그 테이블';
 
 CREATE TABLE IF NOT EXISTS department (
@@ -353,17 +385,23 @@ CREATE TABLE IF NOT EXISTS engineer (
     department_id BIGINT COMMENT '소속 부서 ID',
     description VARCHAR(500) COMMENT '설명',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    created_by VARCHAR(100) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    updated_by VARCHAR(100) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정자',
+    updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
 
     INDEX idx_engineer_name (engineer_name),
     INDEX idx_engineer_email (engineer_email),
     INDEX idx_engineer_position (position),
     INDEX idx_department_id (department_id),
+    INDEX idx_engineer_created_by (created_by),
+    INDEX idx_engineer_updated_by (updated_by),
 
     CONSTRAINT fk_engineer_department FOREIGN KEY (department_id)
-        REFERENCES department(department_id) ON DELETE SET NULL
+        REFERENCES department(department_id) ON DELETE SET NULL,
+    CONSTRAINT fk_engineer_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL,
+    CONSTRAINT fk_engineer_updated_by FOREIGN KEY (updated_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='엔지니어 테이블';
 
 CREATE TABLE IF NOT EXISTS patch_file (
@@ -377,7 +415,7 @@ CREATE TABLE IF NOT EXISTS patch_file (
     output_path VARCHAR(500) NOT NULL COMMENT '생성된 패치 파일 경로',
     description TEXT COMMENT '설명',
     engineer_id BIGINT COMMENT '패치 담당자 (엔지니어 ID)',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
@@ -388,13 +426,16 @@ CREATE TABLE IF NOT EXISTS patch_file (
     INDEX idx_pf_to_version (to_version),
     INDEX idx_pf_engineer_id (engineer_id),
     INDEX idx_pf_created_at (created_at),
+    INDEX idx_pf_created_by (created_by),
 
     CONSTRAINT fk_patch_file_project FOREIGN KEY (project_id)
         REFERENCES project(project_id) ON DELETE RESTRICT,
     CONSTRAINT fk_patch_file_customer FOREIGN KEY (customer_id)
         REFERENCES customer(customer_id) ON DELETE SET NULL,
     CONSTRAINT fk_patch_file_engineer FOREIGN KEY (engineer_id)
-        REFERENCES engineer(engineer_id) ON DELETE SET NULL
+        REFERENCES engineer(engineer_id) ON DELETE SET NULL,
+    CONSTRAINT fk_patch_file_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='패치 파일 테이블';
 
 CREATE TABLE menu (
@@ -469,15 +510,22 @@ CREATE TABLE IF NOT EXISTS service (
     service_type VARCHAR(50) NOT NULL COMMENT '서비스 분류 (SERVICE_TYPE 코드)',
     description TEXT COMMENT '설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서 (SERVICE_TYPE의 sort_order 값)',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_by VARCHAR(100) COMMENT '수정자',
+    updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
     INDEX idx_service_type (service_type),
     INDEX idx_service_name (service_name),
     INDEX idx_sort_order (sort_order),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    INDEX idx_service_created_by (created_by),
+    INDEX idx_service_updated_by (updated_by),
+
+    CONSTRAINT fk_service_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL,
+    CONSTRAINT fk_service_updated_by FOREIGN KEY (updated_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='서비스 관리';
 
 -- 서비스 컴포넌트 (접속 정보) 테이블
@@ -492,17 +540,23 @@ CREATE TABLE IF NOT EXISTS service_component (
     ssh_port INT COMMENT 'SSH 포트번호',
     description TEXT COMMENT '설명',
     sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
-    created_by VARCHAR(100) NOT NULL COMMENT '생성자',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_by VARCHAR(100) COMMENT '수정자',
+    updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
 
     INDEX idx_service_id (service_id),
     INDEX idx_component_type (component_type),
     INDEX idx_component_name (component_name),
     INDEX idx_sort_order (sort_order),
+    INDEX idx_component_created_by (created_by),
+    INDEX idx_component_updated_by (updated_by),
 
-    CONSTRAINT fk_component_service FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE
+    CONSTRAINT fk_component_service FOREIGN KEY (service_id) REFERENCES service(service_id) ON DELETE CASCADE,
+    CONSTRAINT fk_component_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL,
+    CONSTRAINT fk_component_updated_by FOREIGN KEY (updated_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='서비스 컴포넌트 (접속 정보)';
 
 -- =========================================================

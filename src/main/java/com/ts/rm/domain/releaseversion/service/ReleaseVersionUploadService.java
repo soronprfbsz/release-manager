@@ -19,6 +19,8 @@ import com.ts.rm.domain.releaseversion.mapper.ReleaseVersionDtoMapper;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.domain.releaseversion.util.VersionParser;
 import com.ts.rm.domain.releaseversion.util.VersionParser.VersionInfo;
+import com.ts.rm.domain.account.entity.Account;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import java.io.IOException;
@@ -50,6 +52,7 @@ public class ReleaseVersionUploadService {
     private final ProjectRepository projectRepository;
     private final CustomerRepository customerRepository;
     private final EngineerRepository engineerRepository;
+    private final AccountLookupService accountLookupService;
     private final FileStorageService fileStorageService;
     private final ReleaseVersionFileSystemService fileSystemService;
     private final ReleaseVersionTreeService treeService;
@@ -144,17 +147,17 @@ public class ReleaseVersionUploadService {
      * @param releaseCategory 릴리즈 카테고리
      * @param comment         패치 노트 내용
      * @param zipFile         패치 파일이 포함된 ZIP 파일
-     * @param createdBy       생성자 이메일 (JWT에서 추출)
+     * @param createdByEmail       생성자 이메일 (JWT에서 추출)
      * @param isApproved      승인 여부 (true: 승인됨, false: 미승인, null: 미승인)
      * @return 생성된 버전 응답
      */
     @Transactional
     public ReleaseVersionDto.CreateVersionResponse createStandardVersionWithZip(
             String projectId, String version, ReleaseCategory releaseCategory, String comment,
-            MultipartFile zipFile, String createdBy, Boolean isApproved) {
+            MultipartFile zipFile, String createdByEmail, Boolean isApproved) {
 
-        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - projectId: {}, version: {}, releaseCategory: {}, createdBy: {}, isApproved: {}",
-                projectId, version, releaseCategory, createdBy, isApproved);
+        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - projectId: {}, version: {}, releaseCategory: {}, createdByEmail: {}, isApproved: {}",
+                projectId, version, releaseCategory, createdByEmail, isApproved);
 
         // 0. 프로젝트 조회
         Project project = projectRepository.findById(projectId)
@@ -185,7 +188,7 @@ public class ReleaseVersionUploadService {
             versionPath = fileSystemService.createVersionDirectory(versionInfo, projectId);
 
             // 6. 파일 복사 및 DB 저장
-            ReleaseVersion savedVersion = copyFilesAndSaveToDb(project, tempDir, versionPath, versionInfo, releaseCategory, createdBy, comment, isApproved);
+            ReleaseVersion savedVersion = copyFilesAndSaveToDb(project, tempDir, versionPath, versionInfo, releaseCategory, createdByEmail, comment, isApproved);
 
             log.info("ZIP 파일로 표준 릴리즈 버전 생성 완료 - projectId: {}, version: {}, ID: {}, isApproved: {}",
                     projectId, version, savedVersion.getReleaseVersionId(), savedVersion.getIsApproved());
@@ -201,7 +204,7 @@ public class ReleaseVersionUploadService {
                     0,  // hotfixVersion (표준 버전은 0)
                     version,  // fullVersion (표준 버전은 version과 동일)
                     versionInfo.getMajorMinor(),
-                    createdBy,
+                    createdByEmail,
                     comment,
                     savedVersion.getCreatedAt(),
                     getCreatedFilesList(savedVersion)
@@ -234,15 +237,16 @@ public class ReleaseVersionUploadService {
      *
      * @param request   커스텀 버전 생성 요청
      * @param zipFile   패치 파일이 포함된 ZIP 파일
-     * @param createdBy 생성자 이메일 (JWT에서 추출)
+     * @param createdByEmail 생성자 이메일 (JWT에서 추출)
      * @return 생성된 커스텀 버전 응답
      */
     @Transactional
     public ReleaseVersionDto.CreateCustomVersionResponse createCustomVersionWithZip(
-            ReleaseVersionDto.CreateCustomVersionRequest request, MultipartFile zipFile, String createdBy) {
+            ReleaseVersionDto.CreateCustomVersionRequest request, MultipartFile zipFile, String createdByEmail) {
 
-        log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 시작 - projectId: {}, customerId: {}, customBaseVersionId: {}, customVersion: {}, createdBy: {}",
-                request.projectId(), request.customerId(), request.customBaseVersionId(), request.customVersion(), createdBy);
+        log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 시작 - projectId: {}, customerId: {}, customBaseVersionId: {}, customVersion: {}, createdByEmail: {}",
+                request.projectId(), request.customerId(), request.customBaseVersionId(), request.customVersion(),
+                createdByEmail);
 
         // 0. 프로젝트 조회
         Project project = projectRepository.findById(request.projectId())
@@ -316,7 +320,7 @@ public class ReleaseVersionUploadService {
             ReleaseVersion savedVersion = copyFilesAndSaveToDbForCustomVersion(
                     project, customer, customBaseVersion, tempDir, versionPath,
                     customMajorVersion, customMinorVersion, customPatchVersion,
-                    ReleaseCategory.PATCH, request.comment(), createdBy);
+                    ReleaseCategory.PATCH, request.comment(), createdByEmail);
 
             log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 완료 - projectId: {}, customerId: {}, version: {}, ID: {}",
                     request.projectId(), request.customerId(), fullVersion, savedVersion.getReleaseVersionId());
@@ -334,7 +338,7 @@ public class ReleaseVersionUploadService {
                     customPatchVersion,
                     fullVersion,  // 전체 버전 형식 반환
                     customMajorMinor,
-                    createdBy,
+                    createdByEmail,
                     request.comment(),
                     savedVersion.getCreatedAt(),
                     getCreatedFilesList(savedVersion)
@@ -383,7 +387,7 @@ public class ReleaseVersionUploadService {
             Project project, Customer customer, ReleaseVersion customBaseVersion,
             Path tempDir, Path versionPath,
             int customMajorVersion, int customMinorVersion, int customPatchVersion,
-            ReleaseCategory releaseCategory, String comment, String createdBy) throws IOException {
+            ReleaseCategory releaseCategory, String comment, String createdByEmail) throws IOException {
 
         String customVersionStr = customMajorVersion + "." + customMinorVersion + "." + customPatchVersion;
 
@@ -391,6 +395,9 @@ public class ReleaseVersionUploadService {
         // 형식: {베이스버전}-{고객사코드}.{커스텀버전}
         // 예: 1.1.0-companyA.1.0.0
         String fullVersion = customBaseVersion.getVersion() + "-" + customer.getCustomerCode() + "." + customVersionStr;
+
+        // 생성자(Account) 조회 - 이메일로 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
 
         // ReleaseVersion 생성 및 저장 (커스텀 버전 전용 필드 설정)
         // version 필드: 시멘틱 버저닝 형식의 전체 버전 문자열
@@ -410,7 +417,7 @@ public class ReleaseVersionUploadService {
                         .customMajorVersion(customMajorVersion)
                         .customMinorVersion(customMinorVersion)
                         .customPatchVersion(customPatchVersion)
-                        .createdBy(createdBy)
+                        .creator(creator)
                         .comment(comment)
                         .build()
         );
@@ -713,11 +720,14 @@ public class ReleaseVersionUploadService {
      */
     public ReleaseVersion copyFilesAndSaveToDb(Project project, Path tempDir, Path versionPath,
                                                 VersionInfo versionInfo, ReleaseCategory releaseCategory,
-                                                String createdBy, String comment, Boolean isApproved) throws IOException {
+                                                String createdByEmail, String comment, Boolean isApproved) throws IOException {
         String version = versionInfo.getMajorVersion() + "." + versionInfo.getMinorVersion() + "." + versionInfo.getPatchVersion();
 
         // isApproved가 null이면 false로 처리
         boolean approved = Boolean.TRUE.equals(isApproved);
+
+        // 생성자(Account) 조회 - 이메일로 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
 
         // ReleaseVersion 생성 및 저장
         ReleaseVersion.ReleaseVersionBuilder builder = ReleaseVersion.builder()
@@ -728,13 +738,13 @@ public class ReleaseVersionUploadService {
                 .majorVersion(versionInfo.getMajorVersion())
                 .minorVersion(versionInfo.getMinorVersion())
                 .patchVersion(versionInfo.getPatchVersion())
-                .createdBy(createdBy)
+                .creator(creator)
                 .comment(comment)
                 .isApproved(approved);
 
         // 승인된 경우 승인자와 승인일시 설정
         if (approved) {
-            builder.approvedBy(createdBy)
+            builder.approvedBy(createdByEmail)
                    .approvedAt(java.time.LocalDateTime.now());
         }
 
@@ -1090,15 +1100,16 @@ public class ReleaseVersionUploadService {
      * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @param comment             패치 노트 내용
      * @param zipFile             패치 파일이 포함된 ZIP 파일
-     * @param createdBy           생성자 이메일 (JWT에서 추출)
+     * @param createdByEmail           생성자 이메일 (JWT에서 추출)
      * @param engineerId          담당 엔지니어 ID (선택, 패치 스크립트의 기본 담당자로 사용)
      * @return 생성된 핫픽스 응답
      */
     @Transactional
     public ReleaseVersionDto.CreateHotfixResponse createHotfixWithZip(
-            Long hotfixBaseVersionId, String comment, MultipartFile zipFile, String createdBy, Long engineerId) {
+            Long hotfixBaseVersionId, String comment, MultipartFile zipFile, String createdByEmail, Long engineerId) {
 
-        log.info("ZIP 파일로 핫픽스 버전 생성 시작 - hotfixBaseVersionId: {}, createdBy: {}", hotfixBaseVersionId, createdBy);
+        log.info("ZIP 파일로 핫픽스 버전 생성 시작 - hotfixBaseVersionId: {}, createdByEmail: {}", hotfixBaseVersionId,
+                createdByEmail);
 
         // 1. 원본 버전 조회
         ReleaseVersion baseVersion = releaseVersionRepository.findById(hotfixBaseVersionId)
@@ -1130,7 +1141,8 @@ public class ReleaseVersionUploadService {
 
             // 7. 핫픽스 버전 엔티티 생성 및 저장
             ReleaseVersion hotfixVersion = copyFilesAndSaveToDbForHotfix(
-                    baseVersion, tempDir, nextHotfixVersion, comment, createdBy);
+                    baseVersion, tempDir, nextHotfixVersion, comment,
+                    createdByEmail);
 
             // 8. 핫픽스용 디렉토리 구조 생성
             hotfixPath = createHotfixDirectory(hotfixVersion, baseVersion);
@@ -1160,7 +1172,7 @@ public class ReleaseVersionUploadService {
                     hotfixVersion.getHotfixVersion(),
                     hotfixVersion.getFullVersion(),
                     hotfixVersion.getMajorMinor(),
-                    createdBy,
+                    createdByEmail,
                     comment,
                     hotfixVersion.getCreatedAt(),
                     getCreatedFilesList(hotfixVersion)
@@ -1195,12 +1207,15 @@ public class ReleaseVersionUploadService {
      * @param tempDir           임시 디렉토리 (ZIP 압축 해제 경로)
      * @param hotfixVersion     핫픽스 버전 번호
      * @param comment           코멘트
-     * @param createdBy         생성자
+     * @param createdByEmail    생성자 이메일
      * @return 저장된 ReleaseVersion 엔티티
      */
     private ReleaseVersion copyFilesAndSaveToDbForHotfix(
             ReleaseVersion hotfixBaseVersion, Path tempDir, int hotfixVersion,
-            String comment, String createdBy) throws IOException {
+            String comment, String createdByEmail) throws IOException {
+
+        // 생성자(Account) 조회 - 이메일로 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
 
         // 핫픽스 버전은 원본 버전의 메타데이터를 상속
         ReleaseVersion savedHotfix = releaseVersionRepository.save(
@@ -1215,7 +1230,7 @@ public class ReleaseVersionUploadService {
                         .patchVersion(hotfixBaseVersion.getPatchVersion())
                         .hotfixVersion(hotfixVersion)
                         .hotfixBaseVersion(hotfixBaseVersion)
-                        .createdBy(createdBy)
+                        .creator(creator)
                         .comment(comment)
                         .isApproved(false)  // 핫픽스는 기본 미승인
                         .build()

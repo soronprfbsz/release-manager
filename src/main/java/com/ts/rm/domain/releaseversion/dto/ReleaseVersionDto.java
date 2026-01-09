@@ -38,8 +38,8 @@ public final class ReleaseVersionDto {
             @Schema(description = "릴리즈 카테고리 (INSTALL, PATCH)", example = "PATCH")
             ReleaseCategory releaseCategory,
 
-            @Schema(description = "생성자", example = "jhlee@tscientific") @NotBlank(message = "생성자는 필수입니다") @Size(max = 100, message = "생성자는 100자 이하여야 합니다")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "jhlee@tscientific") @NotBlank(message = "생성자는 필수입니다") @Size(max = 100, message = "생성자는 100자 이하여야 합니다")
+            String createdByEmail,
 
             @Schema(description = "버전 코멘트", example = "새로운 기능 추가")
             String comment,
@@ -125,8 +125,14 @@ public final class ReleaseVersionDto {
             @Schema(description = "메이저.마이너", example = "1.1.x")
             String majorMinor,
 
-            @Schema(description = "생성자", example = "jhlee@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "jhlee@tscientific")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @Schema(description = "코멘트", example = "새로운 기능 추가")
             String comment,
@@ -205,8 +211,14 @@ public final class ReleaseVersionDto {
             @Schema(description = "메이저.마이너", example = "1.1.x")
             String majorMinor,
 
-            @Schema(description = "생성자", example = "jhlee@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "jhlee@tscientific")
+            String createdByEmail,
+
+            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
+            String createdByAvatarStyle,
+
+            @Schema(description = "생성자 아바타 시드", example = "abc123")
+            String createdByAvatarSeed,
 
             @Schema(description = "코멘트", example = "새로운 기능 추가")
             String comment,
@@ -277,8 +289,11 @@ public final class ReleaseVersionDto {
             @Schema(description = "생성일자", example = "2025-11-20")
             String createdAt,
 
-            @Schema(description = "생성자", example = "jhlee@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
+
+            @Schema(description = "생성자 이메일", example = "jhlee@tscientific")
+            String createdByEmail,
 
             @Schema(description = "코멘트", example = "새로운 기능 추가")
             String comment,
@@ -318,8 +333,11 @@ public final class ReleaseVersionDto {
             @Schema(description = "생성일자", example = "2025-11-20")
             String createdAt,
 
-            @Schema(description = "생성자", example = "jhlee@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
+
+            @Schema(description = "생성자 이메일", example = "jhlee@tscientific")
+            String createdByEmail,
 
             @Schema(description = "코멘트", example = "긴급 버그 수정")
             String comment,
@@ -421,8 +439,11 @@ public final class ReleaseVersionDto {
             @Schema(description = "생성일자", example = "2025-12-01")
             String createdAt,
 
-            @Schema(description = "생성자", example = "jhlee@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
+
+            @Schema(description = "생성자 이메일", example = "jhlee@tscientific")
+            String createdByEmail,
 
             @Schema(description = "코멘트", example = "A사 커스텀 패치")
             String comment,
@@ -587,7 +608,7 @@ public final class ReleaseVersionDto {
             String majorMinor,
 
             @Schema(description = "생성자 (JWT에서 추출)", example = "admin@tscientific")
-            String createdBy,
+            String createdByEmail,
 
             @Schema(description = "패치 노트 내용", example = "새로운 기능 추가")
             String comment,
@@ -640,7 +661,7 @@ public final class ReleaseVersionDto {
             String customMajorMinor,
 
             @Schema(description = "생성자 (JWT에서 추출)", example = "admin@tscientific")
-            String createdBy,
+            String createdByEmail,
 
             @Schema(description = "패치 노트 내용", example = "A사 커스텀 패치")
             String comment,
@@ -727,8 +748,8 @@ public final class ReleaseVersionDto {
             @Schema(description = "메이저.마이너", example = "1.3.x")
             String majorMinor,
 
-            @Schema(description = "생성자 (JWT에서 추출)", example = "admin@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이메일(JWT에서 추출)", example = "admin@tscientific")
+            String createdByEmail,
 
             @Schema(description = "패치 노트 내용", example = "특정 버그 수정")
             String comment,
@@ -776,8 +797,8 @@ public final class ReleaseVersionDto {
             @Schema(description = "생성일자", example = "2025-12-01")
             String createdAt,
 
-            @Schema(description = "생성자", example = "jhlee@tscientific")
-            String createdBy,
+            @Schema(description = "생성자 이메일", example = "jhlee@tscientific")
+            String createdByEmail,
 
             @Schema(description = "코멘트", example = "특정 버그 수정")
             String comment,

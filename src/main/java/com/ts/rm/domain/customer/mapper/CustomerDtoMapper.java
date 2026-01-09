@@ -13,12 +13,18 @@ import org.mapstruct.Mapping;
 public interface CustomerDtoMapper {
 
     @Mapping(target = "customerId", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "creator", ignore = true)
+    @Mapping(target = "updater", ignore = true)
     Customer toEntity(CustomerDto.CreateRequest request);
 
     @Mapping(target = "project", ignore = true)
     @Mapping(target = "hasCustomVersion", ignore = true)
+    @Mapping(target = "createdByEmail", expression = "java(customer.getCreatedByName())")
+    @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
+    @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
+    @Mapping(target = "updatedBy", expression = "java(customer.getUpdatedByName())")
+    @Mapping(target = "updatedByAvatarStyle", source = "updater.avatarStyle")
+    @Mapping(target = "updatedByAvatarSeed", source = "updater.avatarSeed")
     CustomerDto.DetailResponse toDetailResponse(Customer customer);
 
     List<CustomerDto.DetailResponse> toDetailResponseList(List<Customer> customers);

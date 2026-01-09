@@ -1,10 +1,15 @@
 package com.ts.rm.domain.project.entity;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -40,7 +45,15 @@ public class Project extends BaseEntity {
     @Builder.Default
     private Boolean isEnabled = true;
 
-    @Column(name = "created_by", nullable = false, length = 100)
-    @Builder.Default
-    private String createdBy = "SYSTEM";
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private Account creator;
+
+    /**
+     * 생성자 이름 반환 헬퍼 메서드
+     */
+    @Transient
+    public String getCreatedByName() {
+        return creator != null ? creator.getAccountName() : null;
+    }
 }

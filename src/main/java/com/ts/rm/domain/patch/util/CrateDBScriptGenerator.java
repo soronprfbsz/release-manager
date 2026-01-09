@@ -120,7 +120,7 @@ public class CrateDBScriptGenerator extends AbstractScriptGenerator {
         return String.format("    \"%s:%s:%s:%s\"",
                 hotfixVersion.getFullVersion(),
                 hotfixVersion.getCreatedAt().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")),
-                hotfixVersion.getCreatedBy(),
+                hotfixVersion.getCreatedByName(),
                 hotfixVersion.getComment() != null ? hotfixVersion.getComment().replace("\"", "\\\"") : "핫픽스");
     }
 

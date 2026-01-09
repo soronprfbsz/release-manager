@@ -66,7 +66,7 @@ public interface PatchControllerDocs {
                     + "- patchName: 패치명\n"
                     + "- customerName: 고객사명\n"
                     + "- engineerName: 담당 엔지니어명\n"
-                    + "- createdBy: 생성자\n"
+                    + "- createdByEmail: 생성자\n"
                     + "- createdAt: 생성일시",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",

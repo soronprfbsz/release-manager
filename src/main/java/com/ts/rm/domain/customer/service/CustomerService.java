@@ -1,5 +1,6 @@
 package com.ts.rm.domain.customer.service;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.customer.dto.CustomerDto;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.entity.CustomerProject;
@@ -9,6 +10,7 @@ import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.project.repository.ProjectRepository;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.pagination.PageRowNumberUtil;
@@ -36,16 +38,17 @@ public class CustomerService {
     private final ProjectRepository projectRepository;
     private final ReleaseVersionRepository releaseVersionRepository;
     private final CustomerDtoMapper mapper;
+    private final AccountLookupService accountLookupService;
 
     /**
      * 고객사 생성
      *
      * @param request   고객사 생성 요청
-     * @param createdBy 생성자 (JWT에서 추출)
+     * @param createdByEmail 생성자 (JWT에서 추출)
      * @return 생성된 고객사 상세 정보
      */
     @Transactional
-    public CustomerDto.DetailResponse createCustomer(CustomerDto.CreateRequest request, String createdBy) {
+    public CustomerDto.DetailResponse createCustomer(CustomerDto.CreateRequest request, String createdByEmail) {
         log.info("Creating customer with code: {}", request.customerCode());
 
         // 중복 검증
@@ -53,9 +56,12 @@ public class CustomerService {
             throw new BusinessException(ErrorCode.CUSTOMER_CODE_CONFLICT);
         }
 
+        // 생성자 Account 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
+
         Customer customer = mapper.toEntity(request);
-        customer.setCreatedBy(createdBy);
-        customer.setUpdatedBy(createdBy);
+        customer.setCreator(creator);
+        customer.setUpdater(creator);
 
         Customer savedCustomer = customerRepository.save(customer);
 
@@ -173,6 +179,9 @@ public class CustomerService {
         // 엔티티 조회
         Customer customer = findCustomerById(customerId);
 
+        // 수정자 Account 조회
+        Account updater = accountLookupService.findByEmail(updatedBy);
+
         // Setter를 통한 수정 (JPA Dirty Checking)
         if (request.customerName() != null) {
             customer.setCustomerName(request.customerName());
@@ -183,8 +192,8 @@ public class CustomerService {
         if (request.isActive() != null) {
             customer.setIsActive(request.isActive());
         }
-        // updatedBy는 항상 설정 (JWT에서 추출)
-        customer.setUpdatedBy(updatedBy);
+        // updater는 항상 설정 (JWT에서 추출)
+        customer.setUpdater(updater);
 
         // 기존 프로젝트 정보 조회 (프로젝트는 수정 불가)
         CustomerDto.ProjectInfo projectInfo = getProjectInfoByCustomerId(customerId);
@@ -291,9 +300,13 @@ public class CustomerService {
                 hasCustomVersion,
                 projectInfo,
                 customer.getCreatedAt(),
-                customer.getCreatedBy(),
+                customer.getCreatedByName(),
+                customer.getCreator() != null ? customer.getCreator().getAvatarStyle() : null,
+                customer.getCreator() != null ? customer.getCreator().getAvatarSeed() : null,
                 customer.getUpdatedAt(),
-                customer.getUpdatedBy()
+                customer.getUpdatedByName(),
+                customer.getUpdater() != null ? customer.getUpdater().getAvatarStyle() : null,
+                customer.getUpdater() != null ? customer.getUpdater().getAvatarSeed() : null
         );
     }
 }

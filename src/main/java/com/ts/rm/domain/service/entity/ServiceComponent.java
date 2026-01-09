@@ -1,5 +1,6 @@
 package com.ts.rm.domain.service.entity;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.service.enums.ComponentType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,6 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -71,14 +73,22 @@ public class ServiceComponent {
     @Builder.Default
     private Integer sortOrder = 0;
 
-    @Column(name = "created_by", nullable = false, length = 100)
-    private String createdBy;
+    /**
+     * 생성자
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private Account creator;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_by", length = 100)
-    private String updatedBy;
+    /**
+     * 수정자
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by")
+    private Account updater;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
@@ -96,6 +106,22 @@ public class ServiceComponent {
     }
 
     /**
+     * 생성자 이름 반환 헬퍼 메서드
+     */
+    @Transient
+    public String getCreatedByName() {
+        return creator != null ? creator.getAccountName() : null;
+    }
+
+    /**
+     * 수정자 이름 반환 헬퍼 메서드
+     */
+    @Transient
+    public String getUpdatedByName() {
+        return updater != null ? updater.getAccountName() : null;
+    }
+
+    /**
      * 컴포넌트 정보 수정
      *
      * @param componentType 컴포넌트 타입
@@ -105,12 +131,12 @@ public class ServiceComponent {
      * @param url           URL
      * @param description   설명
      * @param sshPort       SSH 포트
-     * @param updatedBy     수정자
+     * @param updater       수정자
      */
     public void update(ComponentType componentType, String componentName,
                        String host, Integer port, String url,
                        String description, Integer sshPort,
-                       String updatedBy) {
+                       Account updater) {
         if (componentType != null) {
             this.componentType = componentType;
         }
@@ -124,8 +150,8 @@ public class ServiceComponent {
         this.description = description;
         this.sshPort = sshPort;
 
-        if (updatedBy != null && !updatedBy.isBlank()) {
-            this.updatedBy = updatedBy;
+        if (updater != null) {
+            this.updater = updater;
         }
     }
 

@@ -4,8 +4,10 @@ import static com.ts.rm.global.util.FileTypeExtractor.extractFileType;
 import static com.ts.rm.global.util.MapExtractUtil.extractString;
 import static com.ts.rm.global.util.MapExtractUtil.extractStringOrDefault;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.job.entity.BackupFile;
 import com.ts.rm.domain.job.repository.BackupFileRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.domain.filesync.adapter.FileSyncAdapter;
@@ -30,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BackupFileSyncAdapter implements FileSyncAdapter {
 
     private final BackupFileRepository backupFileRepository;
+    private final AccountLookupService accountLookupService;
 
     @Override
     public FileSyncTarget getTarget() {
@@ -73,7 +76,10 @@ public class BackupFileSyncAdapter implements FileSyncAdapter {
         // additionalData에서 오버라이드 가능
         fileCategory = extractStringOrDefault(additionalData, "fileCategory", fileCategory);
         String description = extractString(additionalData, "description");
-        String createdBy = extractStringOrDefault(additionalData, "createdBy", "SYSTEM_SYNC");
+        String createdByEmail = extractStringOrDefault(additionalData, "createdByEmail", "SYSTEM_SYNC");
+
+        // 생성자 Account 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
 
         BackupFile backupFile = BackupFile.builder()
                 .fileCategory(fileCategory)
@@ -83,7 +89,7 @@ public class BackupFileSyncAdapter implements FileSyncAdapter {
                 .fileSize(metadata.getFileSize())
                 .checksum(metadata.getChecksum())
                 .description(description)
-                .createdBy(createdBy)
+                .creator(creator)
                 .build();
 
         BackupFile saved = backupFileRepository.save(backupFile);

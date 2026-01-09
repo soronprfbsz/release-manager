@@ -1,10 +1,12 @@
 package com.ts.rm.domain.job.service;
 
+import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.job.dto.BackupLogDto;
 import com.ts.rm.domain.job.entity.BackupFile;
 import com.ts.rm.domain.job.entity.BackupFileLog;
 import com.ts.rm.domain.job.repository.BackupFileLogRepository;
 import com.ts.rm.domain.job.repository.BackupFileRepository;
+import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import java.io.IOException;
@@ -42,6 +44,7 @@ public class BackupLogService {
 
     private final BackupFileRepository backupFileRepository;
     private final BackupFileLogRepository backupFileLogRepository;
+    private final AccountLookupService accountLookupService;
 
     @Value("${app.release.base-path}")
     private String releaseBasePath;
@@ -248,14 +251,14 @@ public class BackupLogService {
      * @param backupFile  백업 파일 정보
      * @param logFileName 로그 파일명
      * @param logType     로그 타입 (BACKUP, RESTORE)
-     * @param createdBy   생성자
+     * @param createdByEmail   생성자
      * @param fileSize    로그 파일 크기 (bytes)
      * @param checksum    로그 파일 체크섬 (SHA-256)
      * @return 생성된 로그 파일 엔티티
      */
     @Transactional
     public BackupFileLog createLogFile(BackupFile backupFile, String logFileName,
-            String logType, String createdBy, Long fileSize, String checksum) {
+            String logType, String createdByEmail, Long fileSize, String checksum) {
         String logFilePath = buildLogFilePath(backupFile, logFileName);
 
         // 실제 파일 디렉토리 생성 (확장자 제거한 디렉토리명 사용)
@@ -270,6 +273,9 @@ public class BackupLogService {
                     "로그 디렉토리 생성에 실패했습니다");
         }
 
+        // 생성자 Account 조회
+        Account creator = accountLookupService.findByEmail(createdByEmail);
+
         // DB에 메타데이터 저장
         BackupFileLog logEntity = BackupFileLog.builder()
                 .backupFile(backupFile)
@@ -278,7 +284,7 @@ public class BackupLogService {
                 .logFilePath(logFilePath)
                 .fileSize(fileSize)
                 .checksum(checksum)
-                .createdBy(createdBy)
+                .creator(creator)
                 .build();
 
         BackupFileLog savedLog = backupFileLogRepository.save(logEntity);

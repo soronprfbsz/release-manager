@@ -47,7 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>현재 구조에 맞춰 완전히 재작성됨:
  * <ul>
  *   <li>버전 생성: ZIP 파일 업로드 방식 (multipart/form-data + Authorization)</li>
- *   <li>패치 생성: PatchDto.GenerateRequest (type, fromVersion, toVersion, createdBy 등)</li>
+ *   <li>패치 생성: PatchDto.GenerateRequest (type, fromVersion, toVersion, createdByEmail 등)</li>
  *   <li>파일 구조: database/mariadb/{version}/, database/cratedb/{version}/</li>
  *   <li>스크립트: mariadb_patch.sh, cratedb_patch.sh</li>
  *   <li>README.md 포함</li>
@@ -157,7 +157,7 @@ public class CumulativePatchGenerationScenarioTest {
                 .customerId(null)
                 .fromVersion("1.2.0")
                 .toVersion("1.3.1")
-                .createdBy(CREATED_BY)
+                .createdByEmail(CREATED_BY)
                 .description("1.2.0에서 1.3.1로 업그레이드용 누적 패치")
                 .engineerId(null) // 엔지니어 미지정
                 .patchName(null) // 자동 생성
@@ -323,7 +323,7 @@ public class CumulativePatchGenerationScenarioTest {
                 .type("STANDARD")
                 .fromVersion("1.0.0")
                 .toVersion("1.0.1")
-                .createdBy(CREATED_BY)
+                .createdByEmail(CREATED_BY)
                 .description("Hotfix patch")
                 .build();
 
@@ -359,7 +359,7 @@ public class CumulativePatchGenerationScenarioTest {
                 .type("STANDARD")
                 .fromVersion("1.1.0")
                 .toVersion("1.0.0")
-                .createdBy(CREATED_BY)
+                .createdByEmail(CREATED_BY)
                 .build();
 
         // Then: 400 Bad Request
@@ -392,7 +392,7 @@ public class CumulativePatchGenerationScenarioTest {
                 .type("STANDARD")
                 .fromVersion("1.0.0")
                 .toVersion("9.9.9")
-                .createdBy(CREATED_BY)
+                .createdByEmail(CREATED_BY)
                 .build();
 
         // Then: 404 Not Found
