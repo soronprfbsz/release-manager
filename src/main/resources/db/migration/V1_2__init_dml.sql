@@ -284,7 +284,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 -- =========================================================
 
 INSERT INTO account (account_name, email, password, avatar_style, avatar_seed, role, status) VALUES
-('시스템 관리자','admin@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'thumbs', 'o3167940vb7d22eo7i87h', 'ADMIN', 'ACTIVE'),
+('시스템 관리자','admin@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'pixelArt', 'ir14c0cexm9r7x4ckfts', 'ADMIN', 'ACTIVE'),
 ('기본 사용자','m_user@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'thumbs', 'h1lk5s01hbwx9qck6q01bi', 'USER', 'ACTIVE');
 
 -- =========================================================
