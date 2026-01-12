@@ -53,6 +53,11 @@ public enum ErrorCode {
 
   // Department - 부서
   DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "error.department.not_found"),
+  DEPARTMENT_NAME_CONFLICT(HttpStatus.CONFLICT, "D002", "error.department.name_conflict"),
+  DEPARTMENT_HAS_CHILDREN(HttpStatus.CONFLICT, "D003", "error.department.has_children"),
+  DEPARTMENT_HAS_ACCOUNTS(HttpStatus.CONFLICT, "D004", "error.department.has_accounts"),
+  DEPARTMENT_CANNOT_MOVE_TO_DESCENDANT(HttpStatus.BAD_REQUEST, "D005", "error.department.cannot_move_to_descendant"),
+  DEPARTMENT_ROOT_CANNOT_DELETE(HttpStatus.BAD_REQUEST, "D006", "error.department.root_cannot_delete"),
 
   // Project - 프로젝트
   PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "error.project.not_found"),

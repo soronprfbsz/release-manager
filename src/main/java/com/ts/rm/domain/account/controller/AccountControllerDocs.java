@@ -56,7 +56,19 @@ public interface AccountControllerDocs {
 
     @Operation(
             summary = "계정 목록 조회 (페이징)",
-            description = "등록된 계정 목록을 페이징으로 조회합니다. 상태 필터 및 계정명 검색을 지원합니다.",
+            description = """
+                    등록된 계정 목록을 페이징으로 조회합니다. 상태, 부서, 부서유형, 키워드 필터를 지원합니다.
+
+                    **부서 필터링 옵션:**
+                    - `departmentId` 미지정: 전체 계정 조회
+                    - `departmentId=6`: 부서 ID가 6인 계정만 조회
+                    - `departmentId=6&includeSubDepartments=true`: 부서 6 + 하위 부서의 모든 계정 조회
+                    - `departmentId=null`: 부서 미배치 계정만 조회
+
+                    **부서 유형 필터링 옵션:**
+                    - `departmentType=DEVELOPMENT`: 개발 부서 소속 계정만 조회
+                    - `departmentType=ENGINEER`: 엔지니어 부서 소속 계정만 조회
+                    """,
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",
@@ -69,7 +81,13 @@ public interface AccountControllerDocs {
     ResponseEntity<ApiResponse<Page<AccountDto.ListResponse>>> getAccounts(
             @Parameter(description = "계정 상태 (ACTIVE, INACTIVE)", example = "ACTIVE")
             @RequestParam(required = false) AccountStatus status,
-            @Parameter(description = "계정명 검색 키워드", example = "홍길동")
+            @Parameter(description = "부서 ID (숫자: 해당 부서, 'null': 미배치 계정)", example = "6")
+            @RequestParam(required = false) String departmentId,
+            @Parameter(description = "하위 부서 포함 여부 (true: 해당 부서 + 모든 하위 부서, false: 해당 부서만)", example = "false")
+            @RequestParam(required = false) Boolean includeSubDepartments,
+            @Parameter(description = "부서 유형 (DEVELOPMENT: 개발, ENGINEER: 엔지니어)", example = "ENGINEER")
+            @RequestParam(required = false) String departmentType,
+            @Parameter(description = "계정명/이메일 검색 키워드", example = "홍길동")
             @RequestParam(required = false) String keyword,
             Pageable pageable
     );

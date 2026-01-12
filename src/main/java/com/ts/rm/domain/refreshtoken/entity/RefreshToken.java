@@ -35,6 +35,8 @@ public class RefreshToken implements Serializable {
 
     private String role;
 
+    private Long departmentId;
+
     private String avatarStyle;
 
     private String avatarSeed;

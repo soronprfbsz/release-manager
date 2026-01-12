@@ -5,7 +5,7 @@ import com.ts.rm.domain.releaseversion.service.ReleaseVersionService;
 import com.ts.rm.domain.releaseversion.service.ReleaseVersionTreeService;
 import com.ts.rm.domain.releaseversion.service.ReleaseVersionUploadService;
 import com.ts.rm.global.response.ApiResponse;
-import com.ts.rm.global.security.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,6 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
     private final ReleaseVersionService releaseVersionService;
     private final ReleaseVersionUploadService uploadService;
     private final ReleaseVersionTreeService treeService;
-    private final JwtTokenProvider jwtTokenProvider;
 
     /**
      * 표준 릴리즈 버전 생성 (ZIP 파일 업로드)
@@ -56,9 +55,8 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
         log.info("표준 릴리즈 버전 생성 요청 - projectId: {}, version: {}, releaseCategory: {}, comment: {}, fileSize: {}",
                 request.projectId(), request.version(), request.releaseCategory(), request.comment(), patchFiles.getSize());
 
-        // JWT 토큰에서 이메일 추출
-        String token = extractToken(authorization);
-        String createdBy = jwtTokenProvider.getEmail(token);
+        // SecurityUtil에서 현재 인증된 사용자 정보 추출
+        String createdBy = SecurityUtil.getTokenInfo().email();
 
         log.info("버전 생성자: {}", createdBy);
 
@@ -95,9 +93,8 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
                 request.projectId(), request.customerId(), request.customBaseVersionId(),
                 request.customVersion(), request.comment(), patchFiles.getSize());
 
-        // JWT 토큰에서 이메일 추출
-        String token = extractToken(authorization);
-        String createdBy = jwtTokenProvider.getEmail(token);
+        // SecurityUtil에서 현재 인증된 사용자 정보 추출
+        String createdBy = SecurityUtil.getTokenInfo().email();
 
         log.info("버전 생성자: {}", createdBy);
 
@@ -109,21 +106,6 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
         );
 
         return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
-     * Authorization 헤더에서 JWT 토큰 추출
-     *
-     * @param authorization "Bearer {token}" 형식
-     * @return JWT 토큰
-     */
-    private String extractToken(String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new com.ts.rm.global.exception.BusinessException(
-                    com.ts.rm.global.exception.ErrorCode.INVALID_CREDENTIALS,
-                    "유효하지 않은 Authorization 헤더입니다");
-        }
-        return authorization.substring(7);
     }
 
     /**
@@ -252,9 +234,8 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
 
         log.info("릴리즈 버전 승인 요청 - ID: {}", id);
 
-        // JWT 토큰에서 이메일 추출
-        String token = extractToken(authorization);
-        String approvedBy = jwtTokenProvider.getEmail(token);
+        // SecurityUtil에서 현재 인증된 사용자 정보 추출
+        String approvedBy = SecurityUtil.getTokenInfo().email();
 
         log.info("승인자: {}", approvedBy);
 
@@ -287,9 +268,8 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
         log.info("핫픽스 생성 요청 - hotfixBaseVersionId: {}, comment: {}, fileSize: {}",
                 id, request.comment(), patchFiles.getSize());
 
-        // JWT 토큰에서 이메일 추출
-        String token = extractToken(authorization);
-        String createdBy = jwtTokenProvider.getEmail(token);
+        // SecurityUtil에서 현재 인증된 사용자 정보 추출
+        String createdBy = SecurityUtil.getTokenInfo().email();
 
         log.info("핫픽스 생성자: {}", createdBy);
 

@@ -33,6 +33,49 @@ CREATE TABLE IF NOT EXISTS code (
     CONSTRAINT fk_code_type FOREIGN KEY (code_type_id) REFERENCES code_type(code_type_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='코드 테이블';
 
+-- =========================================================
+-- 부서 테이블 (account 테이블보다 먼저 생성 - FK 참조)
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS department (
+    department_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '부서 ID',
+    department_name VARCHAR(100) NOT NULL UNIQUE COMMENT '부서명',
+    department_type VARCHAR(50) COMMENT '부서 유형 (code_type_id=DEPARTMENT_TYPE 참조: DEVELOPMENT, ENGINEER)',
+    description VARCHAR(500) COMMENT '설명',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_department_name (department_name),
+    INDEX idx_department_type (department_type),
+    INDEX idx_department_sort_order (sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='부서 테이블';
+
+-- =========================================================
+-- 부서 계층 구조 테이블 (Closure Table 패턴)
+-- =========================================================
+-- ancestor_id: 조상 부서 ID
+-- descendant_id: 후손 부서 ID
+-- depth: 0=자기자신, 1=직계자식, 2=손자, ...
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS department_hierarchy (
+    ancestor_id BIGINT NOT NULL COMMENT '조상 부서 ID',
+    descendant_id BIGINT NOT NULL COMMENT '후손 부서 ID',
+    depth INT NOT NULL DEFAULT 0 COMMENT '계층 깊이 (0=자기자신, 1=직계자식, 2=손자...)',
+
+    PRIMARY KEY (ancestor_id, descendant_id),
+
+    INDEX idx_dh_ancestor (ancestor_id),
+    INDEX idx_dh_descendant (descendant_id),
+    INDEX idx_dh_depth (depth),
+
+    CONSTRAINT fk_dh_ancestor FOREIGN KEY (ancestor_id)
+        REFERENCES department(department_id) ON DELETE CASCADE,
+    CONSTRAINT fk_dh_descendant FOREIGN KEY (descendant_id)
+        REFERENCES department(department_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='부서 계층 구조 테이블 (Closure Table)';
+
 CREATE TABLE IF NOT EXISTS account (
     account_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '계정 ID',
     account_name VARCHAR(50) NOT NULL COMMENT '계정 이름',
@@ -40,6 +83,9 @@ CREATE TABLE IF NOT EXISTS account (
     password VARCHAR(100) NOT NULL COMMENT '비밀번호',
     avatar_style VARCHAR(50) COMMENT '아바타 스타일 (DiceBear 스타일명)',
     avatar_seed VARCHAR(100) COMMENT '아바타 시드 (랜덤 문자열)',
+    phone VARCHAR(20) COMMENT '연락처',
+    position VARCHAR(100) COMMENT '직급 (code_type_id=POSITION 참조)',
+    department_id BIGINT COMMENT '소속 부서 ID',
     role VARCHAR(100) NOT NULL COMMENT '계정 권한',
     status VARCHAR(100) NOT NULL COMMENT '계정 상태 (ACTIVE, INACTIVE, SUSPENDED)',
     last_login_at DATETIME COMMENT '마지막 로그인 일시',
@@ -47,9 +93,15 @@ CREATE TABLE IF NOT EXISTS account (
     locked_until DATETIME COMMENT '계정 잠금 해제 시간 (10분 임시 잠금)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
     INDEX idx_email (email),
     INDEX idx_role (role),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_position (position),
+    INDEX idx_account_department (department_id),
+
+    CONSTRAINT fk_account_department FOREIGN KEY (department_id)
+        REFERENCES department(department_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='계정 테이블';
 
 CREATE TABLE IF NOT EXISTS project (
@@ -380,46 +432,6 @@ CREATE TABLE IF NOT EXISTS backup_file_log (
         REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='백업 파일 로그 테이블';
 
-CREATE TABLE IF NOT EXISTS department (
-    department_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '부서 ID',
-    department_name VARCHAR(100) NOT NULL UNIQUE COMMENT '부서명',
-    description VARCHAR(500) COMMENT '설명',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-
-    INDEX idx_department_name (department_name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='부서 테이블';
-
-CREATE TABLE IF NOT EXISTS engineer (
-    engineer_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '엔지니어 ID',
-    engineer_name VARCHAR(50) NOT NULL COMMENT '엔지니어 이름',
-    engineer_email VARCHAR(100) NOT NULL UNIQUE COMMENT '엔지니어 회사 이메일',
-    engineer_phone VARCHAR(20) COMMENT '엔지니어 연락처',
-    position VARCHAR(100) COMMENT '직급 (code_type_id=POSITION 참조)',
-    department_id BIGINT COMMENT '소속 부서 ID',
-    description VARCHAR(500) COMMENT '설명',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
-    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
-    updated_by_email VARCHAR(100) COMMENT '수정자 이메일 (계정 삭제 시에도 유지)',
-
-    INDEX idx_engineer_name (engineer_name),
-    INDEX idx_engineer_email (engineer_email),
-    INDEX idx_engineer_position (position),
-    INDEX idx_department_id (department_id),
-    INDEX idx_engineer_created_by (created_by),
-    INDEX idx_engineer_updated_by (updated_by),
-
-    CONSTRAINT fk_engineer_department FOREIGN KEY (department_id)
-        REFERENCES department(department_id) ON DELETE SET NULL,
-    CONSTRAINT fk_engineer_created_by FOREIGN KEY (created_by)
-        REFERENCES account(account_id) ON DELETE SET NULL,
-    CONSTRAINT fk_engineer_updated_by FOREIGN KEY (updated_by)
-        REFERENCES account(account_id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='엔지니어 테이블';
-
 CREATE TABLE IF NOT EXISTS patch_file (
     patch_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '패치 ID',
     project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
@@ -430,7 +442,8 @@ CREATE TABLE IF NOT EXISTS patch_file (
     patch_name VARCHAR(100) NOT NULL COMMENT '패치 파일명',
     output_path VARCHAR(500) NOT NULL COMMENT '생성된 패치 파일 경로',
     description TEXT COMMENT '설명',
-    engineer_id BIGINT COMMENT '패치 담당자 (엔지니어 ID)',
+    assignee_id BIGINT COMMENT '패치 담당자 (account.account_id FK)',
+    assignee_email VARCHAR(100) COMMENT '담당자 이메일 (계정 삭제 시에도 유지)',
     created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
     created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
@@ -441,7 +454,7 @@ CREATE TABLE IF NOT EXISTS patch_file (
     INDEX idx_pf_customer_id (customer_id),
     INDEX idx_pf_from_version (from_version),
     INDEX idx_pf_to_version (to_version),
-    INDEX idx_pf_engineer_id (engineer_id),
+    INDEX idx_pf_assignee_id (assignee_id),
     INDEX idx_pf_created_at (created_at),
     INDEX idx_pf_created_by (created_by),
 
@@ -449,8 +462,8 @@ CREATE TABLE IF NOT EXISTS patch_file (
         REFERENCES project(project_id) ON DELETE RESTRICT,
     CONSTRAINT fk_patch_file_customer FOREIGN KEY (customer_id)
         REFERENCES customer(customer_id) ON DELETE SET NULL,
-    CONSTRAINT fk_patch_file_engineer FOREIGN KEY (engineer_id)
-        REFERENCES engineer(engineer_id) ON DELETE SET NULL,
+    CONSTRAINT fk_patch_file_assignee FOREIGN KEY (assignee_id)
+        REFERENCES account(account_id) ON DELETE SET NULL,
     CONSTRAINT fk_patch_file_created_by FOREIGN KEY (created_by)
         REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='패치 파일 테이블';

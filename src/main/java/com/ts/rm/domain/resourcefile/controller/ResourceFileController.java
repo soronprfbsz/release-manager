@@ -6,7 +6,7 @@ import com.ts.rm.domain.resourcefile.mapper.ResourceFileDtoMapper;
 import com.ts.rm.domain.resourcefile.service.ResourceFileService;
 import com.ts.rm.global.file.HttpFileDownloadUtil;
 import com.ts.rm.global.response.ApiResponse;
-import com.ts.rm.global.security.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.SecurityUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -42,7 +42,6 @@ public class ResourceFileController implements ResourceFileControllerDocs {
 
     private final ResourceFileService resourceFileService;
     private final ResourceFileDtoMapper resourceFileDtoMapper;
-    private final JwtTokenProvider jwtTokenProvider;
 
     /**
      * 리소스 파일 업로드
@@ -60,8 +59,7 @@ public class ResourceFileController implements ResourceFileControllerDocs {
         log.info("리소스 파일 업로드 요청 - 파일명: {}, 파일카테고리: {}, 서브카테고리: {}, 리소스파일명: {}",
                 file.getOriginalFilename(), fileCategory, subCategory, resourceFileName);
 
-        String token = authorizationHeader.substring(7);
-        String createdBy = jwtTokenProvider.getEmail(token);
+        String createdBy = SecurityUtil.getTokenInfo().email();
 
         ResourceFileDto.UploadRequest request = new ResourceFileDto.UploadRequest(
                 fileCategory, subCategory, resourceFileName, description, createdBy

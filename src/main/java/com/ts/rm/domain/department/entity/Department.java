@@ -28,6 +28,31 @@ public class Department extends BaseEntity {
     @Column(name = "department_name", nullable = false, unique = true, length = 100)
     private String departmentName;
 
+    @Column(name = "department_type", length = 50)
+    private String departmentType;
+
     @Column(name = "description", length = 500)
     private String description;
+
+    @Column(name = "sort_order", nullable = false)
+    @Builder.Default
+    private Integer sortOrder = 0;
+
+    /**
+     * 부서 정보 업데이트
+     */
+    public void update(String departmentName, String departmentType, String description, Integer sortOrder) {
+        if (departmentName != null) {
+            this.departmentName = departmentName;
+        }
+        if (departmentType != null) {
+            this.departmentType = departmentType;
+        }
+        if (description != null) {
+            this.description = description;
+        }
+        if (sortOrder != null) {
+            this.sortOrder = sortOrder;
+        }
+    }
 }

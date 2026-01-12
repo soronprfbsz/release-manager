@@ -1,5 +1,7 @@
 package com.ts.rm.global.filter;
 
+import com.ts.rm.domain.common.service.CustomUserDetailsService;
+import com.ts.rm.global.security.AccountUserDetails;
 import com.ts.rm.global.security.jwt.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -10,8 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -21,6 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * JWT 인증 필터
  * - HTTP 요청에서 JWT 토큰 추출 및 검증
  * - 유효한 토큰인 경우 SecurityContext에 인증 정보 저장
+ * - accountId 기반 사용자 조회
  */
 @Slf4j
 @Component
@@ -31,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsService userDetailsService;
+    private final CustomUserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(
@@ -46,9 +47,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 2. 토큰 검증 및 인증 정보 설정
             if (StringUtils.hasText(token)) {
                 if (jwtTokenProvider.validateToken(token)) {
-                    // 유효한 토큰 → 인증 정보 설정
-                    String email = jwtTokenProvider.getEmail(token);
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                    // 유효한 토큰 → accountId 추출 후 사용자 정보 로드
+                    Long accountId = jwtTokenProvider.getAccountId(token);
+                    AccountUserDetails userDetails = userDetailsService.loadUserByAccountId(accountId);
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
@@ -58,7 +59,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("Set Authentication to security context for '{}', uri: {}", email, request.getRequestURI());
+                    log.debug("Set Authentication to security context for accountId: '{}', uri: {}",
+                            accountId, request.getRequestURI());
                 } else {
                     // 토큰은 있지만 유효하지 않음 (만료 또는 변조)
                     log.warn("Invalid or expired JWT token for uri: {}", request.getRequestURI());

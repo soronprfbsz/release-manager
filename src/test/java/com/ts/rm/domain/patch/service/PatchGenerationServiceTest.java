@@ -5,9 +5,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.customer.repository.CustomerProjectRepository;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
-import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.domain.patch.repository.PatchRepository;
 import com.ts.rm.domain.patch.util.ScriptGenerator;
 import com.ts.rm.domain.project.entity.Project;
@@ -52,7 +52,7 @@ class PatchGenerationServiceTest {
     private CustomerProjectRepository customerProjectRepository;
 
     @Mock
-    private EngineerRepository engineerRepository;
+    private AccountRepository accountRepository;
 
     @Mock
     private ProjectRepository projectRepository;

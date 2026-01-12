@@ -1,12 +1,11 @@
 package com.ts.rm.domain.patch.service;
 
 import com.ts.rm.domain.account.entity.Account;
+import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.entity.CustomerProject;
 import com.ts.rm.domain.customer.repository.CustomerProjectRepository;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
-import com.ts.rm.domain.engineer.entity.Engineer;
-import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.repository.PatchRepository;
 import com.ts.rm.domain.patch.util.ScriptGenerator;
@@ -52,7 +51,7 @@ public class PatchGenerationService {
     private final ReleaseFileRepository releaseFileRepository;
     private final CustomerRepository customerRepository;
     private final CustomerProjectRepository customerProjectRepository;
-    private final EngineerRepository engineerRepository;
+    private final AccountRepository accountRepository;
     private final ProjectRepository projectRepository;
     private final ScriptGenerator mariaDBScriptGenerator;
     private final ScriptGenerator crateDBScriptGenerator;
@@ -71,7 +70,7 @@ public class PatchGenerationService {
      * @param toVersion    To 버전 (예: 1.1.1)
      * @param createdByEmail    생성자
      * @param description  설명 (선택)
-     * @param engineerId   패치 담당자 엔지니어 ID (선택)
+     * @param assigneeId   패치 담당자 ID (선택)
      * @param patchName    패치 이름 (선택, 미입력 시 자동 생성)
      * @param includeAllBuildVersions WEB/ENGINE 모든 버전 포함 여부 (false: 마지막 버전만)
      * @return 생성된 패치
@@ -79,7 +78,7 @@ public class PatchGenerationService {
     @Transactional
     public Patch generatePatchByVersion(String projectId, String releaseType, Long customerId,
             String fromVersion, String toVersion, String createdByEmail, String description,
-            Long engineerId, String patchName, boolean includeAllBuildVersions) {
+            Long assigneeId, String patchName, boolean includeAllBuildVersions) {
 
         // 버전 조회 (프로젝트 내에서, 핫픽스 제외)
         ReleaseVersion from = releaseVersionRepository.findByProject_ProjectIdAndReleaseTypeAndVersionAndHotfixVersion(
@@ -93,7 +92,7 @@ public class PatchGenerationService {
                         "To 버전을 찾을 수 없습니다: " + toVersion));
 
         return generatePatch(projectId, from.getReleaseVersionId(), to.getReleaseVersionId(),
-                customerId, createdByEmail, description, engineerId, patchName, includeAllBuildVersions);
+                customerId, createdByEmail, description, assigneeId, patchName, includeAllBuildVersions);
     }
 
     /**
@@ -105,14 +104,14 @@ public class PatchGenerationService {
      * @param toVersion    To 커스텀 버전 (예: 1.0.2)
      * @param createdByEmail    생성자
      * @param description  설명 (선택)
-     * @param engineerId   패치 담당자 엔지니어 ID (선택)
+     * @param assigneeId   패치 담당자 ID (선택)
      * @param patchName    패치 이름 (선택, 미입력 시 자동 생성)
      * @return 생성된 패치
      */
     @Transactional
     public Patch generateCustomPatchByVersion(String projectId, Long customerId,
             String fromVersion, String toVersion, String createdByEmail, String description,
-            Long engineerId, String patchName) {
+            Long assigneeId, String patchName) {
 
         // 고객사 조회
         Customer customer = customerRepository.findById(customerId)
@@ -147,7 +146,7 @@ public class PatchGenerationService {
                         "To 커스텀 버전을 찾을 수 없습니다: " + toVersion));
 
         return generateCustomPatch(projectId, customerId, from, to,
-                createdByEmail, description, engineerId, patchName);
+                createdByEmail, description, assigneeId, patchName);
     }
 
     /**
@@ -158,7 +157,7 @@ public class PatchGenerationService {
     @Transactional
     public Patch generateCustomPatch(String projectId, Long customerId,
             ReleaseVersion fromVersion, ReleaseVersion toVersion,
-            String createdByEmail, String description, Long engineerId, String patchName) {
+            String createdByEmail, String description, Long assigneeId, String patchName) {
         try {
             // 프로젝트 조회
             Project project = projectRepository.findById(projectId)
@@ -197,12 +196,12 @@ public class PatchGenerationService {
                     toVersion.getVersion(),
                     betweenVersions.stream().map(ReleaseVersion::getVersion).toList());
 
-            // 3. 엔지니어 조회 (engineerId가 있는 경우)
-            Engineer engineer = null;
-            if (engineerId != null) {
-                engineer = engineerRepository.findById(engineerId)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                                "엔지니어를 찾을 수 없습니다: " + engineerId));
+            // 3. 담당자 조회 (assigneeId가 있는 경우)
+            Account assignee = null;
+            if (assigneeId != null) {
+                assignee = accountRepository.findByAccountId(assigneeId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.ACCOUNT_NOT_FOUND,
+                                "담당자를 찾을 수 없습니다: " + assigneeId));
             }
 
             // 4. 패치 이름 결정 (전체 버전 형식 사용)
@@ -215,8 +214,8 @@ public class PatchGenerationService {
             copySqlFiles(betweenVersions, outputPath, false);
 
             // 7. 패치 스크립트 생성
-            String engineerEmail = engineer != null ? engineer.getEngineerEmail() : null;
-            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, engineerEmail);
+            String assigneeEmail = assignee != null ? assignee.getEmail() : null;
+            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, assigneeEmail);
 
             // 8. README 생성
             generateCustomReadme(fromVersion, toVersion, betweenVersions, outputPath, customer);
@@ -236,7 +235,7 @@ public class PatchGenerationService {
                     .creator(creator)
                     .createdByEmail(creator.getEmail())
                     .description(description)
-                    .engineer(engineer)
+                    .assignee(assignee)
                     .build();
 
             Patch saved = patchRepository.save(patch);
@@ -425,14 +424,14 @@ public class PatchGenerationService {
      * @param customerId    고객사 ID (선택)
      * @param createdByEmail     생성자
      * @param description   설명 (선택)
-     * @param engineerId    패치 담당자 엔지니어 ID (선택)
+     * @param assigneeId    패치 담당자 ID (선택)
      * @param patchName     패치 이름 (선택, 미입력 시 자동 생성)
      * @param includeAllBuildVersions WEB/ENGINE 모든 버전 포함 여부 (false: 마지막 버전만)
      * @return 생성된 패치
      */
     @Transactional
     public Patch generatePatch(String projectId, Long fromVersionId, Long toVersionId, Long customerId,
-            String createdByEmail, String description, Long engineerId, String patchName,
+            String createdByEmail, String description, Long assigneeId, String patchName,
             boolean includeAllBuildVersions) {
         try {
             // 프로젝트 조회
@@ -477,12 +476,12 @@ public class PatchGenerationService {
                                 "고객사를 찾을 수 없습니다: " + customerId));
             }
 
-            // 3-1. 엔지니어 조회 (engineerId가 있는 경우)
-            Engineer engineer = null;
-            if (engineerId != null) {
-                engineer = engineerRepository.findById(engineerId)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.DATA_NOT_FOUND,
-                                "엔지니어를 찾을 수 없습니다: " + engineerId));
+            // 3-1. 담당자 조회 (assigneeId가 있는 경우)
+            Account assignee = null;
+            if (assigneeId != null) {
+                assignee = accountRepository.findByAccountId(assigneeId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.ACCOUNT_NOT_FOUND,
+                                "담당자를 찾을 수 없습니다: " + assigneeId));
             }
 
             // 4. 패치 이름 결정 (입력값이 없으면 자동 생성: YYYYMMDDHHMMSS_fromversion_toversion)
@@ -495,8 +494,8 @@ public class PatchGenerationService {
             copySqlFiles(betweenVersions, outputPath, includeAllBuildVersions);
 
             // 7. 패치 스크립트 생성
-            String engineerEmail = engineer != null ? engineer.getEngineerEmail() : null;
-            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, engineerEmail);
+            String assigneeEmail = assignee != null ? assignee.getEmail() : null;
+            generatePatchScripts(fromVersion, toVersion, betweenVersions, outputPath, assigneeEmail);
 
             // 8. README 생성
             generateReadme(fromVersion, toVersion, betweenVersions, outputPath);
@@ -516,7 +515,7 @@ public class PatchGenerationService {
                     .creator(creator)
                     .createdByEmail(creator.getEmail())
                     .description(description)
-                    .engineer(engineer)
+                    .assignee(assignee)
                     .build();
 
             Patch saved = patchRepository.save(patch);

@@ -1,6 +1,7 @@
 package com.ts.rm.domain.refreshtoken.service;
 
 import com.ts.rm.domain.account.entity.Account;
+import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.auth.dto.TokenResponse;
 import com.ts.rm.domain.refreshtoken.entity.RefreshToken;
 import com.ts.rm.domain.refreshtoken.repository.RefreshTokenRepository;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AccountRepository accountRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
@@ -37,6 +39,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .email(account.getEmail())
                 .accountName(account.getAccountName())
                 .role(account.getRole())
+                .departmentId(account.getDepartment() != null ? account.getDepartment().getDepartmentId() : null)
                 .avatarStyle(account.getAvatarStyle())
                 .avatarSeed(account.getAvatarSeed())
                 .createdAt(LocalDateTime.now())
@@ -60,35 +63,22 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         RefreshToken refreshToken = refreshTokenRepository.findById(refreshTokenValue)
                 .orElseThrow(() -> new BadCredentialsException("존재하지 않는 리프레시 토큰입니다."));
 
-        // 3. 계정 정보 (Redis에서 추출)
-        String email = refreshToken.getEmail();
-        String accountName = refreshToken.getAccountName();
-        String role = refreshToken.getRole();
+        // 3. DB에서 최신 계정 정보 조회 (계정 상태 변경, 부서 변경 등 반영)
         Long accountId = refreshToken.getAccountId();
-        String avatarStyle = refreshToken.getAvatarStyle();
-        String avatarSeed = refreshToken.getAvatarSeed();
+        Account account = accountRepository.findByAccountId(accountId)
+                .orElseThrow(() -> new BadCredentialsException("존재하지 않는 계정입니다."));
 
-        // 4. 새로운 Access Token 생성
-        String newAccessToken = jwtTokenProvider.generateToken(email, role);
+        // 4. 새로운 Access Token 생성 (accountId 기반, 최신 부서 ID 포함)
+        Long departmentId = account.getDepartment() != null ? account.getDepartment().getDepartmentId() : null;
+        String newAccessToken = jwtTokenProvider.generateToken(accountId, account.getRole(), departmentId);
 
         // 5. Refresh Token Rotation: 기존 토큰 삭제 및 새 토큰 발급
         refreshTokenRepository.deleteById(refreshTokenValue);
-
-        // Account 객체 재생성 (Redis에서는 Account 연관관계 없음)
-        Account account = Account.builder()
-                .email(email)
-                .accountName(accountName)
-                .role(role)
-                .avatarStyle(avatarStyle)
-                .avatarSeed(avatarSeed)
-                .build();
-        account.setAccountId(accountId);
-
         RefreshToken newRefreshToken = createRefreshToken(account);
 
-        log.info("Token refreshed for account: {}", email);
+        log.info("Token refreshed for account: {}", account.getEmail());
 
-        // 6. 응답 생성
+        // 6. 응답 생성 (최신 계정 정보 반영)
         return TokenResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken.getToken())
@@ -96,12 +86,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .expiresIn(jwtTokenProvider.getExpirationInSeconds())
                 .refreshExpiresIn(jwtTokenProvider.getRefreshExpirationInSeconds())
                 .accountInfo(TokenResponse.AccountInfo.builder()
-                        .accountId(accountId)
-                        .email(email)
-                        .accountName(accountName)
-                        .role(role)
-                        .avatarStyle(avatarStyle)
-                        .avatarSeed(avatarSeed)
+                        .accountId(account.getAccountId())
+                        .email(account.getEmail())
+                        .accountName(account.getAccountName())
+                        .role(account.getRole())
+                        .avatarStyle(account.getAvatarStyle())
+                        .avatarSeed(account.getAvatarSeed())
                         .build())
                 .build();
     }

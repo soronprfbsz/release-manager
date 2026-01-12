@@ -5,7 +5,7 @@ import com.ts.rm.domain.publishing.dto.PublishingFileDto;
 import com.ts.rm.domain.publishing.service.PublishingService;
 import com.ts.rm.global.file.HttpFileDownloadUtil;
 import com.ts.rm.global.response.ApiResponse;
-import com.ts.rm.global.security.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.SecurityUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -44,7 +44,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class PublishingController implements PublishingControllerDocs {
 
     private final PublishingService publishingService;
-    private final JwtTokenProvider jwtTokenProvider;
 
     /**
      * 퍼블리싱 생성 (ZIP 업로드)
@@ -62,8 +61,7 @@ public class PublishingController implements PublishingControllerDocs {
 
         log.info("퍼블리싱 생성 요청 - 이름: {}, 카테고리: {}", publishingName, publishingCategory);
 
-        String token = authorizationHeader.substring(7);
-        String createdBy = jwtTokenProvider.getEmail(token);
+        String createdBy = SecurityUtil.getTokenInfo().email();
 
         PublishingDto.CreateRequest request = new PublishingDto.CreateRequest(
                 publishingName, description, publishingCategory, subCategory, customerId, createdBy
@@ -96,8 +94,7 @@ public class PublishingController implements PublishingControllerDocs {
 
         log.info("퍼블리싱 수정 요청 - ID: {}, 이름: {}", id, request.publishingName());
 
-        String token = authorizationHeader.substring(7);
-        String updatedBy = jwtTokenProvider.getEmail(token);
+        String updatedBy = SecurityUtil.getTokenInfo().email();
 
         // updatedBy를 포함한 새로운 UpdateRequest 생성
         PublishingDto.UpdateRequest requestWithUpdatedBy = new PublishingDto.UpdateRequest(

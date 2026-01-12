@@ -1,24 +1,36 @@
 package com.ts.rm.domain.account.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ts.rm.domain.account.dto.AccountDto;
 import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.account.enums.AccountRole;
 import com.ts.rm.domain.account.enums.AccountStatus;
 import com.ts.rm.domain.account.mapper.AccountDtoMapper;
 import com.ts.rm.domain.account.repository.AccountRepository;
+import com.ts.rm.domain.common.repository.CodeRepository;
+import com.ts.rm.domain.department.entity.Department;
+import com.ts.rm.domain.department.repository.DepartmentHierarchyRepository;
+import com.ts.rm.domain.department.repository.DepartmentRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.pagination.PageRowNumberUtil;
 import com.ts.rm.global.security.SecurityUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Account Service - MapStruct를 사용한 Entity ↔ DTO 자동 변환 - AccountDto 단일 클래스에서
- * Request/Response DTO 관리
+ * Account Service
+ * - MapStruct를 사용한 Entity ↔ DTO 자동 변환
+ * - AccountDto 단일 클래스에서 Request/Response DTO 관리
  */
 @Slf4j
 @Service
@@ -26,13 +38,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AccountService {
 
+    private static final String POSITION_CODE_TYPE = "POSITION";
+
     private final AccountRepository accountRepository;
+    private final DepartmentRepository departmentRepository;
+    private final DepartmentHierarchyRepository departmentHierarchyRepository;
+    private final CodeRepository codeRepository;
     private final AccountDtoMapper mapper;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public AccountDto.DetailResponse createAccount(
-            AccountDto.CreateRequest request) {
+    public AccountDto.DetailResponse createAccount(AccountDto.CreateRequest request) {
         log.info("Creating account with email: {}", request.email());
 
         if (accountRepository.existsByEmail(request.email())) {
@@ -40,41 +56,61 @@ public class AccountService {
         }
 
         Account account = mapper.toEntity(request);
+
+        // 부서 설정
+        if (request.departmentId() != null) {
+            Department department = findDepartmentById(request.departmentId());
+            account.setDepartment(department);
+        }
+
         Account savedAccount = accountRepository.save(account);
 
-        log.info("Account created successfully with id: {}",
-                savedAccount.getAccountId());
-        return mapper.toDetailResponse(savedAccount);
+        log.info("Account created successfully with id: {}", savedAccount.getAccountId());
+        return toDetailResponseWithPositionName(savedAccount);
     }
 
     public AccountDto.DetailResponse getAccountByAccountId(Long accountId) {
         Account account = findAccountByAccountId(accountId);
-        return mapper.toDetailResponse(account);
+        return toDetailResponseWithPositionName(account);
     }
 
     /**
      * 계정 목록 조회 (필터링 및 검색, 페이징)
-     * QueryDSL을 사용한 다중 필드 키워드 검색 (계정명, 이메일)
      *
-     * @param status   계정 상태 필터 (ACTIVE, INACTIVE 등, null이면 전체)
-     * @param keyword  검색 키워드 - 계정명, 이메일 통합 검색
+     * @param status 계정 상태 필터
+     * @param departmentId 부서 ID 필터
+     * @param includeSubDepartments 하위 부서 포함 여부 (true: 해당 부서 + 모든 하위 부서, false: 해당 부서만)
+     * @param departmentType 부서 유형 필터 (DEVELOPMENT: 개발, ENGINEER: 엔지니어)
+     * @param unassigned 미배치 계정만 조회 (true: department가 null인 계정만)
+     * @param keyword 검색 키워드
      * @param pageable 페이징 정보
-     * @return 계정 페이지
+     * @return 계정 목록 페이지
      */
-    public org.springframework.data.domain.Page<AccountDto.ListResponse> getAccounts(
-            AccountStatus status, String keyword, org.springframework.data.domain.Pageable pageable) {
-        // QueryDSL 기반 다중 필드 검색
+    public Page<AccountDto.ListResponse> getAccounts(
+            AccountStatus status, Long departmentId, Boolean includeSubDepartments,
+            String departmentType, boolean unassigned, String keyword, Pageable pageable) {
         String statusName = status != null ? status.name() : null;
-        org.springframework.data.domain.Page<Account> accountPage =
-                accountRepository.findAllWithFilters(statusName, keyword, pageable);
 
-        // rowNumber 계산 (공통 유틸리티 사용)
+        // 부서 ID 목록 생성
+        List<Long> departmentIds = buildDepartmentIds(departmentId, includeSubDepartments);
+
+        // 하위 부서 포함 조회 시, 요청한 부서의 계정을 우선 정렬하기 위해 primaryDepartmentId 전달
+        Long primaryDepartmentId = Boolean.TRUE.equals(includeSubDepartments) ? departmentId : null;
+
+        Page<Account> accountPage = accountRepository.findAllWithFilters(
+                statusName, departmentIds, primaryDepartmentId, departmentType, unassigned, keyword, pageable);
+
         return PageRowNumberUtil.mapWithRowNumber(accountPage, (account, rowNumber) ->
                 new AccountDto.ListResponse(
                         rowNumber,
                         account.getAccountId(),
                         account.getEmail(),
                         account.getAccountName(),
+                        account.getPhone(),
+                        account.getPosition(),
+                        getPositionName(account.getPosition()),
+                        account.getDepartment() != null ? account.getDepartment().getDepartmentId() : null,
+                        account.getDepartment() != null ? account.getDepartment().getDepartmentName() : null,
                         account.getAvatarStyle(),
                         account.getAvatarSeed(),
                         account.getRole(),
@@ -85,15 +121,32 @@ public class AccountService {
         );
     }
 
+    /**
+     * 부서 ID 목록 생성 (하위 부서 포함 여부에 따라)
+     */
+    private List<Long> buildDepartmentIds(Long departmentId, Boolean includeSubDepartments) {
+        if (departmentId == null) {
+            return null;
+        }
+
+        List<Long> departmentIds = new ArrayList<>();
+        departmentIds.add(departmentId);
+
+        // 하위 부서 포함인 경우 하위 부서 ID 목록 추가
+        if (Boolean.TRUE.equals(includeSubDepartments)) {
+            List<Long> descendantIds = departmentHierarchyRepository.findDescendantIds(departmentId);
+            departmentIds.addAll(descendantIds);
+        }
+
+        return departmentIds;
+    }
+
     @Transactional
-    public AccountDto.DetailResponse updateAccount(Long accountId,
-            AccountDto.UpdateRequest request) {
+    public AccountDto.DetailResponse updateAccount(Long accountId, AccountDto.UpdateRequest request) {
         log.info("Updating account with accountId: {}", accountId);
 
-        // 엔티티 조회
         Account account = findAccountByAccountId(accountId);
 
-        // Setter를 통한 수정 (JPA Dirty Checking)
         if (request.accountName() != null) {
             account.setAccountName(request.accountName());
         }
@@ -102,19 +155,16 @@ public class AccountService {
             account.setPassword(request.password());
         }
 
-        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Account updated successfully with accountId: {}", accountId);
-        return mapper.toDetailResponse(account);
+        return toDetailResponseWithPositionName(account);
     }
 
     @Transactional
     public void deleteAccount(Long accountId) {
         log.info("Deleting account with accountId: {}", accountId);
 
-        // 1. 삭제할 계정 조회
         Account account = findAccountByAccountId(accountId);
 
-        // 2. ADMIN 계정인 경우, 마지막 ADMIN인지 확인
         if (AccountRole.ADMIN.getCodeId().equals(account.getRole())) {
             long adminCount = accountRepository.countByRole(AccountRole.ADMIN.getCodeId());
             if (adminCount <= 1) {
@@ -123,46 +173,28 @@ public class AccountService {
             }
         }
 
-        // 3. 계정 삭제
         accountRepository.delete(account);
-
         log.info("Account deleted successfully with accountId: {}", accountId);
     }
 
-    /**
-     * 계정 상태 변경
-     *
-     * @param accountId 계정 ID
-     * @param status    변경할 상태
-     */
     @Transactional
     public void updateAccountStatus(Long accountId, AccountStatus status) {
         log.info("Updating account status - accountId: {}, status: {}", accountId, status);
 
-        // 엔티티 조회 후 setter를 통한 수정 (JPA Dirty Checking)
         Account account = findAccountByAccountId(accountId);
         account.setStatus(status.name());
 
-        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Account status updated - accountId: {}, status: {}", accountId, status);
     }
 
     /**
-     * 계정 수정 (ADMIN 전용 - 이름, 권한, 상태 수정)
-     *
-     * @param accountId 계정 ID
-     * @param request   수정 요청 (accountName, role, status)
-     * @return 수정된 계정 상세 정보
+     * 계정 수정 (ADMIN 전용 - 이름, 권한, 상태, 부서, 직급 수정)
      */
     @Transactional
-    public AccountDto.DetailResponse adminUpdateAccount(Long accountId,
-            AccountDto.AdminUpdateRequest request) {
+    public AccountDto.DetailResponse adminUpdateAccount(Long accountId, AccountDto.AdminUpdateRequest request) {
         log.info("Admin updating account with accountId: {}", accountId);
 
-        // 엔티티 조회
         Account account = findAccountByAccountId(accountId);
-
-        // Setter를 통한 수정 (JPA Dirty Checking)
 
         // 이름 수정
         if (request.accountName() != null && !request.accountName().isBlank()) {
@@ -170,9 +202,36 @@ public class AccountService {
             log.debug("Account name updated to {} for accountId: {}", request.accountName(), accountId);
         }
 
+        // 연락처 수정
+        if (request.phone() != null) {
+            account.setPhone(request.phone());
+            log.debug("Phone updated for accountId: {}", accountId);
+        }
+
+        // 직급 수정
+        if (request.position() != null) {
+            validatePositionCode(request.position());
+            account.setPosition(request.position());
+            log.debug("Position updated to {} for accountId: {}", request.position(), accountId);
+        }
+
+        // 부서 수정 (Optional: null=미전송→변경없음, empty=명시적null→배치해제, present=값→해당부서배치)
+        if (request.departmentId() != null) {
+            if (request.departmentId().isEmpty()) {
+                // departmentId: null → 부서 배치 해제
+                account.setDepartment(null);
+                log.debug("Department unassigned for accountId: {}", accountId);
+            } else {
+                // departmentId: 숫자 → 해당 부서로 배치
+                Department department = findDepartmentById(request.departmentId().get());
+                account.setDepartment(department);
+                log.debug("Department updated to {} for accountId: {}", request.departmentId().get(), accountId);
+            }
+        }
+        // departmentId 미전송 → 부서 변경 없음
+
         // 권한 수정
         if (request.role() != null && !request.role().isBlank()) {
-            // role 유효성 검증
             try {
                 AccountRole.valueOf(request.role());
                 account.setRole(request.role());
@@ -185,7 +244,6 @@ public class AccountService {
 
         // 상태 수정
         if (request.status() != null && !request.status().isBlank()) {
-            // status 유효성 검증
             try {
                 AccountStatus.valueOf(request.status());
                 account.setStatus(request.status());
@@ -196,37 +254,29 @@ public class AccountService {
             }
         }
 
-        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Account updated successfully by admin with accountId: {}", accountId);
-        return mapper.toDetailResponse(account);
+        return toDetailResponseWithPositionName(account);
     }
 
     /**
      * 내 정보 조회
-     *
-     * @return 현재 로그인한 사용자의 계정 상세 정보
      */
     public AccountDto.DetailResponse getMyAccount() {
         String email = SecurityUtil.getTokenInfo().email();
         log.info("Getting my account info - email: {}", email);
 
         Account account = findAccountByEmail(email);
-        return mapper.toDetailResponse(account);
+        return toDetailResponseWithPositionName(account);
     }
 
     /**
      * 내 정보 수정 (본인만 가능)
-     *
-     * @param request 수정 요청 (이름, 비밀번호)
-     * @return 수정된 계정 상세 정보
      */
     @Transactional
     public AccountDto.DetailResponse updateMyAccount(AccountDto.UpdateRequest request) {
-        // JWT에서 현재 로그인한 사용자 이메일 추출
         String email = SecurityUtil.getTokenInfo().email();
         log.info("Updating my account - email: {}", email);
 
-        // 이메일로 계정 조회
         Account account = findAccountByEmail(email);
 
         // 이름 수정
@@ -241,6 +291,12 @@ public class AccountService {
             log.debug("Password updated for email: {}", email);
         }
 
+        // 연락처 수정
+        if (request.phone() != null) {
+            account.setPhone(request.phone());
+            log.debug("Phone updated for email: {}", email);
+        }
+
         // 아바타 스타일 수정
         if (request.avatarStyle() != null) {
             account.setAvatarStyle(request.avatarStyle());
@@ -253,22 +309,73 @@ public class AccountService {
             log.debug("Avatar seed updated for email: {}", email);
         }
 
-        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("My account updated successfully - email: {}", email);
-        return mapper.toDetailResponse(account);
+        return toDetailResponseWithPositionName(account);
+    }
+
+    /**
+     * positionName을 포함한 DetailResponse 생성
+     */
+    private AccountDto.DetailResponse toDetailResponseWithPositionName(Account account) {
+        String positionName = getPositionName(account.getPosition());
+
+        return new AccountDto.DetailResponse(
+                account.getAccountId(),
+                account.getEmail(),
+                account.getAccountName(),
+                account.getPhone(),
+                account.getPosition(),
+                positionName,
+                account.getDepartment() != null ? account.getDepartment().getDepartmentId() : null,
+                account.getDepartment() != null ? account.getDepartment().getDepartmentName() : null,
+                account.getAvatarStyle(),
+                account.getAvatarSeed(),
+                account.getRole(),
+                account.getStatus(),
+                account.getCreatedAt(),
+                account.getUpdatedAt()
+        );
+    }
+
+    /**
+     * position 코드로 직급명 조회
+     */
+    private String getPositionName(String positionCode) {
+        if (positionCode == null || positionCode.isBlank()) {
+            return null;
+        }
+        return codeRepository.findByCodeTypeIdAndCodeId(POSITION_CODE_TYPE, positionCode)
+                .map(code -> code.getCodeName())
+                .orElse(null);
+    }
+
+    /**
+     * position 코드 유효성 검증
+     */
+    private void validatePositionCode(String positionCode) {
+        if (positionCode == null || positionCode.isBlank()) {
+            return;
+        }
+        boolean exists = codeRepository.existsByCodeTypeIdAndCodeId(POSITION_CODE_TYPE, positionCode);
+        if (!exists) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 
     private Account findAccountByAccountId(Long accountId) {
         return accountRepository
                 .findByAccountId(accountId)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.ACCOUNT_NOT_FOUND));
     }
 
     private Account findAccountByEmail(String email) {
         return accountRepository
                 .findByEmail(email)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.ACCOUNT_NOT_FOUND));
+    }
+
+    private Department findDepartmentById(Long departmentId) {
+        return departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
     }
 }

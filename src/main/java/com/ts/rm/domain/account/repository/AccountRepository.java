@@ -1,7 +1,10 @@
 package com.ts.rm.domain.account.repository;
 
 import com.ts.rm.domain.account.entity.Account;
+
+import java.util.List;
 import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -46,4 +49,25 @@ public interface AccountRepository extends JpaRepository<Account, Long>, Account
      * @return 해당 권한을 가진 계정 개수
      */
     long countByRole(String role);
+
+    /**
+     * 특정 부서의 계정 수 조회
+     */
+    long countByDepartmentDepartmentId(Long departmentId);
+
+    /**
+     * 특정 부서의 계정 목록 조회 (페이징)
+     */
+    Page<Account> findByDepartmentDepartmentId(Long departmentId, Pageable pageable);
+
+    /**
+     * 특정 부서의 계정 목록 조회
+     */
+    List<Account> findByDepartmentDepartmentId(Long departmentId);
+
+    /**
+     * 부서별 계정 조회 + 이름 검색 (페이징)
+     */
+    Page<Account> findByDepartmentDepartmentIdAndAccountNameContaining(
+            Long departmentId, String keyword, Pageable pageable);
 }

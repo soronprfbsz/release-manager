@@ -60,8 +60,77 @@ public final class QuerydslPaginationUtil {
             Map<String, com.querydsl.core.types.Expression<?>> sortMapping,
             OrderSpecifier<?>... defaultOrder) {
 
-        return applyPaginationWithSecondaryOrder(
+        return applyPaginationWithPrefixOrder(
                 contentQuery, countQuery, pageable, sortMapping, null, defaultOrder);
+    }
+
+    /**
+     * JPAQuery에 페이징 및 정렬을 적용하여 Page 객체 반환 (우선 정렬 지원)
+     *
+     * <p>우선 정렬(prefixOrders)은 사용자 지정 정렬보다 먼저 적용됩니다.
+     * 예: 특정 부서 계정을 먼저 보여주고 싶을 때 사용
+     *
+     * @param <T>             엔티티 타입
+     * @param contentQuery    데이터 조회 쿼리 (정렬/페이징 적용 전)
+     * @param countQuery      전체 개수 조회 쿼리 (정렬/페이징 미적용)
+     * @param pageable        페이징 정보
+     * @param sortMapping     정렬 필드 매핑 (key: 필드명, value: QueryDSL Expression)
+     * @param prefixOrders    우선 정렬 (사용자 정렬보다 먼저 적용됨, null이면 무시)
+     * @param defaultOrder    기본 정렬 (정렬 조건이 없을 때 사용)
+     * @return Page 객체
+     */
+    public static <T> Page<T> applyPagination(
+            JPAQuery<T> contentQuery,
+            JPAQuery<?> countQuery,
+            Pageable pageable,
+            Map<String, com.querydsl.core.types.Expression<?>> sortMapping,
+            List<OrderSpecifier<?>> prefixOrders,
+            OrderSpecifier<?>... defaultOrder) {
+
+        return applyPaginationWithPrefixOrder(
+                contentQuery, countQuery, pageable, sortMapping, prefixOrders, defaultOrder);
+    }
+
+    /**
+     * JPAQuery에 페이징 및 정렬을 적용하여 Page 객체 반환 (우선 정렬 지원)
+     */
+    private static <T> Page<T> applyPaginationWithPrefixOrder(
+            JPAQuery<T> contentQuery,
+            JPAQuery<?> countQuery,
+            Pageable pageable,
+            Map<String, com.querydsl.core.types.Expression<?>> sortMapping,
+            List<OrderSpecifier<?>> prefixOrders,
+            OrderSpecifier<?>... defaultOrder) {
+
+        // 1. 우선 정렬 적용 (사용자 정렬보다 먼저)
+        if (prefixOrders != null && !prefixOrders.isEmpty()) {
+            for (OrderSpecifier<?> order : prefixOrders) {
+                contentQuery.orderBy(order);
+            }
+        }
+
+        // 2. 사용자 정렬 적용
+        List<OrderSpecifier<?>> userOrders = createOrderSpecifiers(pageable.getSort(), sortMapping);
+        for (OrderSpecifier<?> order : userOrders) {
+            contentQuery.orderBy(order);
+        }
+
+        // 3. 기본 정렬 추가 (우선 정렬과 사용자 정렬이 모두 없을 경우)
+        boolean hasAnyOrder = (prefixOrders != null && !prefixOrders.isEmpty()) || !userOrders.isEmpty();
+        if (!hasAnyOrder && defaultOrder.length > 0) {
+            contentQuery.orderBy(defaultOrder);
+        }
+
+        // 4. 페이징 적용
+        List<T> content = contentQuery
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        // 5. 전체 개수 조회
+        Long total = countQuery.fetchCount();
+
+        return new PageImpl<>(content, pageable, total != null ? total : 0L);
     }
 
     /**

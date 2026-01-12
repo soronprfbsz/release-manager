@@ -44,4 +44,12 @@ public class SignUpRequest {
     @Schema(description = "아바타 시드 (랜덤 문자열)", example = "abc123xyz")
     @Size(max = 100, message = "아바타 시드는 최대 100자까지 입력 가능합니다.")
     private String avatarSeed;
+
+    @Schema(description = "연락처", example = "010-1234-5678")
+    @Size(max = 20, message = "연락처는 최대 20자까지 입력 가능합니다.")
+    private String phone;
+
+    @Schema(description = "직급 코드 (POSITION 코드)", example = "MANAGER")
+    @Size(max = 100, message = "직급 코드는 최대 100자까지 입력 가능합니다.")
+    private String position;
 }

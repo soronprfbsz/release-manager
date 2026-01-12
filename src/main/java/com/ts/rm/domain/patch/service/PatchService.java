@@ -133,8 +133,8 @@ public class PatchService {
                     response.createdByAvatarSeed(),
                     response.isDeletedCreator(),
                     response.description(),
-                    response.engineerId(),
-                    response.engineerName(),
+                    response.assigneeId(),
+                    response.assigneeName(),
                     response.createdAt()
             );
         });

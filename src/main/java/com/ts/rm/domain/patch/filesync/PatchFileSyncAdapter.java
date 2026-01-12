@@ -5,10 +5,9 @@ import static com.ts.rm.global.util.MapExtractUtil.extractString;
 import static com.ts.rm.global.util.MapExtractUtil.extractStringOrDefault;
 
 import com.ts.rm.domain.account.entity.Account;
+import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
-import com.ts.rm.domain.engineer.entity.Engineer;
-import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.domain.filesync.adapter.FileSyncAdapter;
 import com.ts.rm.domain.filesync.dto.FileSyncMetadata;
 import com.ts.rm.domain.filesync.enums.FileSyncTarget;
@@ -47,7 +46,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
     private final PatchRepository patchRepository;
     private final ProjectRepository projectRepository;
     private final CustomerRepository customerRepository;
-    private final EngineerRepository engineerRepository;
+    private final AccountRepository accountRepository;
     private final AccountLookupService accountLookupService;
 
     /**
@@ -131,7 +130,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
         String customerCode = extractStringOrDefault(additionalData, "customerCode", folderInfo.customerCode);
         String description = extractString(additionalData, "description");
         String createdByEmail = extractStringOrDefault(additionalData, "createdByEmail", "SYSTEM_SYNC");
-        Long engineerId = extractLong(additionalData, "engineerId");
+        Long assigneeId = extractLong(additionalData, "assigneeId");
 
         // 프로젝트 조회
         Project project = projectRepository.findById(projectId)
@@ -148,12 +147,12 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
             }
         }
 
-        // 담당 엔지니어 조회
-        Engineer engineer = null;
-        if (engineerId != null) {
-            engineer = engineerRepository.findById(engineerId).orElse(null);
-            if (engineer == null) {
-                log.warn("엔지니어를 찾을 수 없습니다: {}. 엔지니어 없이 패치를 등록합니다.", engineerId);
+        // 담당자 조회
+        Account assignee = null;
+        if (assigneeId != null) {
+            assignee = accountRepository.findByAccountId(assigneeId).orElse(null);
+            if (assignee == null) {
+                log.warn("담당자를 찾을 수 없습니다: {}. 담당자 없이 패치를 등록합니다.", assigneeId);
             }
         }
 
@@ -167,7 +166,7 @@ public class PatchFileSyncAdapter implements FileSyncAdapter {
                 .project(project)
                 .releaseType(releaseType.toUpperCase())
                 .customer(customer)
-                .engineer(engineer)
+                .assignee(assignee)
                 .fromVersion(fromVersion)
                 .toVersion(toVersion)
                 .patchName(patchName)

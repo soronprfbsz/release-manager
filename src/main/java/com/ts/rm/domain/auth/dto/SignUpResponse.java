@@ -28,6 +28,15 @@ public class SignUpResponse {
     @Schema(description = "계정 이름", example = "홍길동")
     private String accountName;
 
+    @Schema(description = "연락처", example = "010-1234-5678")
+    private String phone;
+
+    @Schema(description = "직급 코드", example = "MANAGER")
+    private String position;
+
+    @Schema(description = "직급명", example = "과장")
+    private String positionName;
+
     @Schema(description = "권한", example = "USER")
     private String role;
 

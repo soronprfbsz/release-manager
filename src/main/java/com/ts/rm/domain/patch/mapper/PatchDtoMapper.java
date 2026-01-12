@@ -20,8 +20,8 @@ public interface PatchDtoMapper {
     @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
     @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
     @Mapping(target = "isDeletedCreator", expression = "java(patch.getCreator() == null)")
-    @Mapping(target = "engineerId", source = "engineer.engineerId")
-    @Mapping(target = "engineerName", source = "engineer.engineerName")
+    @Mapping(target = "assigneeId", source = "assignee.accountId")
+    @Mapping(target = "assigneeName", source = "assignee.accountName")
     PatchDto.SimpleResponse toSimpleResponse(Patch patch);
 
     List<PatchDto.SimpleResponse> toSimpleResponseList(List<Patch> patches);
@@ -35,8 +35,8 @@ public interface PatchDtoMapper {
     @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
     @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
     @Mapping(target = "isDeletedCreator", expression = "java(patch.getCreator() == null)")
-    @Mapping(target = "engineerId", source = "engineer.engineerId")
-    @Mapping(target = "engineerName", source = "engineer.engineerName")
+    @Mapping(target = "assigneeId", source = "assignee.accountId")
+    @Mapping(target = "assigneeName", source = "assignee.accountName")
     PatchDto.DetailResponse toDetailResponse(Patch patch);
 
     List<PatchDto.DetailResponse> toDetailResponseList(List<Patch> patches);
@@ -50,7 +50,7 @@ public interface PatchDtoMapper {
     @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")
     @Mapping(target = "createdByAvatarSeed", source = "creator.avatarSeed")
     @Mapping(target = "isDeletedCreator", expression = "java(patch.getCreator() == null)")
-    @Mapping(target = "engineerId", source = "engineer.engineerId")
-    @Mapping(target = "engineerName", source = "engineer.engineerName")
+    @Mapping(target = "assigneeId", source = "assignee.accountId")
+    @Mapping(target = "assigneeName", source = "assignee.accountName")
     PatchDto.ListResponse toListResponse(Patch patch);
 }

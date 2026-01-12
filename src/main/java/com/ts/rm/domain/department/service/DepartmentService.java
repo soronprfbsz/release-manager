@@ -1,14 +1,26 @@
 package com.ts.rm.domain.department.service;
 
-import com.ts.rm.domain.department.dto.DepartmentDto;
-import com.ts.rm.domain.department.entity.Department;
-import com.ts.rm.domain.department.mapper.DepartmentDtoMapper;
-import com.ts.rm.domain.department.repository.DepartmentRepository;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.ts.rm.domain.account.repository.AccountRepository;
+import com.ts.rm.domain.department.dto.DepartmentDto;
+import com.ts.rm.domain.department.entity.Department;
+import com.ts.rm.domain.department.entity.DepartmentHierarchy;
+import com.ts.rm.domain.department.mapper.DepartmentDtoMapper;
+import com.ts.rm.domain.department.repository.DepartmentHierarchyRepository;
+import com.ts.rm.domain.department.repository.DepartmentRepository;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Department Service
@@ -19,16 +31,451 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class DepartmentService {
 
+    private static final Long ROOT_DEPARTMENT_ID = 1L;
+
     private final DepartmentRepository departmentRepository;
+    private final DepartmentHierarchyRepository hierarchyRepository;
+    private final AccountRepository accountRepository;
     private final DepartmentDtoMapper mapper;
 
     /**
-     * 전체 부서 목록 조회
-     *
-     * @return 부서 목록
+     * 전체 부서 목록 조회 (flat)
      */
     public List<DepartmentDto.Response> getAllDepartments() {
         List<Department> departments = departmentRepository.findAllByOrderByDepartmentNameAsc();
         return mapper.toResponseList(departments);
+    }
+
+    /**
+     * 부서 상세 조회
+     */
+    public DepartmentDto.DetailResponse getDepartmentById(Long departmentId) {
+        Department department = findDepartmentById(departmentId);
+
+        // 부모 정보 조회
+        Optional<DepartmentHierarchy> parentHierarchy =
+                hierarchyRepository.findByDescendantDepartmentIdAndDepth(departmentId, 1);
+
+        Long parentId = parentHierarchy.map(h -> h.getAncestor().getDepartmentId()).orElse(null);
+        String parentName = parentHierarchy.map(h -> h.getAncestor().getDepartmentName()).orElse(null);
+
+        // 깊이 계산 (루트로부터의 거리)
+        List<DepartmentHierarchy> ancestors = hierarchyRepository.findByDescendantDepartmentId(departmentId);
+        int depth = ancestors.stream()
+                .mapToInt(DepartmentHierarchy::getDepth)
+                .max()
+                .orElse(0);
+
+        // 직계 자식 수
+        long childCount = hierarchyRepository.countByAncestorDepartmentIdAndDepth(departmentId, 1);
+
+        // 소속 계정 수
+        long accountCount = accountRepository.countByDepartmentDepartmentId(departmentId);
+
+        return new DepartmentDto.DetailResponse(
+                department.getDepartmentId(),
+                department.getDepartmentName(),
+                department.getDepartmentType(),
+                department.getDescription(),
+                department.getSortOrder(),
+                parentId,
+                parentName,
+                depth,
+                childCount,
+                accountCount
+        );
+    }
+
+    /**
+     * 부서 트리 구조 조회
+     */
+    public List<DepartmentDto.TreeResponse> getDepartmentTree() {
+        // 모든 부서와 계층 정보 조회
+        List<Department> allDepartments = departmentRepository.findAll();
+        List<DepartmentHierarchy> allHierarchies = hierarchyRepository.findAll();
+
+        // 부서별 계정 수 조회
+        Map<Long, Long> accountCounts = new HashMap<>();
+        for (Department dept : allDepartments) {
+            accountCounts.put(dept.getDepartmentId(),
+                    accountRepository.countByDepartmentDepartmentId(dept.getDepartmentId()));
+        }
+
+        // 부서 ID → 부서 맵
+        Map<Long, Department> deptMap = new HashMap<>();
+        for (Department dept : allDepartments) {
+            deptMap.put(dept.getDepartmentId(), dept);
+        }
+
+        // 부모 → 자식 관계 맵 (depth=1만)
+        Map<Long, List<Long>> childrenMap = new HashMap<>();
+        for (DepartmentHierarchy h : allHierarchies) {
+            if (h.getDepth() == 1) {
+                childrenMap
+                        .computeIfAbsent(h.getAncestor().getDepartmentId(), k -> new ArrayList<>())
+                        .add(h.getDescendant().getDepartmentId());
+            }
+        }
+
+        // 루트 부서 찾기 (depth=1인 조상이 없는 부서)
+        List<Long> rootIds = new ArrayList<>();
+        for (Department dept : allDepartments) {
+            boolean hasParent = allHierarchies.stream()
+                    .anyMatch(h -> h.getDescendant().getDepartmentId().equals(dept.getDepartmentId())
+                            && h.getDepth() == 1);
+            if (!hasParent) {
+                rootIds.add(dept.getDepartmentId());
+            }
+        }
+
+        // 트리 구조 생성
+        List<DepartmentDto.TreeResponse> result = new ArrayList<>();
+        for (Long rootId : rootIds) {
+            result.add(buildTreeNode(rootId, 0, deptMap, childrenMap, accountCounts));
+        }
+
+        return result;
+    }
+
+    private DepartmentDto.TreeResponse buildTreeNode(Long deptId, int depth,
+            Map<Long, Department> deptMap,
+            Map<Long, List<Long>> childrenMap,
+            Map<Long, Long> accountCounts) {
+
+        Department dept = deptMap.get(deptId);
+        List<Long> childIds = childrenMap.getOrDefault(deptId, new ArrayList<>());
+
+        // sortOrder로 정렬하여 children 생성
+        List<DepartmentDto.TreeResponse> children = childIds.stream()
+                .map(childId -> buildTreeNode(childId, depth + 1, deptMap, childrenMap, accountCounts))
+                .sorted((a, b) -> {
+                    int orderA = a.sortOrder() != null ? a.sortOrder() : 0;
+                    int orderB = b.sortOrder() != null ? b.sortOrder() : 0;
+                    return Integer.compare(orderA, orderB);
+                })
+                .toList();
+
+        return new DepartmentDto.TreeResponse(
+                dept.getDepartmentId(),
+                dept.getDepartmentName(),
+                dept.getDepartmentType(),
+                dept.getDescription(),
+                dept.getSortOrder(),
+                depth,
+                accountCounts.getOrDefault(deptId, 0L),
+                children
+        );
+    }
+
+    /**
+     * 직계 하위 부서 목록 조회
+     */
+    public List<DepartmentDto.Response> getChildDepartments(Long departmentId) {
+        findDepartmentById(departmentId); // 존재 확인
+
+        List<DepartmentHierarchy> children =
+                hierarchyRepository.findByAncestorDepartmentIdAndDepth(departmentId, 1);
+
+        return children.stream()
+                .map(h -> mapper.toResponse(h.getDescendant()))
+                .toList();
+    }
+
+    /**
+     * 모든 하위 부서 목록 조회 (자기 자신 제외)
+     */
+    public List<DepartmentDto.Response> getDescendantDepartments(Long departmentId) {
+        findDepartmentById(departmentId); // 존재 확인
+
+        List<DepartmentHierarchy> descendants =
+                hierarchyRepository.findByAncestorDepartmentId(departmentId);
+
+        return descendants.stream()
+                .filter(h -> h.getDepth() > 0) // 자기 자신 제외
+                .map(h -> mapper.toResponse(h.getDescendant()))
+                .toList();
+    }
+
+    /**
+     * 부서 생성
+     */
+    @Transactional
+    public DepartmentDto.Response createDepartment(DepartmentDto.CreateRequest request) {
+        // 부서명 중복 체크
+        if (departmentRepository.existsByDepartmentName(request.departmentName())) {
+            throw new BusinessException(ErrorCode.DEPARTMENT_NAME_CONFLICT);
+        }
+
+        // 상위 부서 결정 (null이면 루트 부서 하위)
+        Long parentId = request.parentDepartmentId() != null
+                ? request.parentDepartmentId()
+                : ROOT_DEPARTMENT_ID;
+
+        Department parentDepartment = findDepartmentById(parentId);
+
+        // 새 부서 생성 (sortOrder는 나중에 설정)
+        Department newDepartment = Department.builder()
+                .departmentName(request.departmentName())
+                .departmentType(request.departmentType())
+                .description(request.description())
+                .sortOrder(0)
+                .build();
+
+        Department saved = departmentRepository.save(newDepartment);
+
+        // 계층 구조 생성
+        createHierarchyForNewDepartment(saved, parentDepartment);
+
+        // sortOrder 설정: 지정된 경우 형제 재정렬, 미지정 시 맨 뒤에 추가
+        if (request.sortOrder() != null) {
+            reorderSiblings(parentId, saved.getDepartmentId(), request.sortOrder());
+        } else {
+            int nextOrder = getNextSortOrder(parentId);
+            saved.update(null, null, null, nextOrder);
+        }
+
+        log.info("부서 생성 완료: {} (상위: {}, sortOrder: {})",
+                saved.getDepartmentName(), parentDepartment.getDepartmentName(), saved.getSortOrder());
+
+        return mapper.toResponse(saved);
+    }
+
+    private void createHierarchyForNewDepartment(Department newDept, Department parent) {
+        // 1. 자기 참조 (depth=0)
+        hierarchyRepository.save(DepartmentHierarchy.createSelfReference(newDept));
+
+        // 2. 부모의 모든 조상과 연결
+        List<DepartmentHierarchy> parentAncestors =
+                hierarchyRepository.findByDescendantDepartmentId(parent.getDepartmentId());
+
+        for (DepartmentHierarchy ancestorHierarchy : parentAncestors) {
+            DepartmentHierarchy newHierarchy = DepartmentHierarchy.createWithDepth(
+                    ancestorHierarchy.getAncestor(),
+                    newDept,
+                    ancestorHierarchy.getDepth() + 1
+            );
+            hierarchyRepository.save(newHierarchy);
+        }
+    }
+
+    /**
+     * 부서 수정
+     */
+    @Transactional
+    public DepartmentDto.Response updateDepartment(Long departmentId, DepartmentDto.UpdateRequest request) {
+        Department department = findDepartmentById(departmentId);
+
+        // 부서명 중복 체크 (자기 자신 제외)
+        if (request.departmentName() != null &&
+            departmentRepository.existsByDepartmentNameAndDepartmentIdNot(request.departmentName(), departmentId)) {
+            throw new BusinessException(ErrorCode.DEPARTMENT_NAME_CONFLICT);
+        }
+
+        // sortOrder 변경 시 형제 부서들 재정렬
+        if (request.sortOrder() != null) {
+            // 부모 부서 ID 조회
+            Optional<DepartmentHierarchy> parentHierarchy =
+                    hierarchyRepository.findByDescendantDepartmentIdAndDepth(departmentId, 1);
+            Long parentId = parentHierarchy
+                    .map(h -> h.getAncestor().getDepartmentId())
+                    .orElse(ROOT_DEPARTMENT_ID);
+
+            reorderSiblings(parentId, departmentId, request.sortOrder());
+        }
+
+        // sortOrder 외 필드 업데이트 (sortOrder는 reorderSiblings에서 처리됨)
+        department.update(request.departmentName(), request.departmentType(), request.description(), null);
+
+        log.info("부서 수정 완료: {}", department.getDepartmentName());
+
+        return mapper.toResponse(department);
+    }
+
+    /**
+     * 부서 삭제
+     * - 하위 부서가 있으면 삭제 불가
+     * - 소속 계정이 있으면 삭제 불가
+     * - 루트 부서는 삭제 불가
+     */
+    @Transactional
+    public void deleteDepartment(Long departmentId) {
+        Department department = findDepartmentById(departmentId);
+
+        // 루트 부서 삭제 방지
+        if (departmentId.equals(ROOT_DEPARTMENT_ID)) {
+            throw new BusinessException(ErrorCode.DEPARTMENT_ROOT_CANNOT_DELETE);
+        }
+
+        // 하위 부서 존재 확인
+        long childCount = hierarchyRepository.countByAncestorDepartmentIdAndDepth(departmentId, 1);
+        if (childCount > 0) {
+            throw new BusinessException(ErrorCode.DEPARTMENT_HAS_CHILDREN);
+        }
+
+        // 소속 계정 존재 확인
+        long accountCount = accountRepository.countByDepartmentDepartmentId(departmentId);
+        if (accountCount > 0) {
+            throw new BusinessException(ErrorCode.DEPARTMENT_HAS_ACCOUNTS);
+        }
+
+        // 계층 데이터 삭제 (CASCADE로 자동 삭제되지만 명시적으로)
+        hierarchyRepository.deleteByDepartmentId(departmentId);
+
+        // 부서 삭제
+        departmentRepository.delete(department);
+
+        log.info("부서 삭제 완료: {}", department.getDepartmentName());
+    }
+
+    /**
+     * 부서 이동
+     * - 자기 자신의 하위로 이동 불가
+     * - 새 부모가 null이면 루트 부서 하위로 이동
+     * - sortOrder 변경도 처리
+     */
+    @Transactional
+    public DepartmentDto.Response moveDepartment(Long departmentId, DepartmentDto.MoveRequest request) {
+        Department department = findDepartmentById(departmentId);
+
+        // 루트 부서는 이동 불가
+        if (departmentId.equals(ROOT_DEPARTMENT_ID)) {
+            throw new BusinessException(ErrorCode.DEPARTMENT_ROOT_CANNOT_DELETE);
+        }
+
+        // 새 부모 결정
+        Long newParentId = request.newParentId() != null ? request.newParentId() : ROOT_DEPARTMENT_ID;
+        Department newParent = findDepartmentById(newParentId);
+
+        // 자기 자신의 하위로 이동 방지
+        if (hierarchyRepository.existsByAncestorDepartmentIdAndDescendantDepartmentId(departmentId, newParentId)) {
+            throw new BusinessException(ErrorCode.DEPARTMENT_CANNOT_MOVE_TO_DESCENDANT);
+        }
+
+        // 현재 부모 ID 조회
+        Optional<DepartmentHierarchy> currentParentHierarchy =
+                hierarchyRepository.findByDescendantDepartmentIdAndDepth(departmentId, 1);
+        Long currentParentId = currentParentHierarchy
+                .map(h -> h.getAncestor().getDepartmentId())
+                .orElse(null);
+
+        // 부모가 변경되는 경우에만 계층 구조 업데이트
+        boolean parentChanged = !newParentId.equals(currentParentId);
+        if (parentChanged) {
+            // 모든 하위 부서 ID 조회 (자기 포함)
+            List<Long> descendantIds = new ArrayList<>();
+            descendantIds.add(departmentId);
+            descendantIds.addAll(hierarchyRepository.findDescendantIds(departmentId));
+
+            // 기존 조상 관계 삭제 (자기 참조 제외)
+            for (Long descId : descendantIds) {
+                hierarchyRepository.deleteAncestorRelationships(descId);
+            }
+
+            // 새 부모의 조상들과 연결
+            List<DepartmentHierarchy> newParentAncestors =
+                    hierarchyRepository.findByDescendantDepartmentId(newParentId);
+
+            for (Long descId : descendantIds) {
+                Department descendant = findDepartmentById(descId);
+
+                // 이동 대상 부서와의 상대적 깊이 계산
+                int relativeDepth = getRelativeDepth(departmentId, descId);
+
+                for (DepartmentHierarchy ancestorHierarchy : newParentAncestors) {
+                    DepartmentHierarchy newHierarchy = DepartmentHierarchy.createWithDepth(
+                            ancestorHierarchy.getAncestor(),
+                            descendant,
+                            ancestorHierarchy.getDepth() + 1 + relativeDepth
+                    );
+                    hierarchyRepository.save(newHierarchy);
+                }
+            }
+
+            log.info("부서 이동 완료: {} → {}", department.getDepartmentName(), newParent.getDepartmentName());
+        }
+
+        // sortOrder 재정렬 (부모 변경 여부와 무관하게 항상 처리)
+        if (request.sortOrder() != null) {
+            reorderSiblings(newParentId, departmentId, request.sortOrder());
+            log.info("부서 정렬 순서 변경: {} → {}", department.getDepartmentName(), request.sortOrder());
+        } else if (parentChanged) {
+            // 부모가 변경되었는데 sortOrder가 없으면 맨 뒤에 추가
+            int nextOrder = getNextSortOrder(newParentId);
+            department.update(null, null, null, nextOrder);
+        }
+
+        return mapper.toResponse(department);
+    }
+
+    private int getRelativeDepth(Long ancestorId, Long descendantId) {
+        if (ancestorId.equals(descendantId)) {
+            return 0;
+        }
+
+        return hierarchyRepository.findByAncestorDepartmentId(ancestorId).stream()
+                .filter(h -> h.getDescendant().getDepartmentId().equals(descendantId))
+                .findFirst()
+                .map(DepartmentHierarchy::getDepth)
+                .orElse(0);
+    }
+
+    private Department findDepartmentById(Long departmentId) {
+        return departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
+    }
+
+    /**
+     * 형제 부서들의 sortOrder 재정렬
+     * - 새로운 sortOrder 위치에 타겟 부서를 배치
+     * - 해당 위치 이상의 기존 형제들은 +1씩 밀림
+     *
+     * @param parentId 부모 부서 ID
+     * @param targetDeptId 이동할 부서 ID
+     * @param newSortOrder 새로운 sortOrder (1부터 시작)
+     */
+    private void reorderSiblings(Long parentId, Long targetDeptId, int newSortOrder) {
+        // 같은 부모의 직계 자식들(형제들) 조회
+        List<DepartmentHierarchy> siblings = hierarchyRepository.findByAncestorDepartmentIdAndDepth(parentId, 1);
+
+        // 형제 부서들의 sortOrder 재정렬
+        for (DepartmentHierarchy h : siblings) {
+            Department sibling = h.getDescendant();
+
+            // 타겟 부서는 나중에 처리
+            if (sibling.getDepartmentId().equals(targetDeptId)) {
+                continue;
+            }
+
+            // 새로운 위치 이상인 형제들은 +1
+            int currentOrder = sibling.getSortOrder() != null ? sibling.getSortOrder() : 0;
+            if (currentOrder >= newSortOrder) {
+                sibling.update(null, null, null, currentOrder + 1);
+            }
+        }
+
+        // 타겟 부서의 sortOrder 설정
+        Department targetDept = findDepartmentById(targetDeptId);
+        targetDept.update(null, null, null, newSortOrder);
+
+        log.debug("부서 정렬 순서 재정렬 완료 - parentId: {}, targetDeptId: {}, newSortOrder: {}",
+                parentId, targetDeptId, newSortOrder);
+    }
+
+    /**
+     * 새 부서 생성 시 다음 sortOrder 반환
+     * - 같은 부모의 형제들 중 가장 큰 sortOrder + 1
+     * - 형제가 없으면 1 반환
+     *
+     * @param parentId 부모 부서 ID
+     * @return 다음 sortOrder
+     */
+    private int getNextSortOrder(Long parentId) {
+        List<DepartmentHierarchy> siblings = hierarchyRepository.findByAncestorDepartmentIdAndDepth(parentId, 1);
+
+        return siblings.stream()
+                .map(h -> h.getDescendant().getSortOrder())
+                .filter(order -> order != null)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
     }
 }

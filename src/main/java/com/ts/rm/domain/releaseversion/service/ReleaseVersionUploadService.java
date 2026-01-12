@@ -1,10 +1,10 @@
 package com.ts.rm.domain.releaseversion.service;
 
+import com.ts.rm.domain.account.entity.Account;
+import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.common.service.FileStorageService;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
-import com.ts.rm.domain.engineer.entity.Engineer;
-import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.domain.patch.util.ScriptGenerator;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.project.repository.ProjectRepository;
@@ -51,7 +51,7 @@ public class ReleaseVersionUploadService {
     private final ReleaseFileRepository releaseFileRepository;
     private final ProjectRepository projectRepository;
     private final CustomerRepository customerRepository;
-    private final EngineerRepository engineerRepository;
+    private final AccountRepository accountRepository;
     private final AccountLookupService accountLookupService;
     private final FileStorageService fileStorageService;
     private final ReleaseVersionFileSystemService fileSystemService;
@@ -1104,12 +1104,12 @@ public class ReleaseVersionUploadService {
      * @param comment             패치 노트 내용
      * @param zipFile             패치 파일이 포함된 ZIP 파일
      * @param createdByEmail           생성자 이메일 (JWT에서 추출)
-     * @param engineerId          담당 엔지니어 ID (선택, 패치 스크립트의 기본 담당자로 사용)
+     * @param assigneeId          담당자 ID (선택, 패치 스크립트의 기본 담당자로 사용)
      * @return 생성된 핫픽스 응답
      */
     @Transactional
     public ReleaseVersionDto.CreateHotfixResponse createHotfixWithZip(
-            Long hotfixBaseVersionId, String comment, MultipartFile zipFile, String createdByEmail, Long engineerId) {
+            Long hotfixBaseVersionId, String comment, MultipartFile zipFile, String createdByEmail, Long assigneeId) {
 
         log.info("ZIP 파일로 핫픽스 버전 생성 시작 - hotfixBaseVersionId: {}, createdByEmail: {}", hotfixBaseVersionId,
                 createdByEmail);
@@ -1154,7 +1154,7 @@ public class ReleaseVersionUploadService {
             copyHotfixFiles(tempDir, hotfixPath, hotfixVersion);
 
             // 10. 핫픽스 패치 스크립트 생성
-            generateHotfixPatchScripts(hotfixVersion, hotfixPath, engineerId);
+            generateHotfixPatchScripts(hotfixVersion, hotfixPath, assigneeId);
 
             log.info("ZIP 파일로 핫픽스 버전 생성 완료 - hotfixBaseVersionId: {}, hotfixVersion: {}, ID: {}",
                     hotfixBaseVersionId, nextHotfixVersion, hotfixVersion.getReleaseVersionId());
@@ -1370,22 +1370,22 @@ public class ReleaseVersionUploadService {
      *
      * @param hotfixVersion 핫픽스 버전 엔티티
      * @param hotfixPath    핫픽스 디렉토리 경로
-     * @param engineerId    담당 엔지니어 ID (선택, null 가능)
+     * @param assigneeId    담당자 ID (선택, null 가능)
      */
-    private void generateHotfixPatchScripts(ReleaseVersion hotfixVersion, Path hotfixPath, Long engineerId) {
-        log.info("핫픽스 패치 스크립트 생성 시작 - fullVersion: {}, engineerId: {}",
-                hotfixVersion.getFullVersion(), engineerId);
+    private void generateHotfixPatchScripts(ReleaseVersion hotfixVersion, Path hotfixPath, Long assigneeId) {
+        log.info("핫픽스 패치 스크립트 생성 시작 - fullVersion: {}, assigneeId: {}",
+                hotfixVersion.getFullVersion(), assigneeId);
 
         // 프로젝트 ID 추출
         String projectId = hotfixVersion.getProject() != null
                 ? hotfixVersion.getProject().getProjectId()
                 : "infraeye2";
 
-        // 엔지니어 이메일 조회 (패치 담당자 기본값으로 사용 - 패치 파일과 동일하게 이메일 사용)
+        // 담당자 이메일 조회 (패치 담당자 기본값으로 사용 - 패치 파일과 동일하게 이메일 사용)
         String defaultPatchedBy = null;
-        if (engineerId != null) {
-            defaultPatchedBy = engineerRepository.findById(engineerId)
-                    .map(Engineer::getEngineerEmail)
+        if (assigneeId != null) {
+            defaultPatchedBy = accountRepository.findByAccountId(assigneeId)
+                    .map(Account::getEmail)
                     .orElse(null);
         }
 

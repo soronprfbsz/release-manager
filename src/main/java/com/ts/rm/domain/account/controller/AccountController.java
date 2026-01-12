@@ -64,11 +64,32 @@ public class AccountController implements AccountControllerDocs {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<AccountDto.ListResponse>>> getAccounts(
             @RequestParam(required = false) AccountStatus status,
+            @RequestParam(required = false) String departmentId,
+            @RequestParam(required = false, defaultValue = "false") Boolean includeSubDepartments,
+            @RequestParam(required = false) String departmentType,
             @RequestParam(required = false) String keyword,
             @PageableDefault(size = 20, sort = "accountId", direction = Sort.Direction.DESC) Pageable pageable) {
-        log.info("GET /api/accounts - status: {}, keyword: {}, pageable: {}", status, keyword, pageable);
+        log.info("GET /api/accounts - status: {}, departmentId: {}, includeSubDepartments: {}, departmentType: {}, keyword: {}, pageable: {}",
+                status, departmentId, includeSubDepartments, departmentType, keyword, pageable);
 
-        Page<AccountDto.ListResponse> accountPage = accountService.getAccounts(status, keyword, pageable);
+        // departmentId 파싱: "null" → 미배치 조회, 숫자 → 해당 부서 조회, 없음 → 전체 조회
+        Long parsedDepartmentId = null;
+        boolean unassigned = false;
+
+        if (departmentId != null && !departmentId.isBlank()) {
+            if ("null".equalsIgnoreCase(departmentId.trim())) {
+                unassigned = true;
+            } else {
+                try {
+                    parsedDepartmentId = Long.parseLong(departmentId.trim());
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid departmentId format: {}", departmentId);
+                }
+            }
+        }
+
+        Page<AccountDto.ListResponse> accountPage = accountService.getAccounts(
+                status, parsedDepartmentId, includeSubDepartments, departmentType, unassigned, keyword, pageable);
 
         log.info("Found {} accounts (page {}/{})", accountPage.getNumberOfElements(),
                 accountPage.getNumber() + 1, accountPage.getTotalPages());

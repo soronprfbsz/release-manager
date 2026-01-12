@@ -1,12 +1,20 @@
 package com.ts.rm.domain.account.repository;
 
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.account.entity.QAccount;
+import com.ts.rm.domain.common.entity.QCode;
 import com.ts.rm.global.querydsl.QuerydslPaginationUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,17 +29,26 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class AccountRepositoryImpl implements AccountRepositoryCustom {
 
+    private static final String POSITION_CODE_TYPE = "POSITION";
+
     private final JPAQueryFactory queryFactory;
 
     private static final QAccount account = QAccount.account;
+    private static final QCode positionCode = new QCode("positionCode");
 
     @Override
-    public Page<Account> findAllWithFilters(String status, String keyword, Pageable pageable) {
-        // 1. 기본 쿼리 생성
+    public Page<Account> findAllWithFilters(String status, List<Long> departmentIds, Long primaryDepartmentId,
+                                            String departmentType, boolean unassigned, String keyword, Pageable pageable) {
+        // 1. 기본 쿼리 생성 (직급 정렬을 위해 code 테이블 left join)
         JPAQuery<Account> contentQuery = queryFactory
                 .selectFrom(account)
+                .leftJoin(positionCode)
+                    .on(positionCode.codeTypeId.eq(POSITION_CODE_TYPE)
+                            .and(positionCode.codeId.eq(account.position)))
                 .where(
                         statusCondition(status),
+                        departmentCondition(departmentIds, unassigned),
+                        departmentTypeCondition(departmentType),
                         keywordCondition(keyword)
                 );
 
@@ -41,6 +58,8 @@ public class AccountRepositoryImpl implements AccountRepositoryCustom {
                 .from(account)
                 .where(
                         statusCondition(status),
+                        departmentCondition(departmentIds, unassigned),
+                        departmentTypeCondition(departmentType),
                         keywordCondition(keyword)
                 );
 
@@ -55,12 +74,26 @@ public class AccountRepositoryImpl implements AccountRepositoryCustom {
                 "createdAt", account.createdAt
         );
 
-        // 4. 공통 유틸리티로 페이징/정렬 적용
+        // 4. 우선 정렬 조건 생성 (primaryDepartmentId가 있으면 해당 부서 계정이 먼저 정렬됨)
+        List<OrderSpecifier<?>> additionalOrders = new ArrayList<>();
+        if (primaryDepartmentId != null) {
+            // 1차 정렬: 요청한 부서 우선
+            NumberExpression<Integer> departmentPriority = new CaseBuilder()
+                    .when(account.department.departmentId.eq(primaryDepartmentId)).then(0)
+                    .otherwise(1);
+            additionalOrders.add(departmentPriority.asc());
+
+            // 2차 정렬: 직급(position)의 code.sort_order 순서대로 정렬
+            additionalOrders.add(positionCode.sortOrder.asc().nullsLast());
+        }
+
+        // 5. 공통 유틸리티로 페이징/정렬 적용
         return QuerydslPaginationUtil.applyPagination(
                 contentQuery,
                 countQuery,
                 pageable,
                 sortMapping,
+                additionalOrders,
                 account.createdAt.desc()
         );
     }
@@ -73,6 +106,32 @@ public class AccountRepositoryImpl implements AccountRepositoryCustom {
     }
 
     /**
+     * 부서 조건 (단일 부서, 여러 부서 IN 조건, 또는 미배치)
+     *
+     * @param departmentIds 부서 ID 목록 (null이면 전체)
+     * @param unassigned 미배치 계정만 조회 (true: department가 null인 계정만)
+     */
+    private BooleanExpression departmentCondition(List<Long> departmentIds, boolean unassigned) {
+        // 미배치 계정 조회
+        if (unassigned) {
+            return account.department.isNull();
+        }
+
+        // 부서 ID 목록이 없으면 전체 조회
+        if (departmentIds == null || departmentIds.isEmpty()) {
+            return null;
+        }
+
+        // 단일 부서
+        if (departmentIds.size() == 1) {
+            return account.department.departmentId.eq(departmentIds.get(0));
+        }
+
+        // 여러 부서
+        return account.department.departmentId.in(departmentIds);
+    }
+
+    /**
      * 키워드 검색 조건 (계정명, 이메일 통합 검색)
      */
     private BooleanExpression keywordCondition(String keyword) {
@@ -82,5 +141,15 @@ public class AccountRepositoryImpl implements AccountRepositoryCustom {
         String trimmedKeyword = keyword.trim();
         return account.accountName.containsIgnoreCase(trimmedKeyword)
                 .or(account.email.containsIgnoreCase(trimmedKeyword));
+    }
+
+    /**
+     * 부서 유형 조건 (DEVELOPMENT: 개발, ENGINEER: 엔지니어)
+     */
+    private BooleanExpression departmentTypeCondition(String departmentType) {
+        if (departmentType == null || departmentType.trim().isEmpty()) {
+            return null;
+        }
+        return account.department.departmentType.eq(departmentType);
     }
 }

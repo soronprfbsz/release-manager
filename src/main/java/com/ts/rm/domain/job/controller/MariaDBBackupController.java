@@ -7,7 +7,7 @@ import com.ts.rm.domain.job.service.MariaDBBackupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.response.ApiResponse;
-import com.ts.rm.global.security.jwt.JwtTokenProvider;
+import com.ts.rm.global.security.SecurityUtil;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,7 +33,6 @@ public class MariaDBBackupController implements MariaDBBackupControllerDocs {
 
     private final MariaDBBackupService backupService;
     private final JobStatusManager jobStatusManager;
-    private final JwtTokenProvider jwtTokenProvider;
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern(
             "yyyyMMdd_HHmmss");
@@ -47,8 +46,7 @@ public class MariaDBBackupController implements MariaDBBackupControllerDocs {
         log.info("MariaDB 백업 요청 - host: {}, database: {}",
                 request.getHost(), request.getDatabase());
 
-        String token = authorizationHeader.substring(7);
-        String createdBy = jwtTokenProvider.getEmail(token);
+        String createdBy = SecurityUtil.getTokenInfo().email();
 
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
         String jobId = "backup_" + timestamp;

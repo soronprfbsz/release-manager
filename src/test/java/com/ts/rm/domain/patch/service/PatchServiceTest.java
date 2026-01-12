@@ -8,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.ts.rm.domain.customer.repository.CustomerRepository;
-import com.ts.rm.domain.engineer.repository.EngineerRepository;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.repository.PatchRepository;
 import com.ts.rm.domain.patch.util.ScriptGenerator;
@@ -48,9 +47,6 @@ class PatchServiceTest {
 
     @Mock
     private CustomerRepository customerRepository;
-
-    @Mock
-    private EngineerRepository engineerRepository;
 
     @Mock
     private ScriptGenerator mariaDBScriptGenerator;

@@ -58,7 +58,7 @@ public class PatchController implements PatchControllerDocs {
                 request.toVersion(),
                 request.createdByEmail(),
                 request.description(),
-                request.engineerId(),
+                request.assigneeId(),
                 request.patchName(),
                 request.shouldIncludeAllBuildVersions()
         );
@@ -240,7 +240,7 @@ public class PatchController implements PatchControllerDocs {
                 request.toVersion(),
                 request.createdByEmail(),
                 request.description(),
-                request.engineerId(),
+                request.assigneeId(),
                 request.patchName()
         );
 

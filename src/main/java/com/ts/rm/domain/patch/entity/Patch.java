@@ -2,7 +2,6 @@ package com.ts.rm.domain.patch.entity;
 
 import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.customer.entity.Customer;
-import com.ts.rm.domain.engineer.entity.Engineer;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.common.entity.BaseEntity;
 import jakarta.persistence.Column;
@@ -81,11 +80,11 @@ public class Patch extends BaseEntity {
     private String description;
 
     /**
-     * 패치 담당자 (엔지니어)
+     * 패치 담당자
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "engineer_id")
-    private Engineer engineer;
+    @JoinColumn(name = "assignee_id")
+    private Account assignee;
 
     /**
      * 생성자 이름 반환 헬퍼 메서드

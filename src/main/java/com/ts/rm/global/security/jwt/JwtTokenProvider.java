@@ -40,22 +40,28 @@ public class JwtTokenProvider {
     /**
      * JWT 토큰 생성
      *
-     * @param email 사용자 이메일
-     * @param role  사용자 권한
+     * @param accountId    계정 ID
+     * @param role         사용자 권한
+     * @param departmentId 부서 ID (null 가능)
      * @return 생성된 JWT 토큰
      */
-    public String generateToken(String email, String role) {
+    public String generateToken(Long accountId, String role, Long departmentId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationTime);
 
-        return Jwts.builder()
-                .subject(email)
+        var builder = Jwts.builder()
+                .subject(String.valueOf(accountId))
                 .claim("role", role)
                 .issuer(issuer)
                 .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(secretKey, Jwts.SIG.HS256)
-                .compact();
+                .expiration(expiryDate);
+
+        // 부서 ID 추가 (null이 아닌 경우에만)
+        if (departmentId != null) {
+            builder.claim("departmentId", departmentId);
+        }
+
+        return builder.signWith(secretKey, Jwts.SIG.HS256).compact();
     }
 
     /**
@@ -100,13 +106,13 @@ public class JwtTokenProvider {
     }
 
     /**
-     * JWT 토큰에서 이메일 추출
+     * JWT 토큰에서 계정 ID 추출
      *
      * @param token JWT 토큰
-     * @return 사용자 이메일
+     * @return 계정 ID
      */
-    public String getEmail(String token) {
-        return getClaims(token).getSubject();
+    public Long getAccountId(String token) {
+        return Long.parseLong(getClaims(token).getSubject());
     }
 
     /**
@@ -117,6 +123,16 @@ public class JwtTokenProvider {
      */
     public String getRole(String token) {
         return getClaims(token).get("role", String.class);
+    }
+
+    /**
+     * JWT 토큰에서 부서 ID 추출
+     *
+     * @param token JWT 토큰
+     * @return 부서 ID (없으면 null)
+     */
+    public Long getDepartmentId(String token) {
+        return getClaims(token).get("departmentId", Long.class);
     }
 
     /**

@@ -32,7 +32,8 @@ INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VA
 ('PUBLISHING_CATEGORY', '퍼블리싱 카테고리', '퍼블리싱 제품 분류', TRUE),
 ('PUBLISHING_SUBCATEGORY_INFRAEYE1', 'Infraeye 1 퍼블리싱 서브 카테고리', 'Infraeye 1 퍼블리싱 기능 분류', TRUE),
 ('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'Infraeye 2 퍼블리싱 서브 카테고리', 'Infraeye 2 퍼블리싱 기능 분류', TRUE),
-('PUBLISHING_SUBCATEGORY_COMMON', '공통 퍼블리싱 서브 카테고리', '공통 퍼블리싱 기능 분류', TRUE);
+('PUBLISHING_SUBCATEGORY_COMMON', '공통 퍼블리싱 서브 카테고리', '공통 퍼블리싱 기능 분류', TRUE),
+('DEPARTMENT_TYPE', '부서 유형', '부서 유형 구분 (개발/엔지니어)', TRUE);
 
 -- =========================================================
 -- code 테이블 (모든 코드 데이터)
@@ -201,6 +202,11 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('POSITION', 'ASSISTANT_MANAGER', '대리', '대리', 5, TRUE),
 ('POSITION', 'STAFF', '사원', '사원', 6, TRUE);
 
+-- DEPARTMENT_TYPE
+INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
+('DEPARTMENT_TYPE', 'DEVELOPMENT', '개발', '개발 부서', 1, TRUE),
+('DEPARTMENT_TYPE', 'ENGINEER', '엔지니어', '엔지니어 부서', 2, TRUE);
+
 -- SERVICE_TYPE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('SERVICE_TYPE', 'infra', '개발/운영 인프라', '개발 및 운영 인프라 관련 서비스', 1, TRUE),
@@ -290,41 +296,65 @@ INSERT INTO account (account_name, email, password, avatar_style, avatar_seed, r
 -- =========================================================
 -- department 테이블
 -- =========================================================
-
-INSERT INTO department (department_name, description) VALUES
-('인프라기술팀', '인프라 기술 지원'),
-('서비스기술팀', '서비스 기술 지원'),
-('보안기술팀', '보안 기술 지원');
-
--- =========================================================
--- engineer 테이블
+-- 루트 부서(Tscientific) 포함 계층 구조
 -- =========================================================
 
-INSERT INTO engineer (engineer_email, position, engineer_name, department_id, created_by, created_by_email) VALUES
-('shinss@tscientific.co.kr', 'GENERAL_MANAGER','신성수', 1, 1, 'admin@tscientific.co.kr'),
-('yhkim0144@tscientific.co.kr', 'MANAGER','김요한', 1, 1, 'admin@tscientific.co.kr'),
-('skykimtw@tscientific.co.kr', 'MANAGER','김태우', 1, 1, 'admin@tscientific.co.kr'),
-('choi7733@tscientific.co.kr', 'MANAGER','최은빈', 1, 1, 'admin@tscientific.co.kr'),
-('thdrudcks97@tscientific.co.kr', 'ASSISTANT_MANAGER','송경찬', 1, 1, 'admin@tscientific.co.kr'),
-('swngh56@tscientific.co.kr', 'STAFF','신주호', 1, 1, 'admin@tscientific.co.kr'),
-('tjddyd3050@tscientific.co.kr', 'STAFF', '최성용', 1, 1, 'admin@tscientific.co.kr'),
-('yeonhyuck@tscientific.co.kr', 'STAFF', '최연혁', 1, 1, 'admin@tscientific.co.kr'),
-('yoonss@tscientific.co.kr', 'DIRECTOR', '윤성식', 2, 1, 'admin@tscientific.co.kr'),
-('eu@tscientific.co.kr', 'ASSISTANT_MANAGER', '은지영', 2, 1, 'admin@tscientific.co.kr'),
-('wychoi@tscientific.co.kr', 'ASSISTANT_MANAGER', '최우열', 2, 1, 'admin@tscientific.co.kr'),
-('kchh3617@tscientific.co.kr', 'ASSISTANT_MANAGER', '권찬혁', 2, 1, 'admin@tscientific.co.kr'),
-('swoun4221@tscientific.co.kr', 'STAFF', '신운성', 2, 1, 'admin@tscientific.co.kr'),
-('rlaud95@tscientific.co.kr', 'STAFF', '손기명', 2, 1, 'admin@tscientific.co.kr'),
-('ljk0105@tscientific.co.kr', 'STAFF', '이정규', 2, 1, 'admin@tscientific.co.kr'),
-('jmkim@tscientific.co.kr', 'DEPUTY_MANAGER', '김정목', 3, 1, 'admin@tscientific.co.kr'),
-('ssyang9417@tscientific.co.kr', 'MANAGER', '송병준', 3, 1, 'admin@tscientific.co.kr'),
-('dydtls888@tscientific.co.kr', 'STAFF', '박용신', 3, 1, 'admin@tscientific.co.kr'),
-('twins827@tscientific.co.kr', 'STAFF', '박준성', 3, 1, 'admin@tscientific.co.kr'),
-('tngur317@tscientific.co.kr', 'STAFF', '오수혁', 3, 1, 'admin@tscientific.co.kr'),
-('oyj961212@tscientific.co.kr', 'STAFF', '오유준', 3, 1, 'admin@tscientific.co.kr'),
-('yoonchul.lee@tscientific.co.kr', 'STAFF', '이윤철', 3, 1, 'admin@tscientific.co.kr'),
-('lkh2433@tscientific.co.kr', 'STAFF', '이경호', 3, 1, 'admin@tscientific.co.kr'),
-('pjh@tscientific.co.kr', 'STAFF', '박재호', 3, 1, 'admin@tscientific.co.kr');
+INSERT INTO department (department_name, department_type, description, sort_order) VALUES
+('Tscientific', NULL, '티사이언티픽', 1),
+('솔루션사업본부', NULL, '솔루션 사업 본부', 1),
+('개발1팀', 'DEVELOPMENT', '개발 1팀', 1),
+('개발2팀', 'DEVELOPMENT', '개발 2팀', 2),
+('솔루션지원그룹', NULL, '솔루션 지원 그룹', 3),
+('인프라기술팀', 'ENGINEER', '인프라 기술 지원', 1),
+('서비스기술팀', 'ENGINEER', '서비스 기술 지원', 2),
+('보안기술팀', 'ENGINEER', '보안 기술 지원', 3);
+
+-- =========================================================
+-- department_hierarchy 테이블 (Closure Table)
+-- =========================================================
+-- 부서 계층 구조 초기 데이터
+-- Tscientific(1) - 루트
+--   └── 솔루션사업본부(2)
+--       ├── 개발1팀(3)
+--       ├── 개발2팀(4)
+--       └── 솔루션지원그룹(5)
+--           ├── 인프라기술팀(6)
+--           ├── 서비스기술팀(7)
+--           └── 보안기술팀(8)
+-- =========================================================
+
+INSERT INTO department_hierarchy (ancestor_id, descendant_id, depth) VALUES
+-- 자기 자신 참조 (depth=0)
+(1, 1, 0),  -- Tscientific
+(2, 2, 0),  -- 솔루션사업본부
+(3, 3, 0),  -- 개발1팀
+(4, 4, 0),  -- 개발2팀
+(5, 5, 0),  -- 솔루션지원그룹
+(6, 6, 0),  -- 인프라기술팀
+(7, 7, 0),  -- 서비스기술팀
+(8, 8, 0),  -- 보안기술팀
+-- Tscientific → 솔루션사업본부 (depth=1)
+(1, 2, 1),
+-- Tscientific → 솔루션사업본부 하위 전체 (depth=2)
+(1, 3, 2),  -- Tscientific → 개발1팀
+(1, 4, 2),  -- Tscientific → 개발2팀
+(1, 5, 2),  -- Tscientific → 솔루션지원그룹
+-- Tscientific → 솔루션지원그룹 하위 전체 (depth=3)
+(1, 6, 3),  -- Tscientific → 인프라기술팀
+(1, 7, 3),  -- Tscientific → 서비스기술팀
+(1, 8, 3),  -- Tscientific → 보안기술팀
+-- 솔루션사업본부 → 직계 자식 (depth=1)
+(2, 3, 1),  -- 솔루션사업본부 → 개발1팀
+(2, 4, 1),  -- 솔루션사업본부 → 개발2팀
+(2, 5, 1),  -- 솔루션사업본부 → 솔루션지원그룹
+-- 솔루션사업본부 → 솔루션지원그룹 하위 전체 (depth=2)
+(2, 6, 2),  -- 솔루션사업본부 → 인프라기술팀
+(2, 7, 2),  -- 솔루션사업본부 → 서비스기술팀
+(2, 8, 2),  -- 솔루션사업본부 → 보안기술팀
+-- 솔루션지원그룹 → 직계 자식 (depth=1)
+(5, 6, 1),  -- 솔루션지원그룹 → 인프라기술팀
+(5, 7, 1),  -- 솔루션지원그룹 → 서비스기술팀
+(5, 8, 1); -- 솔루션지원그룹 → 보안기술팀
 
 -- =========================================================
 -- customer 테이블
@@ -472,11 +502,11 @@ INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, descripti
 
 -- 2depth 메뉴 - 운영 관리
 INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
-('operation_customers', '고객사', 'operations/customers', 'building-2', TRUE, '고객사 정보를 관리합니다.', TRUE, FALSE, 1),
-('operation_engineers', '엔지니어', 'operations/engineers', 'users', TRUE, '엔지니어 정보를 관리합니다.', TRUE, FALSE, 2),
-('operation_filesync', '파일 동기화', 'operations/file-sync', 'file-diff', TRUE, '실제 파일과 DB 메타데이터 간 불일치를 분석하고 동기화합니다.', TRUE, FALSE, 3),
-('operation_projects', '프로젝트', 'operations/projects', 'folder-kanban', TRUE, '프로젝트 정보를 관리합니다.', TRUE, FALSE, 4),
-('operation_accounts', '계정', 'operations/accounts', 'user', TRUE, '계정 정보를 관리합니다.', TRUE, FALSE, 5);
+('operation_projects', '프로젝트', 'operations/projects', 'folder-kanban', TRUE, '프로젝트 정보를 관리합니다.', TRUE, FALSE, 1),
+('operation_customers', '고객사', 'operations/customers', 'building-2', TRUE, '고객사 정보를 관리합니다.', TRUE, FALSE, 2),
+('operation_accounts', '계정', 'operations/accounts', 'user', TRUE, '계정 정보를 관리합니다.', TRUE, FALSE, 3),
+('operation_department', '부서', 'operations/departments', 'users', TRUE, '부서 정보를 관리합니다.', TRUE, FALSE, 4),
+('operation_filesync', '파일 동기화', 'operations/file-sync', 'file-diff', TRUE, '실제 파일과 DB 메타데이터 간 불일치를 분석하고 동기화합니다.', TRUE, FALSE, 5);
 
 -- 2depth 메뉴 - 업무 지원
 INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
@@ -509,7 +539,7 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('patch_standard', 'patch_standard', 0),
 ('patch_custom', 'patch_custom', 0),
 ('operation_customers', 'operation_customers', 0),
-('operation_engineers', 'operation_engineers', 0),
+('operation_department', 'operation_department', 0),
 ('operation_filesync', 'operation_filesync', 0),
 ('operation_projects', 'operation_projects', 0),
 ('operation_accounts', 'operation_accounts', 0),
@@ -535,7 +565,7 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 -- 부모-자식 관계 (depth=1) - 운영 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('operation_management', 'operation_customers', 1),
-('operation_management', 'operation_engineers', 1),
+('operation_management', 'operation_department', 1),
 ('operation_management', 'operation_filesync', 1),
 ('operation_management', 'operation_projects', 1),
 ('operation_management', 'operation_accounts', 1);
@@ -582,7 +612,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('patch_custom', 'ADMIN'),
 -- 2depth - 운영 관리
 ('operation_customers', 'ADMIN'),
-('operation_engineers', 'ADMIN'),
+('operation_department', 'ADMIN'),
 ('operation_filesync', 'ADMIN'),
 ('operation_projects', 'ADMIN'),
 ('operation_accounts', 'ADMIN'),
@@ -610,7 +640,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('patch_custom', 'USER'),
 -- 2depth - 운영 관리 (계정 제외)
 ('operation_customers', 'USER'),
-('operation_engineers', 'USER'),
+('operation_department', 'USER'),
 ('operation_filesync', 'USER'),
 ('operation_projects', 'USER'),
 -- 2depth - 개발 지원

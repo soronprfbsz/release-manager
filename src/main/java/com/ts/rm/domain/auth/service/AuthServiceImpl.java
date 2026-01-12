@@ -7,6 +7,7 @@ import com.ts.rm.domain.auth.dto.SignInRequest;
 import com.ts.rm.domain.auth.dto.SignUpRequest;
 import com.ts.rm.domain.auth.dto.SignUpResponse;
 import com.ts.rm.domain.auth.dto.TokenResponse;
+import com.ts.rm.domain.common.repository.CodeRepository;
 import com.ts.rm.domain.refreshtoken.entity.RefreshToken;
 import com.ts.rm.domain.refreshtoken.service.RefreshTokenService;
 import com.ts.rm.global.exception.BusinessException;
@@ -28,13 +29,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private static final String POSITION_CODE_TYPE = "POSITION";
+    private static final String GUEST = "GUEST";
+    private static final String ACTIVE = "ACTIVE";
+
     private final AccountRepository accountRepository;
+    private final CodeRepository codeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
-
-    private static final String GUEST = "GUEST";
-    private static final String ACTIVE = "ACTIVE";
     private static final int MAX_LOGIN_ATTEMPTS = 5;
     private static final int LOCK_DURATION_MINUTES = 10;
 
@@ -46,11 +49,18 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다: " + request.getEmail());
         }
 
-        // 2. 계정 생성
+        // 2. 직급 코드 유효성 검증
+        if (request.getPosition() != null && !request.getPosition().isBlank()) {
+            validatePositionCode(request.getPosition());
+        }
+
+        // 3. 계정 생성
         Account account = Account.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .accountName(request.getAccountName())
+                .phone(request.getPhone())
+                .position(request.getPosition())
                 .avatarStyle(request.getAvatarStyle())
                 .avatarSeed(request.getAvatarSeed())
                 .role(GUEST)
@@ -60,14 +70,39 @@ public class AuthServiceImpl implements AuthService {
         Account savedAccount = accountRepository.save(account);
         log.info("New account created: {}", savedAccount.getEmail());
 
-        // 3. 응답 생성
+        // 4. 응답 생성
         return SignUpResponse.builder()
                 .accountId(savedAccount.getAccountId())
                 .email(savedAccount.getEmail())
                 .accountName(savedAccount.getAccountName())
+                .phone(savedAccount.getPhone())
+                .position(savedAccount.getPosition())
+                .positionName(getPositionName(savedAccount.getPosition()))
                 .role(savedAccount.getRole())
                 .createdAt(savedAccount.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * 직급 코드 유효성 검증
+     */
+    private void validatePositionCode(String positionCode) {
+        boolean exists = codeRepository.existsByCodeTypeIdAndCodeId(POSITION_CODE_TYPE, positionCode);
+        if (!exists) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    /**
+     * position 코드로 직급명 조회
+     */
+    private String getPositionName(String positionCode) {
+        if (positionCode == null || positionCode.isBlank()) {
+            return null;
+        }
+        return codeRepository.findByCodeTypeIdAndCodeId(POSITION_CODE_TYPE, positionCode)
+                .map(code -> code.getCodeName())
+                .orElse(null);
     }
 
     @Override
@@ -88,8 +123,9 @@ public class AuthServiceImpl implements AuthService {
         // 4. 로그인 성공 처리
         handleLoginSuccess(account);
 
-        // 5. Access Token 생성
-        String accessToken = jwtTokenProvider.generateToken(account.getEmail(), account.getRole());
+        // 5. Access Token 생성 (accountId 기반, 부서 ID 포함)
+        Long departmentId = account.getDepartment() != null ? account.getDepartment().getDepartmentId() : null;
+        String accessToken = jwtTokenProvider.generateToken(account.getAccountId(), account.getRole(), departmentId);
 
         // 6. Refresh Token 생성 및 저장
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(account);
