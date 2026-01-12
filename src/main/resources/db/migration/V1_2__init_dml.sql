@@ -504,8 +504,8 @@ INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, descripti
 INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
 ('operation_projects', '프로젝트', 'operations/projects', 'folder-kanban', TRUE, '프로젝트 정보를 관리합니다.', TRUE, FALSE, 1),
 ('operation_customers', '고객사', 'operations/customers', 'building-2', TRUE, '고객사 정보를 관리합니다.', TRUE, FALSE, 2),
-('operation_accounts', '계정', 'operations/accounts', 'user', TRUE, '계정 정보를 관리합니다.', TRUE, FALSE, 3),
-('operation_department', '부서', 'operations/departments', 'users', TRUE, '부서 정보를 관리합니다.', TRUE, FALSE, 4),
+('operation_department', '부서', 'operations/departments', 'users', TRUE, '부서 정보를 관리합니다.', TRUE, FALSE, 3),
+('operation_accounts', '계정', 'operations/accounts', 'user', TRUE, '계정 정보를 관리합니다.', TRUE, FALSE, 4),
 ('operation_filesync', '파일 동기화', 'operations/file-sync', 'file-diff', TRUE, '실제 파일과 DB 메타데이터 간 불일치를 분석하고 동기화합니다.', TRUE, FALSE, 5);
 
 -- 2depth 메뉴 - 업무 지원
