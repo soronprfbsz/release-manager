@@ -860,19 +860,19 @@ public class PatchGenerationService {
                     "CRATEDB"
             );
 
-            // MariaDB 스크립트는 항상 생성 (VERSION_HISTORY INSERT를 위해 필수)
+            // MariaDB 스크립트는 항상 생성 (VERSION_HISTORY INSERT를 위해 필수 - 단, infraeye1/infraeye2만)
             // SQL 파일이 없더라도 VERSION_HISTORY에 버전 이력을 기록해야 함
-            mariaDBScriptGenerator.generatePatchScript(fromVersion.getVersion(),
+            mariaDBScriptGenerator.generatePatchScript(projectId, fromVersion.getVersion(),
                     toVersion.getVersion(), versions, mariadbFiles, outputPath, patchedBy);
             if (mariadbFiles.isEmpty()) {
-                log.info("MariaDB SQL 파일은 없지만 VERSION_HISTORY 기록을 위해 스크립트 생성: {}/{}", outputPath, mariaDBScriptGenerator.getScriptFileName());
+                log.info("MariaDB SQL 파일은 없지만 스크립트 생성: {}/{}", outputPath, mariaDBScriptGenerator.getScriptFileName());
             } else {
                 log.info("MariaDB 패치 스크립트 생성 완료: {}/{} (SQL 파일 {}개)", outputPath, mariaDBScriptGenerator.getScriptFileName(), mariadbFiles.size());
             }
 
             // CrateDB 스크립트는 파일이 있을 때만 생성
             if (!cratedbFiles.isEmpty()) {
-                crateDBScriptGenerator.generatePatchScript(fromVersion.getVersion(),
+                crateDBScriptGenerator.generatePatchScript(projectId, fromVersion.getVersion(),
                         toVersion.getVersion(), versions, cratedbFiles, outputPath, null);
                 log.info("CrateDB 패치 스크립트 생성 완료: {}/{}", outputPath, crateDBScriptGenerator.getScriptFileName());
             } else {

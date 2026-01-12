@@ -17,6 +17,13 @@ import org.springframework.stereotype.Component;
 @Component("mariaDBScriptGenerator")
 public class MariaDBScriptGenerator extends AbstractScriptGenerator {
 
+    /**
+     * VERSION_HISTORY INSERT가 필요한 프로젝트 ID 목록
+     *
+     * <p>CM_DB.VERSION_HISTORY 테이블은 infraeye1, infraeye2 프로젝트에서만 사용됩니다.
+     */
+    private static final List<String> VERSION_HISTORY_PROJECT_IDS = List.of("infraeye1", "infraeye2");
+
     @Override
     protected String getTemplatePath() {
         return "release-manager/templates/MARIADB/mariadb_patch_template.sh";
@@ -36,7 +43,9 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
      * MariaDB 패치 스크립트 생성
      *
      * <p>MariaDB SQL 파일이 없더라도 VERSION_HISTORY INSERT를 위해 항상 스크립트가 생성됩니다.
+     * <p>단, VERSION_HISTORY INSERT는 infraeye1, infraeye2 프로젝트에서만 실행됩니다.
      *
+     * @param projectId        프로젝트 ID
      * @param fromVersion      From 버전
      * @param toVersion        To 버전
      * @param versions         버전 리스트
@@ -46,6 +55,7 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
      */
     @Override
     public void generatePatchScript(
+            String projectId,
             String fromVersion,
             String toVersion,
             List<ReleaseVersion> versions,
@@ -53,13 +63,24 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
             String outputDirPath,
             String defaultPatchedBy) {
 
+        // VERSION_HISTORY INSERT가 필요한 프로젝트인지 확인
+        boolean includeVersionHistory = VERSION_HISTORY_PROJECT_IDS.contains(projectId);
+
         // 템플릿 로드
         String template = loadTemplate();
 
-        // SQL 실행 명령어 생성 (파일이 있으면 SQL 실행 + VERSION_HISTORY, 없으면 VERSION_HISTORY만)
-        String sqlCommands = mariadbFiles.isEmpty()
-                ? buildVersionHistoryOnlyCommands(versions)
-                : buildSqlExecutionCommands(mariadbFiles, versions);
+        // SQL 실행 명령어 생성
+        String sqlCommands;
+        if (mariadbFiles.isEmpty()) {
+            if (includeVersionHistory) {
+                sqlCommands = buildVersionHistoryOnlyCommands(versions);
+            } else {
+                // VERSION_HISTORY도 없고 SQL 파일도 없으면 빈 명령어
+                sqlCommands = "log_info \"이 패치에는 MariaDB SQL 파일이 없습니다.\"\n";
+            }
+        } else {
+            sqlCommands = buildSqlExecutionCommands(mariadbFiles, versions, includeVersionHistory);
+        }
 
         // 패치 담당자 기본값 처리 (null 또는 빈 문자열이면 빈 문자열)
         String patchedByDefault = (defaultPatchedBy != null && !defaultPatchedBy.isBlank())
@@ -109,12 +130,15 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
      *
      * <p>각 버전 SQL 실행 완료 후 VERSION_HISTORY 테이블에 버전 정보를 INSERT합니다.
      * MariaDB SQL 파일이 없는 버전도 VERSION_HISTORY INSERT는 수행됩니다.
+     * <p>단, VERSION_HISTORY INSERT는 infraeye1, infraeye2 프로젝트에서만 실행됩니다.
      *
-     * @param files    MariaDB SQL 파일 리스트
-     * @param versions 전체 버전 리스트
+     * @param files                 MariaDB SQL 파일 리스트
+     * @param versions              전체 버전 리스트
+     * @param includeVersionHistory VERSION_HISTORY INSERT 포함 여부
      * @return SQL 실행 명령어
      */
-    private String buildSqlExecutionCommands(List<ReleaseFile> files, List<ReleaseVersion> versions) {
+    private String buildSqlExecutionCommands(List<ReleaseFile> files, List<ReleaseVersion> versions,
+            boolean includeVersionHistory) {
         // 버전별로 그룹화
         var filesByVersion = files.stream()
                 .collect(Collectors.groupingBy(f -> f.getReleaseVersion().getVersion()));
@@ -146,8 +170,10 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
                 commands.append("log_info \"이 버전에는 MariaDB SQL 파일이 없습니다.\"\n");
             }
 
-            // VERSION_HISTORY INSERT는 항상 실행
-            commands.append(buildVersionHistoryInsertCommand(version));
+            // VERSION_HISTORY INSERT는 infraeye1, infraeye2 프로젝트에서만 실행
+            if (includeVersionHistory) {
+                commands.append(buildVersionHistoryInsertCommand(version));
+            }
 
             commands.append(String.format("log_success \"버전 %s 패치 완료!\"\n\n", versionStr));
         }
@@ -160,7 +186,9 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
      *
      * <p>핫픽스는 단일 버전에 대한 패치이므로 From-To 범위가 아닌 단일 버전 스크립트를 생성합니다.
      * 기존 템플릿을 재사용하되, 핫픽스에 맞게 변수를 치환합니다.
+     * <p>단, VERSION_HISTORY INSERT는 infraeye1, infraeye2 프로젝트에서만 실행됩니다.
      *
+     * @param projectId        프로젝트 ID
      * @param hotfixVersion    핫픽스 버전 엔티티
      * @param mariadbFiles     MariaDB SQL 파일 리스트
      * @param outputDirPath    출력 디렉토리 경로
@@ -168,10 +196,14 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
      */
     @Override
     public void generateHotfixScript(
+            String projectId,
             ReleaseVersion hotfixVersion,
             List<ReleaseFile> mariadbFiles,
             String outputDirPath,
             String defaultPatchedBy) {
+
+        // VERSION_HISTORY INSERT가 필요한 프로젝트인지 확인
+        boolean includeVersionHistory = VERSION_HISTORY_PROJECT_IDS.contains(projectId);
 
         // 템플릿 로드
         String template = loadTemplate();
@@ -181,9 +213,17 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
         String fullVersion = hotfixVersion.getFullVersion();     // 예: 1.1.0.1
 
         // SQL 실행 명령어 생성 (핫픽스용)
-        String sqlCommands = mariadbFiles.isEmpty()
-                ? buildHotfixVersionHistoryOnlyCommands(hotfixVersion)
-                : buildHotfixSqlExecutionCommands(hotfixVersion, mariadbFiles);
+        String sqlCommands;
+        if (mariadbFiles.isEmpty()) {
+            if (includeVersionHistory) {
+                sqlCommands = buildHotfixVersionHistoryOnlyCommands(hotfixVersion);
+            } else {
+                // VERSION_HISTORY도 없고 SQL 파일도 없으면 빈 명령어
+                sqlCommands = "log_info \"이 핫픽스에는 MariaDB SQL 파일이 없습니다.\"\n";
+            }
+        } else {
+            sqlCommands = buildHotfixSqlExecutionCommands(hotfixVersion, mariadbFiles, includeVersionHistory);
+        }
 
         // 패치 담당자 기본값 처리
         String patchedByDefault = (defaultPatchedBy != null && !defaultPatchedBy.isBlank())
@@ -235,8 +275,14 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
 
     /**
      * 핫픽스 SQL 실행 명령어 생성
+     *
+     * @param hotfixVersion         핫픽스 버전 엔티티
+     * @param files                 MariaDB SQL 파일 리스트
+     * @param includeVersionHistory VERSION_HISTORY INSERT 포함 여부
+     * @return SQL 실행 명령어
      */
-    private String buildHotfixSqlExecutionCommands(ReleaseVersion hotfixVersion, List<ReleaseFile> files) {
+    private String buildHotfixSqlExecutionCommands(ReleaseVersion hotfixVersion, List<ReleaseFile> files,
+            boolean includeVersionHistory) {
         StringBuilder commands = new StringBuilder();
 
         String fullVersion = hotfixVersion.getFullVersion();
@@ -251,8 +297,10 @@ public class MariaDBScriptGenerator extends AbstractScriptGenerator {
                     commands.append(String.format("execute_sql \"%s\"\n", file.getFileName()));
                 });
 
-        // VERSION_HISTORY INSERT
-        commands.append(buildHotfixVersionHistoryInsertCommand(hotfixVersion));
+        // VERSION_HISTORY INSERT는 infraeye1, infraeye2 프로젝트에서만 실행
+        if (includeVersionHistory) {
+            commands.append(buildHotfixVersionHistoryInsertCommand(hotfixVersion));
+        }
 
         commands.append(String.format("log_success \"핫픽스 %s 패치 완료!\"\n\n", fullVersion));
 

@@ -35,6 +35,7 @@ public class CrateDBScriptGenerator extends AbstractScriptGenerator {
     /**
      * CrateDB 패치 스크립트 생성
      *
+     * @param projectId        프로젝트 ID (CrateDB에서는 사용하지 않음)
      * @param fromVersion      From 버전
      * @param toVersion        To 버전
      * @param versions         버전 리스트
@@ -44,6 +45,7 @@ public class CrateDBScriptGenerator extends AbstractScriptGenerator {
      */
     @Override
     public void generatePatchScript(
+            String projectId,
             String fromVersion,
             String toVersion,
             List<ReleaseVersion> versions,
@@ -73,6 +75,7 @@ public class CrateDBScriptGenerator extends AbstractScriptGenerator {
      * <p>핫픽스는 단일 버전에 대한 패치이므로 From-To 범위가 아닌 단일 버전 스크립트를 생성합니다.
      * CrateDB는 VERSION_HISTORY를 사용하지 않으므로 SQL 파일만 실행합니다.
      *
+     * @param projectId        프로젝트 ID (CrateDB에서는 사용하지 않음)
      * @param hotfixVersion    핫픽스 버전 엔티티
      * @param cratedbFiles     CrateDB SQL 파일 리스트
      * @param outputDirPath    출력 디렉토리 경로
@@ -80,6 +83,7 @@ public class CrateDBScriptGenerator extends AbstractScriptGenerator {
      */
     @Override
     public void generateHotfixScript(
+            String projectId,
             ReleaseVersion hotfixVersion,
             List<ReleaseFile> cratedbFiles,
             String outputDirPath,

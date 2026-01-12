@@ -1376,6 +1376,11 @@ public class ReleaseVersionUploadService {
         log.info("핫픽스 패치 스크립트 생성 시작 - fullVersion: {}, engineerId: {}",
                 hotfixVersion.getFullVersion(), engineerId);
 
+        // 프로젝트 ID 추출
+        String projectId = hotfixVersion.getProject() != null
+                ? hotfixVersion.getProject().getProjectId()
+                : "infraeye2";
+
         // 엔지니어 이메일 조회 (패치 담당자 기본값으로 사용 - 패치 파일과 동일하게 이메일 사용)
         String defaultPatchedBy = null;
         if (engineerId != null) {
@@ -1404,9 +1409,10 @@ public class ReleaseVersionUploadService {
         Path absoluteHotfixPath = hotfixPath.toAbsolutePath().normalize();
         String outputDirPath = basePath.relativize(absoluteHotfixPath).toString().replace("\\", "/");
 
-        // MariaDB 패치 스크립트 생성 (MariaDB는 VERSION_HISTORY 기록을 위해 항상 생성)
+        // MariaDB 패치 스크립트 생성 (MariaDB는 VERSION_HISTORY 기록을 위해 항상 생성 - infraeye1/infraeye2만)
         try {
             mariaDBScriptGenerator.generateHotfixScript(
+                    projectId,
                     hotfixVersion,
                     mariadbFiles,
                     outputDirPath,
@@ -1425,6 +1431,7 @@ public class ReleaseVersionUploadService {
         if (!cratedbFiles.isEmpty()) {
             try {
                 crateDBScriptGenerator.generateHotfixScript(
+                        projectId,
                         hotfixVersion,
                         cratedbFiles,
                         outputDirPath,
