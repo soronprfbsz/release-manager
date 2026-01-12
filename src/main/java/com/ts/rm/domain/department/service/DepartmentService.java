@@ -332,6 +332,7 @@ public class DepartmentService {
      * - 자기 자신의 하위로 이동 불가
      * - 새 부모가 null이면 루트 부서 하위로 이동
      * - sortOrder 변경도 처리
+     * - 동일/다른 depth 모두 sort_order를 1부터 재정렬
      */
     @Transactional
     public DepartmentDto.Response moveDepartment(Long departmentId, DepartmentDto.MoveRequest request) {
@@ -392,6 +393,11 @@ public class DepartmentService {
             }
 
             log.info("부서 이동 완료: {} → {}", department.getDepartmentName(), newParent.getDepartmentName());
+
+            // 원래 부모의 형제들 sort_order 정규화 (1부터 순차적으로)
+            if (currentParentId != null) {
+                normalizeSiblingSortOrder(currentParentId, null);
+            }
         }
 
         // sortOrder 재정렬 (부모 변경 여부와 무관하게 항상 처리)
@@ -399,9 +405,10 @@ public class DepartmentService {
             reorderSiblings(newParentId, departmentId, request.sortOrder());
             log.info("부서 정렬 순서 변경: {} → {}", department.getDepartmentName(), request.sortOrder());
         } else if (parentChanged) {
-            // 부모가 변경되었는데 sortOrder가 없으면 맨 뒤에 추가
+            // 부모가 변경되었는데 sortOrder가 없으면 맨 뒤에 추가 후 정규화
             int nextOrder = getNextSortOrder(newParentId);
             department.update(null, null, null, nextOrder);
+            normalizeSiblingSortOrder(newParentId, null);
         }
 
         return mapper.toResponse(department);
@@ -426,39 +433,69 @@ public class DepartmentService {
 
     /**
      * 형제 부서들의 sortOrder 재정렬
-     * - 새로운 sortOrder 위치에 타겟 부서를 배치
-     * - 해당 위치 이상의 기존 형제들은 +1씩 밀림
+     * - 타겟 부서를 지정된 위치에 삽입
+     * - 모든 형제를 1부터 순차적으로 재정렬
      *
      * @param parentId 부모 부서 ID
      * @param targetDeptId 이동할 부서 ID
-     * @param newSortOrder 새로운 sortOrder (1부터 시작)
+     * @param targetPosition 삽입할 위치 (1부터 시작)
      */
-    private void reorderSiblings(Long parentId, Long targetDeptId, int newSortOrder) {
+    private void reorderSiblings(Long parentId, Long targetDeptId, int targetPosition) {
         // 같은 부모의 직계 자식들(형제들) 조회
         List<DepartmentHierarchy> siblings = hierarchyRepository.findByAncestorDepartmentIdAndDepth(parentId, 1);
 
-        // 형제 부서들의 sortOrder 재정렬
-        for (DepartmentHierarchy h : siblings) {
-            Department sibling = h.getDescendant();
+        // 타겟 부서 제외한 형제들을 sortOrder 순으로 정렬
+        List<Department> orderedSiblings = siblings.stream()
+                .map(DepartmentHierarchy::getDescendant)
+                .filter(d -> !d.getDepartmentId().equals(targetDeptId))
+                .sorted((a, b) -> {
+                    int orderA = a.getSortOrder() != null ? a.getSortOrder() : 0;
+                    int orderB = b.getSortOrder() != null ? b.getSortOrder() : 0;
+                    return Integer.compare(orderA, orderB);
+                })
+                .collect(java.util.stream.Collectors.toList());
 
-            // 타겟 부서는 나중에 처리
-            if (sibling.getDepartmentId().equals(targetDeptId)) {
-                continue;
-            }
+        Department targetDept = findDepartmentById(targetDeptId);
 
-            // 새로운 위치 이상인 형제들은 +1
-            int currentOrder = sibling.getSortOrder() != null ? sibling.getSortOrder() : 0;
-            if (currentOrder >= newSortOrder) {
-                sibling.update(null, null, null, currentOrder + 1);
-            }
+        // 타겟 위치에 삽입 (1-indexed → 0-indexed 변환, 범위 체크)
+        int insertIndex = Math.max(0, Math.min(targetPosition - 1, orderedSiblings.size()));
+        orderedSiblings.add(insertIndex, targetDept);
+
+        // 모두 1부터 순서대로 재정렬
+        for (int i = 0; i < orderedSiblings.size(); i++) {
+            orderedSiblings.get(i).update(null, null, null, i + 1);
         }
 
-        // 타겟 부서의 sortOrder 설정
-        Department targetDept = findDepartmentById(targetDeptId);
-        targetDept.update(null, null, null, newSortOrder);
+        log.debug("부서 정렬 순서 재정렬 완료 - parentId: {}, targetDeptId: {}, targetPosition: {}, 총 형제 수: {}",
+                parentId, targetDeptId, targetPosition, orderedSiblings.size());
+    }
 
-        log.debug("부서 정렬 순서 재정렬 완료 - parentId: {}, targetDeptId: {}, newSortOrder: {}",
-                parentId, targetDeptId, newSortOrder);
+    /**
+     * 형제 부서들의 sortOrder 정규화 (1부터 순차적으로)
+     * - 특정 부서 제외 가능
+     *
+     * @param parentId 부모 부서 ID
+     * @param excludeDeptId 제외할 부서 ID (null이면 모두 포함)
+     */
+    private void normalizeSiblingSortOrder(Long parentId, Long excludeDeptId) {
+        List<DepartmentHierarchy> siblings = hierarchyRepository.findByAncestorDepartmentIdAndDepth(parentId, 1);
+
+        List<Department> orderedSiblings = siblings.stream()
+                .map(DepartmentHierarchy::getDescendant)
+                .filter(d -> excludeDeptId == null || !d.getDepartmentId().equals(excludeDeptId))
+                .sorted((a, b) -> {
+                    int orderA = a.getSortOrder() != null ? a.getSortOrder() : 0;
+                    int orderB = b.getSortOrder() != null ? b.getSortOrder() : 0;
+                    return Integer.compare(orderA, orderB);
+                })
+                .collect(java.util.stream.Collectors.toList());
+
+        // 1부터 순서대로 재정렬
+        for (int i = 0; i < orderedSiblings.size(); i++) {
+            orderedSiblings.get(i).update(null, null, null, i + 1);
+        }
+
+        log.debug("형제 부서 정렬 순서 정규화 완료 - parentId: {}, 총 형제 수: {}", parentId, orderedSiblings.size());
     }
 
     /**
