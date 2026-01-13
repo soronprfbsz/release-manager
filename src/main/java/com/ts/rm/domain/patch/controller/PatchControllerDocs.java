@@ -61,7 +61,7 @@ public interface PatchControllerDocs {
 
     @Operation(
             summary = "패치 목록 조회",
-            description = "패치 목록을 페이징하여 조회합니다. projectId와 releaseType으로 필터링 가능. page, size, sort 파라미터 사용 가능\n\n"
+            description = "패치 목록을 페이징하여 조회합니다. projectId, releaseType, customerId로 필터링 가능. page, size, sort 파라미터 사용 가능\n\n"
                     + "정렬 가능 필드:\n"
                     + "- patchName: 패치명\n"
                     + "- customerName: 고객사명\n"
@@ -83,6 +83,9 @@ public interface PatchControllerDocs {
 
             @Parameter(description = "릴리즈 타입 (STANDARD/CUSTOM)")
             @RequestParam(required = false) String releaseType,
+
+            @Parameter(description = "고객사 코드 (특정 고객사의 패치만 조회)")
+            @RequestParam(required = false) String customerCode,
 
             @ParameterObject Pageable pageable
     );

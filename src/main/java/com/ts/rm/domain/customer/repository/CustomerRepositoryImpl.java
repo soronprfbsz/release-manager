@@ -36,7 +36,7 @@ public class CustomerRepositoryImpl implements CustomerRepositoryCustom {
     private static final QReleaseVersion releaseVersion = QReleaseVersion.releaseVersion;
 
     @Override
-    public Page<Customer> findAllWithProjectInfo(Boolean isActive, String keyword, Pageable pageable) {
+    public Page<Customer> findAllWithProjectInfo(String projectId, Boolean isActive, String keyword, Pageable pageable) {
         // 1. 기본 쿼리 생성
         JPAQuery<Customer> contentQuery = queryFactory
                 .selectDistinct(customer)
@@ -44,6 +44,7 @@ public class CustomerRepositoryImpl implements CustomerRepositoryCustom {
                 .leftJoin(customerProject).on(customerProject.customer.customerId.eq(customer.customerId))
                 .leftJoin(project).on(customerProject.project.projectId.eq(project.projectId))
                 .where(
+                        projectIdCondition(projectId),
                         isActiveCondition(isActive),
                         keywordCondition(keyword)
                 );
@@ -55,6 +56,7 @@ public class CustomerRepositoryImpl implements CustomerRepositoryCustom {
                 .leftJoin(customerProject).on(customerProject.customer.customerId.eq(customer.customerId))
                 .leftJoin(project).on(customerProject.project.projectId.eq(project.projectId))
                 .where(
+                        projectIdCondition(projectId),
                         isActiveCondition(isActive),
                         keywordCondition(keyword)
                 );
@@ -94,6 +96,15 @@ public class CustomerRepositoryImpl implements CustomerRepositoryCustom {
                 sortMapping,
                 customer.customerName.asc() // 기본 정렬: 고객사명 오름차순
         );
+    }
+
+    /**
+     * 프로젝트 ID 조건
+     */
+    private BooleanExpression projectIdCondition(String projectId) {
+        return (projectId != null && !projectId.isBlank())
+                ? customerProject.project.projectId.eq(projectId)
+                : null;
     }
 
     /**

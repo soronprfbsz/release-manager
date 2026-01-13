@@ -91,15 +91,16 @@ public class PatchController implements PatchControllerDocs {
     public ApiResponse<Page<PatchDto.ListResponse>> listPatches(
             @RequestParam(required = false) String projectId,
             @RequestParam(required = false) String releaseType,
+            @RequestParam(required = false) String customerCode,
             @ParameterObject Pageable pageable) {
 
-        log.info("패치 목록 조회 요청 - projectId: {}, releaseType: {}, page: {}, size: {}",
-                projectId, releaseType, pageable.getPageNumber(), pageable.getPageSize());
+        log.info("패치 목록 조회 요청 - projectId: {}, releaseType: {}, customerCode: {}, page: {}, size: {}",
+                projectId, releaseType, customerCode, pageable.getPageNumber(), pageable.getPageSize());
 
         // API 정렬 필드를 엔티티 경로로 매핑
         Pageable mappedPageable = com.ts.rm.global.querydsl.SortFieldMapper.mapPatchSortFields(pageable);
 
-        Page<PatchDto.ListResponse> response = patchService.listPatchesWithPaging(projectId, releaseType, mappedPageable);
+        Page<PatchDto.ListResponse> response = patchService.listPatchesWithPaging(projectId, releaseType, customerCode, mappedPageable);
 
         return ApiResponse.success(response);
     }

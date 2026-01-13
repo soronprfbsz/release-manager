@@ -136,14 +136,15 @@ public class CustomerService {
     /**
      * 고객사 목록 페이징 조회 (필터링 및 검색)
      *
-     * @param isActive 활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
-     * @param keyword  고객사명 검색 키워드
-     * @param pageable 페이징 정보 (sort에 "project.projectName", "lastPatchedVersion", "lastPatchedAt", "hasCustomVersion" 사용 가능)
+     * @param projectId 프로젝트 ID (null이면 전체)
+     * @param isActive  활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
+     * @param keyword   고객사명 검색 키워드
+     * @param pageable  페이징 정보 (sort에 "project.projectName", "lastPatchedVersion", "lastPatchedAt", "hasCustomVersion" 사용 가능)
      * @return 고객사 페이지
      */
-    public Page<CustomerDto.ListResponse> getCustomersWithPaging(Boolean isActive, String keyword, Pageable pageable) {
+    public Page<CustomerDto.ListResponse> getCustomersWithPaging(String projectId, Boolean isActive, String keyword, Pageable pageable) {
         // QueryDSL Custom 메서드 사용 (프로젝트 정보 JOIN 정렬 지원)
-        Page<Customer> customers = customerRepository.findAllWithProjectInfo(isActive, keyword, pageable);
+        Page<Customer> customers = customerRepository.findAllWithProjectInfo(projectId, isActive, keyword, pageable);
 
         // rowNumber 계산 (공통 유틸리티 사용)
         return PageRowNumberUtil.mapWithRowNumber(customers, (customer, rowNumber) -> {
@@ -204,25 +205,6 @@ public class CustomerService {
         // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
         log.info("Customer updated successfully with customerId: {}", customerId);
         return toDetailResponseWithProject(customer, projectInfo);
-    }
-
-    /**
-     * 고객사 활성화 상태 변경
-     *
-     * @param customerId 고객사 ID
-     * @param isActive   활성화 여부
-     */
-    @Transactional
-    public void updateCustomerStatus(Long customerId, Boolean isActive) {
-        log.info("Updating customer status - customerId: {}, isActive: {}", customerId,
-                isActive);
-
-        // 엔티티 조회 후 setter를 통한 수정 (JPA Dirty Checking)
-        Customer customer = findCustomerById(customerId);
-        customer.setIsActive(isActive);
-
-        // 트랜잭션 커밋 시 자동으로 UPDATE 쿼리 실행 (Dirty Checking)
-        log.info("Customer status updated - customerId: {}, isActive: {}", customerId, isActive);
     }
 
     /**

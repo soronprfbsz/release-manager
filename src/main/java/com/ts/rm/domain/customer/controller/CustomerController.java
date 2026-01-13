@@ -77,18 +77,20 @@ public class CustomerController implements CustomerControllerDocs {
     /**
      * 고객사 목록 조회 (페이징)
      *
-     * @param isActive 활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
-     * @param keyword  고객사명 검색 키워드 (optional)
-     * @param pageable 페이징 정보
+     * @param projectId 프로젝트 ID (optional)
+     * @param isActive  활성화 여부 필터 (true: 활성화만, false: 비활성화만, null: 전체)
+     * @param keyword   고객사명 검색 키워드 (optional)
+     * @param pageable  페이징 정보
      * @return 고객사 페이지
      */
     @Override
     @GetMapping
     public ResponseEntity<ApiResponse<Page<CustomerDto.ListResponse>>> getCustomers(
+            @RequestParam(required = false) String projectId,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(required = false) String keyword,
             @ParameterObject Pageable pageable) {
-        Page<CustomerDto.ListResponse> response = customerService.getCustomersWithPaging(isActive, keyword, pageable);
+        Page<CustomerDto.ListResponse> response = customerService.getCustomersWithPaging(projectId, isActive, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -128,19 +130,4 @@ public class CustomerController implements CustomerControllerDocs {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    /**
-     * 고객사 활성화 상태 변경
-     *
-     * @param id       고객사 ID
-     * @param isActive 활성화 여부 (true: 활성화, false: 비활성화)
-     * @return 성공 응답
-     */
-    @Override
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<Void>> updateCustomerStatus(
-            @PathVariable Long id,
-            @RequestParam Boolean isActive) {
-        customerService.updateCustomerStatus(id, isActive);
-        return ResponseEntity.ok(ApiResponse.success(null));
-    }
 }

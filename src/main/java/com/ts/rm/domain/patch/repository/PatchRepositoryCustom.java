@@ -2,6 +2,8 @@ package com.ts.rm.domain.patch.repository;
 
 import com.ts.rm.domain.patch.entity.Patch;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Patch Repository Custom Interface
@@ -19,4 +21,15 @@ public interface PatchRepositoryCustom {
      * @return 최근 패치 목록
      */
     List<Patch> findRecentByProjectIdAndReleaseType(String projectId, String releaseType, int limit);
+
+    /**
+     * 패치 목록 조회 (다중 필터링)
+     *
+     * @param projectId    프로젝트 ID (null이면 전체)
+     * @param releaseType  릴리즈 타입 (STANDARD/CUSTOM, null이면 전체)
+     * @param customerCode 고객사 코드 (null이면 전체)
+     * @param pageable     페이징 정보
+     * @return 패치 목록 페이지
+     */
+    Page<Patch> findAllWithFilters(String projectId, String releaseType, String customerCode, Pageable pageable);
 }

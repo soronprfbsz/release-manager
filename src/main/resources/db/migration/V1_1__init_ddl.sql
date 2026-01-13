@@ -611,3 +611,30 @@ CREATE TABLE IF NOT EXISTS file_sync_ignore (
     INDEX idx_file_sync_ignore_target_type (target_type),
     INDEX idx_file_sync_ignore_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='파일 동기화 무시 목록';
+
+-- =========================================================
+-- 고객사별 특이사항/메모 관리를 위한 테이블
+-- =========================================================
+CREATE TABLE IF NOT EXISTS customer_note (
+    note_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '특이사항 ID',
+    customer_id BIGINT NOT NULL COMMENT '고객사 ID',
+    title VARCHAR(200) NOT NULL COMMENT '제목',
+    content TEXT NOT NULL COMMENT '내용',
+    created_by BIGINT COMMENT '작성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '작성자 이메일 (계정 삭제 시에도 유지)',
+    updated_by BIGINT COMMENT '수정자 계정 ID (account.account_id FK)',
+    updated_by_email VARCHAR(100) COMMENT '수정자 이메일 (계정 삭제 시에도 유지)',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_cn_customer_id (customer_id),
+    INDEX idx_cn_created_at (created_at),
+    INDEX idx_cn_created_by (created_by),
+    INDEX idx_cn_updated_by (updated_by),
+    CONSTRAINT fk_customer_note_customer FOREIGN KEY (customer_id)
+        REFERENCES customer(customer_id) ON DELETE CASCADE,
+    CONSTRAINT fk_customer_note_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL,
+    CONSTRAINT fk_customer_note_updated_by FOREIGN KEY (updated_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사 특이사항 테이블';

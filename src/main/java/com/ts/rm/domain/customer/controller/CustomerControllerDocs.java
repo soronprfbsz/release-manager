@@ -60,7 +60,7 @@ public interface CustomerControllerDocs {
 
     @Operation(
             summary = "고객사 목록 조회",
-            description = "고객사 목록 조회합니다. isActive로 활성화 여부 필터링, keyword로 고객사명 검색 가능. page, size, sort 파라미터 사용 가능",
+            description = "고객사 목록 조회합니다. projectId로 프로젝트별 필터링, isActive로 활성화 여부 필터링, keyword로 고객사명 검색 가능. page, size, sort 파라미터 사용 가능",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",
@@ -71,6 +71,9 @@ public interface CustomerControllerDocs {
             )
     )
     ResponseEntity<ApiResponse<Page<CustomerDto.ListResponse>>> getCustomers(
+            @Parameter(description = "프로젝트 ID (예: infraeye1, infraeye2)")
+            @RequestParam(required = false) String projectId,
+
             @Parameter(description = "활성화 여부 (true: 활성화만, false: 비활성화만, null: 전체)")
             @RequestParam(required = false) Boolean isActive,
 
@@ -116,28 +119,6 @@ public interface CustomerControllerDocs {
     ResponseEntity<ApiResponse<Void>> deleteCustomer(
             @Parameter(description = "고객사 ID", required = true)
             @PathVariable Long id
-    );
-
-    @Operation(
-            summary = "고객사 활성화 상태 변경",
-            description = "고객사의 활성화 상태를 변경합니다",
-            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(
-                                    example = "{\"status\": \"success\", \"data\": null}"
-                            )
-                    )
-            )
-    )
-    ResponseEntity<ApiResponse<Void>> updateCustomerStatus(
-            @Parameter(description = "고객사 ID", required = true)
-            @PathVariable Long id,
-
-            @Parameter(description = "활성화 여부", required = true)
-            @RequestParam Boolean isActive
     );
 
     /**
