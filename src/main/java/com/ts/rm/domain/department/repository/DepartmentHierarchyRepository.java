@@ -55,8 +55,10 @@ public interface DepartmentHierarchyRepository extends JpaRepository<DepartmentH
 
     /**
      * 특정 부서를 후손으로 하는 모든 계층 삭제 (부서 이동 시 기존 관계 제거용)
+     * clearAutomatically: DELETE 후 영속성 컨텍스트 초기화 (삭제된 엔티티 동기화)
+     * flushAutomatically: DELETE 전 영속성 컨텍스트 flush (pending 변경사항 반영)
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM DepartmentHierarchy dh WHERE dh.descendant.departmentId = :descendantId AND dh.depth > 0")
     void deleteAncestorRelationships(@Param("descendantId") Long descendantId);
 

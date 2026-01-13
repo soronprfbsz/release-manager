@@ -68,6 +68,8 @@ public class AccountRepositoryImpl implements AccountRepositoryCustom {
                 "accountId", account.accountId,
                 "email", account.email,
                 "accountName", account.accountName,
+                "phone", account.phone,
+                "position", positionCode.sortOrder,  // 직급 순서(code.sort_order) 기준 정렬
                 "role", account.role,
                 "status", account.status,
                 "lastLoginAt", account.lastLoginAt,

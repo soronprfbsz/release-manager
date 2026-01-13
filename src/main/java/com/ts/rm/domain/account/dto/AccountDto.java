@@ -98,6 +98,10 @@ public final class AccountDto {
             @Size(max = 20, message = "연락처는 20자 이하여야 합니다")
             String phone,
 
+            @Schema(description = "직급 코드 (POSITION 코드)", example = "MANAGER")
+            @Size(max = 100, message = "직급 코드는 100자 이하여야 합니다")
+            String position,
+
             @Schema(description = "아바타 스타일 (DiceBear 스타일명)", example = "adventurer")
             @Size(max = 50, message = "아바타 스타일은 50자 이하여야 합니다")
             String avatarStyle,

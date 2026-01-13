@@ -297,6 +297,13 @@ public class AccountService {
             log.debug("Phone updated for email: {}", email);
         }
 
+        // 직급 수정
+        if (request.position() != null) {
+            validatePositionCode(request.position());
+            account.setPosition(request.position());
+            log.debug("Position updated to {} for email: {}", request.position(), email);
+        }
+
         // 아바타 스타일 수정
         if (request.avatarStyle() != null) {
             account.setAvatarStyle(request.avatarStyle());
