@@ -7,6 +7,8 @@ import com.ts.rm.domain.customer.entity.CustomerProject;
 import com.ts.rm.domain.customer.repository.CustomerProjectRepository;
 import com.ts.rm.domain.customer.repository.CustomerRepository;
 import com.ts.rm.domain.patch.entity.Patch;
+import com.ts.rm.domain.patch.entity.PatchHistory;
+import com.ts.rm.domain.patch.repository.PatchHistoryRepository;
 import com.ts.rm.domain.patch.repository.PatchRepository;
 import com.ts.rm.domain.patch.util.ScriptGenerator;
 import com.ts.rm.domain.project.entity.Project;
@@ -47,6 +49,7 @@ import org.springframework.util.StringUtils;
 public class PatchGenerationService {
 
     private final PatchRepository patchRepository;
+    private final PatchHistoryRepository patchHistoryRepository;
     private final ReleaseVersionRepository releaseVersionRepository;
     private final ReleaseFileRepository releaseFileRepository;
     private final CustomerRepository customerRepository;
@@ -240,7 +243,10 @@ public class PatchGenerationService {
 
             Patch saved = patchRepository.save(patch);
 
-            // 10. CustomerProject 마지막 패치 정보 업데이트
+            // 10. 패치 이력 저장 (영구 보존)
+            savePatchHistory(saved);
+
+            // 11. CustomerProject 마지막 패치 정보 업데이트
             updateCustomerProjectPatchInfo(customer, project, toVersion.getVersion());
 
             log.info("커스텀 패치 생성 완료 - ID: {}, Path: {}", saved.getPatchId(), outputPath);
@@ -520,7 +526,10 @@ public class PatchGenerationService {
 
             Patch saved = patchRepository.save(patch);
 
-            // 10. CustomerProject 마지막 패치 정보 업데이트 (고객사가 지정된 경우)
+            // 10. 패치 이력 저장 (영구 보존)
+            savePatchHistory(saved);
+
+            // 11. CustomerProject 마지막 패치 정보 업데이트 (고객사가 지정된 경우)
             if (customer != null) {
                 updateCustomerProjectPatchInfo(customer, project, toVersion.getVersion());
             }
@@ -971,5 +980,19 @@ public class PatchGenerationService {
 
         log.info("CustomerProject 업데이트 완료 - customerId: {}, projectId: {}, lastPatchedVersion: {}",
                 customer.getCustomerId(), project.getProjectId(), toVersion);
+    }
+
+    /**
+     * 패치 이력 저장 (영구 보존)
+     *
+     * <p>patch_file 삭제와 무관하게 패치 이력을 영구 보존합니다.
+     *
+     * @param patch 생성된 Patch 엔티티
+     */
+    private void savePatchHistory(Patch patch) {
+        PatchHistory history = PatchHistory.fromPatch(patch);
+        PatchHistory saved = patchHistoryRepository.save(history);
+        log.info("패치 이력 저장 완료 - historyId: {}, patchName: {}",
+                saved.getHistoryId(), saved.getPatchName());
     }
 }

@@ -468,6 +468,40 @@ CREATE TABLE IF NOT EXISTS patch_file (
         REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='패치 파일 테이블';
 
+CREATE TABLE IF NOT EXISTS patch_history (
+    history_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '이력 ID',
+    project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
+    release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
+    customer_id BIGINT COMMENT '고객사 ID (커스텀 패치인 경우)',
+    from_version VARCHAR(50) NOT NULL COMMENT '시작 버전',
+    to_version VARCHAR(50) NOT NULL COMMENT '종료 버전',
+    patch_name VARCHAR(100) NOT NULL COMMENT '패치 파일명',
+    description TEXT COMMENT '설명',
+    assignee_id BIGINT COMMENT '패치 담당자 (account.account_id FK)',
+    assignee_email VARCHAR(100) COMMENT '담당자 이메일 (계정 삭제 시에도 유지)',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+
+    INDEX idx_ph_project_id (project_id),
+    INDEX idx_ph_release_type (release_type),
+    INDEX idx_ph_customer_id (customer_id),
+    INDEX idx_ph_from_version (from_version),
+    INDEX idx_ph_to_version (to_version),
+    INDEX idx_ph_assignee_id (assignee_id),
+    INDEX idx_ph_created_at (created_at),
+    INDEX idx_ph_created_by (created_by),
+
+    CONSTRAINT fk_patch_history_project FOREIGN KEY (project_id)
+        REFERENCES project(project_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_patch_history_customer FOREIGN KEY (customer_id)
+        REFERENCES customer(customer_id) ON DELETE SET NULL,
+    CONSTRAINT fk_patch_history_assignee FOREIGN KEY (assignee_id)
+        REFERENCES account(account_id) ON DELETE SET NULL,
+    CONSTRAINT fk_patch_history_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='패치 이력 테이블 (삭제 없이 영구 보존)';
+
 CREATE TABLE menu (
     menu_id VARCHAR(50) PRIMARY KEY COMMENT '메뉴 ID',
     menu_name VARCHAR(100) NOT NULL COMMENT '메뉴명',
