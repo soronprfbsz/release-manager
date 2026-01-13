@@ -244,9 +244,9 @@ public class ReleaseVersionUploadService {
     public ReleaseVersionDto.CreateCustomVersionResponse createCustomVersionWithZip(
             ReleaseVersionDto.CreateCustomVersionRequest request, MultipartFile zipFile, String createdByEmail) {
 
-        log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 시작 - projectId: {}, customerId: {}, customBaseVersionId: {}, customVersion: {}, createdByEmail: {}",
+        log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 시작 - projectId: {}, customerId: {}, customBaseVersionId: {}, customVersion: {}, createdByEmail: {}, isApproved: {}",
                 request.projectId(), request.customerId(), request.customBaseVersionId(), request.customVersion(),
-                createdByEmail);
+                createdByEmail, request.isApproved());
 
         // 0. 프로젝트 조회
         Project project = projectRepository.findById(request.projectId())
@@ -281,6 +281,15 @@ public class ReleaseVersionUploadService {
             // 최초 커스텀 버전 생성 시 customBaseVersionId 필수
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
                     "해당 고객사의 최초 커스텀 버전 생성 시 기준 표준 버전 ID(customBaseVersionId)는 필수입니다.");
+        } else {
+            // 최초가 아닌 경우: 기존 커스텀 버전의 customBaseVersion을 상속
+            customBaseVersion = existingCustomVersions.get(0).getCustomBaseVersion();
+            if (customBaseVersion == null) {
+                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                        "기존 커스텀 버전의 기준 표준 버전 정보를 찾을 수 없습니다.");
+            }
+            log.info("기존 커스텀 버전에서 기준 표준 버전 상속 - customBaseVersionId: {}, version: {}",
+                    customBaseVersion.getReleaseVersionId(), customBaseVersion.getVersion());
         }
 
         // 4. 커스텀 버전 파싱
@@ -320,10 +329,10 @@ public class ReleaseVersionUploadService {
             ReleaseVersion savedVersion = copyFilesAndSaveToDbForCustomVersion(
                     project, customer, customBaseVersion, tempDir, versionPath,
                     customMajorVersion, customMinorVersion, customPatchVersion,
-                    ReleaseCategory.PATCH, request.comment(), createdByEmail);
+                    ReleaseCategory.PATCH, request.comment(), createdByEmail, request.isApproved());
 
-            log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 완료 - projectId: {}, customerId: {}, version: {}, ID: {}",
-                    request.projectId(), request.customerId(), fullVersion, savedVersion.getReleaseVersionId());
+            log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 완료 - projectId: {}, customerId: {}, version: {}, ID: {}, isApproved: {}",
+                    request.projectId(), request.customerId(), fullVersion, savedVersion.getReleaseVersionId(), savedVersion.getIsApproved());
 
             // 11. 응답 생성
             return new ReleaseVersionDto.CreateCustomVersionResponse(
@@ -387,7 +396,8 @@ public class ReleaseVersionUploadService {
             Project project, Customer customer, ReleaseVersion customBaseVersion,
             Path tempDir, Path versionPath,
             int customMajorVersion, int customMinorVersion, int customPatchVersion,
-            ReleaseCategory releaseCategory, String comment, String createdByEmail) throws IOException {
+            ReleaseCategory releaseCategory, String comment, String createdByEmail,
+            Boolean isApproved) throws IOException {
 
         String customVersionStr = customMajorVersion + "." + customMinorVersion + "." + customPatchVersion;
 
@@ -399,29 +409,39 @@ public class ReleaseVersionUploadService {
         // 생성자(Account) 조회 - 이메일로 조회
         Account creator = accountLookupService.findByEmail(createdByEmail);
 
+        // isApproved가 null이면 false로 처리
+        boolean approved = Boolean.TRUE.equals(isApproved);
+
         // ReleaseVersion 생성 및 저장 (커스텀 버전 전용 필드 설정)
         // version 필드: 시멘틱 버저닝 형식의 전체 버전 문자열
         // majorVersion/minorVersion/patchVersion: 베이스 버전 숫자 (버전 정렬 및 비교용)
         // customMajorVersion/customMinorVersion/customPatchVersion: 커스텀 버전 숫자
-        final ReleaseVersion savedVersion = releaseVersionRepository.save(
-                ReleaseVersion.builder()
-                        .project(project)
-                        .releaseType("CUSTOM")
-                        .releaseCategory(releaseCategory)
-                        .customer(customer)
-                        .customBaseVersion(customBaseVersion)
-                        .version(fullVersion)  // 시멘틱 버저닝 형식: 1.1.0-companyA.1.0.0
-                        .majorVersion(customBaseVersion.getMajorVersion())    // 베이스 버전 기준
-                        .minorVersion(customBaseVersion.getMinorVersion())    // 베이스 버전 기준
-                        .patchVersion(customBaseVersion.getPatchVersion())    // 베이스 버전 기준
-                        .customMajorVersion(customMajorVersion)
-                        .customMinorVersion(customMinorVersion)
-                        .customPatchVersion(customPatchVersion)
-                        .creator(creator)
-                        .createdByEmail(createdByEmail)
-                        .comment(comment)
-                        .build()
-        );
+        ReleaseVersion.ReleaseVersionBuilder builder = ReleaseVersion.builder()
+                .project(project)
+                .releaseType("CUSTOM")
+                .releaseCategory(releaseCategory)
+                .customer(customer)
+                .customBaseVersion(customBaseVersion)
+                .version(fullVersion)  // 시멘틱 버저닝 형식: 1.1.0-companyA.1.0.0
+                .majorVersion(customBaseVersion.getMajorVersion())    // 베이스 버전 기준
+                .minorVersion(customBaseVersion.getMinorVersion())    // 베이스 버전 기준
+                .patchVersion(customBaseVersion.getPatchVersion())    // 베이스 버전 기준
+                .customMajorVersion(customMajorVersion)
+                .customMinorVersion(customMinorVersion)
+                .customPatchVersion(customPatchVersion)
+                .creator(creator)
+                .createdByEmail(createdByEmail)
+                .comment(comment)
+                .isApproved(approved);
+
+        // 승인된 경우 승인자와 승인일시 설정
+        if (approved) {
+            builder.approver(creator)
+                   .approvedByEmail(createdByEmail)
+                   .approvedAt(java.time.LocalDateTime.now());
+        }
+
+        final ReleaseVersion savedVersion = releaseVersionRepository.save(builder.build());
 
         log.info("커스텀 ReleaseVersion 저장 완료 - ID: {}, version: {}, customVersion: {}, customBaseVersion: {}",
                 savedVersion.getReleaseVersionId(), fullVersion, customVersionStr,

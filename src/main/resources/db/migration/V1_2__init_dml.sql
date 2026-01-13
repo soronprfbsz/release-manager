@@ -357,38 +357,6 @@ INSERT INTO department_hierarchy (ancestor_id, descendant_id, depth) VALUES
 (5, 8, 1); -- 솔루션지원그룹 → 보안기술팀
 
 -- =========================================================
--- customer 테이블
--- =========================================================
-
-INSERT INTO customer (created_by, created_by_email, customer_code, customer_name, description, is_active, updated_by, updated_by_email) VALUES
-(1, 'admin@tscientific.co.kr', 'customerA', 'A회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerB', 'B회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerC', 'C회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerD', 'D회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerE', 'E회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerF', 'F회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerG', 'G회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerH', 'H회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerI', 'I회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerJ', 'J회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerK', 'K회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerL', 'L회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerM', 'M회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerN', 'N회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerO', 'O회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerP', 'P회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerQ', 'Q회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerR', 'R회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerS', 'S회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerT', 'T회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerU', 'U회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerV', 'V회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerW', 'W회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerX', 'X회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerY', 'Y회사', NULL, true, 1, 'admin@tscientific.co.kr'),
-(1, 'admin@tscientific.co.kr', 'customerZ', 'Z회사', NULL, true, 1, 'admin@tscientific.co.kr');
-
--- =========================================================
 -- project 테이블
 -- =========================================================
 
@@ -396,29 +364,15 @@ INSERT INTO project (project_id, project_name, description, created_by, created_
 ('infraeye1', 'Infraeye 1', 'Infraeye 1.0', 1, 'admin@tscientific.co.kr'),
 ('infraeye2', 'Infraeye 2', 'Infraeye 2.0', 1, 'admin@tscientific.co.kr');
 
--- =========================================================
--- customer_project 테이블
--- =========================================================
-
-INSERT INTO customer_project (customer_id, project_id)
-SELECT customer_id, 'infraeye2'
-FROM customer
-WHERE customer_code IN (
-    'customerA', 'customerB', 'customerC', 'customerD', 'customerE', 'customerF',
-    'customerG', 'customerH', 'customerI', 'customerJ', 'customerK', 'customerL',
-    'customerM', 'customerN', 'customerO', 'customerP', 'customerQ', 'customerR',
-    'customerS', 'customerT', 'customerU', 'customerV', 'customerW', 'customerX',
-    'customerY', 'customerZ'
-);
 
 -- =========================================================
 -- release_version 테이블
 -- =========================================================
 
-INSERT INTO release_version (project_id, release_type, release_category, customer_id, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_by_email, approved_at, created_by, created_by_email, comment, created_at) VALUES
-('infraeye2', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-01-01 00:00:00', 1, 'admin@tscientific.co.kr', '최초 설치본', '2025-01-01 00:00:00'),
-('infraeye2', 'STANDARD', 'PATCH', NULL, '1.1.0', 1, 1, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-12-18 00:00:00', 1, 'admin@tscientific.co.kr', 'SMS 기능 추가', '2025-12-18 00:00:00'),
-('infraeye1', 'STANDARD', 'INSTALL', NULL, '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2026-01-02 00:00:00', 1, 'admin@tscientific.co.kr', '최초 설치본', '2026-01-02 00:00:00');
+INSERT INTO release_version (project_id, release_type, release_category, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_by_email, approved_at, created_by, created_by_email, comment, created_at) VALUES
+('infraeye2', 'STANDARD', 'INSTALL', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-01-01 00:00:00', 1, 'admin@tscientific.co.kr', '최초 설치본', '2025-01-01 00:00:00'),
+('infraeye2', 'STANDARD', 'PATCH', '1.1.0', 1, 1, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-12-18 00:00:00', 1, 'admin@tscientific.co.kr', 'SMS 기능 추가', '2025-12-18 00:00:00'),
+('infraeye1', 'STANDARD', 'INSTALL', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2026-01-02 00:00:00', 1, 'admin@tscientific.co.kr', '최초 설치본', '2026-01-02 00:00:00');
 
 -- =========================================================
 -- release_file 테이블
@@ -707,17 +661,17 @@ INSERT INTO service_component (service_id,component_type,component_name,host,por
 -- =============================================
 -- Publishing 초기 데이터
 -- =============================================
-INSERT INTO publishing (publishing_id, publishing_name, description, publishing_category, sub_category, customer_id, sort_order, created_by, created_by_email) VALUES
- (1, '경남은행', '경남은행 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 2, 1, 'admin@tscientific.co.kr'),
- (2, '경산시청', '경산시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 3, 1, 'admin@tscientific.co.kr'),
- (3, '경찰청 업무망', '경찰청 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 5, 1, 'admin@tscientific.co.kr'),
- (4, '경찰청 인터넷망', '경찰청 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 6, 1, 'admin@tscientific.co.kr'),
- (5, '광주광역시청', '광주광역시청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 7, 1, 'admin@tscientific.co.kr'),
- (6, '국시원 업무망', '국시원 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 8, 1, 'admin@tscientific.co.kr'),
- (7, '국시원 인터넷망', '국시원 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 9, 1, 'admin@tscientific.co.kr'),
- (8, '노원구청', '노원구청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 10, 1, 'admin@tscientific.co.kr'),
- (9, '경찰청 FMS', '경찰청 FMS 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 11, 1, 'admin@tscientific.co.kr'),
- (10, '경기남부경찰청', '경기남부경찰청 대시보드', 'INFRAEYE1', 'DASHBOARD', NULL, 12, 1, 'admin@tscientific.co.kr');
+INSERT INTO publishing (publishing_id, publishing_name, description, publishing_category, sub_category, sort_order, created_by, created_by_email) VALUES
+ (1, '경남은행', '경남은행 대시보드', 'INFRAEYE1', 'DASHBOARD', 2, 1, 'admin@tscientific.co.kr'),
+ (2, '경산시청', '경산시청 대시보드', 'INFRAEYE1', 'DASHBOARD', 3, 1, 'admin@tscientific.co.kr'),
+ (3, '경찰청 업무망', '경찰청 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', 5, 1, 'admin@tscientific.co.kr'),
+ (4, '경찰청 인터넷망', '경찰청 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', 6, 1, 'admin@tscientific.co.kr'),
+ (5, '광주광역시청', '광주광역시청 대시보드', 'INFRAEYE1', 'DASHBOARD', 7, 1, 'admin@tscientific.co.kr'),
+ (6, '국시원 업무망', '국시원 업무망 대시보드', 'INFRAEYE1', 'DASHBOARD', 8, 1, 'admin@tscientific.co.kr'),
+ (7, '국시원 인터넷망', '국시원 인터넷망 대시보드', 'INFRAEYE1', 'DASHBOARD', 9, 1, 'admin@tscientific.co.kr'),
+ (8, '노원구청', '노원구청 대시보드', 'INFRAEYE1', 'DASHBOARD', 10, 1, 'admin@tscientific.co.kr'),
+ (9, '경찰청 FMS', '경찰청 FMS 대시보드', 'INFRAEYE1', 'DASHBOARD', 11, 1, 'admin@tscientific.co.kr'),
+ (10, '경기남부경찰청', '경기남부경찰청 대시보드', 'INFRAEYE1', 'DASHBOARD', 12, 1, 'admin@tscientific.co.kr');
 
 -- =============================================
 -- Publishing File 초기 데이터

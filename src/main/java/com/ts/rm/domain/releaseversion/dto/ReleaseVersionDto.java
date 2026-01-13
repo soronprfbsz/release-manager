@@ -580,7 +580,10 @@ public final class ReleaseVersionDto {
             @Schema(description = "패치 노트 내용", example = "A사 커스텀 패치", required = true)
             @NotBlank(message = "패치 노트 내용은 필수입니다")
             @Size(max = 500, message = "패치 노트 내용은 500자 이하여야 합니다")
-            String comment
+            String comment,
+
+            @Schema(description = "승인 여부 (true: 승인됨, false: 미승인)", example = "false", defaultValue = "false")
+            Boolean isApproved
     ) {
 
     }
