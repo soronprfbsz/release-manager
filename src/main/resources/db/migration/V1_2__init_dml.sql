@@ -643,7 +643,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('operation_department', 'USER'),
 ('operation_filesync', 'USER'),
 ('operation_projects', 'USER'),
-('operation_accounts', 'ADMIN'),
+('operation_accounts', 'USER'),
 -- 2depth - 개발 지원
 ('remote_jobs', 'USER'),
 ('infrastructure', 'USER'),
