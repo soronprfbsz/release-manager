@@ -625,7 +625,7 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- 3depth - 인프라
 ('infrastructure_resources', 'ADMIN');
 
--- USER: 제외 메뉴: [계정]
+-- USER: 제외 메뉴: [없음]
 INSERT INTO menu_role (menu_id, role) VALUES
 -- 1depth
 ('version_management', 'USER'),
@@ -638,11 +638,12 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- 2depth - 패치 관리
 ('patch_standard', 'USER'),
 ('patch_custom', 'USER'),
--- 2depth - 운영 관리 (계정 제외)
+-- 2depth - 운영 관리
 ('operation_customers', 'USER'),
 ('operation_department', 'USER'),
 ('operation_filesync', 'USER'),
 ('operation_projects', 'USER'),
+('operation_accounts', 'ADMIN'),
 -- 2depth - 개발 지원
 ('remote_jobs', 'USER'),
 ('infrastructure', 'USER'),
