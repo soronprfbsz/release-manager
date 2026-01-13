@@ -3,6 +3,7 @@ package com.ts.rm.domain.refreshtoken.service;
 import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.account.repository.AccountRepository;
 import com.ts.rm.domain.auth.dto.TokenResponse;
+import com.ts.rm.domain.common.repository.CodeRepository;
 import com.ts.rm.domain.refreshtoken.entity.RefreshToken;
 import com.ts.rm.domain.refreshtoken.repository.RefreshTokenRepository;
 import com.ts.rm.global.security.jwt.JwtTokenProvider;
@@ -20,8 +21,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 
+    private static final String POSITION_CODE_TYPE = "POSITION";
+
     private final RefreshTokenRepository refreshTokenRepository;
     private final AccountRepository accountRepository;
+    private final CodeRepository codeRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
@@ -90,10 +94,26 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                         .email(account.getEmail())
                         .accountName(account.getAccountName())
                         .role(account.getRole())
+                        .departmentId(departmentId)
+                        .departmentName(account.getDepartment() != null ? account.getDepartment().getDepartmentName() : null)
+                        .position(account.getPosition())
+                        .positionName(getPositionName(account.getPosition()))
                         .avatarStyle(account.getAvatarStyle())
                         .avatarSeed(account.getAvatarSeed())
                         .build())
                 .build();
+    }
+
+    /**
+     * position 코드로 직급명 조회
+     */
+    private String getPositionName(String positionCode) {
+        if (positionCode == null || positionCode.isBlank()) {
+            return null;
+        }
+        return codeRepository.findByCodeTypeIdAndCodeId(POSITION_CODE_TYPE, positionCode)
+                .map(code -> code.getCodeName())
+                .orElse(null);
     }
 
     @Override

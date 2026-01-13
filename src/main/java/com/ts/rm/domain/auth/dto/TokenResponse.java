@@ -64,6 +64,18 @@ public class TokenResponse {
         @Schema(description = "권한", example = "USER")
         private String role;
 
+        @Schema(description = "부서 ID", example = "3")
+        private Long departmentId;
+
+        @Schema(description = "부서명", example = "개발팀")
+        private String departmentName;
+
+        @Schema(description = "직급 코드", example = "MANAGER")
+        private String position;
+
+        @Schema(description = "직급명", example = "과장")
+        private String positionName;
+
         @Schema(description = "아바타 스타일", example = "bottts")
         private String avatarStyle;
 
