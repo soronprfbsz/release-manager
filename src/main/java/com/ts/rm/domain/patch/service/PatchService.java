@@ -117,7 +117,8 @@ public class PatchService {
                     response.description(),
                     response.assigneeId(),
                     response.assigneeName(),
-                    response.createdAt()
+                    response.createdAt(),
+                    response.updatedAt()
             );
         });
     }

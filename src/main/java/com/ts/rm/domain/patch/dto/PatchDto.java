@@ -252,7 +252,10 @@ public final class PatchDto {
             String assigneeName,
 
             @Schema(description = "등록일시")
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+
+            @Schema(description = "수정일시")
+            LocalDateTime updatedAt
     ) {
 
     }
