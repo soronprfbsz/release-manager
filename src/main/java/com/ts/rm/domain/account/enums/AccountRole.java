@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum AccountRole {
     ADMIN("ADMIN", "관리자"),
+    DEVELOPER("DEVELOPER", "개발자"),
     USER("USER", "일반 사용자");
 
     private final String codeId;

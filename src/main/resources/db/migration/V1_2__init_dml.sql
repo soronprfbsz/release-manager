@@ -42,8 +42,9 @@ INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VA
 -- ACCOUNT_ROLE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('ACCOUNT_ROLE', 'ADMIN', '관리자', '시스템 관리자 권한', 1, TRUE),
-('ACCOUNT_ROLE', 'USER', '일반 사용자', '일반 사용자 권한', 2, TRUE),
-('ACCOUNT_ROLE', 'GUEST', '게스트', '게스트 사용자 권한', 3, TRUE);
+('ACCOUNT_ROLE', 'DEVELOPER', '개발자', '개발자 권한', 2, TRUE),
+('ACCOUNT_ROLE', 'USER', '일반 사용자', '일반 사용자 권한', 3, TRUE),
+('ACCOUNT_ROLE', 'GUEST', '게스트', '게스트 사용자 권한', 4, TRUE);
 
 -- ACCOUNT_STATUS
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -290,8 +291,7 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 -- =========================================================
 
 INSERT INTO account (account_name, email, password, avatar_style, avatar_seed, role, status) VALUES
-('시스템 관리자','admin@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'pixelArt', 'ir14c0cexm9r7x4ckfts', 'ADMIN', 'ACTIVE'),
-('기본 사용자','m_user@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'thumbs', 'h1lk5s01hbwx9qck6q01bi', 'USER', 'ACTIVE');
+('시스템 관리자','admin@tscientific.co.kr', '$2a$10$l8sMjsX460lFokTzvBuBOefMU0u//xpEzNCV4uhLvr0huqUWpTYPe', 'pixelArt', 'ir14c0cexm9r7x4ckfts', 'ADMIN', 'ACTIVE');
 
 -- =========================================================
 -- department 테이블
@@ -369,10 +369,10 @@ INSERT INTO project (project_id, project_name, description, created_by, created_
 -- release_version 테이블
 -- =========================================================
 
-INSERT INTO release_version (project_id, release_type, release_category, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_by_email, approved_at, created_by, created_by_email, comment, created_at) VALUES
-('infraeye2', 'STANDARD', 'INSTALL', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-01-01 00:00:00', 1, 'admin@tscientific.co.kr', '최초 설치본', '2025-01-01 00:00:00'),
-('infraeye2', 'STANDARD', 'PATCH', '1.1.0', 1, 1, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-12-18 00:00:00', 1, 'admin@tscientific.co.kr', 'SMS 기능 추가', '2025-12-18 00:00:00'),
-('infraeye1', 'STANDARD', 'INSTALL', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2026-01-02 00:00:00', 1, 'admin@tscientific.co.kr', '최초 설치본', '2026-01-02 00:00:00');
+INSERT INTO release_version (project_id, release_type, release_category, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_by_email, approved_at, created_by, created_by_email, comment) VALUES
+('infraeye2', 'STANDARD', 'INSTALL', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-01-01 00:00:00', 1, 'admin@tscientific.co.kr', '- 버전 관리가 시작 되지 않은 모든 사이트의 버전관리 시작용 버전'),
+('infraeye2', 'STANDARD', 'PATCH', '1.1.0', 1, 1, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-12-18 00:00:00', 1, 'admin@tscientific.co.kr', '- SMS 기능 추가'),
+('infraeye1', 'STANDARD', 'INSTALL', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2026-01-02 00:00:00', 1, 'admin@tscientific.co.kr', '- 버전 관리가 시작 되지 않은 모든 사이트의 버전관리 시작용 버전');
 
 -- =========================================================
 -- release_file 테이블
@@ -578,6 +578,34 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('remote_terminal', 'ADMIN'),
 -- 3depth - 인프라
 ('infrastructure_resources', 'ADMIN');
+
+-- DEVELOPER: 제외 메뉴: [없음]
+INSERT INTO menu_role (menu_id, role) VALUES
+-- 1depth
+('version_management', 'DEVELOPER'),
+('patch_management', 'DEVELOPER'),
+('operation_management', 'DEVELOPER'),
+('support', 'DEVELOPER'),
+-- 2depth - 버전 관리
+('version_standard', 'DEVELOPER'),
+('version_custom', 'DEVELOPER'),
+-- 2depth - 패치 관리
+('patch_standard', 'DEVELOPER'),
+('patch_custom', 'DEVELOPER'),
+-- 2depth - 운영 관리
+('operation_customers', 'DEVELOPER'),
+('operation_department', 'DEVELOPER'),
+('operation_filesync', 'DEVELOPER'),
+('operation_projects', 'DEVELOPER'),
+('operation_accounts', 'DEVELOPER'),
+-- 2depth - 개발 지원
+('remote_jobs', 'DEVELOPER'),
+('infrastructure', 'DEVELOPER'),
+-- 3depth - 원격 작업
+('remote_mariadb', 'DEVELOPER'),
+('remote_terminal', 'DEVELOPER'),
+-- 3depth - 인프라
+('infrastructure_resources', 'DEVELOPER');
 
 -- USER: 제외 메뉴: [없음]
 INSERT INTO menu_role (menu_id, role) VALUES
