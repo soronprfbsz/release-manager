@@ -551,6 +551,29 @@ public interface ReleaseVersionControllerDocs {
     );
 
     @Operation(
+            summary = "릴리즈 버전 코멘트 수정",
+            description = "릴리즈 버전의 코멘트(패치 노트)를 수정합니다.\n\n"
+                    + "**권한**: ADMIN, USER\n\n"
+                    + "**처리 내용**:\n"
+                    + "- comment 필드를 수정",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = DetailApiResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<ReleaseVersionDto.DetailResponse>> updateComment(
+            @Parameter(description = "버전 ID", required = true)
+            @PathVariable Long id,
+
+            @Parameter(description = "수정할 코멘트 정보", required = true)
+            @Valid @org.springframework.web.bind.annotation.RequestBody ReleaseVersionDto.UpdateRequest request
+    );
+
+    @Operation(
             summary = "릴리즈 버전 승인",
             description = "릴리즈 버전을 승인합니다.\n\n"
                     + "**권한**: ADMIN, USER\n\n"

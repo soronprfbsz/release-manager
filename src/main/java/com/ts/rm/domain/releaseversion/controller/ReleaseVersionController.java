@@ -14,8 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -220,6 +222,26 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
     }
 
     /**
+     * 릴리즈 버전 코멘트 수정
+     *
+     * @param id      버전 ID
+     * @param request 수정 요청 (comment)
+     * @return 수정된 버전 상세 정보
+     */
+    @Override
+    @PatchMapping("/versions/{id}/comment")
+    public ResponseEntity<ApiResponse<ReleaseVersionDto.DetailResponse>> updateComment(
+            @PathVariable Long id,
+            @Valid @RequestBody ReleaseVersionDto.UpdateRequest request) {
+
+        log.info("릴리즈 버전 코멘트 수정 요청 - ID: {}, comment: {}", id, request.comment());
+
+        ReleaseVersionDto.DetailResponse response = releaseVersionService.updateVersion(id, request);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
      * 릴리즈 버전 승인
      *
      * @param id            버전 ID
@@ -227,7 +249,7 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
      * @return 승인된 버전 상세 정보
      */
     @Override
-    @org.springframework.web.bind.annotation.PatchMapping("/versions/{id}/approve")
+    @PatchMapping("/versions/{id}/approve")
     public ResponseEntity<ApiResponse<ReleaseVersionDto.DetailResponse>> approveVersion(
             @PathVariable Long id,
             @RequestHeader("Authorization") String authorization) {
