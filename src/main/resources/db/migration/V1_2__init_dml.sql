@@ -438,21 +438,12 @@ INSERT INTO resource_link (link_category,sub_category,link_name,link_url,descrip
 -- menu 테이블
 -- =========================================================
 -- 1depth 메뉴 (루트 메뉴에 아이콘 포함)
+-- 버전 관리, 패치 관리: 탭으로 Standard/Custom 구분 (쿼리파라미터: ?tab=standard, ?tab=custom)
 INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
-('version_management', '버전 관리', NULL, 'rocket', TRUE, '릴리즈 버전 관리', TRUE, FALSE, 1),-- 패치 관리: file-diff → package
-('patch_management', '패치 관리', NULL, 'package', TRUE, '패치 파일 관리', TRUE, FALSE, 2),
+('version_management', '버전 관리', 'releases', 'rocket', TRUE, '릴리즈 버전을 관리합니다.', TRUE, FALSE, 1),
+('patch_management', '패치 관리', 'patches', 'package', TRUE, '릴리즈 버전을 기반으로 패치 파일을 생성 및 관리합니다.', TRUE, FALSE, 2),
 ('operation_management', '운영 관리', NULL, 'settings', TRUE, '릴리즈 매니저 운영에 필요한 데이터를 관리합니다.', TRUE, FALSE, 3),
 ('support', '업무 지원', NULL, 'keyboard', TRUE, '인프라 서비스 및 원격 작업 등의 편의 기능을 제공합니다.', TRUE, FALSE, 4);
-
--- 2depth 메뉴 - 버전 관리
-INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
-('version_standard', 'Standard', 'releases/standard', 'tag', TRUE, '표준 버전을 관리합니다.', FALSE, TRUE, 1),
-('version_custom', 'Custom', 'releases/custom', 'git-branch', TRUE, '커스텀 사이트 버전을 관리합니다.', FALSE, TRUE, 2);
-
--- 2depth 메뉴 - 패치 관리
-INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
-('patch_standard', 'Standard', 'patches/standard', 'tag', TRUE, '표준 패치를 관리합니다.', FALSE, TRUE, 1),
-('patch_custom', 'Custom', 'patches/custom', 'git-branch', TRUE, '커스텀 사이트 패치를 관리합니다.', FALSE, TRUE, 2);
 
 -- 2depth 메뉴 - 운영 관리
 INSERT INTO menu (menu_id, menu_name, menu_url, icon, is_icon_visible, description, is_description_visible, is_line_break, menu_order) VALUES
@@ -488,33 +479,19 @@ INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 
 -- 2depth 메뉴 (자기 자신)
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('version_standard', 'version_standard', 0),
-('version_custom', 'version_custom', 0),
-('patch_standard', 'patch_standard', 0),
-('patch_custom', 'patch_custom', 0),
 ('operation_customers', 'operation_customers', 0),
 ('operation_department', 'operation_department', 0),
 ('operation_filesync', 'operation_filesync', 0),
 ('operation_projects', 'operation_projects', 0),
 ('operation_accounts', 'operation_accounts', 0),
 ('remote_jobs', 'remote_jobs', 0),
-('infrastructure', 'infrastructure', 0);;
+('infrastructure', 'infrastructure', 0);
 
 -- 3depth 메뉴 (자기 자신)
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
 ('remote_mariadb', 'remote_mariadb', 0),
 ('remote_terminal', 'remote_terminal', 0),
 ('infrastructure_resources', 'infrastructure_resources', 0);
-
--- 부모-자식 관계 (depth=1) - 버전 관리
-INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('version_management', 'version_standard', 1),
-('version_management', 'version_custom', 1);
-
--- 부모-자식 관계 (depth=1) - 패치 관리
-INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
-('patch_management', 'patch_standard', 1),
-('patch_management', 'patch_custom', 1);
 
 -- 부모-자식 관계 (depth=1) - 운영 관리
 INSERT INTO menu_hierarchy (ancestor, descendant, depth) VALUES
@@ -558,12 +535,6 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('patch_management', 'ADMIN'),
 ('operation_management', 'ADMIN'),
 ('support', 'ADMIN'),
--- 2depth - 버전 관리
-('version_standard', 'ADMIN'),
-('version_custom', 'ADMIN'),
--- 2depth - 패치 관리
-('patch_standard', 'ADMIN'),
-('patch_custom', 'ADMIN'),
 -- 2depth - 운영 관리
 ('operation_customers', 'ADMIN'),
 ('operation_department', 'ADMIN'),
@@ -579,19 +550,13 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- 3depth - 인프라
 ('infrastructure_resources', 'ADMIN');
 
--- DEVELOPER: 제외 메뉴: [없음]
+-- DEVELOPER: USER의 모든 권한 포함
 INSERT INTO menu_role (menu_id, role) VALUES
 -- 1depth
 ('version_management', 'DEVELOPER'),
 ('patch_management', 'DEVELOPER'),
 ('operation_management', 'DEVELOPER'),
 ('support', 'DEVELOPER'),
--- 2depth - 버전 관리
-('version_standard', 'DEVELOPER'),
-('version_custom', 'DEVELOPER'),
--- 2depth - 패치 관리
-('patch_standard', 'DEVELOPER'),
-('patch_custom', 'DEVELOPER'),
 -- 2depth - 운영 관리
 ('operation_customers', 'DEVELOPER'),
 ('operation_department', 'DEVELOPER'),
@@ -614,12 +579,6 @@ INSERT INTO menu_role (menu_id, role) VALUES
 ('patch_management', 'USER'),
 ('operation_management', 'USER'),
 ('support', 'USER'),
--- 2depth - 버전 관리
-('version_standard', 'USER'),
-('version_custom', 'USER'),
--- 2depth - 패치 관리
-('patch_standard', 'USER'),
-('patch_custom', 'USER'),
 -- 2depth - 운영 관리
 ('operation_customers', 'USER'),
 ('operation_department', 'USER'),
@@ -637,15 +596,9 @@ INSERT INTO menu_role (menu_id, role) VALUES
 
 -- GUEST: 제외 메뉴: [운영 관리, 업무지원]
 INSERT INTO menu_role (menu_id, role) VALUES
--- 1depth (버전관리, 패치관리 외 제외)
+-- 1depth (버전관리, 패치관리만 접근 가능)
 ('version_management', 'GUEST'),
-('patch_management', 'GUEST'),
--- 2depth - 버전 관리
-('version_standard', 'GUEST'),
-('version_custom', 'GUEST'),
--- 2depth - 패치 관리
-('patch_standard', 'GUEST'),
-('patch_custom', 'GUEST');
+('patch_management', 'GUEST');
 
 -- =========================================================
 -- service 테이블

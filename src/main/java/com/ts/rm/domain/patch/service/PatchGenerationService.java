@@ -125,10 +125,11 @@ public class PatchGenerationService {
         // 베이스 버전 형식: 1.1.0, 커스텀 버전 형식: 1.1.0-companyA.1.0.0
         ReleaseVersion from;
         if (fromVersion.contains("-")) {
-            // 커스텀 버전인 경우: version 필드로 조회
+            // 커스텀 버전인 경우: version 필드로 조회 (핫픽스 제외)
             from = releaseVersionRepository.findAllByCustomer_CustomerIdOrderByCreatedAtDesc(customerId)
                     .stream()
                     .filter(v -> fromVersion.equals(v.getVersion()))
+                    .filter(v -> v.getHotfixVersion() == 0)  // 핫픽스 제외
                     .findFirst()
                     .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                             "From 커스텀 버전을 찾을 수 없습니다: " + fromVersion));
@@ -140,10 +141,11 @@ public class PatchGenerationService {
                             "From 베이스 버전을 찾을 수 없습니다: " + fromVersion));
         }
 
-        // To 버전 조회 (커스텀 버전만 허용)
+        // To 버전 조회 (커스텀 버전만 허용, 핫픽스 제외)
         ReleaseVersion to = releaseVersionRepository.findAllByCustomer_CustomerIdOrderByCreatedAtDesc(customerId)
                 .stream()
                 .filter(v -> toVersion.equals(v.getVersion()))
+                .filter(v -> v.getHotfixVersion() == 0)  // 핫픽스 제외
                 .findFirst()
                 .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                         "To 커스텀 버전을 찾을 수 없습니다: " + toVersion));
@@ -171,6 +173,16 @@ public class PatchGenerationService {
             Customer customer = customerRepository.findById(customerId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND,
                             "고객사를 찾을 수 없습니다: " + customerId));
+
+            // 핫픽스 버전은 패치 생성 대상이 아님
+            if (fromVersion.isHotfix()) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "핫픽스 버전은 패치 생성의 From 버전으로 사용할 수 없습니다: " + fromVersion.getVersion());
+            }
+            if (toVersion.isHotfix()) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "핫픽스 버전은 패치 생성의 To 버전으로 사용할 수 없습니다: " + toVersion.getVersion());
+            }
 
             // 1. 버전 검증
             validateCustomVersionRange(fromVersion, toVersion);
@@ -453,6 +465,16 @@ public class PatchGenerationService {
             ReleaseVersion toVersion = releaseVersionRepository.findById(toVersionId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.RELEASE_VERSION_NOT_FOUND,
                             "To 버전을 찾을 수 없습니다: " + toVersionId));
+
+            // 핫픽스 버전은 패치 생성 대상이 아님
+            if (fromVersion.isHotfix()) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "핫픽스 버전은 패치 생성의 From 버전으로 사용할 수 없습니다: " + fromVersion.getVersion());
+            }
+            if (toVersion.isHotfix()) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                        "핫픽스 버전은 패치 생성의 To 버전으로 사용할 수 없습니다: " + toVersion.getVersion());
+            }
 
             validateVersionRange(fromVersion, toVersion);
 

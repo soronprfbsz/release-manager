@@ -207,11 +207,19 @@ public class ReleaseVersion {
 
     /**
      * 전체 버전 문자열 반환 (핫픽스 포함)
-     * <p>일반 버전: 1.3.2
-     * <p>핫픽스: 1.3.2.1
+     * <p>표준 버전: 1.3.2, 핫픽스: 1.3.2.1
+     * <p>커스텀 버전: 1.1.0-customerA.1.0.0, 핫픽스: 1.1.0-customerA.1.0.0.1
      */
     @Transient
     public String getFullVersion() {
+        // 커스텀 버전인 경우 version 필드 기반으로 반환
+        if ("CUSTOM".equals(releaseType) || customMajorVersion != null) {
+            if (isHotfix()) {
+                return version + "." + hotfixVersion;
+            }
+            return version;
+        }
+        // 표준 버전
         if (isHotfix()) {
             return majorVersion + "." + minorVersion + "." + patchVersion + "." + hotfixVersion;
         }

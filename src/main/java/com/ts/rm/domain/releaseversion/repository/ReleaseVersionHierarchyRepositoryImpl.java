@@ -31,6 +31,8 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
                 .selectDistinct(rv)
                 .from(h)
                 .innerJoin(h.descendant, rv)
+                .leftJoin(rv.creator).fetchJoin()
+                .leftJoin(rv.approver).fetchJoin()
                 .where(
                         h.depth.eq(0),  // 자기 자신 관계만
                         rv.releaseType.eq(releaseType)
@@ -54,6 +56,8 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
                 .from(h)
                 .innerJoin(h.descendant, rv)
                 .leftJoin(rv.project).fetchJoin()
+                .leftJoin(rv.creator).fetchJoin()
+                .leftJoin(rv.approver).fetchJoin()
                 .where(
                         h.depth.eq(0),
                         rv.project.projectId.eq(projectId),
@@ -78,6 +82,8 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
                 .from(h)
                 .innerJoin(h.descendant, rv)
                 .leftJoin(rv.customer).fetchJoin()
+                .leftJoin(rv.creator).fetchJoin()
+                .leftJoin(rv.approver).fetchJoin()
                 .where(
                         h.depth.eq(0),
                         rv.releaseType.eq(releaseType),
@@ -103,6 +109,8 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
                 .innerJoin(h.descendant, rv)
                 .leftJoin(rv.project).fetchJoin()
                 .leftJoin(rv.customer).fetchJoin()
+                .leftJoin(rv.creator).fetchJoin()
+                .leftJoin(rv.approver).fetchJoin()
                 .where(
                         h.depth.eq(0),
                         rv.project.projectId.eq(projectId),

@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS release_version (
     INDEX idx_created_by (created_by),
     INDEX idx_approved_by (approved_by),
 
-    UNIQUE KEY uk_project_type_customer_version (project_id, release_type, customer_id, version),
+    UNIQUE KEY uk_project_type_customer_version (project_id, release_type, customer_id, version, hotfix_version),
     UNIQUE KEY uk_custom_version (customer_id, custom_major_version, custom_minor_version, custom_patch_version),
 
     CONSTRAINT fk_release_version_project FOREIGN KEY (project_id)

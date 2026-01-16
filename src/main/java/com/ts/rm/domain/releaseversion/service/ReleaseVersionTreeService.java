@@ -132,7 +132,7 @@ public class ReleaseVersionTreeService {
     }
 
     /**
-     * 커스텀 버전 목록을 Major.Minor로 그룹핑
+     * 커스텀 버전 목록을 Major.Minor로 그룹핑 (핫픽스 포함)
      *
      * @param versions 커스텀 릴리즈 버전 목록
      * @return 커스텀 Major.Minor 그룹 목록
@@ -140,10 +140,30 @@ public class ReleaseVersionTreeService {
     private List<ReleaseVersionDto.CustomMajorMinorNode> buildCustomMajorMinorGroups(
             List<ReleaseVersion> versions) {
 
-        // 커스텀 버전의 MajorMinor로 그룹핑
-        Map<String, List<ReleaseVersion>> groupedByMajorMinor = new java.util.LinkedHashMap<>();
+        // 원본 버전과 핫픽스 버전 분리
+        List<ReleaseVersion> mainVersions = new ArrayList<>();
+        Map<Long, List<ReleaseVersion>> hotfixesByParentId = new java.util.HashMap<>();
 
         for (ReleaseVersion version : versions) {
+            if (version.isHotfix()) {
+                // 핫픽스 버전: 원본 버전 ID로 그룹핑
+                Long parentId = version.getHotfixBaseVersion() != null
+                        ? version.getHotfixBaseVersion().getReleaseVersionId()
+                        : null;
+                if (parentId != null) {
+                    hotfixesByParentId.computeIfAbsent(parentId, k -> new ArrayList<>())
+                            .add(version);
+                }
+            } else {
+                // 원본 버전
+                mainVersions.add(version);
+            }
+        }
+
+        // 커스텀 버전의 MajorMinor로 그룹핑 (원본 버전만)
+        Map<String, List<ReleaseVersion>> groupedByMajorMinor = new java.util.LinkedHashMap<>();
+
+        for (ReleaseVersion version : mainVersions) {
             String customMajorMinor = version.getCustomMajorMinor();
             if (customMajorMinor != null) {
                 groupedByMajorMinor.computeIfAbsent(customMajorMinor, k -> new ArrayList<>())
@@ -166,9 +186,9 @@ public class ReleaseVersionTreeService {
                     )
             );
 
-            // 각 버전에 대한 CustomVersionNode 생성
+            // 각 버전에 대한 CustomVersionNode 생성 (핫픽스 포함)
             List<ReleaseVersionDto.CustomVersionNode> versionNodes = versionsInGroup.stream()
-                    .map(this::buildCustomVersionNode)
+                    .map(v -> buildCustomVersionNodeWithHotfixes(v, hotfixesByParentId))
                     .toList();
 
             majorMinorNodes.add(new ReleaseVersionDto.CustomMajorMinorNode(majorMinor, versionNodes));
@@ -178,12 +198,15 @@ public class ReleaseVersionTreeService {
     }
 
     /**
-     * ReleaseVersion 엔티티로부터 CustomVersionNode 생성
+     * ReleaseVersion 엔티티로부터 CustomVersionNode 생성 (핫픽스 포함)
      *
-     * @param version 릴리즈 버전 엔티티
-     * @return CustomVersionNode
+     * @param version            릴리즈 버전 엔티티
+     * @param hotfixesByParentId 부모 버전 ID별 핫픽스 Map
+     * @return CustomVersionNode (핫픽스 포함)
      */
-    private ReleaseVersionDto.CustomVersionNode buildCustomVersionNode(ReleaseVersion version) {
+    private ReleaseVersionDto.CustomVersionNode buildCustomVersionNodeWithHotfixes(
+            ReleaseVersion version, Map<Long, List<ReleaseVersion>> hotfixesByParentId) {
+
         // createdAt을 "YYYY-MM-DD" 형식으로 포맷
         String createdAt = version.getCreatedAt() != null
                 ? version.getCreatedAt().toLocalDate().toString()
@@ -205,6 +228,17 @@ public class ReleaseVersionTreeService {
         String approvedByAvatarStyle = version.getApprovedByAvatarStyle();
         String approvedByAvatarSeed = version.getApprovedByAvatarSeed();
 
+        // 핫픽스 목록 조회 및 정렬
+        List<ReleaseVersionDto.HotfixNode> hotfixNodes = new ArrayList<>();
+        List<ReleaseVersion> hotfixes = hotfixesByParentId.get(version.getReleaseVersionId());
+        if (hotfixes != null && !hotfixes.isEmpty()) {
+            // 핫픽스 버전 순으로 정렬
+            hotfixes.sort((h1, h2) -> Integer.compare(h1.getHotfixVersion(), h2.getHotfixVersion()));
+            hotfixNodes = hotfixes.stream()
+                    .map(this::buildHotfixNode)
+                    .toList();
+        }
+
         return new ReleaseVersionDto.CustomVersionNode(
                 version.getReleaseVersionId(),
                 version.getVersion(),  // 전체 버전 문자열 (예: 1.1.0-companyA.1.0.0)
@@ -219,7 +253,8 @@ public class ReleaseVersionTreeService {
                 approvedByAvatarStyle,
                 approvedByAvatarSeed,
                 approvedAt,
-                fileCategories
+                fileCategories,
+                hotfixNodes
         );
     }
 

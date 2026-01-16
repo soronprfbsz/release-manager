@@ -147,7 +147,7 @@ public class ReleaseVersionUploadService {
      * @param releaseCategory 릴리즈 카테고리
      * @param comment         패치 노트 내용
      * @param zipFile         패치 파일이 포함된 ZIP 파일
-     * @param createdByEmail       생성자 이메일 (JWT에서 추출)
+     * @param createdByEmail       생성자 이메일
      * @param isApproved      승인 여부 (true: 승인됨, false: 미승인, null: 미승인)
      * @return 생성된 버전 응답
      */
@@ -237,7 +237,7 @@ public class ReleaseVersionUploadService {
      *
      * @param request   커스텀 버전 생성 요청
      * @param zipFile   패치 파일이 포함된 ZIP 파일
-     * @param createdByEmail 생성자 이메일 (JWT에서 추출)
+     * @param createdByEmail 생성자 이메일
      * @return 생성된 커스텀 버전 응답
      */
     @Transactional
@@ -258,9 +258,12 @@ public class ReleaseVersionUploadService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND,
                         "고객사를 찾을 수 없습니다: " + request.customerId()));
 
-        // 2. 해당 고객사의 기존 커스텀 버전 존재 여부 확인
+        // 2. 해당 고객사의 기존 커스텀 버전 존재 여부 확인 (핫픽스 제외)
         List<ReleaseVersion> existingCustomVersions = releaseVersionRepository
-                .findAllByCustomer_CustomerIdOrderByCreatedAtDesc(request.customerId());
+                .findAllByCustomer_CustomerIdOrderByCreatedAtDesc(request.customerId())
+                .stream()
+                .filter(v -> !v.isHotfix())  // 핫픽스 제외, 기본 커스텀 버전만
+                .toList();
         boolean isFirstCustomVersion = existingCustomVersions.isEmpty();
 
         // 2-1. 미승인 커스텀 버전 존재 여부 확인 (미승인 버전이 있으면 새 버전 생성 불가)
@@ -1123,13 +1126,15 @@ public class ReleaseVersionUploadService {
      * @param hotfixBaseVersionId 핫픽스 원본 버전 ID
      * @param comment             패치 노트 내용
      * @param zipFile             패치 파일이 포함된 ZIP 파일
-     * @param createdByEmail           생성자 이메일 (JWT에서 추출)
+     * @param createdByEmail      생성자 이메일
      * @param assigneeId          담당자 ID (선택, 패치 스크립트의 기본 담당자로 사용)
+     * @param isApproved          승인 여부 (true: 생성과 동시에 승인 처리)
      * @return 생성된 핫픽스 응답
      */
     @Transactional
     public ReleaseVersionDto.CreateHotfixResponse createHotfixWithZip(
-            Long hotfixBaseVersionId, String comment, MultipartFile zipFile, String createdByEmail, Long assigneeId) {
+            Long hotfixBaseVersionId, String comment, MultipartFile zipFile, String createdByEmail,
+            Long assigneeId, boolean isApproved) {
 
         log.info("ZIP 파일로 핫픽스 버전 생성 시작 - hotfixBaseVersionId: {}, createdByEmail: {}", hotfixBaseVersionId,
                 createdByEmail);
@@ -1165,7 +1170,7 @@ public class ReleaseVersionUploadService {
             // 7. 핫픽스 버전 엔티티 생성 및 저장
             ReleaseVersion hotfixVersion = copyFilesAndSaveToDbForHotfix(
                     baseVersion, tempDir, nextHotfixVersion, comment,
-                    createdByEmail);
+                    createdByEmail, isApproved);
 
             // 8. 핫픽스용 디렉토리 구조 생성
             hotfixPath = createHotfixDirectory(hotfixVersion, baseVersion);
@@ -1231,34 +1236,41 @@ public class ReleaseVersionUploadService {
      * @param hotfixVersion     핫픽스 버전 번호
      * @param comment           코멘트
      * @param createdByEmail    생성자 이메일
+     * @param isApproved        승인 여부
      * @return 저장된 ReleaseVersion 엔티티
      */
     private ReleaseVersion copyFilesAndSaveToDbForHotfix(
             ReleaseVersion hotfixBaseVersion, Path tempDir, int hotfixVersion,
-            String comment, String createdByEmail) throws IOException {
+            String comment, String createdByEmail, boolean isApproved) throws IOException {
 
         // 생성자(Account) 조회 - 이메일로 조회
         Account creator = accountLookupService.findByEmail(createdByEmail);
 
         // 핫픽스 버전은 원본 버전의 메타데이터를 상속
-        ReleaseVersion savedHotfix = releaseVersionRepository.save(
-                ReleaseVersion.builder()
-                        .project(hotfixBaseVersion.getProject())
-                        .releaseType(hotfixBaseVersion.getReleaseType())
-                        .releaseCategory(ReleaseCategory.PATCH)  // 핫픽스는 항상 PATCH
-                        .customer(hotfixBaseVersion.getCustomer())
-                        .version(hotfixBaseVersion.getVersion())
-                        .majorVersion(hotfixBaseVersion.getMajorVersion())
-                        .minorVersion(hotfixBaseVersion.getMinorVersion())
-                        .patchVersion(hotfixBaseVersion.getPatchVersion())
-                        .hotfixVersion(hotfixVersion)
-                        .hotfixBaseVersion(hotfixBaseVersion)
-                        .creator(creator)
-                        .createdByEmail(createdByEmail)
-                        .comment(comment)
-                        .isApproved(false)  // 핫픽스는 기본 미승인
-                        .build()
-        );
+        ReleaseVersion.ReleaseVersionBuilder builder = ReleaseVersion.builder()
+                .project(hotfixBaseVersion.getProject())
+                .releaseType(hotfixBaseVersion.getReleaseType())
+                .releaseCategory(ReleaseCategory.PATCH)  // 핫픽스는 항상 PATCH
+                .customer(hotfixBaseVersion.getCustomer())
+                .version(hotfixBaseVersion.getVersion())
+                .majorVersion(hotfixBaseVersion.getMajorVersion())
+                .minorVersion(hotfixBaseVersion.getMinorVersion())
+                .patchVersion(hotfixBaseVersion.getPatchVersion())
+                .hotfixVersion(hotfixVersion)
+                .hotfixBaseVersion(hotfixBaseVersion)
+                .creator(creator)
+                .createdByEmail(createdByEmail)
+                .comment(comment)
+                .isApproved(isApproved);
+
+        // 승인된 상태로 생성 시 승인자 정보 설정
+        if (isApproved) {
+            builder.approver(creator)
+                    .approvedByEmail(createdByEmail)
+                    .approvedAt(java.time.LocalDateTime.now());
+        }
+
+        ReleaseVersion savedHotfix = releaseVersionRepository.save(builder.build());
 
         log.info("핫픽스 ReleaseVersion 저장 완료 - ID: {}, fullVersion: {}, hotfixBaseVersion: {}",
                 savedHotfix.getReleaseVersionId(), savedHotfix.getFullVersion(),

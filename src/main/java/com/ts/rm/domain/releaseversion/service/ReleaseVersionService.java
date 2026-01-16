@@ -330,6 +330,7 @@ public class ReleaseVersionService {
                 .findAllByProject_ProjectIdAndReleaseTypeOrderByCreatedAtDesc(projectId, "STANDARD");
 
         return versions.stream()
+                .filter(v -> !v.isHotfix())  // 핫픽스 제외
                 .map(v -> new ReleaseVersionDto.VersionSelectOption(
                         v.getReleaseVersionId(),  // versionId
                         v.getVersion(),           // version

@@ -371,11 +371,11 @@ public class ReleaseFileService {
      * 버전별 ZIP 파일명 생성
      *
      * @param versionId 릴리즈 버전 ID
-     * @return ZIP 파일명 (예: release_1.1.0.zip)
+     * @return ZIP 파일명 (예: release_1.1.0.zip, 핫픽스: release_1.1.0.1.zip)
      */
     public String getVersionZipFileName(Long versionId) {
         ReleaseVersion releaseVersion = findReleaseVersionById(versionId);
-        return String.format("release_%s.zip", releaseVersion.getVersion());
+        return String.format("release_%s.zip", releaseVersion.getFullVersion());
     }
 
     /**

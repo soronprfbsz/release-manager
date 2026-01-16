@@ -44,7 +44,7 @@ public class CustomerService {
      * 고객사 생성
      *
      * @param request   고객사 생성 요청
-     * @param createdByEmail 생성자 (JWT에서 추출)
+     * @param createdByEmail 생성자 이메일
      * @return 생성된 고객사 상세 정보
      */
     @Transactional
@@ -171,7 +171,7 @@ public class CustomerService {
      *
      * @param customerId    고객사 ID
      * @param request       수정 요청
-     * @param updatedBy     수정자 (JWT에서 추출)
+     * @param updatedBy     수정자 이메일
      * @return 수정된 고객사 상세 정보
      */
     @Transactional
@@ -195,7 +195,7 @@ public class CustomerService {
         if (request.isActive() != null) {
             customer.setIsActive(request.isActive());
         }
-        // updater는 항상 설정 (JWT에서 추출)
+        // updater는 항상 설정
         customer.setUpdater(updater);
         customer.setUpdatedByEmail(updater.getEmail());
 

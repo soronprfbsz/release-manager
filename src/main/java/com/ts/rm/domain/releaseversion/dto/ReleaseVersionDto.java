@@ -518,7 +518,10 @@ public final class ReleaseVersionDto {
             String approvedAt,
 
             @Schema(description = "포함된 파일 카테고리 목록", example = "[\"DATABASE\", \"WEB\"]")
-            List<String> fileCategories
+            List<String> fileCategories,
+
+            @Schema(description = "핫픽스 버전 목록")
+            List<HotfixNode> hotfixes
     ) {
 
     }
@@ -670,7 +673,7 @@ public final class ReleaseVersionDto {
             @Schema(description = "메이저.마이너", example = "1.1.x")
             String majorMinor,
 
-            @Schema(description = "생성자 (JWT에서 추출)", example = "admin@tscientific")
+            @Schema(description = "생성자 이메일", example = "admin@tscientific")
             String createdByEmail,
 
             @Schema(description = "패치 노트 내용", example = "새로운 기능 추가")
@@ -723,7 +726,7 @@ public final class ReleaseVersionDto {
             @Schema(description = "커스텀 메이저.마이너", example = "1.0.x")
             String customMajorMinor,
 
-            @Schema(description = "생성자 (JWT에서 추출)", example = "admin@tscientific")
+            @Schema(description = "생성자 이메일", example = "admin@tscientific")
             String createdByEmail,
 
             @Schema(description = "패치 노트 내용", example = "A사 커스텀 패치")
@@ -771,9 +774,17 @@ public final class ReleaseVersionDto {
             String comment,
 
             @Schema(description = "담당 엔지니어 ID (선택, 패치 스크립트의 기본 담당자로 사용)", example = "5")
-            Long engineerId
-    ) {
+            Long engineerId,
 
+            @Schema(description = "승인 여부 (기본값: false)", example = "true")
+            Boolean isApproved
+    ) {
+        /**
+         * 승인 여부 반환 (null인 경우 false 반환)
+         */
+        public boolean isApprovedOrDefault() {
+            return isApproved != null && isApproved;
+        }
     }
 
     /**
@@ -811,7 +822,7 @@ public final class ReleaseVersionDto {
             @Schema(description = "메이저.마이너", example = "1.3.x")
             String majorMinor,
 
-            @Schema(description = "생성자 이메일(JWT에서 추출)", example = "admin@tscientific")
+            @Schema(description = "생성자 이메일", example = "admin@tscientific")
             String createdByEmail,
 
             @Schema(description = "패치 노트 내용", example = "특정 버그 수정")

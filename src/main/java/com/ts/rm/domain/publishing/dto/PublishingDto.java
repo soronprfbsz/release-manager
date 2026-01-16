@@ -72,7 +72,7 @@ public final class PublishingDto {
             @Schema(description = "고객사 ID (커스터마이징인 경우)", example = "1")
             Long customerId,
 
-            @Schema(description = "수정자 이메일 (서버에서 JWT 토큰으로 자동 설정)", hidden = true)
+            @Schema(description = "수정자 이메일 (서버에서 자동 설정)", hidden = true)
             String updatedByEmail
     ) {
     }
