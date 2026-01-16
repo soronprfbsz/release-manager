@@ -41,9 +41,10 @@ public class PatchRepositoryImpl implements PatchRepositoryCustom {
 
     @Override
     public Page<Patch> findAllWithFilters(String projectId, String releaseType, String customerCode, Pageable pageable) {
-        // 1. Content 쿼리
+        // 1. Content 쿼리 (customer LEFT JOIN으로 정렬 지원)
         JPAQuery<Patch> contentQuery = queryFactory
                 .selectFrom(patch)
+                .leftJoin(patch.customer).fetchJoin()
                 .where(
                         projectIdCondition(projectId),
                         releaseTypeCondition(releaseType),
