@@ -229,7 +229,6 @@ CREATE TABLE IF NOT EXISTS release_file (
     sub_category VARCHAR(50) COMMENT '하위 카테고리 (MARIADB, CRATEDB, METADATA 등)',
     file_name VARCHAR(255) NOT NULL COMMENT '파일명',
     file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (물리 경로)',
-    relative_path VARCHAR(500) COMMENT 'ZIP 파일 내부 상대 경로',
     file_size BIGINT COMMENT '파일 크기 (bytes)',
     checksum VARCHAR(64) COMMENT '파일 체크섬 (MD5)',
     execution_order INT NOT NULL DEFAULT 1 COMMENT '실행 순서',
@@ -672,3 +671,39 @@ CREATE TABLE IF NOT EXISTS customer_note (
     CONSTRAINT fk_customer_note_updated_by FOREIGN KEY (updated_by)
         REFERENCES account(account_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='고객사 특이사항 테이블';
+
+-- =============================================
+-- 온보딩 파일 테이블 생성
+-- 레거시 고객사 DB 초기화를 위한 온보딩 파일 관리
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS onboarding_file (
+    onboarding_file_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '온보딩 파일 ID',
+    project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID (project.project_id FK)',
+    file_type VARCHAR(20) NOT NULL COMMENT '파일 타입 (확장자 대문자, 예: SQL, SH)',
+    file_category VARCHAR(50) NOT NULL COMMENT '파일 카테고리 (MARIADB, CRATEDB, ETC)',
+    file_name VARCHAR(255) NOT NULL COMMENT '파일명',
+    file_path VARCHAR(500) NOT NULL COMMENT '파일 경로 (onboardings/{projectId} 하위 상대경로)',
+    file_size BIGINT COMMENT '파일 크기 (bytes)',
+    checksum VARCHAR(64) COMMENT '파일 체크섬 (SHA-256)',
+    description TEXT COMMENT '파일 설명',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '정렬 순서',
+    created_by BIGINT COMMENT '생성자 계정 ID (account.account_id FK)',
+    created_by_email VARCHAR(100) COMMENT '생성자 이메일 (계정 삭제 시에도 유지)',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+
+    INDEX idx_obf_project_id (project_id),
+    INDEX idx_obf_file_type (file_type),
+    INDEX idx_obf_file_category (file_category),
+    INDEX idx_obf_file_name (file_name),
+    INDEX idx_obf_sort_order (sort_order),
+
+    CONSTRAINT fk_obf_project FOREIGN KEY (project_id)
+        REFERENCES project(project_id) ON DELETE CASCADE,
+    CONSTRAINT fk_obf_created_by FOREIGN KEY (created_by)
+        REFERENCES account(account_id) ON DELETE SET NULL,
+
+    CONSTRAINT uk_obf_file_path UNIQUE (file_path)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='온보딩 파일 테이블 - 레거시 고객사 DB 초기화용';

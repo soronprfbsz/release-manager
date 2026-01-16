@@ -205,20 +205,6 @@ public interface PublishingControllerDocs {
     );
 
     @Operation(
-            summary = "퍼블리싱 파일 다운로드",
-            description = "퍼블리싱에 포함된 개별 파일을 다운로드합니다."
-    )
-    void downloadFile(
-            @Parameter(description = "퍼블리싱 ID", required = true, example = "1")
-            @PathVariable Long id,
-
-            @Parameter(description = "파일 ID", required = true, example = "1")
-            @PathVariable Long fileId,
-
-            HttpServletResponse response
-    ) throws IOException;
-
-    @Operation(
             summary = "퍼블리싱 파일 상세 조회",
             description = "퍼블리싱에 포함된 개별 파일의 상세 정보를 조회합니다.",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -239,12 +225,12 @@ public interface PublishingControllerDocs {
     );
 
     @Operation(
-            summary = "퍼블리싱 파일 트리 구조 조회",
-            description = "퍼블리싱에 업로드된 파일의 디렉토리/파일 트리 구조를 조회합니다.\n\n"
+            summary = "퍼블리싱 파일 구조 조회",
+            description = "퍼블리싱에 업로드된 파일의 디렉토리/파일 구조를 조회합니다.\n\n"
                     + "**응답 구조**:\n"
                     + "- 재귀적인 디렉토리/파일 구조\n"
                     + "- 각 노드는 `type`으로 구분 (directory/file)\n"
-                    + "- 파일은 `size` 정보 포함",
+                    + "- 파일은 `size`, `path`, `filePath` 정보 포함",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",
@@ -254,7 +240,7 @@ public interface PublishingControllerDocs {
                     )
             )
     )
-    ApiResponse<PublishingDto.FileStructureResponse> getFileTree(
+    ApiResponse<PublishingDto.FileStructureResponse> getFiles(
             @Parameter(description = "퍼블리싱 ID", required = true, example = "1")
             @PathVariable Long id
     );

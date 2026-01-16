@@ -60,7 +60,7 @@ public class ReleaseVersionUploadService {
     private final ScriptGenerator mariaDBScriptGenerator;
     private final ScriptGenerator crateDBScriptGenerator;
 
-    @Value("${app.release.base-path:src/main/resources/release-manager}")
+    @Value("${app.release.base-path:data/release-manager}")
     private String baseReleasePath;
 
     @Value("${spring.servlet.multipart.max-file-size:1GB}")
@@ -960,7 +960,6 @@ public class ReleaseVersionUploadService {
                 .subCategory(subCategory)
                 .fileName(sourceFile.getFileName().toString())
                 .filePath(physicalPath)
-                .relativePath(zipInternalPath)
                 .fileSize(fileSize)
                 .checksum(checksum)
                 .executionOrder(executionOrder)
@@ -1522,7 +1521,6 @@ public class ReleaseVersionUploadService {
                     .subCategory(null)
                     .fileName(scriptFileName)
                     .filePath(physicalPath)
-                    .relativePath(relativePath)
                     .fileSize(fileSize)
                     .checksum(checksum)
                     .executionOrder(0)  // 스크립트는 실행 순서 0

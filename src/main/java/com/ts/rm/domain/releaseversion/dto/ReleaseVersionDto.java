@@ -599,7 +599,7 @@ public final class ReleaseVersionDto {
             @Schema(description = "파일/디렉토리 이름", example = "mariadb")
             String name,
 
-            @Schema(description = "전체 경로", example = "/mariadb")
+            @Schema(description = "상대 경로 (UI 표시용)", example = "database/MARIADB")
             String path,
 
             @Schema(description = "타입 (file 또는 directory)", example = "directory")
@@ -611,17 +611,20 @@ public final class ReleaseVersionDto {
             @Schema(description = "릴리즈 파일 ID (파일인 경우만)", example = "123")
             Long releaseFileId,
 
+            @Schema(description = "다운로드용 파일 경로 (파일인 경우만)", example = "versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/file.sql")
+            String filePath,
+
             @Schema(description = "하위 노드 (디렉토리인 경우만)")
             List<FileTreeNode> children
     ) {
         // 디렉토리 노드 생성
         public static FileTreeNode directory(String name, String path, List<FileTreeNode> children) {
-            return new FileTreeNode(name, path, "directory", null, null, children);
+            return new FileTreeNode(name, path, "directory", null, null, null, children);
         }
 
         // 파일 노드 생성
-        public static FileTreeNode file(String name, String path, Long size, Long releaseFileId) {
-            return new FileTreeNode(name, path, "file", size, releaseFileId, null);
+        public static FileTreeNode file(String name, String path, Long size, Long releaseFileId, String filePath) {
+            return new FileTreeNode(name, path, "file", size, releaseFileId, filePath, null);
         }
     }
 

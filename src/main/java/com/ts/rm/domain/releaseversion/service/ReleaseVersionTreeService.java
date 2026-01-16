@@ -551,7 +551,7 @@ public class ReleaseVersionTreeService {
                 continue;
             }
 
-            // 경로를 / 로 분리 (예: /mariadb/01.sql -> ["", "mariadb", "01.sql"])
+            // 경로를 / 로 분리 (예: install/file.sql -> ["install", "file.sql"])
             String[] parts = relativePath.split("/");
 
             // 현재 경로 추적
@@ -559,21 +559,29 @@ public class ReleaseVersionTreeService {
             List<ReleaseVersionDto.FileTreeNode> currentChildren = rootChildren;
 
             // 각 경로 부분을 순회하며 트리 구축
-            for (int i = 1; i < parts.length; i++) {  // i=0은 빈 문자열이므로 건너뜀
+            for (int i = 0; i < parts.length; i++) {
                 String part = parts[i];
-                currentPath.append("/").append(part);
+                if (part.isEmpty()) {
+                    continue;  // 빈 문자열 건너뜀
+                }
+                // 선행 슬래시 없이 경로 구성 (예: install/file.sql)
+                if (currentPath.length() > 0) {
+                    currentPath.append("/");
+                }
+                currentPath.append(part);
                 String pathKey = currentPath.toString();
 
                 // 마지막 부분 (파일)인지 확인
                 boolean isFile = (i == parts.length - 1);
 
                 if (isFile) {
-                    // 파일 노드 생성
+                    // 파일 노드 생성 (filePath는 다운로드용 실제 경로)
                     ReleaseVersionDto.FileTreeNode fileNode = ReleaseVersionDto.FileTreeNode.file(
                             part,
                             pathKey,
                             file.getFileSize(),
-                            file.getReleaseFileId()
+                            file.getReleaseFileId(),
+                            file.getFilePath()
                     );
                     currentChildren.add(fileNode);
                 } else {
@@ -598,7 +606,7 @@ public class ReleaseVersionTreeService {
             }
         }
 
-        // 루트 노드 반환
-        return ReleaseVersionDto.FileTreeNode.directory("", "/", rootChildren);
+        // 루트 노드 반환 (path는 빈 문자열)
+        return ReleaseVersionDto.FileTreeNode.directory("", "", rootChildren);
     }
 }

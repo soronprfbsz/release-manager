@@ -153,31 +153,6 @@ public class PublishingController implements PublishingControllerDocs {
     }
 
     /**
-     * 퍼블리싱 파일 다운로드
-     */
-    @Override
-    @GetMapping("/{id}/files/{fileId}/download")
-    public void downloadFile(
-            @PathVariable Long id,
-            @PathVariable Long fileId,
-            HttpServletResponse response) throws IOException {
-
-        log.info("퍼블리싱 파일 다운로드 요청 - 퍼블리싱 ID: {}, 파일 ID: {}", id, fileId);
-
-        String fileName = publishingService.getFileName(id, fileId);
-        long fileSize = publishingService.getFileSize(id, fileId);
-
-        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
-                HttpFileDownloadUtil.buildContentDisposition(fileName));
-        response.setContentLengthLong(fileSize);
-
-        publishingService.downloadFile(id, fileId, response.getOutputStream());
-
-        log.info("퍼블리싱 파일 다운로드 완료 - 파일명: {}", fileName);
-    }
-
-    /**
      * 퍼블리싱 파일 상세 조회
      */
     @Override
@@ -228,12 +203,12 @@ public class PublishingController implements PublishingControllerDocs {
     }
 
     /**
-     * 퍼블리싱 파일 트리 구조 조회
+     * 퍼블리싱 파일 구조 조회
      */
     @Override
-    @GetMapping("/{id}/file-tree")
-    public ApiResponse<PublishingDto.FileStructureResponse> getFileTree(@PathVariable Long id) {
-        log.info("퍼블리싱 파일 트리 조회 요청 - ID: {}", id);
+    @GetMapping("/{id}/files")
+    public ApiResponse<PublishingDto.FileStructureResponse> getFiles(@PathVariable Long id) {
+        log.info("퍼블리싱 파일 구조 조회 요청 - ID: {}", id);
         PublishingDto.FileStructureResponse response = publishingService.getFileTree(id);
         return ApiResponse.success(response);
     }

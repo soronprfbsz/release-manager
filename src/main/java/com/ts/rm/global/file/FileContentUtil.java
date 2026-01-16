@@ -148,7 +148,7 @@ public final class FileContentUtil {
 
         try {
             // 상대 경로를 절대 경로로 변환
-            Path resolvedPath = baseDir.resolve(relativePath).normalize();
+            Path resolvedPath = baseDir.resolve(relativePath.trim()).normalize();
 
             // 경로 탐색 공격 방지: 해석된 경로가 기준 디렉토리 내부에 있는지 확인
             if (!resolvedPath.startsWith(baseDir)) {

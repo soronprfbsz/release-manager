@@ -8,9 +8,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.io.IOException;
 import java.util.List;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -150,15 +148,6 @@ public interface ResourceFileControllerDocs {
     ApiResponse<List<ResourceFileDto.CategoryGuideResponse>> getCategoryGuide();
 
     @Operation(
-            summary = "리소스 파일 다운로드",
-            description = "리소스 파일을 다운로드합니다."
-    )
-    void downloadResourceFile(
-            @PathVariable Long id,
-            HttpServletResponse response
-    ) throws IOException;
-
-    @Operation(
             summary = "리소스 파일 삭제",
             description = "리소스 파일을 삭제합니다.\n\n"
                     + "**삭제 범위**:\n"
@@ -212,27 +201,6 @@ public interface ResourceFileControllerDocs {
             @RequestBody ResourceFileDto.ReorderResourceFilesRequest request
     );
 
-    @Operation(
-            summary = "리소스 파일 내용 조회",
-            description = "리소스 파일의 내용을 조회합니다.\n\n"
-                    + "**파일 타입별 응답**:\n"
-                    + "- 텍스트 파일 (SH, SQL, TXT 등): `isBinary=false`, `content`는 UTF-8 문자열\n"
-                    + "- 바이너리 파일 (이미지, PDF 등): `isBinary=true`, `content`는 Base64 인코딩\n\n"
-                    + "**최대 파일 크기**: 10MB",
-            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = FileContentApiResponse.class)
-                    )
-            )
-    )
-    ApiResponse<ResourceFileDto.FileContentResponse> getFileContent(
-            @Parameter(description = "리소스 파일 ID", required = true, example = "1")
-            @PathVariable Long id
-    );
-
     /**
      * Swagger 스키마용 wrapper 클래스 - 리소스 파일 상세 응답
      */
@@ -267,17 +235,5 @@ public interface ResourceFileControllerDocs {
 
         @Schema(description = "카테고리 가이드 목록")
         public List<ResourceFileDto.CategoryGuideResponse> data;
-    }
-
-    /**
-     * Swagger 스키마용 wrapper 클래스 - 파일 내용 응답
-     */
-    @Schema(description = "파일 내용 API 응답")
-    class FileContentApiResponse {
-        @Schema(description = "응답 상태", example = "success")
-        public String status;
-
-        @Schema(description = "파일 내용 정보")
-        public ResourceFileDto.FileContentResponse data;
     }
 }

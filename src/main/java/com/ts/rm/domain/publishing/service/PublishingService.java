@@ -53,7 +53,7 @@ public class PublishingService {
     private final PublishingDtoMapper publishingDtoMapper;
     private final AccountLookupService accountLookupService;
 
-    @Value("${app.release.base-path:src/main/resources/release-manager}")
+    @Value("${app.release.base-path:data/release-manager}")
     private String baseReleasePath;
 
     private static final String PUBLISHING_DIR = "resources/publishing";
@@ -377,7 +377,8 @@ public class PublishingService {
         }
 
         try {
-            PublishingDto.DirectoryNode root = buildDirectoryNode(publishingDir, publishingDir);
+            String publishingOutputPath = Paths.get(PUBLISHING_DIR, publishing.getPublishingName()).toString().replace("\\", "/");
+            PublishingDto.DirectoryNode root = buildDirectoryNode(publishingDir, publishingDir, publishingOutputPath);
 
             return new PublishingDto.FileStructureResponse(
                     publishing.getPublishingId(),
@@ -731,7 +732,7 @@ public class PublishingService {
      * @param basePath  기준 경로
      * @return DirectoryNode (재귀 구조)
      */
-    private PublishingDto.DirectoryNode buildDirectoryNode(Path directory, Path basePath) throws IOException {
+    private PublishingDto.DirectoryNode buildDirectoryNode(Path directory, Path basePath, String publishingOutputPath) throws IOException {
         String name = directory.getFileName() != null
                 ? directory.getFileName().toString()
                 : directory.toString();
@@ -749,7 +750,7 @@ public class PublishingService {
                 try {
                     if (Files.isDirectory(path)) {
                         // 하위 디렉토리 재귀 조회
-                        PublishingDto.DirectoryNode childDir = buildDirectoryNode(path, basePath);
+                        PublishingDto.DirectoryNode childDir = buildDirectoryNode(path, basePath, publishingOutputPath);
 
                         // 빈 디렉토리는 제외 (children이 비어있으면 추가하지 않음)
                         if (!childDir.children().isEmpty()) {
@@ -757,7 +758,7 @@ public class PublishingService {
                         }
                     } else {
                         // 파일 정보 추가
-                        children.add(buildFileInfo(path, basePath));
+                        children.add(buildFileInfo(path, basePath, publishingOutputPath));
                     }
                 } catch (IOException e) {
                     log.warn("파일/디렉토리 정보 조회 실패: {}", path, e);
@@ -771,11 +772,12 @@ public class PublishingService {
     /**
      * 파일 정보 생성
      */
-    private PublishingDto.FileInfo buildFileInfo(Path filePath, Path basePath) throws IOException {
+    private PublishingDto.FileInfo buildFileInfo(Path filePath, Path basePath, String publishingOutputPath) throws IOException {
         String name = filePath.getFileName().toString();
         long size = Files.size(filePath);
         String relativePath = basePath.relativize(filePath).toString().replace("\\", "/");
+        String downloadPath = Paths.get(publishingOutputPath, relativePath).toString().replace("\\", "/");
 
-        return new PublishingDto.FileInfo(name, size, "file", relativePath);
+        return new PublishingDto.FileInfo(name, size, "file", relativePath, downloadPath);
     }
 }

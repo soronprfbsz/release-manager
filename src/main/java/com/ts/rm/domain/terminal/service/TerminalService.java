@@ -38,7 +38,7 @@ public class TerminalService {
     private final TerminalSessionManager sessionManager;
     private final PatchRepository patchRepository;
 
-    @Value("${app.release.base-path:src/main/resources/release-manager}")
+    @Value("${app.release.base-path:data/release-manager}")
     private String releaseBasePath;
 
     /**

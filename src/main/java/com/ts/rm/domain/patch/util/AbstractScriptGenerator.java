@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 
 /**
  * 스크립트 생성 추상 클래스
@@ -23,7 +22,7 @@ import org.springframework.core.io.ClassPathResource;
 @Slf4j
 public abstract class AbstractScriptGenerator implements ScriptGenerator {
 
-    @Value("${app.release.base-path:src/main/resources/release-manager}")
+    @Value("${app.release.base-path:data/release-manager}")
     protected String baseReleasePath;
 
     protected static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(
@@ -32,19 +31,23 @@ public abstract class AbstractScriptGenerator implements ScriptGenerator {
     /**
      * 템플릿 파일 경로 반환 (구현체에서 정의)
      *
-     * @return 템플릿 파일 경로 (예: release-manager/templates/MARIADB/mariadb_patch_template.sh)
+     * @return 템플릿 파일 상대 경로 (예: templates/MARIADB/mariadb_patch_template.sh)
      */
     protected abstract String getTemplatePath();
 
     /**
-     * 템플릿 로드
+     * 템플릿 로드 (파일 시스템 기반)
      *
      * @return 템플릿 내용
      */
     protected String loadTemplate() {
         try {
-            ClassPathResource templateResource = new ClassPathResource(getTemplatePath());
-            return Files.readString(Path.of(templateResource.getURI()));
+            Path templatePath = Paths.get(baseReleasePath, getTemplatePath());
+            if (!Files.exists(templatePath)) {
+                throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                        "템플릿 파일을 찾을 수 없습니다: " + templatePath);
+            }
+            return Files.readString(templatePath);
         } catch (IOException e) {
             log.error("템플릿 로드 실패: {}", getTemplatePath(), e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,

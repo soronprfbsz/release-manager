@@ -19,7 +19,7 @@ public class CrateDBScriptGenerator extends AbstractScriptGenerator {
 
     @Override
     protected String getTemplatePath() {
-        return "release-manager/templates/CRATEDB/cratedb_patch_template.sh";
+        return "templates/CRATEDB/cratedb_patch_template.sh";
     }
 
     @Override

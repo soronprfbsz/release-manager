@@ -75,11 +75,10 @@ AUX
 com[1-9]
 lpt[1-9]
 
-### Release Files ###
-src/main/resources/release-manager/patches/
-src/main/resources/release-manager/resources/
-src/main/resources/release-manager/versions/
-src/main/resources/release-manager/publishing/
+### Release Data (External Static Files) ###
+# data/release-manager 하위 폴더 중 templates만 Git 추적
+data/release-manager/*
+!data/release-manager/templates/
 
 ### Backup Files ###
 **/backup_files/

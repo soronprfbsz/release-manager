@@ -252,6 +252,7 @@ public final class PublishingDto {
         String name();
         String path();
         String type();
+        String filePath();
     }
 
     /**
@@ -269,7 +270,10 @@ public final class PublishingDto {
             String type,
 
             @Schema(description = "경로", example = "css/style.css")
-            String path
+            String path,
+
+            @Schema(description = "다운로드용 파일 경로 (파일인 경우만)")
+            String filePath
     ) implements FileNode {
     }
 
@@ -290,6 +294,9 @@ public final class PublishingDto {
             @Schema(description = "자식 노드 목록 (파일 또는 디렉토리)")
             List<FileNode> children
     ) implements FileNode {
+        public String filePath() {
+            return null;
+        }
     }
 
     /**

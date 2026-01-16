@@ -60,7 +60,7 @@ public class PatchGenerationService {
     private final ScriptGenerator crateDBScriptGenerator;
     private final AccountLookupService accountLookupService;
 
-    @Value("${app.release.base-path:src/main/resources/release-manager}")
+    @Value("${app.release.base-path:data/release-manager}")
     private String releaseBasePath;
 
     /**

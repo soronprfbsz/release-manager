@@ -268,6 +268,7 @@ public final class PatchDto {
         String name();
         String path();
         String type();
+        String filePath();
     }
 
     /**
@@ -285,7 +286,10 @@ public final class PatchDto {
             String type,
 
             @Schema(description = "경로", example = "mariadb/source_files/1.1.0/1.patch_mariadb.sql")
-            String path
+            String path,
+
+            @Schema(description = "다운로드용 파일 경로 (파일인 경우만)")
+            String filePath
     ) implements FileNode {
 
     }
@@ -307,7 +311,9 @@ public final class PatchDto {
             @Schema(description = "자식 노드 목록 (파일 또는 디렉토리)")
             java.util.List<FileNode> children
     ) implements FileNode {
-
+        public String filePath() {
+            return null;
+        }
     }
 
     /**

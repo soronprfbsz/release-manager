@@ -1,17 +1,13 @@
 package com.ts.rm.domain.releasefile.controller;
 
-import com.ts.rm.domain.releasefile.dto.ReleaseFileDto;
 import com.ts.rm.domain.releasefile.service.ReleaseFileService;
 import com.ts.rm.global.file.HttpFileDownloadUtil;
-import com.ts.rm.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,20 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReleaseFileController implements ReleaseFileControllerDocs {
 
     private final ReleaseFileService releaseFileService;
-
-    @Override
-    @GetMapping("/files/{id}/download")
-    public ResponseEntity<Resource> downloadReleaseFile(@PathVariable("id") Long fileId) {
-
-        Resource resource = releaseFileService.downloadReleaseFile(fileId);
-        ReleaseFileDto.DetailResponse releaseFile = releaseFileService.getReleaseFileById(fileId);
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        HttpFileDownloadUtil.buildContentDisposition(releaseFile.fileName()))
-                .body(resource);
-    }
 
     @Override
     @GetMapping("/versions/{id}/download")
@@ -67,17 +49,5 @@ public class ReleaseFileController implements ReleaseFileControllerDocs {
 
         log.info("버전별 파일 스트리밍 다운로드 완료 - versionId: {}, fileName: {}, uncompressedSize: {} bytes",
                 id, fileName, uncompressedSize);
-    }
-
-    @Override
-    @GetMapping("/files/{id}/file-content")
-    public ResponseEntity<ApiResponse<ReleaseFileDto.FileContentResponse>> getFileContent(
-            @PathVariable("id") Long fileId) {
-
-        log.info("릴리즈 파일 내용 조회 API 호출 - fileId: {}", fileId);
-
-        ReleaseFileDto.FileContentResponse response = releaseFileService.getFileContent(fileId);
-
-        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

@@ -64,16 +64,15 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()  // Spring Boot 기본 에러 처리 엔드포인트
                         // WebSocket 엔드포인트 - SockJS handshake 허용 (STOMP CONNECT에서 JWT 검증)
                         .requestMatchers("/ws/**").permitAll()  // 모든 WebSocket 엔드포인트 (/ws/remote-execution, /ws/terminal 등)
-                        // 파일 다운로드 API - 브라우저 네이티브 다운로드 방식 사용으로 인증 제외
-                        .requestMatchers("/api/releases/files/*/download").permitAll()  // 릴리즈 파일 다운로드
-                        .requestMatchers("/api/releases/versions/*/download").permitAll()  // 릴리즈 버전 전체 다운로드
-                        .requestMatchers("/api/patches/*/download").permitAll()  // 패치 다운로드
-                        .requestMatchers("/api/resources/*/download").permitAll()  // 리소스 파일 다운로드
+                        // 파일 API - 브라우저 네이티브 다운로드 방식 사용으로 인증 제외
+                        .requestMatchers("/api/files/**").permitAll()  // 공통 파일 API (다운로드, 컨텐츠 조회)
+                        .requestMatchers("/api/releases/versions/*/download").permitAll()  // 릴리즈 버전 전체 다운로드 (ZIP)
+                        .requestMatchers("/api/patches/*/download").permitAll()  // 패치 다운로드 (ZIP)
+                        .requestMatchers("/api/projects/*/files/download-all").permitAll() // 온보딩 전체 다운로드 (ZIP)
                         .requestMatchers("/api/jobs/backup-files/*/download").permitAll() // 백업 파일 다운로드
                         .requestMatchers("/api/jobs/backup-files/*/logs/download").permitAll() // 백업 로그 다운로드
                         .requestMatchers("/api/publishing/*/serve/**").permitAll() // 퍼블리싱 파일 서빙 (브라우저 열기)
-                        .requestMatchers("/api/publishing/*/files/*/download").permitAll() // 퍼블리싱 파일 다운로드
-                        .requestMatchers("/api/publishing/*/download").permitAll() // 퍼블리싱 전체 다운로드
+                        .requestMatchers("/api/publishing/*/download").permitAll() // 퍼블리싱 전체 다운로드 (ZIP)
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )

@@ -4,16 +4,12 @@ import com.ts.rm.domain.resourcefile.dto.ResourceFileDto;
 import com.ts.rm.domain.resourcefile.entity.ResourceFile;
 import com.ts.rm.domain.resourcefile.mapper.ResourceFileDtoMapper;
 import com.ts.rm.domain.resourcefile.service.ResourceFileService;
-import com.ts.rm.global.file.HttpFileDownloadUtil;
 import com.ts.rm.global.response.ApiResponse;
 import com.ts.rm.global.security.SecurityUtil;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -173,30 +169,6 @@ public class ResourceFileController implements ResourceFileControllerDocs {
     }
 
     /**
-     * 리소스 파일 다운로드
-     */
-    @Override
-    @GetMapping("/{id}/download")
-    public void downloadResourceFile(
-            @PathVariable Long id,
-            HttpServletResponse response) throws IOException {
-
-        log.info("리소스 파일 다운로드 요청 - ID: {}", id);
-
-        String fileName = resourceFileService.getFileName(id);
-        long fileSize = resourceFileService.getFileSize(id);
-
-        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
-                HttpFileDownloadUtil.buildContentDisposition(fileName));
-        response.setContentLengthLong(fileSize);
-
-        resourceFileService.downloadFile(id, response.getOutputStream());
-
-        log.info("리소스 파일 다운로드 완료 - ID: {}, fileName: {}", id, fileName);
-    }
-
-    /**
      * 리소스 파일 삭제
      */
     @Override
@@ -222,19 +194,5 @@ public class ResourceFileController implements ResourceFileControllerDocs {
         resourceFileService.reorderResourceFiles(request);
 
         return ApiResponse.success(null);
-    }
-
-    /**
-     * 리소스 파일 내용 조회
-     */
-    @Override
-    @GetMapping("/{id}/file-content")
-    public ApiResponse<ResourceFileDto.FileContentResponse> getFileContent(@PathVariable Long id) {
-
-        log.info("리소스 파일 내용 조회 요청 - ID: {}", id);
-
-        ResourceFileDto.FileContentResponse response = resourceFileService.getFileContent(id);
-
-        return ApiResponse.success(response);
     }
 }

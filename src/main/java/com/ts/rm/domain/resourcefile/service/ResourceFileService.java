@@ -38,7 +38,7 @@ public class ResourceFileService {
     private final ResourceFileRepository resourceFileRepository;
     private final AccountLookupService accountLookupService;
 
-    @Value("${app.release.base-path:src/main/resources/release-manager}")
+    @Value("${app.release.base-path:data/release-manager}")
     private String baseReleasePath;
 
     /**

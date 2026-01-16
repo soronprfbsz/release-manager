@@ -14,9 +14,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -66,9 +65,6 @@ public class ReleaseFile extends BaseEntity {
     @Column(name = "file_path", nullable = false, length = 500)
     private String filePath;
 
-    @Column(name = "relative_path", length = 500)
-    private String relativePath;
-
     @Column(name = "file_size")
     private Long fileSize;
 
@@ -80,4 +76,65 @@ public class ReleaseFile extends BaseEntity {
 
     @Column(length = 500)
     private String description;
+
+    /**
+     * filePath에서 상대 경로 추출 (Transient 계산 필드)
+     *
+     * <p>filePath 구조:
+     * <ul>
+     *   <li>표준: versions/{projectId}/standard/{majorMinor}/{version}/{relativePath}
+     *   <li>커스텀: versions/{projectId}/custom/{customerCode}/{majorMinor}/{version}/{relativePath}
+     * </ul>
+     *
+     * <p>예시:
+     * <ul>
+     *   <li>filePath: versions/infraeye2/standard/1.0.x/1.0.0/install/file.sql
+     *   <li>반환값: install/file.sql
+     * </ul>
+     *
+     * @return 상대 경로 (선행 슬래시 없음)
+     */
+    @Transient
+    public String getRelativePath() {
+        if (filePath == null || filePath.isEmpty()) {
+            return fileName;
+        }
+
+        String[] parts = filePath.split("/");
+        if (parts.length < 6) {
+            return fileName;
+        }
+
+        // parts[0] = "versions"
+        // parts[1] = projectId
+        // parts[2] = type (standard, custom)
+        // 표준: parts[3] = majorMinor, parts[4] = version, parts[5...] = relativePath
+        // 커스텀: parts[3] = customerCode, parts[4] = majorMinor, parts[5] = version, parts[6...] = relativePath
+
+        int relativeStartIndex;
+        if ("versions".equals(parts[0])) {
+            if (parts.length > 2 && "custom".equals(parts[2])) {
+                // 커스텀: 6번째 이후가 상대 경로
+                relativeStartIndex = 6;
+            } else {
+                // 표준: 5번째 이후가 상대 경로
+                relativeStartIndex = 5;
+            }
+
+            if (relativeStartIndex >= parts.length) {
+                return fileName;
+            }
+
+            StringBuilder relativePath = new StringBuilder();
+            for (int i = relativeStartIndex; i < parts.length; i++) {
+                if (i > relativeStartIndex) {
+                    relativePath.append("/");
+                }
+                relativePath.append(parts[i]);
+            }
+            return relativePath.toString();
+        }
+
+        return fileName;
+    }
 }

@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PatchDownloadService {
 
-    @Value("${app.release.base-path:src/main/resources/release-manager}")
+    @Value("${app.release.base-path:data/release-manager}")
     private String releaseBasePath;
 
     /**
@@ -160,7 +160,7 @@ public class PatchDownloadService {
 
         try {
             // 루트 디렉토리 구조 생성
-            return buildDirectoryNode(patchDir, patchDir);
+            return buildDirectoryNode(patchDir, patchDir, patch.getOutputPath());
 
         } catch (IOException e) {
             log.error("패치 디렉토리 구조 조회 실패: {}", patchDir, e);
@@ -176,7 +176,7 @@ public class PatchDownloadService {
      * @param basePath  기준 경로
      * @return DirectoryNode (재귀 구조)
      */
-    private PatchDto.DirectoryNode buildDirectoryNode(Path directory, Path basePath)
+    private PatchDto.DirectoryNode buildDirectoryNode(Path directory, Path basePath, String patchOutputPath)
             throws IOException {
 
         String name = directory.getFileName() != null
@@ -196,7 +196,7 @@ public class PatchDownloadService {
                 try {
                     if (Files.isDirectory(path)) {
                         // 하위 디렉토리 재귀 조회
-                        PatchDto.DirectoryNode childDir = buildDirectoryNode(path, basePath);
+                        PatchDto.DirectoryNode childDir = buildDirectoryNode(path, basePath, patchOutputPath);
 
                         // 빈 디렉토리는 제외 (children이 비어있으면 추가하지 않음)
                         if (!childDir.children().isEmpty()) {
@@ -204,7 +204,7 @@ public class PatchDownloadService {
                         }
                     } else {
                         // 파일 정보 추가
-                        children.add(buildFileInfo(path, basePath));
+                        children.add(buildFileInfo(path, basePath, patchOutputPath));
                     }
                 } catch (IOException e) {
                     log.warn("파일/디렉토리 정보 조회 실패: {}", path, e);
@@ -218,12 +218,13 @@ public class PatchDownloadService {
     /**
      * 파일 정보 생성
      */
-    private PatchDto.FileInfo buildFileInfo(Path filePath, Path basePath) throws IOException {
+    private PatchDto.FileInfo buildFileInfo(Path filePath, Path basePath, String patchOutputPath) throws IOException {
         String name = filePath.getFileName().toString();
         long size = Files.size(filePath);
         String relativePath = basePath.relativize(filePath).toString().replace("\\", "/");
+        String downloadPath = Paths.get(patchOutputPath, relativePath).toString().replace("\\", "/");
 
-        return new PatchDto.FileInfo(name, size, "file", relativePath);
+        return new PatchDto.FileInfo(name, size, "file", relativePath, downloadPath);
     }
 
     /**

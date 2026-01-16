@@ -187,20 +187,17 @@ stages:
     - echo "$HARBOR_PASSWORD" | docker login http://$HARBOR_REGISTRY -u $HARBOR_USERNAME --password-stdin || true
   script:
     - |
-      # JAR에서 리소스 파일 추출 및 동기화
-      echo "=== 리소스 파일 동기화 ==="
-      JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | head -1)
-      TEMP_DIR="/tmp/release_extract_$$"
+      # 템플릿 파일 동기화 (Git에서 추적되는 templates 폴더만 동기화)
+      # 다른 동적 폴더(versions, patches 등)는 이미 서버에 존재하므로 동기화 불필요
+      echo "=== 템플릿 파일 동기화 ==="
+      TEMPLATES_SRC="data/release-manager/templates"
 
-      if [ -f "$JAR_FILE" ]; then
-        mkdir -p ${TEMP_DIR}
-        unzip -q -o "$JAR_FILE" "BOOT-INF/classes/release-manager/*" -d ${TEMP_DIR} 2>/dev/null || true
-
-        if [ -d "${TEMP_DIR}/BOOT-INF/classes/release-manager" ]; then
-          rsync -av ${TEMP_DIR}/BOOT-INF/classes/release-manager/ ${RELEASE_DIR}/
-          echo "✅ 리소스 동기화 완료"
-        fi
-        rm -rf ${TEMP_DIR}
+      if [ -d "${TEMPLATES_SRC}" ]; then
+        mkdir -p ${RELEASE_DIR}/templates
+        rsync -av ${TEMPLATES_SRC}/ ${RELEASE_DIR}/templates/
+        echo "✅ 템플릿 동기화 완료"
+      else
+        echo "⚠️  템플릿 폴더 없음: ${TEMPLATES_SRC}"
       fi
       chmod -R 755 ${RELEASE_DIR}
 
