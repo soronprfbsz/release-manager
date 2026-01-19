@@ -9,6 +9,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.account.entity.QAccount;
 import com.ts.rm.domain.common.entity.QCode;
+import com.ts.rm.domain.department.entity.QDepartment;
 import com.ts.rm.global.querydsl.QuerydslPaginationUtil;
 
 import java.util.ArrayList;
@@ -35,13 +36,15 @@ public class AccountRepositoryImpl implements AccountRepositoryCustom {
 
     private static final QAccount account = QAccount.account;
     private static final QCode positionCode = new QCode("positionCode");
+    private static final QDepartment department = QDepartment.department;
 
     @Override
     public Page<Account> findAllWithFilters(String status, List<Long> departmentIds, Long primaryDepartmentId,
                                             String departmentType, boolean unassigned, String keyword, Pageable pageable) {
-        // 1. 기본 쿼리 생성 (직급 정렬을 위해 code 테이블 left join)
+        // 1. 기본 쿼리 생성 (직급/부서 정렬을 위해 code, department 테이블 left join)
         JPAQuery<Account> contentQuery = queryFactory
                 .selectFrom(account)
+                .leftJoin(account.department, department)
                 .leftJoin(positionCode)
                     .on(positionCode.codeTypeId.eq(POSITION_CODE_TYPE)
                             .and(positionCode.codeId.eq(account.position)))
@@ -70,6 +73,7 @@ public class AccountRepositoryImpl implements AccountRepositoryCustom {
                 "accountName", account.accountName,
                 "phone", account.phone,
                 "position", positionCode.sortOrder,  // 직급 순서(code.sort_order) 기준 정렬
+                "departmentName", department.departmentName,  // 부서명 기준 정렬
                 "role", account.role,
                 "status", account.status,
                 "lastLoginAt", account.lastLoginAt,

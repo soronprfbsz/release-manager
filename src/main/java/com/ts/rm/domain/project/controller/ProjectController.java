@@ -183,7 +183,7 @@ public class ProjectController implements ProjectControllerDocs {
      * @param response HTTP 응답
      */
     @Override
-    @GetMapping("/{id}/files/download-all")
+    @GetMapping("/{id}/onboarding/download")
     public void downloadAllOnboardingFiles(
             @PathVariable String id,
             HttpServletResponse response) throws IOException {
@@ -196,6 +196,7 @@ public class ProjectController implements ProjectControllerDocs {
         response.setContentType("application/zip");
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
                 HttpFileDownloadUtil.buildContentDisposition(zipFileName));
+        response.setHeader("X-Uncompressed-Size", String.valueOf(totalSize));
 
         projectService.downloadAllOnboardingFiles(id, response.getOutputStream());
 
