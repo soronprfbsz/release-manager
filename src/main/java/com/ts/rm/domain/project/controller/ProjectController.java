@@ -135,20 +135,22 @@ public class ProjectController implements ProjectControllerDocs {
     }
 
     /**
-     * 프로젝트별 온보딩 파일 목록 조회 (DB 기반)
+     * 온보딩 디렉토리 생성
      *
-     * @param id 프로젝트 ID
-     * @return 온보딩 파일 목록 응답
+     * @param id   프로젝트 ID
+     * @param path 생성할 디렉토리 경로
+     * @return 생성 결과 응답
      */
     @Override
-    @GetMapping("/{id}/files/list")
-    public ResponseEntity<ApiResponse<ProjectDto.OnboardingFileListResponse>> getOnboardingFileList(
-            @PathVariable String id) {
+    @PostMapping("/{id}/files/directory")
+    public ResponseEntity<ApiResponse<ProjectDto.OnboardingDirectoryResponse>> createOnboardingDirectory(
+            @PathVariable String id,
+            @RequestParam String path) {
 
-        log.info("온보딩 파일 목록 조회 API 호출 - projectId: {}", id);
+        log.info("온보딩 디렉토리 생성 API 호출 - projectId: {}, path: {}", id, path);
 
-        ProjectDto.OnboardingFileListResponse response = projectService.getOnboardingFileList(id);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        ProjectDto.OnboardingDirectoryResponse response = projectService.createOnboardingDirectory(id, path);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
     /**
@@ -158,6 +160,7 @@ public class ProjectController implements ProjectControllerDocs {
      * @param file        업로드할 파일 (ZIP 또는 단일 파일)
      * @param targetPath  대상 경로 (선택)
      * @param description 파일 설명 (선택)
+     * @param extractZip  ZIP 파일 압축 해제 여부 (기본값: true)
      * @return 업로드 결과 응답
      */
     @Override
@@ -166,13 +169,14 @@ public class ProjectController implements ProjectControllerDocs {
             @PathVariable String id,
             @RequestPart("file") MultipartFile file,
             @RequestParam(required = false) String targetPath,
-            @RequestParam(required = false) String description) {
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false, defaultValue = "true") Boolean extractZip) {
 
-        log.info("온보딩 파일 업로드 API 호출 - projectId: {}, fileName: {}, targetPath: {}",
-                id, file.getOriginalFilename(), targetPath);
+        log.info("온보딩 파일 업로드 API 호출 - projectId: {}, fileName: {}, targetPath: {}, extractZip: {}",
+                id, file.getOriginalFilename(), targetPath, extractZip);
 
         ProjectDto.OnboardingUploadResponse response =
-                projectService.uploadOnboardingFile(id, file, targetPath, description);
+                projectService.uploadOnboardingFile(id, file, targetPath, description, extractZip);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
@@ -204,19 +208,21 @@ public class ProjectController implements ProjectControllerDocs {
     }
 
     /**
-     * 온보딩 파일 삭제 (ID 기반)
+     * 온보딩 파일 삭제 (경로 기반)
      *
-     * @param fileId 온보딩 파일 ID
+     * @param id       프로젝트 ID
+     * @param filePath 삭제할 파일 경로 (예: /mariadb/init.sql)
      * @return 삭제 결과 응답
      */
     @Override
-    @DeleteMapping("/files/{fileId}")
+    @DeleteMapping("/{id}/files")
     public ResponseEntity<ApiResponse<ProjectDto.OnboardingDeleteResponse>> deleteOnboardingFile(
-            @PathVariable Long fileId) {
+            @PathVariable String id,
+            @RequestParam String filePath) {
 
-        log.info("온보딩 파일 삭제 API 호출 - fileId: {}", fileId);
+        log.info("온보딩 파일 삭제 API 호출 - projectId: {}, filePath: {}", id, filePath);
 
-        ProjectDto.OnboardingDeleteResponse response = projectService.deleteOnboardingFileById(fileId);
+        ProjectDto.OnboardingDeleteResponse response = projectService.deleteOnboardingFile(id, filePath);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

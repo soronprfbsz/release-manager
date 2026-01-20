@@ -1,18 +1,12 @@
 package com.ts.rm.domain.project.service;
 
-import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.project.dto.ProjectDto;
-import com.ts.rm.domain.project.entity.OnboardingFile;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.project.mapper.ProjectDtoMapper;
-import com.ts.rm.domain.project.repository.OnboardingFileRepository;
 import com.ts.rm.domain.project.repository.ProjectRepository;
-import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
-import com.ts.rm.global.file.FileChecksumUtil;
 import com.ts.rm.global.file.StreamingZipUtil;
-import com.ts.rm.global.security.SecurityUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,8 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final OnboardingFileRepository onboardingFileRepository;
-    private final AccountLookupService accountLookupService;
     private final ProjectDtoMapper mapper;
 
     @Value("${app.release.base-path:data/release-manager}")
@@ -162,7 +154,7 @@ public class ProjectService {
         return projectRepository.existsByProjectId(projectId);
     }
 
-    // === Onboarding File Methods ===
+    // === Onboarding File Methods (파일시스템 기반) ===
 
     /**
      * 프로젝트별 온보딩 파일 트리 조회 (파일시스템 기반)
@@ -205,66 +197,6 @@ public class ProjectService {
                 result.fileCount,
                 result.totalSize,
                 result.rootNode
-        );
-    }
-
-    /**
-     * 프로젝트별 온보딩 파일 목록 조회 (DB 기반)
-     *
-     * @param projectId 프로젝트 ID
-     * @return 온보딩 파일 목록 응답
-     */
-    public ProjectDto.OnboardingFileListResponse getOnboardingFileList(String projectId) {
-        log.info("온보딩 파일 목록 조회 요청 (DB 기반) - projectId: {}", projectId);
-
-        // 프로젝트 조회 및 검증
-        Project project = findProjectById(projectId);
-
-        // DB에서 파일 목록 조회
-        List<OnboardingFile> onboardingFiles =
-                onboardingFileRepository.findAllByProject_ProjectIdOrderBySortOrderAscCreatedAtDesc(projectId);
-
-        // 총 파일 크기 계산
-        Long totalSize = onboardingFileRepository.sumFileSizeByProjectId(projectId);
-
-        // DTO 변환
-        List<ProjectDto.OnboardingFileDetailResponse> fileResponses = onboardingFiles.stream()
-                .map(this::toOnboardingFileDetailResponse)
-                .toList();
-
-        log.info("온보딩 파일 목록 조회 완료 - projectId: {}, fileCount: {}, totalSize: {}",
-                projectId, fileResponses.size(), totalSize);
-
-        return new ProjectDto.OnboardingFileListResponse(
-                projectId,
-                project.getProjectName(),
-                fileResponses.size(),
-                totalSize != null ? totalSize : 0L,
-                fileResponses
-        );
-    }
-
-    /**
-     * OnboardingFile 엔티티를 DTO로 변환
-     */
-    private ProjectDto.OnboardingFileDetailResponse toOnboardingFileDetailResponse(OnboardingFile file) {
-        return new ProjectDto.OnboardingFileDetailResponse(
-                file.getOnboardingFileId(),
-                file.getProject().getProjectId(),
-                file.getFileType(),
-                file.getFileCategory(),
-                file.getFileName(),
-                file.getFilePath(),
-                file.getFileSize(),
-                file.getChecksum(),
-                file.getDescription(),
-                file.getSortOrder(),
-                file.getCreatedByEmail(),
-                file.getCreatedByName(),
-                file.getCreatedByAvatarStyle(),
-                file.getCreatedByAvatarSeed(),
-                file.isDeletedCreator(),
-                file.getCreatedAt()
         );
     }
 
@@ -329,7 +261,7 @@ public class ProjectService {
         String name = currentPath.equals(rootPath)
                 ? "root"
                 : currentPath.getFileName().toString();
-        
+
         // filePath 생성 (onboardings/{projectId}/ 포함)
         String filePathStr = currentPath.equals(rootPath)
                 ? onboardingRelativeBase
@@ -348,33 +280,68 @@ public class ProjectService {
     ) {
     }
 
-    // === Onboarding File Upload/Download/Delete Methods ===
+    // === Onboarding File Upload/Download/Delete Methods (파일시스템 기반) ===
 
     /**
-     * 온보딩 파일 업로드 (ZIP 또는 단일 파일) - DB 연동
+     * 온보딩 디렉토리 생성
      *
-     * @param projectId   프로젝트 ID
-     * @param file        업로드할 파일 (ZIP인 경우 압축 해제)
-     * @param targetPath  대상 경로 (null이면 루트에 저장)
-     * @param description 파일 설명 (선택)
-     * @return 업로드 결과 응답
+     * @param projectId 프로젝트 ID
+     * @param path      생성할 디렉토리 경로 (예: /mariadb/scripts)
+     * @return 생성 결과 응답
      */
-    @Transactional
-    public ProjectDto.OnboardingUploadResponse uploadOnboardingFile(
-            String projectId, MultipartFile file, String targetPath, String description) {
-
-        log.info("온보딩 파일 업로드 요청 - projectId: {}, fileName: {}, targetPath: {}",
-                projectId, file.getOriginalFilename(), targetPath);
+    public ProjectDto.OnboardingDirectoryResponse createOnboardingDirectory(String projectId, String path) {
+        log.info("온보딩 디렉토리 생성 요청 - projectId: {}, path: {}", projectId, path);
 
         // 프로젝트 조회 및 검증
-        Project project = findProjectById(projectId);
+        findProjectById(projectId);
 
-        // 현재 로그인 사용자 정보 조회
-        String currentEmail = SecurityUtil.getCurrentEmail();
-        Account creator = accountLookupService.findByEmail(currentEmail);
+        // 경로 정규화
+        String normalizedPath = path.replaceAll("^/+|/+$", "");
+        if (normalizedPath.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "디렉토리 경로가 비어있습니다");
+        }
 
-        // 온보딩 기본 경로 (상대경로)
-        String onboardingRelativeBase = "onboardings/" + projectId;
+        Path fullPath = Paths.get(baseReleasePath, "onboardings", projectId, normalizedPath);
+
+        try {
+            if (Files.exists(fullPath)) {
+                throw new BusinessException(ErrorCode.DATA_CONFLICT, "이미 존재하는 경로입니다: " + path);
+            }
+            Files.createDirectories(fullPath);
+            log.info("온보딩 디렉토리 생성 완료 - path: {}", fullPath);
+
+        } catch (IOException e) {
+            log.error("온보딩 디렉토리 생성 실패 - projectId: {}, error: {}", projectId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다: " + e.getMessage());
+        }
+
+        return new ProjectDto.OnboardingDirectoryResponse(
+                projectId,
+                "/" + normalizedPath,
+                "디렉토리가 생성되었습니다."
+        );
+    }
+
+    /**
+     * 온보딩 파일 업로드 (ZIP 또는 단일 파일) - 파일시스템만 사용
+     *
+     * @param projectId   프로젝트 ID
+     * @param file        업로드할 파일
+     * @param targetPath  대상 경로 (null이면 루트에 저장)
+     * @param description 파일 설명 (사용하지 않음, API 호환성 유지)
+     * @param extractZip  ZIP 파일 압축 해제 여부 (true: 압축 해제, false: 원본 유지)
+     * @return 업로드 결과 응답
+     */
+    public ProjectDto.OnboardingUploadResponse uploadOnboardingFile(
+            String projectId, MultipartFile file, String targetPath, String description, boolean extractZip) {
+
+        log.info("온보딩 파일 업로드 요청 - projectId: {}, fileName: {}, targetPath: {}, extractZip: {}",
+                projectId, file.getOriginalFilename(), targetPath, extractZip);
+
+        // 프로젝트 조회 및 검증
+        findProjectById(projectId);
+
+        // 온보딩 기본 경로
         Path onboardingBasePath = Paths.get(baseReleasePath, "onboardings", projectId);
 
         // 대상 경로 설정
@@ -400,25 +367,20 @@ public class ProjectService {
                 throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "파일명이 없습니다");
             }
 
-            // ZIP 파일인 경우 압축 해제
-            if (originalFileName.toLowerCase().endsWith(".zip")) {
-                uploadedFiles = extractZipFileWithDb(file, uploadTargetPath, onboardingRelativeBase,
-                        targetSubPath, project, creator, currentEmail);
+            // ZIP 파일이고 extractZip이 true인 경우 압축 해제
+            if (extractZip && originalFileName.toLowerCase().endsWith(".zip")) {
+                uploadedFiles = extractZipFile(file, uploadTargetPath, targetSubPath);
             } else {
-                // 단일 파일 저장 및 DB 등록
+                // 단일 파일 저장 (ZIP 파일도 extractZip=false이면 원본 그대로 저장)
                 Path targetFilePath = uploadTargetPath.resolve(originalFileName);
                 Files.copy(file.getInputStream(), targetFilePath, StandardCopyOption.REPLACE_EXISTING);
 
-                // DB에 메타데이터 저장
-                OnboardingFile savedFile = saveOnboardingFileMetadata(
-                        project, targetFilePath, onboardingRelativeBase, targetSubPath,
-                        originalFileName, description, creator, currentEmail);
-
+                long fileSize = Files.size(targetFilePath);
                 String relativePath = "/" + targetSubPath + (targetSubPath.isEmpty() ? "" : "/") + originalFileName;
                 uploadedFiles.add(new ProjectDto.UploadedFileInfo(
                         originalFileName,
                         relativePath,
-                        savedFile.getFileSize()
+                        fileSize
                 ));
             }
 
@@ -438,11 +400,10 @@ public class ProjectService {
     }
 
     /**
-     * ZIP 파일 압축 해제 및 DB 저장
+     * ZIP 파일 압축 해제 (파일시스템만 사용)
      */
-    private List<ProjectDto.UploadedFileInfo> extractZipFileWithDb(
-            MultipartFile zipFile, Path targetDir, String onboardingRelativeBase,
-            String targetSubPath, Project project, Account creator, String creatorEmail) throws IOException {
+    private List<ProjectDto.UploadedFileInfo> extractZipFile(
+            MultipartFile zipFile, Path targetDir, String targetSubPath) throws IOException {
 
         List<ProjectDto.UploadedFileInfo> uploadedFiles = new ArrayList<>();
 
@@ -462,20 +423,16 @@ public class ProjectService {
                 Files.createDirectories(filePath.getParent());
                 Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
 
-                // 상대 경로 계산 (targetSubPath를 기준으로)
+                // 상대 경로 계산
                 String fileRelativePath = targetSubPath.isEmpty()
                         ? entryName
                         : targetSubPath + "/" + entryName;
 
-                // DB에 메타데이터 저장
-                OnboardingFile savedFile = saveOnboardingFileMetadata(
-                        project, filePath, onboardingRelativeBase, fileRelativePath.replace("/" + filePath.getFileName().toString(), ""),
-                        filePath.getFileName().toString(), null, creator, creatorEmail);
-
+                long fileSize = Files.size(filePath);
                 uploadedFiles.add(new ProjectDto.UploadedFileInfo(
                         filePath.getFileName().toString(),
                         "/" + fileRelativePath,
-                        savedFile.getFileSize()
+                        fileSize
                 ));
 
                 zis.closeEntry();
@@ -483,87 +440,6 @@ public class ProjectService {
         }
 
         return uploadedFiles;
-    }
-
-    /**
-     * 온보딩 파일 메타데이터 DB 저장
-     */
-    private OnboardingFile saveOnboardingFileMetadata(
-            Project project, Path filePath, String onboardingRelativeBase,
-            String subPath, String fileName, String description,
-            Account creator, String creatorEmail) throws IOException {
-
-        // 파일 타입 추출 (확장자 대문자)
-        String fileType = extractFileType(fileName);
-
-        // 파일 카테고리 추출 (subPath의 첫 번째 디렉토리 또는 ETC)
-        String fileCategory = extractFileCategory(subPath);
-
-        // 상대 경로 생성 (DB 저장용)
-        String dbFilePath = onboardingRelativeBase + "/" +
-                (subPath.isEmpty() ? fileName : subPath + "/" + fileName);
-
-        // 중복 파일 검사
-        if (onboardingFileRepository.existsByFilePath(dbFilePath)) {
-            // 기존 파일 삭제 후 재등록 (덮어쓰기)
-            onboardingFileRepository.findByFilePath(dbFilePath)
-                    .ifPresent(onboardingFileRepository::delete);
-            log.info("기존 온보딩 파일 덮어쓰기 - path: {}", dbFilePath);
-        }
-
-        // 파일 크기 및 체크섬
-        long fileSize = Files.size(filePath);
-        String checksum = FileChecksumUtil.calculateChecksum(filePath);
-
-        // sortOrder 자동 채번
-        Integer maxSortOrder = onboardingFileRepository.findMaxSortOrderByProjectId(project.getProjectId());
-        Integer sortOrder = maxSortOrder + 1;
-
-        // 엔티티 생성 및 저장
-        OnboardingFile onboardingFile = OnboardingFile.builder()
-                .project(project)
-                .fileType(fileType)
-                .fileCategory(fileCategory)
-                .fileName(fileName)
-                .filePath(dbFilePath)
-                .fileSize(fileSize)
-                .checksum(checksum)
-                .description(description)
-                .sortOrder(sortOrder)
-                .creator(creator)
-                .createdByEmail(creatorEmail)
-                .build();
-
-        OnboardingFile saved = onboardingFileRepository.save(onboardingFile);
-        log.debug("온보딩 파일 DB 저장 완료 - id: {}, path: {}", saved.getOnboardingFileId(), dbFilePath);
-
-        return saved;
-    }
-
-    /**
-     * 파일명에서 확장자 추출 (대문자)
-     */
-    private String extractFileType(String fileName) {
-        int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1) {
-            return "UNKNOWN";
-        }
-        return fileName.substring(lastDotIndex + 1).toUpperCase();
-    }
-
-    /**
-     * 경로에서 파일 카테고리 추출
-     */
-    private String extractFileCategory(String subPath) {
-        if (subPath == null || subPath.isBlank()) {
-            return "ETC";
-        }
-        // 첫 번째 디렉토리를 카테고리로 사용
-        String[] parts = subPath.split("/");
-        if (parts.length > 0 && !parts[0].isBlank()) {
-            return parts[0].toUpperCase();
-        }
-        return "ETC";
     }
 
     /**
@@ -637,7 +513,7 @@ public class ProjectService {
         log.info("온보딩 전체 파일 다운로드 요청 - projectId: {}", projectId);
 
         // 프로젝트 조회 및 검증
-        Project project = findProjectById(projectId);
+        findProjectById(projectId);
 
         Path onboardingPath = Paths.get(baseReleasePath, "onboardings", projectId);
 
@@ -696,13 +572,12 @@ public class ProjectService {
     }
 
     /**
-     * 온보딩 파일 삭제 (파일 경로 기반) - DB 및 파일시스템 동시 삭제
+     * 온보딩 파일 삭제 (파일 경로 기반) - 파일시스템에서만 삭제
      *
      * @param projectId 프로젝트 ID
      * @param filePath  파일 경로 (예: /mariadb/init.sql)
      * @return 삭제 결과 응답
      */
-    @Transactional
     public ProjectDto.OnboardingDeleteResponse deleteOnboardingFile(String projectId, String filePath) {
         log.info("온보딩 파일 삭제 요청 - projectId: {}, filePath: {}", projectId, filePath);
 
@@ -712,17 +587,6 @@ public class ProjectService {
         // 경로 정규화
         String normalizedPath = filePath.replaceAll("^/+", "");
         Path fullPath = Paths.get(baseReleasePath, "onboardings", projectId, normalizedPath);
-
-        // DB 경로 생성
-        String dbFilePath = "onboardings/" + projectId + "/" + normalizedPath;
-
-        // DB에서 파일 정보 조회 및 삭제
-        onboardingFileRepository.findByFilePath(dbFilePath)
-                .ifPresent(onboardingFile -> {
-                    onboardingFileRepository.delete(onboardingFile);
-                    log.info("온보딩 파일 DB 삭제 완료 - id: {}, path: {}",
-                            onboardingFile.getOnboardingFileId(), dbFilePath);
-                });
 
         // 파일시스템에서 삭제
         if (Files.exists(fullPath)) {
@@ -743,12 +607,14 @@ public class ProjectService {
                     // 단일 파일 삭제
                     Files.delete(fullPath);
                 }
-                log.info("온보딩 파일 파일시스템 삭제 완료 - path: {}", fullPath);
+                log.info("온보딩 파일 삭제 완료 - path: {}", fullPath);
 
             } catch (IOException e) {
-                log.error("온보딩 파일 파일시스템 삭제 실패 - projectId: {}, error: {}", projectId, e.getMessage(), e);
-                // DB 삭제는 완료되었으므로 파일시스템 삭제 실패는 경고로 처리
+                log.error("온보딩 파일 삭제 실패 - projectId: {}, error: {}", projectId, e.getMessage(), e);
+                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다");
             }
+        } else {
+            throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "파일을 찾을 수 없습니다: " + filePath);
         }
 
         return new ProjectDto.OnboardingDeleteResponse(
@@ -756,90 +622,6 @@ public class ProjectService {
                 filePath,
                 "파일이 삭제되었습니다."
         );
-    }
-
-    /**
-     * 온보딩 파일 삭제 (ID 기반) - DB 및 파일시스템 동시 삭제
-     *
-     * @param onboardingFileId 온보딩 파일 ID
-     * @return 삭제 결과 응답
-     */
-    @Transactional
-    public ProjectDto.OnboardingDeleteResponse deleteOnboardingFileById(Long onboardingFileId) {
-        log.info("온보딩 파일 삭제 요청 (ID 기반) - onboardingFileId: {}", onboardingFileId);
-
-        // DB에서 파일 정보 조회
-        OnboardingFile onboardingFile = onboardingFileRepository.findById(onboardingFileId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND,
-                        "온보딩 파일을 찾을 수 없습니다: " + onboardingFileId));
-
-        String projectId = onboardingFile.getProject().getProjectId();
-        String filePath = onboardingFile.getFilePath();
-
-        // 파일시스템에서 삭제
-        Path fullPath = Paths.get(baseReleasePath, filePath);
-        if (Files.exists(fullPath)) {
-            try {
-                Files.delete(fullPath);
-                log.info("온보딩 파일 파일시스템 삭제 완료 - path: {}", fullPath);
-            } catch (IOException e) {
-                log.warn("온보딩 파일 파일시스템 삭제 실패 (계속 진행) - path: {}, error: {}", fullPath, e.getMessage());
-            }
-        }
-
-        // DB에서 삭제
-        onboardingFileRepository.delete(onboardingFile);
-        log.info("온보딩 파일 DB 삭제 완료 - id: {}", onboardingFileId);
-
-        // 응답용 상대 경로 생성
-        String responseFilePath = "/" + filePath.replace("onboardings/" + projectId + "/", "");
-
-        return new ProjectDto.OnboardingDeleteResponse(
-                projectId,
-                responseFilePath,
-                "파일이 삭제되었습니다."
-        );
-    }
-
-    /**
-     * 온보딩 파일 단건 조회 (ID 기반)
-     */
-    public OnboardingFile getOnboardingFileById(Long onboardingFileId) {
-        return onboardingFileRepository.findById(onboardingFileId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.FILE_NOT_FOUND,
-                        "온보딩 파일을 찾을 수 없습니다: " + onboardingFileId));
-    }
-
-    /**
-     * 온보딩 파일 다운로드 (ID 기반)
-     *
-     * @param onboardingFileId 온보딩 파일 ID
-     * @param outputStream     출력 스트림
-     */
-    public void downloadOnboardingFileById(Long onboardingFileId, OutputStream outputStream) {
-        log.info("온보딩 파일 다운로드 요청 (ID 기반) - onboardingFileId: {}", onboardingFileId);
-
-        OnboardingFile onboardingFile = getOnboardingFileById(onboardingFileId);
-        Path filePath = Paths.get(baseReleasePath, onboardingFile.getFilePath());
-
-        if (!Files.exists(filePath)) {
-            throw new BusinessException(ErrorCode.FILE_NOT_FOUND,
-                    "파일을 찾을 수 없습니다: " + onboardingFile.getFileName());
-        }
-
-        try (InputStream is = Files.newInputStream(filePath)) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = is.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
-            outputStream.flush();
-            log.info("온보딩 파일 다운로드 완료 - id: {}, fileName: {}",
-                    onboardingFileId, onboardingFile.getFileName());
-        } catch (IOException e) {
-            log.error("온보딩 파일 다운로드 실패 - id: {}, error: {}", onboardingFileId, e.getMessage(), e);
-            throw new BusinessException(ErrorCode.FILE_DOWNLOAD_FAILED, "파일 다운로드에 실패했습니다");
-        }
     }
 
     // === Private Helper Methods ===

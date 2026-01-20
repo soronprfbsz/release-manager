@@ -136,24 +136,29 @@ public interface ProjectControllerDocs {
     );
 
     @Operation(
-            summary = "온보딩 파일 목록 조회 (DB 기반)",
+            summary = "온보딩 디렉토리 생성",
             description = """
-                    프로젝트별 온보딩 파일 목록을 데이터베이스에서 조회합니다.
+                    온보딩 파일용 디렉토리를 생성합니다.
 
-                    **용도**: 온보딩 파일의 메타데이터와 상세 정보를 조회 (생성자, 체크섬 등 포함)
+                    **경로 예시**: `/mariadb`, `/mariadb/scripts`, `/cratedb`
+
+                    이미 존재하는 경로인 경우 409 Conflict 오류가 발생합니다.
                     """,
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "성공",
+                    responseCode = "201",
+                    description = "생성됨",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = OnboardingFileListApiResponse.class)
+                            schema = @Schema(implementation = OnboardingDirectoryApiResponse.class)
                     )
             )
     )
-    ResponseEntity<ApiResponse<ProjectDto.OnboardingFileListResponse>> getOnboardingFileList(
+    ResponseEntity<ApiResponse<ProjectDto.OnboardingDirectoryResponse>> createOnboardingDirectory(
             @Parameter(description = "프로젝트 ID", required = true)
-            @PathVariable String id
+            @PathVariable String id,
+
+            @Parameter(description = "생성할 디렉토리 경로 (예: /mariadb/scripts)", required = true)
+            String path
     );
 
     @Operation(
@@ -163,7 +168,7 @@ public interface ProjectControllerDocs {
 
                     **지원 형식**:
                     - 단일 파일: 지정된 경로에 저장
-                    - ZIP 파일: 자동 압축 해제 후 저장
+                    - ZIP 파일: extractZip 옵션에 따라 압축 해제 또는 원본 저장
 
                     **파일 저장 경로**: `{baseReleasePath}/onboardings/{projectId}/{targetPath}/`
                     """,
@@ -187,7 +192,10 @@ public interface ProjectControllerDocs {
             String targetPath,
 
             @Parameter(description = "파일 설명", required = false)
-            String description
+            String description,
+
+            @Parameter(description = "ZIP 파일 압축 해제 여부 (true: 압축 해제, false: 원본 유지, 기본값: true)", required = false)
+            Boolean extractZip
     );
 
     @Operation(
@@ -208,7 +216,13 @@ public interface ProjectControllerDocs {
 
     @Operation(
             summary = "온보딩 파일 삭제",
-            description = "온보딩 파일을 삭제합니다 (DB 및 파일시스템에서 모두 삭제)",
+            description = """
+                    온보딩 파일을 삭제합니다.
+
+                    **파일 경로 예시**: `/mariadb/init.sql`, `/cratedb`
+
+                    디렉토리 경로를 지정하면 해당 디렉토리와 하위 파일이 모두 삭제됩니다.
+                    """,
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",
@@ -219,8 +233,11 @@ public interface ProjectControllerDocs {
             )
     )
     ResponseEntity<ApiResponse<ProjectDto.OnboardingDeleteResponse>> deleteOnboardingFile(
-            @Parameter(description = "온보딩 파일 ID", required = true)
-            @PathVariable Long fileId
+            @Parameter(description = "프로젝트 ID", required = true)
+            @PathVariable String id,
+
+            @Parameter(description = "삭제할 파일 경로 (예: /mariadb/init.sql)", required = true)
+            String filePath
     );
 
     /**
@@ -325,42 +342,24 @@ public interface ProjectControllerDocs {
     }
 
     /**
-     * Swagger 스키마용 wrapper 클래스 - 온보딩 파일 목록 응답 (DB 기반)
+     * Swagger 스키마용 wrapper 클래스 - 온보딩 디렉토리 생성 응답
      */
-    @Schema(description = "온보딩 파일 목록 API 응답", example = """
+    @Schema(description = "온보딩 디렉토리 생성 API 응답", example = """
             {
               "status": "success",
               "data": {
                 "projectId": "infraeye2",
-                "projectName": "Infraeye 2",
-                "totalFileCount": 2,
-                "totalSize": 102400,
-                "files": [
-                  {
-                    "onboardingFileId": 1,
-                    "projectId": "infraeye2",
-                    "fileType": "SQL",
-                    "fileCategory": "MARIADB",
-                    "fileName": "init_schema.sql",
-                    "filePath": "/mariadb/init_schema.sql",
-                    "fileSize": 51200,
-                    "checksum": "abc123...",
-                    "description": "초기 스키마 생성 스크립트",
-                    "sortOrder": 1,
-                    "createdByEmail": "admin@example.com",
-                    "createdByName": "관리자",
-                    "createdAt": "2025-01-16T10:30:00"
-                  }
-                ]
+                "createdPath": "/mariadb/scripts",
+                "message": "디렉토리가 생성되었습니다."
               }
             }
             """)
-    class OnboardingFileListApiResponse {
+    class OnboardingDirectoryApiResponse {
         @Schema(description = "응답 상태", example = "success")
         public String status;
 
-        @Schema(description = "온보딩 파일 목록 정보")
-        public ProjectDto.OnboardingFileListResponse data;
+        @Schema(description = "디렉토리 생성 결과 정보")
+        public ProjectDto.OnboardingDirectoryResponse data;
     }
 
     /**

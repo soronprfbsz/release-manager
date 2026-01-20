@@ -146,6 +146,38 @@ public final class ProjectDto {
     }
 
     /**
+     * 온보딩 디렉토리 생성 응답
+     */
+    @Schema(description = "온보딩 디렉토리 생성 응답")
+    public record OnboardingDirectoryResponse(
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
+
+            @Schema(description = "생성된 디렉토리 경로", example = "/mariadb/scripts")
+            String createdPath,
+
+            @Schema(description = "메시지", example = "디렉토리가 생성되었습니다.")
+            String message
+    ) {
+    }
+
+    /**
+     * 온보딩 파일 삭제 응답
+     */
+    @Schema(description = "온보딩 파일 삭제 응답")
+    public record OnboardingDeleteResponse(
+            @Schema(description = "프로젝트 ID", example = "infraeye2")
+            String projectId,
+
+            @Schema(description = "삭제된 파일 경로", example = "/mariadb/init_schema.sql")
+            String deletedPath,
+
+            @Schema(description = "메시지", example = "파일이 삭제되었습니다.")
+            String message
+    ) {
+    }
+
+    /**
      * 온보딩 파일 트리 응답
      */
     @Schema(description = "온보딩 파일 트리 응답")
@@ -205,96 +237,4 @@ public final class ProjectDto {
     ) {
     }
 
-    /**
-     * 온보딩 파일 삭제 응답
-     */
-    @Schema(description = "온보딩 파일 삭제 응답")
-    public record OnboardingDeleteResponse(
-            @Schema(description = "프로젝트 ID", example = "infraeye2")
-            String projectId,
-
-            @Schema(description = "삭제된 파일 경로", example = "/mariadb/init_schema.sql")
-            String deletedPath,
-
-            @Schema(description = "메시지", example = "파일이 삭제되었습니다.")
-            String message
-    ) {
-    }
-
-    /**
-     * 온보딩 파일 상세 응답 (DB 기반)
-     */
-    @Schema(description = "온보딩 파일 상세 응답")
-    public record OnboardingFileDetailResponse(
-            @Schema(description = "온보딩 파일 ID", example = "1")
-            Long onboardingFileId,
-
-            @Schema(description = "프로젝트 ID", example = "infraeye2")
-            String projectId,
-
-            @Schema(description = "파일 타입 (확장자 대문자)", example = "SQL")
-            String fileType,
-
-            @Schema(description = "파일 카테고리", example = "MARIADB")
-            String fileCategory,
-
-            @Schema(description = "파일명", example = "init_schema.sql")
-            String fileName,
-
-            @Schema(description = "파일 경로", example = "/mariadb/init_schema.sql")
-            String filePath,
-
-            @Schema(description = "파일 크기 (bytes)", example = "1024")
-            Long fileSize,
-
-            @Schema(description = "체크섬 (SHA-256)", example = "abc123...")
-            String checksum,
-
-            @Schema(description = "파일 설명", example = "초기 스키마 생성 스크립트")
-            String description,
-
-            @Schema(description = "정렬 순서", example = "1")
-            Integer sortOrder,
-
-            @Schema(description = "생성자 이메일", example = "user@example.com")
-            String createdByEmail,
-
-            @Schema(description = "생성자 이름", example = "홍길동")
-            String createdByName,
-
-            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
-            String createdByAvatarStyle,
-
-            @Schema(description = "생성자 아바타 시드", example = "abc123")
-            String createdByAvatarSeed,
-
-            @Schema(description = "생성자 탈퇴 여부", example = "false")
-            Boolean isDeletedCreator,
-
-            @Schema(description = "생성일시")
-            LocalDateTime createdAt
-    ) {
-    }
-
-    /**
-     * 온보딩 파일 목록 응답 (DB 기반)
-     */
-    @Schema(description = "온보딩 파일 목록 응답")
-    public record OnboardingFileListResponse(
-            @Schema(description = "프로젝트 ID", example = "infraeye2")
-            String projectId,
-
-            @Schema(description = "프로젝트명", example = "Infraeye 2")
-            String projectName,
-
-            @Schema(description = "총 파일 수", example = "5")
-            int totalFileCount,
-
-            @Schema(description = "총 파일 크기 (bytes)", example = "102400")
-            long totalSize,
-
-            @Schema(description = "온보딩 파일 목록")
-            java.util.List<OnboardingFileDetailResponse> files
-    ) {
-    }
 }
