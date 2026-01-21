@@ -144,7 +144,8 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
     }
 
     // 파일 다운로드 엔드포인트 제외 (대용량 응답 스트리밍 - OOM 방지)
-    if (path.endsWith("/download") || path.contains("/download/")) {
+    if (path.endsWith("/download") || path.contains("/download/")
+        || path.endsWith("/zip-download")) {
       return true;
     }
 
