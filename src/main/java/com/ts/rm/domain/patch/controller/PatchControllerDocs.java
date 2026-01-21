@@ -257,6 +257,46 @@ public interface PatchControllerDocs {
             @PathVariable Long id
     );
 
+    @Operation(
+            summary = "패치 일괄 삭제",
+            description = """
+                    여러 패치를 일괄 삭제합니다.
+
+                    **삭제 범위**:
+                    - DB 레코드 (patch 테이블)
+                    - 실제 파일 디렉토리 (patches/{patchName}/ 전체)
+
+                    **주의사항**:
+                    - 삭제된 데이터는 복구할 수 없습니다.
+                    - 일부 패치를 찾을 수 없으면 전체 요청이 실패합니다.
+
+                    **사용 예시**:
+                    - `DELETE /api/patches?ids=1,2,3`
+                    """,
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "200",
+                            description = "삭제 성공",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = BatchDeleteApiResponse.class)
+                            )
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "404",
+                            description = "일부 패치를 찾을 수 없음"
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "400",
+                            description = "패치 ID 목록이 비어있음"
+                    )
+            }
+    )
+    ApiResponse<PatchDto.BatchDeleteResponse> batchDeletePatches(
+            @Parameter(description = "삭제할 패치 ID 목록 (쉼표로 구분)", example = "1,2,3", required = true)
+            @RequestParam List<Long> ids
+    );
+
     // ========================================
     // 커스텀 패치 API
     // ========================================
@@ -414,5 +454,17 @@ public interface PatchControllerDocs {
 
         @Schema(description = "커스텀 버전 목록")
         public List<PatchDto.CustomVersionSelectOption> data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 일괄 삭제 응답
+     */
+    @Schema(description = "패치 일괄 삭제 API 응답")
+    class BatchDeleteApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "일괄 삭제 결과")
+        public PatchDto.BatchDeleteResponse data;
     }
 }

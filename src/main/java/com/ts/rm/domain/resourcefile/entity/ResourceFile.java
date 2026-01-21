@@ -119,4 +119,37 @@ public class ResourceFile extends BaseEntity {
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
     }
+
+    /**
+     * 생성자 이름 반환
+     * <p>creator 엔티티의 accountName 반환, null이면 null 반환
+     */
+    @Transient
+    public String getCreatedByName() {
+        return creator != null ? creator.getAccountName() : null;
+    }
+
+    /**
+     * 생성자 아바타 스타일 반환
+     */
+    @Transient
+    public String getCreatedByAvatarStyle() {
+        return creator != null ? creator.getAvatarStyle() : null;
+    }
+
+    /**
+     * 생성자 아바타 시드 반환
+     */
+    @Transient
+    public String getCreatedByAvatarSeed() {
+        return creator != null ? creator.getAvatarSeed() : null;
+    }
+
+    /**
+     * 생성자 탈퇴 여부 반환
+     */
+    @Transient
+    public Boolean isDeletedCreator() {
+        return creator == null && createdByEmail != null;
+    }
 }

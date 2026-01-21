@@ -111,6 +111,7 @@ public class PatchService {
                     response.toVersion(),
                     response.patchName(),
                     response.createdByEmail(),
+                    response.createdByName(),
                     response.createdByAvatarStyle(),
                     response.createdByAvatarSeed(),
                     response.isDeletedCreator(),
@@ -307,5 +308,57 @@ public class PatchService {
         return patchGenerationService.generateCustomPatchByVersion(
                 projectId, customerId, fromVersion, toVersion,
                 createdByEmail, description, engineerId, patchName);
+    }
+
+    /**
+     * 패치 일괄 삭제 (DB 레코드 + 실제 파일)
+     *
+     * @param patchIds 삭제할 패치 ID 목록
+     * @return 삭제 결과
+     */
+    @Transactional
+    public PatchDto.BatchDeleteResponse batchDeletePatches(List<Long> patchIds) {
+        log.info("패치 일괄 삭제 요청 - patchIds: {}", patchIds);
+
+        if (patchIds == null || patchIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "패치 ID 목록은 비어있을 수 없습니다");
+        }
+
+        // 1. 패치 일괄 조회 및 검증
+        List<Patch> patches = patchRepository.findAllById(patchIds);
+
+        if (patches.size() != patchIds.size()) {
+            log.warn("일부 패치를 찾을 수 없음 - 요청: {}, 조회: {}",
+                    patchIds.size(), patches.size());
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND,
+                    "일부 패치를 찾을 수 없습니다");
+        }
+
+        // 2. 각 패치의 실제 파일 디렉토리 삭제
+        for (Patch patch : patches) {
+            Path patchDir = Paths.get(releaseBasePath, patch.getOutputPath());
+
+            if (Files.exists(patchDir)) {
+                try {
+                    deleteDirectoryRecursively(patchDir);
+                    log.info("패치 디렉토리 삭제 완료: {}", patchDir.toAbsolutePath());
+                } catch (IOException e) {
+                    log.error("패치 디렉토리 삭제 실패: {}", patchDir, e);
+                    throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                            "패치 파일 삭제 중 오류가 발생했습니다: " + e.getMessage());
+                }
+            } else {
+                log.warn("패치 디렉토리가 존재하지 않습니다: {}", patchDir);
+            }
+        }
+
+        // 3. DB 레코드 일괄 삭제
+        patchRepository.deleteAll(patches);
+
+        String message = String.format("%d개 패치가 삭제되었습니다.", patches.size());
+        log.info("패치 일괄 삭제 완료 - {}", message);
+
+        return new PatchDto.BatchDeleteResponse(patches.size(), message);
     }
 }

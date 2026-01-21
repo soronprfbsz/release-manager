@@ -247,11 +247,14 @@ public class ReleaseVersionTreeService {
                 version.getCreatedByEmail(),
                 version.getCreatedByAvatarStyle(),
                 version.getCreatedByAvatarSeed(),
+                version.getCreator() == null,  // isDeletedCreator
                 version.getComment(),
                 version.getIsApproved(),
                 version.getApprovedByEmail(),
+                version.getApprovedByName(),
                 approvedByAvatarStyle,
                 approvedByAvatarSeed,
+                version.getApprover() == null && version.getApprovedByEmail() != null,  // isDeletedApprover
                 approvedAt,
                 fileCategories,
                 hotfixNodes
@@ -412,6 +415,7 @@ public class ReleaseVersionTreeService {
                 version.getComment(),
                 version.getIsApproved(),
                 version.getApprovedByEmail(),
+                version.getApprovedByName(),
                 approvedByAvatarStyle,
                 approvedByAvatarSeed,
                 version.getApprover() == null && version.getApprovedByEmail() != null,  // isDeletedApprover
@@ -464,6 +468,7 @@ public class ReleaseVersionTreeService {
                 version.getComment(),
                 version.getIsApproved(),
                 version.getApprovedByEmail(),
+                version.getApprovedByName(),
                 approvedByAvatarStyle,
                 approvedByAvatarSeed,
                 version.getApprover() == null && version.getApprovedByEmail() != null,  // isDeletedApprover

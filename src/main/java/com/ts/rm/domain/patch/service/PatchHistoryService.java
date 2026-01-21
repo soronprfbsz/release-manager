@@ -100,6 +100,7 @@ public class PatchHistoryService {
                 history.getAssignee() != null ? history.getAssignee().getAvatarSeed() : null,
                 history.getAssignee() == null && history.getAssigneeEmail() != null,
                 history.getCreatedByEmail(),
+                history.getCreatedByName(),
                 history.getCreator() != null ? history.getCreator().getAvatarStyle() : null,
                 history.getCreator() != null ? history.getCreator().getAvatarSeed() : null,
                 history.getCreator() == null,

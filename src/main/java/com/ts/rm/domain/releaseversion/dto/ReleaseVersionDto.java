@@ -121,6 +121,9 @@ public final class ReleaseVersionDto {
             @Schema(description = "생성자 이메일", example = "jhlee@tscientific")
             String createdByEmail,
 
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
+
             @Schema(description = "생성자 아바타 스타일", example = "lorelei")
             String createdByAvatarStyle,
 
@@ -138,6 +141,9 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
             String approvedBy,
+
+            @Schema(description = "승인자 이름", example = "김관리자")
+            String approvedByName,
 
             @Schema(description = "승인자 탈퇴 여부", example = "false")
             Boolean isDeletedApprover,
@@ -213,6 +219,9 @@ public final class ReleaseVersionDto {
             @Schema(description = "생성자 이메일", example = "jhlee@tscientific")
             String createdByEmail,
 
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
+
             @Schema(description = "생성자 아바타 스타일", example = "lorelei")
             String createdByAvatarStyle,
 
@@ -230,6 +239,9 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
             String approvedBy,
+
+            @Schema(description = "승인자 이름", example = "김관리자")
+            String approvedByName,
 
             @Schema(description = "승인자 탈퇴 여부", example = "false")
             Boolean isDeletedApprover,
@@ -318,6 +330,9 @@ public final class ReleaseVersionDto {
             @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
             String approvedBy,
 
+            @Schema(description = "승인자 이름", example = "김관리자")
+            String approvedByName,
+
             @Schema(description = "승인자 아바타 스타일", example = "lorelei")
             String approvedByAvatarStyle,
 
@@ -379,6 +394,9 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
             String approvedBy,
+
+            @Schema(description = "승인자 이름", example = "김관리자")
+            String approvedByName,
 
             @Schema(description = "승인자 아바타 스타일", example = "lorelei")
             String approvedByAvatarStyle,
@@ -492,6 +510,9 @@ public final class ReleaseVersionDto {
             @Schema(description = "생성자 아바타 시드", example = "abc123")
             String createdByAvatarSeed,
 
+            @Schema(description = "생성자 탈퇴 여부", example = "false")
+            Boolean isDeletedCreator,
+
             @Schema(description = "코멘트", example = "A사 커스텀 패치")
             String comment,
 
@@ -501,11 +522,17 @@ public final class ReleaseVersionDto {
             @Schema(description = "승인자 이메일", example = "admin@tscientific.co.kr")
             String approvedBy,
 
+            @Schema(description = "승인자 이름", example = "김관리자")
+            String approvedByName,
+
             @Schema(description = "승인자 아바타 스타일", example = "lorelei")
             String approvedByAvatarStyle,
 
             @Schema(description = "승인자 아바타 시드", example = "xyz789")
             String approvedByAvatarSeed,
+
+            @Schema(description = "승인자 탈퇴 여부", example = "false")
+            Boolean isDeletedApprover,
 
             @Schema(description = "승인일시")
             String approvedAt,
@@ -862,6 +889,9 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "생성일자", example = "2025-12-01")
             String createdAt,
+
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
 
             @Schema(description = "생성자 이메일", example = "jhlee@tscientific")
             String createdByEmail,

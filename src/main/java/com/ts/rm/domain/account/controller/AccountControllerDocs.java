@@ -129,6 +129,38 @@ public interface AccountControllerDocs {
             @PathVariable Long id
     );
 
+    @Operation(
+            summary = "계정 일괄 부서 이동 (ADMIN 전용)",
+            description = """
+                    여러 계정의 부서를 일괄로 변경합니다.
+
+                    **targetDepartmentId 동작:**
+                    - `null`: 부서 배치 해제 (미배치 상태)
+                    - `값`: 해당 부서로 일괄 이동
+                    """,
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "200",
+                            description = "이동 성공",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = BatchTransferDepartmentApiResponse.class)
+                            )
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "404",
+                            description = "계정 또는 부서를 찾을 수 없음"
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "403",
+                            description = "권한 없음 (ADMIN만 가능)"
+                    )
+            }
+    )
+    ResponseEntity<ApiResponse<AccountDto.BatchTransferDepartmentResponse>> batchTransferDepartment(
+            @RequestBody AccountDto.BatchTransferDepartmentRequest request
+    );
+
     /**
      * Swagger 스키마용 wrapper 클래스 - 계정 목록 (페이징)
      */
@@ -181,5 +213,17 @@ public interface AccountControllerDocs {
 
         @Schema(description = "계정 상세 정보")
         public AccountDto.DetailResponse data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 일괄 부서 이동 결과
+     */
+    @Schema(description = "일괄 부서 이동 API 응답")
+    class BatchTransferDepartmentApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "일괄 부서 이동 결과")
+        public AccountDto.BatchTransferDepartmentResponse data;
     }
 }

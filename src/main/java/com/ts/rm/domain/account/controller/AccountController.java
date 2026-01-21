@@ -4,7 +4,6 @@ import com.ts.rm.domain.account.dto.AccountDto;
 import com.ts.rm.domain.account.enums.AccountStatus;
 import com.ts.rm.domain.account.service.AccountService;
 import com.ts.rm.global.response.ApiResponse;
-import com.ts.rm.global.security.RoleValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -103,9 +102,6 @@ public class AccountController implements AccountControllerDocs {
             @Valid @RequestBody AccountDto.AdminUpdateRequest request) {
         log.info("PUT /api/accounts/{} - request: {}", id, request);
 
-        // ADMIN 권한 체크
-        RoleValidator.requireAdmin();
-
         AccountDto.DetailResponse response = accountService.adminUpdateAccount(id, request);
 
         log.info("Account updated successfully - accountId: {}", id);
@@ -117,12 +113,23 @@ public class AccountController implements AccountControllerDocs {
     public ResponseEntity<ApiResponse<Void>> deleteAccount(@PathVariable Long id) {
         log.info("DELETE /api/accounts/{}", id);
 
-        // ADMIN 권한 체크
-        RoleValidator.requireAdmin();
-
         accountService.deleteAccount(id);
 
         log.info("Account deleted successfully - accountId: {}", id);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @Override
+    @PatchMapping("/batch-transfer-department")
+    public ResponseEntity<ApiResponse<AccountDto.BatchTransferDepartmentResponse>> batchTransferDepartment(
+            @Valid @RequestBody AccountDto.BatchTransferDepartmentRequest request) {
+        log.info("PATCH /api/accounts/batch-transfer-department - accountIds: {}, targetDepartmentId: {}",
+                request.accountIds(), request.targetDepartmentId());
+
+        AccountDto.BatchTransferDepartmentResponse response =
+                accountService.batchTransferDepartment(request);
+
+        log.info("Batch transfer completed - {}", response.message());
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

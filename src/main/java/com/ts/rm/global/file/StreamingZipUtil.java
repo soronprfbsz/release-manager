@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 
 /**
  * 스트리밍 방식 ZIP 압축 유틸리티
@@ -26,6 +27,33 @@ public class StreamingZipUtil {
 
     private StreamingZipUtil() {
         // Utility class - 인스턴스 생성 방지
+    }
+
+    /**
+     * 클라이언트 연결 끊김 예외인지 확인
+     *
+     * <p>브라우저에서 다운로드 취소 시 발생하는 예외를 감지합니다.
+     *
+     * @param e 확인할 예외
+     * @return 클라이언트 연결 끊김 여부
+     */
+    private static boolean isClientAbortException(Throwable e) {
+        Throwable current = e;
+        while (current != null) {
+            // Tomcat ClientAbortException 확인
+            if (current instanceof ClientAbortException) {
+                return true;
+            }
+            // "Connection reset by peer" 메시지 확인
+            String message = current.getMessage();
+            if (message != null && (message.contains("Connection reset by peer")
+                    || message.contains("Broken pipe")
+                    || message.contains("클라이언트가 연결을 끊었습니다"))) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     /**
@@ -116,6 +144,11 @@ public class StreamingZipUtil {
                     addedFileCount, files.size(), missingFileCount);
 
         } catch (IOException e) {
+            // 클라이언트가 연결을 끊은 경우 (다운로드 취소)
+            if (isClientAbortException(e)) {
+                log.info("클라이언트가 다운로드를 취소했습니다 (파일 목록 압축)");
+                return; // 정상 종료 처리
+            }
             log.error("스트리밍 ZIP 압축 실패", e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
                     "파일 압축 실패: " + e.getMessage());
@@ -184,6 +217,10 @@ public class StreamingZipUtil {
                             log.debug("디렉토리 파일 추가: {} -> {}", path.getFileName(), entryName);
 
                         } catch (IOException e) {
+                            // 클라이언트 연결 끊김은 ClientAbortRuntimeException으로 래핑
+                            if (isClientAbortException(e)) {
+                                throw new ClientAbortRuntimeException("클라이언트가 다운로드를 취소했습니다", e);
+                            }
                             throw new RuntimeException("ZIP 압축 중 오류: " + path, e);
                         }
                     });
@@ -191,10 +228,38 @@ public class StreamingZipUtil {
             zos.finish();
             log.info("디렉토리 스트리밍 압축 완료: {}", sourceDir);
 
-        } catch (IOException e) {
+        } catch (ClientAbortRuntimeException e) {
+            // 클라이언트가 연결을 끊은 경우 (다운로드 취소) - 정상 종료 처리
+            log.info("클라이언트가 다운로드를 취소했습니다: {}", sourceDir.getFileName());
+        } catch (RuntimeException e) {
+            // RuntimeException 내부에 ClientAbortException이 있는지 확인
+            if (isClientAbortException(e)) {
+                log.info("클라이언트가 다운로드를 취소했습니다: {}", sourceDir.getFileName());
+                return;
+            }
             log.error("디렉토리 압축 실패: {}", sourceDir, e);
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
                     "디렉토리 압축 실패: " + e.getMessage());
+        } catch (IOException e) {
+            // 클라이언트가 연결을 끊은 경우 (다운로드 취소)
+            if (isClientAbortException(e)) {
+                log.info("클라이언트가 다운로드를 취소했습니다: {}", sourceDir.getFileName());
+                return; // 정상 종료 처리
+            }
+            log.error("디렉토리 압축 실패: {}", sourceDir, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "디렉토리 압축 실패: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 클라이언트 연결 끊김을 표시하는 내부 RuntimeException
+     *
+     * <p>forEach 람다 내에서 발생한 클라이언트 연결 끊김을 외부로 전파하기 위해 사용
+     */
+    private static class ClientAbortRuntimeException extends RuntimeException {
+        ClientAbortRuntimeException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

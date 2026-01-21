@@ -1,11 +1,13 @@
 package com.ts.rm.domain.account.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
@@ -148,6 +150,20 @@ public final class AccountDto {
     ) {
     }
 
+    /**
+     * 일괄 부서 이동 요청 (ADMIN 전용)
+     */
+    @Schema(description = "일괄 부서 이동 요청")
+    public record BatchTransferDepartmentRequest(
+            @Schema(description = "이동할 계정 ID 목록", example = "[1, 2, 3]")
+            @NotEmpty(message = "계정 ID 목록은 비어있을 수 없습니다")
+            List<Long> accountIds,
+
+            @Schema(description = "대상 부서 ID (null이면 부서 배치 해제)", example = "5")
+            Long targetDepartmentId
+    ) {
+    }
+
     // ========================================
     // Response DTOs
     // ========================================
@@ -198,6 +214,25 @@ public final class AccountDto {
 
             @Schema(description = "수정일시")
             LocalDateTime updatedAt
+    ) {
+    }
+
+    /**
+     * 일괄 부서 이동 결과
+     */
+    @Schema(description = "일괄 부서 이동 결과")
+    public record BatchTransferDepartmentResponse(
+            @Schema(description = "이동된 계정 수", example = "3")
+            int transferredCount,
+
+            @Schema(description = "대상 부서 ID", example = "5")
+            Long targetDepartmentId,
+
+            @Schema(description = "대상 부서명", example = "개발1팀")
+            String targetDepartmentName,
+
+            @Schema(description = "메시지", example = "3개 계정이 개발1팀으로 이동되었습니다.")
+            String message
     ) {
     }
 

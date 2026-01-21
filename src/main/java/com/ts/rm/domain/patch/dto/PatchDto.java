@@ -78,6 +78,19 @@ public final class PatchDto {
     // ========================================
 
     /**
+     * 패치 일괄 삭제 결과
+     */
+    @Schema(description = "패치 일괄 삭제 결과")
+    public record BatchDeleteResponse(
+            @Schema(description = "삭제된 패치 수", example = "3")
+            int deletedCount,
+
+            @Schema(description = "메시지", example = "3개 패치가 삭제되었습니다.")
+            String message
+    ) {
+    }
+
+    /**
      * 패치 상세 응답
      */
     @Schema(description = "패치 상세 응답")
@@ -114,6 +127,9 @@ public final class PatchDto {
 
             @Schema(description = "생성자 이메일", example = "admin@tscientific")
             String createdByEmail,
+
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
 
             @Schema(description = "생성자 아바타 스타일", example = "lorelei")
             String createdByAvatarStyle,
@@ -174,6 +190,9 @@ public final class PatchDto {
             @Schema(description = "생성자 이메일", example = "admin@tscientific")
             String createdByEmail,
 
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
+
             @Schema(description = "생성자 아바타 스타일", example = "lorelei")
             String createdByAvatarStyle,
 
@@ -232,6 +251,9 @@ public final class PatchDto {
 
             @Schema(description = "생성자 이메일", example = "admin@tscientific")
             String createdByEmail,
+
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
 
             @Schema(description = "생성자 아바타 스타일", example = "lorelei")
             String createdByAvatarStyle,

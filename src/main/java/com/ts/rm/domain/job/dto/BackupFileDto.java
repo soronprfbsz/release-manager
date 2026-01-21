@@ -44,6 +44,9 @@ public final class BackupFileDto {
             @Schema(description = "생성자 이메일", example = "admin@company.com")
             String createdByEmail,
 
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
+
             @Schema(description = "생성자 아바타 스타일", example = "lorelei")
             String createdByAvatarStyle,
 
@@ -90,6 +93,9 @@ public final class BackupFileDto {
 
             @Schema(description = "생성자 이메일", example = "admin@company.com")
             String createdByEmail,
+
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
 
             @Schema(description = "생성자 아바타 스타일", example = "lorelei")
             String createdByAvatarStyle,

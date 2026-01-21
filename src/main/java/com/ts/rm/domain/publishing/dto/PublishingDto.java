@@ -121,11 +121,17 @@ public final class PublishingDto {
             @Schema(description = "생성자 이메일", example = "admin@company.com")
             String createdByEmail,
 
+            @Schema(description = "생성자 이름", example = "홍길동")
+            String createdByName,
+
             @Schema(description = "생성자 탈퇴 여부", example = "false")
             Boolean isDeletedCreator,
 
             @Schema(description = "수정자 이메일", example = "admin@company.com")
             String updatedByEmail,
+
+            @Schema(description = "수정자 이름", example = "김철수")
+            String updatedByName,
 
             @Schema(description = "수정자 탈퇴 여부", example = "false")
             Boolean isDeletedUpdater,

@@ -302,12 +302,14 @@ public class ReleaseVersionService {
                 response.fullVersion(),        // fullVersion
                 response.majorMinor(),
                 response.createdByEmail(),
+                response.createdByName(),      // 생성자 이름
                 response.createdByAvatarStyle(),
                 response.createdByAvatarSeed(),
                 response.isDeletedCreator(),   // 생성자 탈퇴 여부
                 response.comment(),
                 response.isApproved(),
                 response.approvedBy(),
+                response.approvedByName(),     // 승인자 이름
                 response.isDeletedApprover(),  // 승인자 탈퇴 여부
                 response.approvedAt(),
                 fileCategories,
@@ -491,6 +493,7 @@ public class ReleaseVersionService {
                 hotfix.getFullVersion(),
                 hotfix.getCreatedAt() != null ? hotfix.getCreatedAt().toLocalDate().toString() : null,
                 hotfix.getCreatedByName(),
+                hotfix.getCreatedByEmail(),
                 hotfix.getComment(),
                 hotfix.getIsApproved(),
                 fileCategories

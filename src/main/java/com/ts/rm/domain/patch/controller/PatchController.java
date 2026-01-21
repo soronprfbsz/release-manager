@@ -188,6 +188,22 @@ public class PatchController implements PatchControllerDocs {
         return ApiResponse.success(null);
     }
 
+    /**
+     * 패치 일괄 삭제
+     */
+    @Override
+    @DeleteMapping
+    public ApiResponse<PatchDto.BatchDeleteResponse> batchDeletePatches(
+            @RequestParam List<Long> ids) {
+
+        log.info("패치 일괄 삭제 요청 - ids: {}", ids);
+
+        PatchDto.BatchDeleteResponse response = patchService.batchDeletePatches(ids);
+
+        log.info("패치 일괄 삭제 완료 - {}", response.message());
+        return ApiResponse.success(response);
+    }
+
     // ========================================
     // 커스텀 패치 API
     // ========================================

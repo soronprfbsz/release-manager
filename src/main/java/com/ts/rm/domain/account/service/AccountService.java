@@ -385,4 +385,53 @@ public class AccountService {
         return departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
     }
+
+    /**
+     * 계정 일괄 부서 이동 (ADMIN 전용)
+     *
+     * @param request 일괄 부서 이동 요청 (계정 ID 목록, 대상 부서 ID)
+     * @return 이동 결과
+     */
+    @Transactional
+    public AccountDto.BatchTransferDepartmentResponse batchTransferDepartment(
+            AccountDto.BatchTransferDepartmentRequest request) {
+        log.info("계정 일괄 부서 이동 요청 - accountIds: {}, targetDepartmentId: {}",
+                request.accountIds(), request.targetDepartmentId());
+
+        // 1. 대상 부서 조회 (null이면 배치 해제)
+        Department targetDepartment = null;
+        String targetDepartmentName = "미배치";
+
+        if (request.targetDepartmentId() != null) {
+            targetDepartment = findDepartmentById(request.targetDepartmentId());
+            targetDepartmentName = targetDepartment.getDepartmentName();
+        }
+
+        // 2. 계정 일괄 조회 및 검증
+        List<Account> accounts = accountRepository.findAllById(request.accountIds());
+
+        if (accounts.size() != request.accountIds().size()) {
+            log.warn("일부 계정을 찾을 수 없음 - 요청: {}, 조회: {}",
+                    request.accountIds().size(), accounts.size());
+            throw new BusinessException(ErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        // 3. 일괄 부서 변경
+        for (Account account : accounts) {
+            account.setDepartment(targetDepartment);
+        }
+
+        // 4. 응답 반환
+        String message = String.format("%d개 계정이 %s(으)로 이동되었습니다.",
+                accounts.size(), targetDepartmentName);
+
+        log.info("계정 일괄 부서 이동 완료 - {}", message);
+
+        return new AccountDto.BatchTransferDepartmentResponse(
+                accounts.size(),
+                request.targetDepartmentId(),
+                targetDepartmentName,
+                message
+        );
+    }
 }

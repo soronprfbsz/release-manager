@@ -663,8 +663,10 @@ public class PublishingService {
                 files,
                 htmlFiles,
                 publishing.getCreatedByEmail(),
+                publishing.getCreatedByName(),
                 publishing.getCreator() == null,
                 publishing.getUpdatedByEmail(),
+                publishing.getUpdatedByName(),
                 publishing.getUpdater() == null,
                 publishing.getCreatedAt(),
                 publishing.getUpdatedAt()
