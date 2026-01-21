@@ -43,13 +43,13 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                         .and(rv.releaseType.eq(releaseType))
                         .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외 (패치 생성에서 핫픽스 미포함)
                         .and(
-                                // fromVersion < version <= toVersion
+                                // fromVersion <= version <= toVersion
                                 rv.majorVersion.gt(fromMajor)
                                         .or(rv.majorVersion.eq(fromMajor)
                                                 .and(rv.minorVersion.gt(fromMinor)))
                                         .or(rv.majorVersion.eq(fromMajor)
                                                 .and(rv.minorVersion.eq(fromMinor))
-                                                .and(rv.patchVersion.gt(fromPatch)))
+                                                .and(rv.patchVersion.goe(fromPatch)))
                         )
                         .and(
                                 // version <= toVersion
@@ -129,13 +129,13 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                         .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외 (핫픽스는 별도 승인 처리)
                         .and(rv.isApproved.isFalse())  // 미승인 버전만 조회
                         .and(
-                                // fromVersion < version <= toVersion
+                                // fromVersion <= version <= toVersion
                                 rv.majorVersion.gt(fromMajor)
                                         .or(rv.majorVersion.eq(fromMajor)
                                                 .and(rv.minorVersion.gt(fromMinor)))
                                         .or(rv.majorVersion.eq(fromMajor)
                                                 .and(rv.minorVersion.eq(fromMinor))
-                                                .and(rv.patchVersion.gt(fromPatch)))
+                                                .and(rv.patchVersion.goe(fromPatch)))
                         )
                         .and(
                                 // version <= toVersion
@@ -178,13 +178,13 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                         .and(rv.customer.customerId.eq(customerId))
                         .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외 (패치 생성에서 핫픽스 미포함)
                         .and(
-                                // fromVersion < version <= toVersion (커스텀 버전 기준)
+                                // fromVersion <= version <= toVersion (커스텀 버전 기준)
                                 rv.customMajorVersion.gt(fromMajor)
                                         .or(rv.customMajorVersion.eq(fromMajor)
                                                 .and(rv.customMinorVersion.gt(fromMinor)))
                                         .or(rv.customMajorVersion.eq(fromMajor)
                                                 .and(rv.customMinorVersion.eq(fromMinor))
-                                                .and(rv.customPatchVersion.gt(fromPatch)))
+                                                .and(rv.customPatchVersion.goe(fromPatch)))
                         )
                         .and(
                                 // version <= toVersion (커스텀 버전 기준)
@@ -228,13 +228,13 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                         .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외 (핫픽스는 별도 승인 처리)
                         .and(rv.isApproved.isFalse())  // 미승인 버전만 조회
                         .and(
-                                // fromVersion < version <= toVersion (커스텀 버전 기준)
+                                // fromVersion <= version <= toVersion (커스텀 버전 기준)
                                 rv.customMajorVersion.gt(fromMajor)
                                         .or(rv.customMajorVersion.eq(fromMajor)
                                                 .and(rv.customMinorVersion.gt(fromMinor)))
                                         .or(rv.customMajorVersion.eq(fromMajor)
                                                 .and(rv.customMinorVersion.eq(fromMinor))
-                                                .and(rv.customPatchVersion.gt(fromPatch)))
+                                                .and(rv.customPatchVersion.goe(fromPatch)))
                         )
                         .and(
                                 // version <= toVersion (커스텀 버전 기준)
@@ -295,13 +295,13 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                         .and(rv.releaseType.eq(releaseType))
                         .and(rv.hotfixVersion.eq(0))  // 핫픽스 제외
                         .and(
-                                // fromVersion < version <= toVersion
+                                // fromVersion <= version <= toVersion
                                 rv.majorVersion.gt(fromMajor)
                                         .or(rv.majorVersion.eq(fromMajor)
                                                 .and(rv.minorVersion.gt(fromMinor)))
                                         .or(rv.majorVersion.eq(fromMajor)
                                                 .and(rv.minorVersion.eq(fromMinor))
-                                                .and(rv.patchVersion.gt(fromPatch)))
+                                                .and(rv.patchVersion.goe(fromPatch)))
                         )
                         .and(
                                 // version <= toVersion

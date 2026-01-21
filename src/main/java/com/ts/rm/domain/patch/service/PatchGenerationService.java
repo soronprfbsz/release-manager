@@ -190,7 +190,7 @@ public class PatchGenerationService {
             // fromVersion이 베이스 버전인지 확인
             boolean isFromBaseVersion = isBaseVersion(fromVersion);
 
-            // 2. 중간 버전 목록 조회 (fromVersion < customVersion <= toVersion)
+            // 2. 중간 버전 목록 조회 (fromVersion <= customVersion <= toVersion)
             // 베이스 버전에서 시작하는 경우 모든 커스텀 버전을 포함 (fromCustomVersion = "0.0.-1")
             String fromCustomVersionForQuery = isFromBaseVersion ? "0.0.-1" : fromVersion.getCustomVersion();
             List<ReleaseVersion> betweenVersions = releaseVersionRepository.findCustomVersionsBetween(
@@ -478,7 +478,7 @@ public class PatchGenerationService {
 
             validateVersionRange(fromVersion, toVersion);
 
-            // 2. 중간 버전 목록 조회 (fromVersion < version <= toVersion)
+            // 2. 중간 버전 목록 조회 (fromVersion <= version <= toVersion)
             List<ReleaseVersion> betweenVersions = releaseVersionRepository.findVersionsBetween(
                     projectId,
                     fromVersion.getReleaseType(),
