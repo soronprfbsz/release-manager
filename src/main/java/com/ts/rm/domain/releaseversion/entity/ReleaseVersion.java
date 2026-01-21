@@ -4,7 +4,6 @@ import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.customer.entity.Customer;
 import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
-import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -52,10 +51,6 @@ public class ReleaseVersion {
 
     @Column(name = "release_type", nullable = false, length = 20)
     private String releaseType;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "release_category", nullable = false, length = 20)
-    private ReleaseCategory releaseCategory;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")

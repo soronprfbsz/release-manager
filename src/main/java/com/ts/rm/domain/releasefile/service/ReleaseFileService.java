@@ -124,7 +124,7 @@ public class ReleaseFileService {
             String fromVersion, String toVersion) {
 
         List<ReleaseFile> releaseFiles = releaseFileRepository
-                .findReleaseFilesBetweenVersionsExcludingInstall(projectId, fromVersion, toVersion);
+                .findReleaseFilesBetweenVersions(projectId, fromVersion, toVersion);
         return mapper.toSimpleResponseList(releaseFiles);
     }
 

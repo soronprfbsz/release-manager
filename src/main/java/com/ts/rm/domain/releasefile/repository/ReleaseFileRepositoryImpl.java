@@ -4,7 +4,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.releasefile.entity.QReleaseFile;
 import com.ts.rm.domain.releasefile.entity.ReleaseFile;
 import com.ts.rm.domain.releasefile.enums.FileCategory;
-import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -21,18 +20,16 @@ public class ReleaseFileRepositoryImpl implements ReleaseFileRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<ReleaseFile> findReleaseFilesBetweenVersionsExcludingInstall(String projectId, String fromVersion, String toVersion) {
+    public List<ReleaseFile> findReleaseFilesBetweenVersions(String projectId, String fromVersion, String toVersion) {
         QReleaseFile rf = QReleaseFile.releaseFile;
 
         return queryFactory
                 .selectFrom(rf)
                 .where(
-                        rf.releaseVersion.project.projectId.eq(projectId),  // 프로젝트 ID 필터링 추가
+                        rf.releaseVersion.project.projectId.eq(projectId),
                         rf.releaseVersion.version.goe(fromVersion),
                         rf.releaseVersion.version.loe(toVersion),
-                        rf.releaseVersion.hotfixVersion.eq(0),  // 핫픽스 제외 (패치 생성 시 핫픽스 파일 미포함)
-                        rf.releaseVersion.releaseCategory.isNull()
-                                .or(rf.releaseVersion.releaseCategory.ne(ReleaseCategory.INSTALL))
+                        rf.releaseVersion.hotfixVersion.eq(0)  // 핫픽스 제외 (패치 생성 시 핫픽스 파일 미포함)
                 )
                 .orderBy(
                         rf.releaseVersion.version.asc(),

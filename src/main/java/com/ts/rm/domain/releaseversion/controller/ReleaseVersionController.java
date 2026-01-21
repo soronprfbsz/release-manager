@@ -54,8 +54,8 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
             @RequestPart("patchFiles") MultipartFile patchFiles,
             @RequestHeader("Authorization") String authorization) {
 
-        log.info("표준 릴리즈 버전 생성 요청 - projectId: {}, version: {}, releaseCategory: {}, comment: {}, fileSize: {}",
-                request.projectId(), request.version(), request.releaseCategory(), request.comment(), patchFiles.getSize());
+        log.info("표준 릴리즈 버전 생성 요청 - projectId: {}, version: {}, comment: {}, fileSize: {}",
+                request.projectId(), request.version(), request.comment(), patchFiles.getSize());
 
         // SecurityUtil에서 현재 인증된 사용자 정보 추출
         String createdBy = SecurityUtil.getTokenInfo().email();
@@ -66,7 +66,6 @@ public class ReleaseVersionController implements ReleaseVersionControllerDocs {
         ReleaseVersionDto.CreateVersionResponse response = uploadService.createStandardVersionWithZip(
                 request.projectId(),
                 request.version(),
-                request.releaseCategory(),
                 request.comment(),
                 patchFiles,
                 createdBy,

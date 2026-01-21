@@ -8,12 +8,6 @@ import lombok.Getter;
 @Getter
 public enum FileCategory {
     /**
-     * 설치 관련 파일
-     * <p>Sub-category: PACKAGE, GUIDE, METADATA
-     */
-    INSTALL("INSTALL", "설치"),
-
-    /**
      * 데이터베이스 관련 파일
      * <p>Sub-category: MARIADB, CRATEDB, METADATA
      */

@@ -3,7 +3,6 @@ package com.ts.rm.domain.releaseversion.repository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.releaseversion.entity.QReleaseVersion;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
-import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -70,16 +69,15 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
     }
 
     @Override
-    public Optional<ReleaseVersion> findLatestByProjectIdAndReleaseTypeAndCategory(String projectId,
-            String releaseType, ReleaseCategory releaseCategory) {
+    public Optional<ReleaseVersion> findLatestByProjectIdAndReleaseType(String projectId,
+            String releaseType) {
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
 
         ReleaseVersion result = queryFactory
                 .selectFrom(rv)
                 .where(
                         rv.project.projectId.eq(projectId),
-                        rv.releaseType.eq(releaseType),
-                        rv.releaseCategory.eq(releaseCategory)
+                        rv.releaseType.eq(releaseType)
                 )
                 .orderBy(rv.createdAt.desc())
                 .limit(1)
@@ -89,16 +87,15 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
     }
 
     @Override
-    public List<ReleaseVersion> findRecentByProjectIdAndReleaseTypeAndCategory(String projectId,
-            String releaseType, ReleaseCategory releaseCategory, int limit) {
+    public List<ReleaseVersion> findRecentByProjectIdAndReleaseType(String projectId,
+            String releaseType, int limit) {
         QReleaseVersion rv = QReleaseVersion.releaseVersion;
 
         return queryFactory
                 .selectFrom(rv)
                 .where(
                         rv.project.projectId.eq(projectId),
-                        rv.releaseType.eq(releaseType),
-                        rv.releaseCategory.eq(releaseCategory)
+                        rv.releaseType.eq(releaseType)
                 )
                 .orderBy(rv.createdAt.desc())
                 .limit(limit)

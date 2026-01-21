@@ -15,43 +15,11 @@ public class DashboardDto {
      */
     @Schema(description = "대시보드 응답")
     public record Response(
-            @Schema(description = "최신 설치본 정보")
-            LatestInstallVersion latestInstall,
-
             @Schema(description = "최신 릴리즈 버전 목록")
             List<RecentVersion> recentVersions,
 
             @Schema(description = "최근 생성 패치 목록")
             List<RecentPatch> recentPatches
-    ) {
-    }
-
-    /**
-     * 최신 설치본 정보
-     */
-    @Schema(description = "최신 설치본 정보")
-    public record LatestInstallVersion(
-            @Schema(description = "릴리즈 버전 ID", example = "1")
-            Long releaseVersionId,
-
-            @Schema(description = "버전", example = "1.0.0")
-            String version,
-
-            @Schema(description = "릴리즈 타입", example = "STANDARD")
-            String releaseType,
-
-            @Schema(description = "릴리즈 카테고리", example = "INSTALL")
-            String releaseCategory,
-
-            @Schema(description = "생성일시")
-            @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-            LocalDateTime createdAt,
-
-            @Schema(description = "생성자", example = "TS")
-            String createdBy,
-
-            @Schema(description = "설명")
-            String comment
     ) {
     }
 
@@ -68,9 +36,6 @@ public class DashboardDto {
 
             @Schema(description = "릴리즈 타입", example = "STANDARD")
             String releaseType,
-
-            @Schema(description = "릴리즈 카테고리", example = "PATCH")
-            String releaseCategory,
 
             @Schema(description = "생성일시")
             @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

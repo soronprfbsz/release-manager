@@ -234,7 +234,6 @@ public class ReleaseVersionService {
         ReleaseVersion version = ReleaseVersion.builder()
                 .project(project)
                 .releaseType(releaseType)
-                .releaseCategory(request.releaseCategory() != null ? request.releaseCategory() : com.ts.rm.domain.releaseversion.enums.ReleaseCategory.PATCH)
                 .customer(customer)
                 .version(request.version())
                 .majorVersion(versionInfo.getMajorVersion())
@@ -404,7 +403,6 @@ public class ReleaseVersionService {
         ReleaseVersion hotfixVersion = ReleaseVersion.builder()
                 .project(baseVersion.getProject())
                 .releaseType(baseVersion.getReleaseType())
-                .releaseCategory(baseVersion.getReleaseCategory())
                 .customer(baseVersion.getCustomer())
                 .version(baseVersion.getVersion())  // 기본 버전은 동일
                 .majorVersion(baseVersion.getMajorVersion())

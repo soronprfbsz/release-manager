@@ -10,7 +10,6 @@ INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VA
 ('ACCOUNT_ROLE', '계정 권한', '계정 권한 구분', TRUE),
 ('ACCOUNT_STATUS', '계정 상태', '계정 상태 구분', TRUE),
 ('RELEASE_TYPE', '릴리즈 타입', '릴리즈 타입 구분 (표준/커스텀)', TRUE),
-('RELEASE_CATEGORY', '릴리즈 카테고리', '릴리즈 카테고리 구분 (설치본/패치본)', TRUE),
 ('DATABASE_TYPE', '데이터베이스 타입', '지원하는 데이터베이스 종류', TRUE),
 ('FILE_TYPE', '파일 타입', '파일 확장자 타입', TRUE),
 ('FILE_CATEGORY', '파일 카테고리', '파일 기능적 대분류', TRUE),
@@ -56,11 +55,6 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('RELEASE_TYPE', 'STANDARD', '표준 릴리즈', '모든 고객사 공통 적용 릴리즈', 1, TRUE),
 ('RELEASE_TYPE', 'CUSTOM', '커스텀 릴리즈', '특정 고객사 전용 릴리즈', 2, TRUE);
-
--- RELEASE_CATEGORY
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('RELEASE_CATEGORY', 'INSTALL', '설치본', '최초 설치용 릴리즈', 1, TRUE),
-('RELEASE_CATEGORY', 'PATCH', '패치본', '업데이트용 패치 릴리즈', 2, TRUE);
 
 -- DATABASE_TYPE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -369,16 +363,18 @@ INSERT INTO project (project_id, project_name, description, created_by, created_
 -- release_version 테이블
 -- =========================================================
 
-INSERT INTO release_version (project_id, release_type, release_category, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_by_email, approved_at, created_by, created_by_email, comment) VALUES
-('infraeye2', 'STANDARD', 'INSTALL', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-01-01 00:00:00', 1, 'admin@tscientific.co.kr', '- 버전 관리가 시작 되지 않은 모든 사이트의 버전관리 시작용 버전'),
-('infraeye2', 'STANDARD', 'PATCH', '1.1.0', 1, 1, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-12-18 00:00:00', 1, 'admin@tscientific.co.kr', '- SMS 기능 추가'),
-('infraeye1', 'STANDARD', 'INSTALL', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2026-01-02 00:00:00', 1, 'admin@tscientific.co.kr', '- 버전 관리가 시작 되지 않은 모든 사이트의 버전관리 시작용 버전');
+INSERT INTO release_version (project_id, release_type, version, major_version, minor_version, patch_version, is_approved, approved_by, approved_by_email, approved_at, created_by, created_by_email, comment) VALUES
+('infraeye2', 'STANDARD', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-01-01 00:00:00', 1, 'admin@tscientific.co.kr', '- 버전 관리가 시작 되지 않은 모든 사이트의 버전관리 시작용 버전'),
+('infraeye2', 'STANDARD', '1.1.0', 1, 1, 0, TRUE, 1, 'admin@tscientific.co.kr', '2025-12-18 00:00:00', 1, 'admin@tscientific.co.kr', '- SMS 기능 추가'),
+('infraeye1', 'STANDARD', '1.0.0', 1, 0, 0, TRUE, 1, 'admin@tscientific.co.kr', '2026-01-02 00:00:00', 1, 'admin@tscientific.co.kr', '- 버전 관리가 시작 되지 않은 모든 사이트의 버전관리 시작용 버전');
 
 -- =========================================================
 -- release_file 테이블
 -- =========================================================
 INSERT INTO release_file (release_version_id,file_type,file_category,sub_category,file_name,file_path,file_size,checksum,execution_order,description) VALUES
-(1,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.0.x/1.0.0/database/MARIADB/1.patch_mariadb_ddl.sql',1176,'4ba2af48ea185b9c08fe28f353db9a3b2bc750ce0af0de0e2617ff1bc2680a5d',1,'DDL 변경'),
+-- infraeye2 1.0.0 (release_version_id = 1)
+(1,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.0.x/1.0.0/database/MARIADB/1.patch_mariadb_ddl.sql',1175,'7b31e896dfd69d235d81b830578ab42a34846f4ab797cca6df27a0d95edde4f3',1,'DDL 변경'),
+-- infraeye2 1.1.0 (release_version_id = 2)
 (2,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/1.patch_mariadb_ddl.sql',33881,'761c3a421dae8608c67c0f16c565a8e977dbb1b7bbdcb995cbd36511e6466a44',1,'DDL 변경'),
 (2,'SQL','DATABASE','MARIADB','2.patch_mariadb_view.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/2.patch_mariadb_view.sql',10220,'f51862500183169d21878f715a20413bff68544625531ab32162cfa593e4c77d',2,'View 변경'),
 (2,'SQL','DATABASE','MARIADB','3.patch_mariadb_데이터코드.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/MARIADB/3.patch_mariadb_데이터코드.sql',135601,'cc373c6e9565020c4037b30dd495f1c6847ca476f8b51a2f2806fa00b0f56d48',3,'데이터 코드 추가'),
@@ -390,8 +386,8 @@ INSERT INTO release_file (release_version_id,file_type,file_category,sub_categor
 (2,'SQL','DATABASE','CRATEDB','1.patch_cratedb_ddl.sql','versions/infraeye2/standard/1.1.x/1.1.0/database/CRATEDB/1.patch_cratedb_ddl.sql',19718,'b04cad39e4ae870c38c5472e63d6824d63d44545f3da1a5c9cd07b4db28cb2b0',1,'CrateDB DDL 변경'),
 (2,'WAR','WEB',NULL,'nms_solution-2.0.0.240102-1-STD.war','versions/infraeye2/standard/1.1.x/1.1.0/web/nms_solution-2.0.0.240102-1-STD.war',164829225,'d6fd55b9610d73ce14738689e3af086c288d6cb9065010c985ea0e119210126c',1,'NMS Solution WAR 패키지'),
 (2,'ZIP','WEB',NULL,'webobjects.zip','versions/infraeye2/standard/1.1.x/1.1.0/web/webobjects.zip',392505570,'92924a7c1e5f44174aa42f9398ece490c6b0906e77cb5741c2a1cfa9bb3c2383',2,'Web Objects 패키지'),
-(3,'PDF','INSTALL',NULL,'InfraEye 설치가이드_20210416.pdf','versions/infraeye1/standard/1.0.x/1.0.0/install/InfraEye 설치가이드_20210416.pdf',1527560,'39cd5659976f28717f4d29395fdef89aa66a05bee580c0b87bb0daf61ee13396',1,'설치 가이드 문서'),
-(3,'MD','INSTALL',NULL,'설치본.md','versions/infraeye1/standard/1.0.x/1.0.0/install/설치본.md',318,'a7c902feb41664d936aab4ea6d5b77f9713a3902f43e7bf7141fe0b41d7f1adc',2,'설치본 정보');
+-- infraeye1 1.0.0 (release_version_id = 3)
+(3,'SQL','DATABASE','MARIADB','1.patch_mariadb_ddl.sql','versions/infraeye1/standard/1.0.x/1.0.0/database/MARIADB/1.patch_mariadb_ddl.sql',1175,'7b31e896dfd69d235d81b830578ab42a34846f4ab797cca6df27a0d95edde4f3',1,'DDL 변경');
 
 -- =========================================================
 -- release_version_hierarchy 테이블

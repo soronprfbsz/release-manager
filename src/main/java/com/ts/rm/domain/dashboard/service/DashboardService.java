@@ -1,13 +1,11 @@
 package com.ts.rm.domain.dashboard.service;
 
 import com.ts.rm.domain.dashboard.dto.DashboardDto;
-import com.ts.rm.domain.dashboard.dto.DashboardDto.LatestInstallVersion;
 import com.ts.rm.domain.dashboard.dto.DashboardDto.RecentPatch;
 import com.ts.rm.domain.dashboard.dto.DashboardDto.RecentVersion;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.repository.PatchRepository;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
-import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -41,49 +39,25 @@ public class DashboardService {
         log.info("프로젝트별 대시보드 최근 데이터 조회 시작 - projectId: {}, 버전: {}개, 패치: {}개",
                 projectId, versionLimit, patchLimit);
 
-        // 1. 최신 설치본 조회 (프로젝트 + STANDARD + INSTALL)
-        LatestInstallVersion latestInstall = releaseVersionRepository
-                .findLatestByProjectIdAndReleaseTypeAndCategory(projectId, RELEASE_TYPE_STANDARD,
-                        ReleaseCategory.INSTALL)
-                .map(this::toLatestInstallVersion)
-                .orElse(null);
-
-        // 2. 최근 릴리즈 버전 조회 (프로젝트 + STANDARD + PATCH)
+        // 1. 최근 릴리즈 버전 조회 (프로젝트 + STANDARD)
         List<RecentVersion> recentVersions = releaseVersionRepository
-                .findRecentByProjectIdAndReleaseTypeAndCategory(projectId, RELEASE_TYPE_STANDARD,
-                        ReleaseCategory.PATCH, versionLimit)
+                .findRecentByProjectIdAndReleaseType(projectId, RELEASE_TYPE_STANDARD, versionLimit)
                 .stream()
                 .map(this::toRecentVersion)
                 .toList();
 
-        // 3. 최근 생성 패치 조회 (프로젝트 + STANDARD)
+        // 2. 최근 생성 패치 조회 (프로젝트 + STANDARD)
         List<RecentPatch> recentPatches = patchRepository
                 .findRecentByProjectIdAndReleaseType(projectId, RELEASE_TYPE_STANDARD, patchLimit)
                 .stream()
                 .map(this::toRecentPatch)
                 .toList();
 
-        log.info("프로젝트별 대시보드 최근 데이터 조회 완료 - 설치본: {}, 릴리즈 버전: {}개, 패치: {}개",
-                latestInstall != null ? "존재" : "없음",
+        log.info("프로젝트별 대시보드 최근 데이터 조회 완료 - 릴리즈 버전: {}개, 패치: {}개",
                 recentVersions.size(),
                 recentPatches.size());
 
-        return new DashboardDto.Response(latestInstall, recentVersions, recentPatches);
-    }
-
-    /**
-     * ReleaseVersion -> LatestInstallVersion 변환
-     */
-    private LatestInstallVersion toLatestInstallVersion(ReleaseVersion rv) {
-        return new LatestInstallVersion(
-                rv.getReleaseVersionId(),
-                rv.getVersion(),
-                rv.getReleaseType(),
-                rv.getReleaseCategory().name(),
-                rv.getCreatedAt(),
-                rv.getCreatedByName(),
-                rv.getComment()
-        );
+        return new DashboardDto.Response(recentVersions, recentPatches);
     }
 
     /**
@@ -102,7 +76,6 @@ public class DashboardService {
                 rv.getReleaseVersionId(),
                 rv.getVersion(),
                 rv.getReleaseType(),
-                rv.getReleaseCategory().name(),
                 rv.getCreatedAt(),
                 rv.getCreatedByName(),
                 rv.getComment(),

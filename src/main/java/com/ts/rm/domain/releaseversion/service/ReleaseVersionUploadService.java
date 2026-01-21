@@ -14,7 +14,6 @@ import com.ts.rm.domain.releasefile.repository.ReleaseFileRepository;
 import com.ts.rm.domain.releasefile.util.SubCategoryValidator;
 import com.ts.rm.domain.releaseversion.dto.ReleaseVersionDto;
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
-import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import com.ts.rm.domain.releaseversion.mapper.ReleaseVersionDtoMapper;
 import com.ts.rm.domain.releaseversion.repository.ReleaseVersionRepository;
 import com.ts.rm.domain.releaseversion.util.VersionParser;
@@ -144,7 +143,6 @@ public class ReleaseVersionUploadService {
      *
      * @param projectId       프로젝트 ID
      * @param version         버전 (예: 1.1.3)
-     * @param releaseCategory 릴리즈 카테고리
      * @param comment         패치 노트 내용
      * @param zipFile         패치 파일이 포함된 ZIP 파일
      * @param createdByEmail       생성자 이메일
@@ -153,11 +151,11 @@ public class ReleaseVersionUploadService {
      */
     @Transactional
     public ReleaseVersionDto.CreateVersionResponse createStandardVersionWithZip(
-            String projectId, String version, ReleaseCategory releaseCategory, String comment,
+            String projectId, String version, String comment,
             MultipartFile zipFile, String createdByEmail, Boolean isApproved) {
 
-        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - projectId: {}, version: {}, releaseCategory: {}, createdByEmail: {}, isApproved: {}",
-                projectId, version, releaseCategory, createdByEmail, isApproved);
+        log.info("ZIP 파일로 표준 릴리즈 버전 생성 시작 - projectId: {}, version: {}, createdByEmail: {}, isApproved: {}",
+                projectId, version, createdByEmail, isApproved);
 
         // 0. 프로젝트 조회
         Project project = projectRepository.findById(projectId)
@@ -181,14 +179,14 @@ public class ReleaseVersionUploadService {
             // 3. 임시 디렉토리에 ZIP 압축 해제
             tempDir = extractZipToTempDirectory(zipFile);
 
-            // 4. ZIP 구조 검증 (releaseCategory에 따른 폴더 검증)
-            validateZipStructure(tempDir, releaseCategory);
+            // 4. ZIP 구조 검증 (패치본만 허용: database/, web/, engine/)
+            validateZipStructure(tempDir);
 
             // 5. 버전 디렉토리 생성
             versionPath = fileSystemService.createVersionDirectory(versionInfo, projectId);
 
             // 6. 파일 복사 및 DB 저장
-            ReleaseVersion savedVersion = copyFilesAndSaveToDb(project, tempDir, versionPath, versionInfo, releaseCategory, createdByEmail, comment, isApproved);
+            ReleaseVersion savedVersion = copyFilesAndSaveToDb(project, tempDir, versionPath, versionInfo, createdByEmail, comment, isApproved);
 
             log.info("ZIP 파일로 표준 릴리즈 버전 생성 완료 - projectId: {}, version: {}, ID: {}, isApproved: {}",
                     projectId, version, savedVersion.getReleaseVersionId(), savedVersion.getIsApproved());
@@ -321,18 +319,18 @@ public class ReleaseVersionUploadService {
             // 7. 임시 디렉토리에 ZIP 압축 해제
             tempDir = extractZipToTempDirectory(zipFile);
 
-            // 8. ZIP 구조 검증 (커스텀 버전은 PATCH만 허용)
-            validateZipStructure(tempDir, ReleaseCategory.PATCH);
+            // 8. ZIP 구조 검증 (패치본만 허용: database/, web/, engine/)
+            validateZipStructure(tempDir);
 
             // 9. 커스텀 버전 디렉토리 생성 (전체 버전 형식 사용)
             versionPath = fileSystemService.createCustomVersionDirectory(
                     request.projectId(), customer.getCustomerCode(), customMajorMinor, fullVersion);
 
-            // 10. 파일 복사 및 DB 저장 (커스텀 버전은 PATCH로 고정)
+            // 10. 파일 복사 및 DB 저장
             ReleaseVersion savedVersion = copyFilesAndSaveToDbForCustomVersion(
                     project, customer, customBaseVersion, tempDir, versionPath,
                     customMajorVersion, customMinorVersion, customPatchVersion,
-                    ReleaseCategory.PATCH, request.comment(), createdByEmail, request.isApproved());
+                    request.comment(), createdByEmail, request.isApproved());
 
             log.info("ZIP 파일로 커스텀 릴리즈 버전 생성 완료 - projectId: {}, customerId: {}, version: {}, ID: {}, isApproved: {}",
                     request.projectId(), request.customerId(), fullVersion, savedVersion.getReleaseVersionId(), savedVersion.getIsApproved());
@@ -399,7 +397,7 @@ public class ReleaseVersionUploadService {
             Project project, Customer customer, ReleaseVersion customBaseVersion,
             Path tempDir, Path versionPath,
             int customMajorVersion, int customMinorVersion, int customPatchVersion,
-            ReleaseCategory releaseCategory, String comment, String createdByEmail,
+            String comment, String createdByEmail,
             Boolean isApproved) throws IOException {
 
         String customVersionStr = customMajorVersion + "." + customMinorVersion + "." + customPatchVersion;
@@ -422,7 +420,6 @@ public class ReleaseVersionUploadService {
         ReleaseVersion.ReleaseVersionBuilder builder = ReleaseVersion.builder()
                 .project(project)
                 .releaseType("CUSTOM")
-                .releaseCategory(releaseCategory)
                 .customer(customer)
                 .customBaseVersion(customBaseVersion)
                 .version(fullVersion)  // 시멘틱 버저닝 형식: 1.1.0-companyA.1.0.0
@@ -677,14 +674,13 @@ public class ReleaseVersionUploadService {
     }
 
     /**
-     * ZIP 구조 검증 (releaseCategory에 따른 카테고리 폴더 확인)
+     * ZIP 구조 검증 (패치본 카테고리 폴더 확인)
      *
-     * <p>INSTALL: install/ 폴더만 허용
-     * <p>PATCH: database/, web/, engine/ 폴더만 허용
+     * <p>허용 폴더: database/, web/, engine/
      */
-    public void validateZipStructure(Path tempDir, ReleaseCategory releaseCategory) throws IOException {
-        // releaseCategory에 따른 허용 카테고리 결정
-        List<FileCategory> allowedCategories = getAllowedCategoriesForReleaseCategory(releaseCategory);
+    public void validateZipStructure(Path tempDir) throws IOException {
+        // 패치본 허용 카테고리: DATABASE, WEB, ENGINE
+        List<FileCategory> allowedCategories = List.of(FileCategory.DATABASE, FileCategory.WEB, FileCategory.ENGINE);
 
         // 최상위 디렉토리에서 유효한 카테고리 폴더 확인
         List<String> foundCategories = Files.list(tempDir)
@@ -701,39 +697,18 @@ public class ReleaseVersionUploadService {
                 .toList();
 
         if (foundCategories.isEmpty()) {
-            String allowedFolders = allowedCategories.stream()
-                    .map(c -> c.getCode().toLowerCase() + "/")
-                    .reduce((a, b) -> a + ", " + b)
-                    .orElse("");
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    String.format("ZIP 파일에 유효한 카테고리 폴더가 없습니다. %s 릴리즈는 다음 폴더가 필요합니다: %s",
-                            releaseCategory.getDescription(), allowedFolders));
+                    "ZIP 파일에 유효한 카테고리 폴더가 없습니다. 다음 폴더 중 하나 이상 필요: database/, web/, engine/");
         }
 
         // 허용되지 않은 카테고리 폴더가 있는지 확인
         for (String foundCategory : foundCategories) {
             FileCategory fileCategory = FileCategory.fromCode(foundCategory);
             if (!allowedCategories.contains(fileCategory)) {
-                String allowedFolders = allowedCategories.stream()
-                        .map(c -> c.getCode().toLowerCase() + "/")
-                        .reduce((a, b) -> a + ", " + b)
-                        .orElse("");
                 throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                        String.format("%s 릴리즈에서는 '%s/' 폴더를 사용할 수 없습니다. 허용된 폴더: %s",
-                                releaseCategory.getDescription(), foundCategory.toLowerCase(), allowedFolders));
+                        String.format("'%s/' 폴더는 허용되지 않습니다. 허용된 폴더: database/, web/, engine/",
+                                foundCategory.toLowerCase()));
             }
-        }
-    }
-
-    /**
-     * ReleaseCategory에 따른 허용 FileCategory 목록 반환
-     */
-    private List<FileCategory> getAllowedCategoriesForReleaseCategory(ReleaseCategory releaseCategory) {
-        if (releaseCategory == ReleaseCategory.INSTALL) {
-            return List.of(FileCategory.INSTALL);
-        } else {
-            // PATCH: DATABASE, WEB, ENGINE 허용
-            return List.of(FileCategory.DATABASE, FileCategory.WEB, FileCategory.ENGINE);
         }
     }
 
@@ -743,7 +718,7 @@ public class ReleaseVersionUploadService {
      * @return 저장된 ReleaseVersion 엔티티
      */
     public ReleaseVersion copyFilesAndSaveToDb(Project project, Path tempDir, Path versionPath,
-                                                VersionInfo versionInfo, ReleaseCategory releaseCategory,
+                                                VersionInfo versionInfo,
                                                 String createdByEmail, String comment, Boolean isApproved) throws IOException {
         String version = versionInfo.getMajorVersion() + "." + versionInfo.getMinorVersion() + "." + versionInfo.getPatchVersion();
 
@@ -757,7 +732,6 @@ public class ReleaseVersionUploadService {
         ReleaseVersion.ReleaseVersionBuilder builder = ReleaseVersion.builder()
                 .project(project)
                 .releaseType("STANDARD")
-                .releaseCategory(releaseCategory)
                 .version(version)
                 .majorVersion(versionInfo.getMajorVersion())
                 .minorVersion(versionInfo.getMinorVersion())
@@ -819,7 +793,7 @@ public class ReleaseVersionUploadService {
      * @param categorySourceDir 카테고리 소스 디렉토리 (예: tempDir/database)
      * @param categoryTargetDir 카테고리 타겟 디렉토리 (예: versionPath/database)
      * @param releaseVersion    릴리즈 버전 엔티티
-     * @param fileCategory      파일 카테고리 (DATABASE, WEB, ENGINE, INSTALL)
+     * @param fileCategory      파일 카테고리 (DATABASE, WEB, ENGINE)
      */
     public void processCategoryFiles(Path categorySourceDir, Path categoryTargetDir,
                                       ReleaseVersion releaseVersion, FileCategory fileCategory) throws IOException {
@@ -849,7 +823,7 @@ public class ReleaseVersionUploadService {
                             log.debug("CODE 테이블에 없는 사용자 정의 하위 카테고리: {}/{}", fileCategory.getCode(), subCategory);
                         }
                     } else {
-                        // WEB, INSTALL은 소문자로 변환
+                        // WEB은 소문자로 변환
                         subCategory = subCategory.toLowerCase();
                     }
 
@@ -1159,8 +1133,8 @@ public class ReleaseVersionUploadService {
             // 4. 임시 디렉토리에 ZIP 압축 해제
             tempDir = extractZipToTempDirectory(zipFile);
 
-            // 5. ZIP 구조 검증 (핫픽스는 PATCH 카테고리만 허용)
-            validateZipStructure(tempDir, ReleaseCategory.PATCH);
+            // 5. ZIP 구조 검증 (패치본만 허용: database/, web/, engine/)
+            validateZipStructure(tempDir);
 
             // 6. 다음 핫픽스 버전 번호 결정
             Integer maxHotfixVersion = releaseVersionRepository.findMaxHotfixVersionByHotfixBaseVersionId(hotfixBaseVersionId);
@@ -1249,7 +1223,6 @@ public class ReleaseVersionUploadService {
         ReleaseVersion.ReleaseVersionBuilder builder = ReleaseVersion.builder()
                 .project(hotfixBaseVersion.getProject())
                 .releaseType(hotfixBaseVersion.getReleaseType())
-                .releaseCategory(ReleaseCategory.PATCH)  // 핫픽스는 항상 PATCH
                 .customer(hotfixBaseVersion.getCustomer())
                 .version(hotfixBaseVersion.getVersion())
                 .majorVersion(hotfixBaseVersion.getMajorVersion())

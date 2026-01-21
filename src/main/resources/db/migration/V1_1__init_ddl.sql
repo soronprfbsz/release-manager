@@ -169,7 +169,6 @@ CREATE TABLE IF NOT EXISTS release_version (
     release_version_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '릴리즈 버전 ID',
     project_id VARCHAR(50) NOT NULL COMMENT '프로젝트 ID',
     release_type VARCHAR(20) NOT NULL COMMENT '릴리즈 타입 (STANDARD/CUSTOM)',
-    release_category VARCHAR(20) NOT NULL DEFAULT 'PATCH' COMMENT '릴리즈 카테고리 (INSTALL/PATCH)',
     customer_id BIGINT COMMENT '고객사 ID (커스텀 릴리즈인 경우)',
     version VARCHAR(50) NOT NULL COMMENT '버전 번호 (예: 1.1.0)',
     major_version INT NOT NULL COMMENT '메이저 버전',
@@ -192,7 +191,6 @@ CREATE TABLE IF NOT EXISTS release_version (
 
     INDEX idx_project_id (project_id),
     INDEX idx_release_type (release_type),
-    INDEX idx_release_category (release_category),
     INDEX idx_customer_id (customer_id),
     INDEX idx_hotfix_version (hotfix_version),
     INDEX idx_hotfix_base_version_id (hotfix_base_version_id),

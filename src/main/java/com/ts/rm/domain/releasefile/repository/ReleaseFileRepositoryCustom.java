@@ -12,14 +12,14 @@ import java.util.List;
 public interface ReleaseFileRepositoryCustom {
 
     /**
-     * 버전 범위 내 릴리즈 파일 목록 조회 (INSTALL 카테고리 버전 제외)
+     * 버전 범위 내 릴리즈 파일 목록 조회
      *
      * @param projectId   프로젝트 ID
      * @param fromVersion 시작 버전
      * @param toVersion   종료 버전
      * @return 릴리즈 파일 목록
      */
-    List<ReleaseFile> findReleaseFilesBetweenVersionsExcludingInstall(String projectId, String fromVersion, String toVersion);
+    List<ReleaseFile> findReleaseFilesBetweenVersions(String projectId, String fromVersion, String toVersion);
 
     /**
      * 버전 범위 내 특정 하위 카테고리 파일 목록 조회

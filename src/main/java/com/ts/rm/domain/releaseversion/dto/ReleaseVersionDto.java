@@ -1,7 +1,6 @@
 package com.ts.rm.domain.releaseversion.dto;
 
 import com.ts.rm.domain.releasefile.dto.ReleaseFileDto;
-import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -34,9 +33,6 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "버전 (예: 1.1.0)", example = "1.1.0") @NotBlank(message = "버전은 필수입니다") @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+$", message = "버전 형식이 올바르지 않습니다 (예: 1.1.0)")
             String version,
-
-            @Schema(description = "릴리즈 카테고리 (INSTALL, PATCH)", example = "PATCH")
-            ReleaseCategory releaseCategory,
 
             @Schema(description = "생성자 이메일", example = "jhlee@tscientific") @NotBlank(message = "생성자는 필수입니다") @Size(max = 100, message = "생성자는 100자 이하여야 합니다")
             String createdByEmail,
@@ -94,9 +90,6 @@ public final class ReleaseVersionDto {
 
             @Schema(description = "릴리즈 타입", example = "standard")
             String releaseType,
-
-            @Schema(description = "릴리즈 카테고리", example = "PATCH")
-            ReleaseCategory releaseCategory,
 
             @Schema(description = "고객사 코드 (커스텀인 경우)", example = "company_a")
             String customerCode,
@@ -541,10 +534,6 @@ public final class ReleaseVersionDto {
             @NotBlank(message = "버전은 필수입니다")
             @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+$", message = "버전 형식이 올바르지 않습니다 (예: 1.1.3)")
             String version,
-
-            @Schema(description = "릴리즈 카테고리 (INSTALL, PATCH)", example = "PATCH", required = true)
-            @NotNull(message = "릴리즈 카테고리는 필수입니다")
-            ReleaseCategory releaseCategory,
 
             @Schema(description = "패치 노트 내용", example = "새로운 기능 추가", required = true)
             @NotBlank(message = "패치 노트 내용은 필수입니다")

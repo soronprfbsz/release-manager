@@ -1,7 +1,6 @@
 package com.ts.rm.domain.releaseversion.repository;
 
 import com.ts.rm.domain.releaseversion.entity.ReleaseVersion;
-import com.ts.rm.domain.releaseversion.enums.ReleaseCategory;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,25 +24,23 @@ public interface ReleaseVersionRepositoryCustom {
     List<ReleaseVersion> findVersionsBetween(String projectId, String releaseType, String fromVersion, String toVersion);
 
     /**
-     * 프로젝트별 릴리즈 타입과 카테고리로 최신 버전 1개 조회
+     * 프로젝트별 릴리즈 타입으로 최신 버전 1개 조회
      *
-     * @param projectId       프로젝트 ID
-     * @param releaseType     릴리즈 타입 (STANDARD/CUSTOM)
-     * @param releaseCategory 릴리즈 카테고리 (INSTALL/PATCH)
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
      * @return 최신 버전
      */
-    Optional<ReleaseVersion> findLatestByProjectIdAndReleaseTypeAndCategory(String projectId, String releaseType, ReleaseCategory releaseCategory);
+    Optional<ReleaseVersion> findLatestByProjectIdAndReleaseType(String projectId, String releaseType);
 
     /**
-     * 프로젝트별 릴리즈 타입과 카테고리로 최근 N개 조회
+     * 프로젝트별 릴리즈 타입으로 최근 N개 조회
      *
-     * @param projectId       프로젝트 ID
-     * @param releaseType     릴리즈 타입 (STANDARD/CUSTOM)
-     * @param releaseCategory 릴리즈 카테고리 (INSTALL/PATCH)
-     * @param limit           조회 개수
+     * @param projectId   프로젝트 ID
+     * @param releaseType 릴리즈 타입 (STANDARD/CUSTOM)
+     * @param limit       조회 개수
      * @return 최근 버전 목록
      */
-    List<ReleaseVersion> findRecentByProjectIdAndReleaseTypeAndCategory(String projectId, String releaseType, ReleaseCategory releaseCategory, int limit);
+    List<ReleaseVersion> findRecentByProjectIdAndReleaseType(String projectId, String releaseType, int limit);
 
     /**
      * 버전 범위 내 미승인 버전 조회 (from ~ to)

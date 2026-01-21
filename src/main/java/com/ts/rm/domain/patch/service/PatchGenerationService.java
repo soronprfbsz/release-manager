@@ -669,7 +669,6 @@ public class PatchGenerationService {
 
     /**
      * 모든 파일 복사 (버전별 디렉토리 구조 유지)
-     * <p>⚠️ INSTALL 카테고리 버전은 패치 생성에서 제외됩니다.
      * <p>⚠️ WEB 카테고리는 해당 파일이 있는 마지막 버전만 포함됩니다.
      * <p>⚠️ ENGINE 카테고리는 sub_category(NC_SMS, NC_FAULT_MS 등)별로 각각 마지막 버전만 포함됩니다.
      *
@@ -690,11 +689,6 @@ public class PatchGenerationService {
                 // 모든 버전의 파일을 역순으로 조회하여 마지막 버전 찾기
                 for (int i = versions.size() - 1; i >= 0; i--) {
                     ReleaseVersion v = versions.get(i);
-
-                    // INSTALL 카테고리 버전은 제외
-                    if (v.getReleaseCategory() != null && v.getReleaseCategory().isExcludedFromPatch()) {
-                        continue;
-                    }
 
                     List<ReleaseFile> files = releaseFileRepository
                             .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(v.getReleaseVersionId());
@@ -721,13 +715,6 @@ public class PatchGenerationService {
             }
 
             for (ReleaseVersion version : versions) {
-                // INSTALL 카테고리 버전은 패치에서 제외
-                if (version.getReleaseCategory() != null
-                        && version.getReleaseCategory().isExcludedFromPatch()) {
-                    log.info("버전 {}는 INSTALL 카테고리이므로 패치에서 제외됩니다.", version.getVersion());
-                    continue;
-                }
-
                 // 모든 파일 조회
                 List<ReleaseFile> files = releaseFileRepository
                         .findAllByReleaseVersion_ReleaseVersionIdOrderByExecutionOrderAsc(
