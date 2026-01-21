@@ -124,7 +124,7 @@ public class ProjectController implements ProjectControllerDocs {
      * @return 온보딩 파일 트리 응답
      */
     @Override
-    @GetMapping("/{id}/files")
+    @GetMapping("/{id}/onboardings/files")
     public ResponseEntity<ApiResponse<ProjectDto.OnboardingFilesResponse>> getOnboardingFiles(
             @PathVariable String id) {
 
@@ -142,7 +142,7 @@ public class ProjectController implements ProjectControllerDocs {
      * @return 생성 결과 응답
      */
     @Override
-    @PostMapping("/{id}/files/directory")
+    @PostMapping("/{id}/onboardings/files/directory")
     public ResponseEntity<ApiResponse<ProjectDto.OnboardingDirectoryResponse>> createOnboardingDirectory(
             @PathVariable String id,
             @RequestParam String path) {
@@ -164,7 +164,7 @@ public class ProjectController implements ProjectControllerDocs {
      * @return 업로드 결과 응답
      */
     @Override
-    @PostMapping(value = "/{id}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{id}/onboardings/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ProjectDto.OnboardingUploadResponse>> uploadOnboardingFile(
             @PathVariable String id,
             @RequestPart("file") MultipartFile file,
@@ -187,7 +187,7 @@ public class ProjectController implements ProjectControllerDocs {
      * @param response HTTP 응답
      */
     @Override
-    @GetMapping("/{id}/onboarding/download")
+    @GetMapping("/{id}/onboardings/files/zip-download")
     public void downloadAllOnboardingFiles(
             @PathVariable String id,
             HttpServletResponse response) throws IOException {
@@ -215,7 +215,7 @@ public class ProjectController implements ProjectControllerDocs {
      * @return 삭제 결과 응답
      */
     @Override
-    @DeleteMapping("/{id}/files")
+    @DeleteMapping("/{id}/onboardings/files")
     public ResponseEntity<ApiResponse<ProjectDto.OnboardingDeleteResponse>> deleteOnboardingFile(
             @PathVariable String id,
             @RequestParam String filePath) {

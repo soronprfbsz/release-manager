@@ -68,7 +68,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/files/**").permitAll()  // 공통 파일 API (다운로드, 컨텐츠 조회)
                         .requestMatchers("/api/releases/versions/*/download").permitAll()  // 릴리즈 버전 전체 다운로드 (ZIP)
                         .requestMatchers("/api/patches/*/download").permitAll()  // 패치 다운로드 (ZIP)
-                        .requestMatchers("/api/projects/*/onboarding/download").permitAll() // 온보딩 전체 다운로드 (ZIP)
+                        .requestMatchers("/api/projects/*/onboardings/files/zip-download").permitAll() // 온보딩 전체 다운로드 (ZIP)
+                        .requestMatchers("/api/projects/*/installs/files/zip-download").permitAll() // 인스톨 전체 다운로드 (ZIP)
                         .requestMatchers("/api/jobs/backup-files/*/download").permitAll() // 백업 파일 다운로드
                         .requestMatchers("/api/jobs/backup-files/*/logs/download").permitAll() // 백업 로그 다운로드
                         .requestMatchers("/api/publishing/*/serve/**").permitAll() // 퍼블리싱 파일 서빙 (브라우저 열기)

@@ -119,7 +119,9 @@ public interface ProjectControllerDocs {
 
                     **용도**: 기존 레거시 고객사들의 DB 상태를 버전관리 가능한 동일한 상태로 만들기 위한 온보딩 파일 조회
 
-                    **파일 경로**: `{baseReleasePath}/onboardings/{projectId}/`
+                    **API 경로**: `/api/projects/{id}/onboardings/files`
+
+                    **파일 저장 경로**: `{baseReleasePath}/onboardings/{projectId}/`
                     """,
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",

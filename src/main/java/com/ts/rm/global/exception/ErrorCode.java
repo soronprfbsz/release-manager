@@ -83,6 +83,7 @@ public enum ErrorCode {
   FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "RF003", "error.resource.file_not_found"),
   FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RF004", "error.resource.upload_failed"),
   FILE_DOWNLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RF005", "error.resource.download_failed"),
+  FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RF006", "error.resource.delete_failed"),
 
   // SSH - SSH 연결 및 실행
   SSH_CONNECTION_FAILED(HttpStatus.BAD_GATEWAY, "SSH001", "error.ssh.connection_failed"),
