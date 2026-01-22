@@ -1,358 +1,564 @@
 package com.ts.rm.domain.resourcefile.service;
 
-import com.ts.rm.domain.account.entity.Account;
 import com.ts.rm.domain.resourcefile.dto.ResourceFileDto;
-import com.ts.rm.domain.resourcefile.entity.ResourceFile;
-import com.ts.rm.domain.resourcefile.repository.ResourceFileRepository;
-import com.ts.rm.global.account.AccountLookupService;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
-import com.ts.rm.global.file.FileChecksumUtil;
-import com.ts.rm.global.file.FileContentUtil;
+import com.ts.rm.global.file.StreamingZipUtil;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * ResourceFile 서비스
+ * ResourceFile Service
  *
- * <p>리소스 파일 업로드, 다운로드, 삭제 비즈니스 로직
+ * <p>카테고리별 리소스 파일 관리 비즈니스 로직 (파일시스템 기반)
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ResourceFileService {
-
-    private final ResourceFileRepository resourceFileRepository;
-    private final AccountLookupService accountLookupService;
 
     @Value("${app.release.base-path:data/release-manager}")
     private String baseReleasePath;
 
+    private static final String RESOURCES_DIR = "resources/file";
+
     /**
-     * 리소스 파일 업로드
+     * 카테고리 목록 조회 (파일시스템 기반)
      *
-     * @param file       업로드할 파일
-     * @param request    업로드 요청 정보
-     * @return 저장된 리소스 파일 엔티티
+     * <p>resources/file 하위 폴더를 카테고리로 인식
+     *
+     * @return 카테고리 목록 응답
      */
-    @Transactional
-    public ResourceFile uploadFile(MultipartFile file, ResourceFileDto.UploadRequest request) {
-        log.info("리소스 파일 업로드 시작 - 파일명: {}, 카테고리: {}, 서브카테고리: {}",
-                file.getOriginalFilename(), request.fileCategory(), request.subCategory());
+    public ResourceFileDto.CategoriesResponse getCategories() {
+        log.info("카테고리 목록 조회 요청");
 
-        // 파일명 검증
-        String originalFileName = file.getOriginalFilename();
-        if (originalFileName == null || originalFileName.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "파일명이 없습니다");
+        Path resourcesPath = Paths.get(baseReleasePath, RESOURCES_DIR);
+
+        // 디렉토리가 존재하지 않는 경우 빈 응답 반환
+        if (!Files.exists(resourcesPath) || !Files.isDirectory(resourcesPath)) {
+            log.info("리소스 디렉토리 미존재 - path: {}", resourcesPath);
+            return new ResourceFileDto.CategoriesResponse(0, List.of());
         }
 
-        // 파일 타입 추출 (확장자 대문자)
-        String fileType = extractFileType(originalFileName);
+        List<ResourceFileDto.CategoryInfo> categories = new ArrayList<>();
 
-        // 저장 경로 생성 (resources/file/script/MARIADB 또는 resources/file/document 등)
-        String relativePath = buildRelativePath(request.fileCategory(), request.subCategory(), originalFileName);
-        Path targetPath = Paths.get(baseReleasePath, relativePath);
-
-        // 중복 파일 검사
-        if (resourceFileRepository.existsByFilePath(relativePath)) {
-            throw new BusinessException(ErrorCode.DUPLICATE_RESOURCE, "이미 동일한 경로에 파일이 존재합니다: " + relativePath);
+        try (Stream<Path> stream = Files.list(resourcesPath)) {
+            stream.filter(Files::isDirectory)
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString().toLowerCase()))
+                    .forEach(categoryPath -> {
+                        String categoryName = categoryPath.getFileName().toString();
+                        CategoryStats stats = calculateCategoryStats(categoryPath);
+                        categories.add(new ResourceFileDto.CategoryInfo(
+                                categoryName,
+                                stats.fileCount,
+                                stats.totalSize
+                        ));
+                    });
+        } catch (IOException e) {
+            log.error("카테고리 목록 조회 실패: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "카테고리 목록 조회에 실패했습니다");
         }
 
-        // sortOrder 자동 채번: 파일 카테고리별로 최대값 + 1
-        Integer maxSortOrder = resourceFileRepository.findMaxSortOrderByFileCategory(request.fileCategory().toUpperCase());
-        Integer sortOrder = maxSortOrder + 1;
+        log.info("카테고리 목록 조회 완료 - categoryCount: {}", categories.size());
+        return new ResourceFileDto.CategoriesResponse(categories.size(), categories);
+    }
+
+    /**
+     * 카테고리 생성 (resources/file 하위에 폴더 생성)
+     *
+     * @param categoryName 카테고리명 (폴더명)
+     * @return 생성 결과 응답
+     */
+    public ResourceFileDto.CategoryCreateResponse createCategory(String categoryName) {
+        log.info("카테고리 생성 요청 - categoryName: {}", categoryName);
+
+        if (categoryName == null || categoryName.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "카테고리명이 비어있습니다");
+        }
+
+        String normalizedCategory = categoryName.toLowerCase().trim();
+
+        // 특수문자 검증 (영문, 숫자, 하이픈, 언더스코어만 허용)
+        if (!normalizedCategory.matches("^[a-z0-9_-]+$")) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "카테고리명은 영문 소문자, 숫자, 하이픈(-), 언더스코어(_)만 사용 가능합니다");
+        }
+
+        Path categoryPath = Paths.get(baseReleasePath, RESOURCES_DIR, normalizedCategory);
+
+        if (Files.exists(categoryPath)) {
+            throw new BusinessException(ErrorCode.DATA_CONFLICT, "이미 존재하는 카테고리입니다: " + normalizedCategory);
+        }
 
         try {
-            // 디렉토리 생성
-            Files.createDirectories(targetPath.getParent());
+            Files.createDirectories(categoryPath);
+            log.info("카테고리 생성 완료 - path: {}", categoryPath);
+        } catch (IOException e) {
+            log.error("카테고리 생성 실패 - categoryName: {}, error: {}", categoryName, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "카테고리 생성에 실패했습니다: " + e.getMessage());
+        }
 
-            // 파일 저장
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            log.info("파일 저장 완료: {}", targetPath);
+        return new ResourceFileDto.CategoryCreateResponse(
+                normalizedCategory,
+                "카테고리가 생성되었습니다."
+        );
+    }
 
-            // 체크섬 계산
-            String checksum = FileChecksumUtil.calculateChecksum(targetPath);
+    /**
+     * 카테고리 삭제 (resources/file 하위의 폴더 삭제)
+     *
+     * <p>카테고리 내에 파일이 있으면 삭제 불가
+     *
+     * @param category 카테고리명
+     * @return 삭제 결과 응답
+     */
+    public ResourceFileDto.CategoryDeleteResponse deleteCategory(String category) {
+        log.info("카테고리 삭제 요청 - category: {}", category);
 
-            // 생성자 Account 조회
-            Account creator = accountLookupService.findByEmail(request.createdByEmail());
+        String normalizedCategory = category.toLowerCase();
+        Path categoryPath = Paths.get(baseReleasePath, RESOURCES_DIR, normalizedCategory);
 
-            // 엔티티 생성 및 저장
-            ResourceFile resourceFile = ResourceFile.builder()
-                    .fileType(fileType)
-                    .fileCategory(request.fileCategory().toUpperCase())
-                    .subCategory(request.subCategory() != null ? request.subCategory().toUpperCase() : null)
-                    .resourceFileName(request.resourceFileName())
-                    .fileName(originalFileName)
-                    .filePath(relativePath)
-                    .fileSize(file.getSize())
-                    .checksum(checksum)
-                    .description(request.description())
-                    .sortOrder(sortOrder)
-                    .creator(creator)
-                    .createdByEmail(creator.getEmail())
-                    .build();
+        if (!Files.exists(categoryPath) || !Files.isDirectory(categoryPath)) {
+            throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "카테고리를 찾을 수 없습니다: " + category);
+        }
 
-            ResourceFile saved = resourceFileRepository.save(resourceFile);
-            log.info("리소스 파일 업로드 완료 - ID: {}, 경로: {}", saved.getResourceFileId(), relativePath);
+        // 폴더 내 파일 존재 여부 확인
+        try (Stream<Path> stream = Files.walk(categoryPath)) {
+            boolean hasFiles = stream.anyMatch(Files::isRegularFile);
+            if (hasFiles) {
+                throw new BusinessException(ErrorCode.DATA_CONFLICT,
+                        "카테고리 내에 파일이 존재하여 삭제할 수 없습니다. 먼저 파일을 삭제해주세요.");
+            }
+        } catch (IOException e) {
+            log.error("카테고리 파일 확인 실패 - category: {}, error: {}", category, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "카테고리 확인에 실패했습니다");
+        }
 
-            return saved;
+        // 빈 폴더 삭제 (하위 빈 디렉토리 포함)
+        try (Stream<Path> walk = Files.walk(categoryPath)) {
+            walk.sorted(Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            log.warn("디렉토리 삭제 실패: {}", path, e);
+                        }
+                    });
+            log.info("카테고리 삭제 완료 - path: {}", categoryPath);
+        } catch (IOException e) {
+            log.error("카테고리 삭제 실패 - category: {}, error: {}", category, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.FILE_DELETE_FAILED, "카테고리 삭제에 실패했습니다");
+        }
+
+        return new ResourceFileDto.CategoryDeleteResponse(
+                normalizedCategory,
+                "카테고리가 삭제되었습니다."
+        );
+    }
+
+    /**
+     * 카테고리별 파일 트리 조회 (파일시스템 기반)
+     *
+     * @param category 카테고리명
+     * @return 파일 트리 응답
+     */
+    public ResourceFileDto.FilesResponse getFiles(String category) {
+        log.info("파일 트리 조회 요청 - category: {}", category);
+
+        String normalizedCategory = category.toLowerCase();
+        Path categoryPath = Paths.get(baseReleasePath, RESOURCES_DIR, normalizedCategory);
+
+        // 디렉토리가 존재하지 않는 경우 빈 응답 반환
+        if (!Files.exists(categoryPath) || !Files.isDirectory(categoryPath)) {
+            log.info("카테고리 디렉토리 미존재 - path: {}", categoryPath);
+            return new ResourceFileDto.FilesResponse(
+                    normalizedCategory,
+                    false,
+                    0,
+                    0L,
+                    ResourceFileDto.FileNode.directory("root", "/", RESOURCES_DIR + "/" + normalizedCategory, List.of())
+            );
+        }
+
+        // 파일 트리 빌드
+        FileTreeResult result = buildFileTree(categoryPath, normalizedCategory);
+
+        log.info("파일 트리 조회 완료 - category: {}, fileCount: {}, totalSize: {}",
+                normalizedCategory, result.fileCount, result.totalSize);
+
+        return new ResourceFileDto.FilesResponse(
+                normalizedCategory,
+                result.fileCount > 0,
+                result.fileCount,
+                result.totalSize,
+                result.rootNode
+        );
+    }
+
+    /**
+     * 디렉토리 생성
+     *
+     * @param category 카테고리명
+     * @param path     생성할 디렉토리 경로 (예: /mariadb/scripts)
+     * @return 생성 결과 응답
+     */
+    public ResourceFileDto.DirectoryResponse createDirectory(String category, String path) {
+        log.info("디렉토리 생성 요청 - category: {}, path: {}", category, path);
+
+        String normalizedCategory = category.toLowerCase();
+        String normalizedPath = path.replaceAll("^/+|/+$", "");
+        if (normalizedPath.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "디렉토리 경로가 비어있습니다");
+        }
+
+        Path fullPath = Paths.get(baseReleasePath, RESOURCES_DIR, normalizedCategory, normalizedPath);
+
+        try {
+            if (Files.exists(fullPath)) {
+                throw new BusinessException(ErrorCode.DATA_CONFLICT, "이미 존재하는 경로입니다: " + path);
+            }
+            Files.createDirectories(fullPath);
+            log.info("디렉토리 생성 완료 - path: {}", fullPath);
 
         } catch (IOException e) {
-            log.error("파일 저장 실패: {}", e.getMessage(), e);
-            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "파일 저장에 실패했습니다: " + e.getMessage());
+            log.error("디렉토리 생성 실패 - category: {}, error: {}", category, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "디렉토리 생성에 실패했습니다: " + e.getMessage());
+        }
+
+        return new ResourceFileDto.DirectoryResponse(
+                normalizedCategory,
+                "/" + normalizedPath,
+                "디렉토리가 생성되었습니다."
+        );
+    }
+
+    /**
+     * 파일 업로드 (ZIP 또는 단일 파일)
+     *
+     * @param category   카테고리명
+     * @param file       업로드할 파일
+     * @param targetPath 대상 경로 (null이면 루트에 저장)
+     * @param extractZip ZIP 파일 압축 해제 여부 (true: 압축 해제, false: 원본 유지)
+     * @return 업로드 결과 응답
+     */
+    public ResourceFileDto.UploadResponse uploadFile(
+            String category, MultipartFile file, String targetPath, boolean extractZip) {
+
+        log.info("파일 업로드 요청 - category: {}, fileName: {}, targetPath: {}, extractZip: {}",
+                category, file.getOriginalFilename(), targetPath, extractZip);
+
+        String normalizedCategory = category.toLowerCase();
+        Path categoryBasePath = Paths.get(baseReleasePath, RESOURCES_DIR, normalizedCategory);
+
+        // 대상 경로 설정
+        Path uploadTargetPath = categoryBasePath;
+        String targetSubPath = "";
+        if (targetPath != null && !targetPath.isBlank()) {
+            String normalizedPath = targetPath.replaceAll("^/+|/+$", "");
+            if (!normalizedPath.isEmpty()) {
+                uploadTargetPath = categoryBasePath.resolve(normalizedPath);
+                targetSubPath = normalizedPath;
+            }
+        }
+
+        List<ResourceFileDto.UploadedFileInfo> uploadedFiles = new ArrayList<>();
+
+        try {
+            Files.createDirectories(uploadTargetPath);
+
+            String originalFileName = file.getOriginalFilename();
+            if (originalFileName == null) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "파일명이 없습니다");
+            }
+
+            // ZIP 파일이고 extractZip이 true인 경우 압축 해제
+            if (extractZip && originalFileName.toLowerCase().endsWith(".zip")) {
+                uploadedFiles = extractZipFile(file, uploadTargetPath, targetSubPath);
+            } else {
+                // 단일 파일 저장
+                Path targetFilePath = uploadTargetPath.resolve(originalFileName);
+                Files.copy(file.getInputStream(), targetFilePath, StandardCopyOption.REPLACE_EXISTING);
+
+                long fileSize = Files.size(targetFilePath);
+                String relativePath = "/" + targetSubPath + (targetSubPath.isEmpty() ? "" : "/") + originalFileName;
+                uploadedFiles.add(new ResourceFileDto.UploadedFileInfo(
+                        originalFileName,
+                        relativePath,
+                        fileSize
+                ));
+            }
+
+            log.info("파일 업로드 완료 - category: {}, uploadedCount: {}", category, uploadedFiles.size());
+
+            return new ResourceFileDto.UploadResponse(
+                    normalizedCategory,
+                    uploadedFiles.size(),
+                    uploadedFiles,
+                    uploadedFiles.size() + "개 파일이 업로드되었습니다."
+            );
+
+        } catch (IOException e) {
+            log.error("파일 업로드 실패 - category: {}, error: {}", category, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "파일 업로드에 실패했습니다: " + e.getMessage());
         }
     }
 
     /**
-     * 리소스 파일 다운로드 (스트리밍)
+     * 파일 삭제 (파일 또는 디렉토리)
      *
-     * @param id           리소스 파일 ID
-     * @param outputStream 출력 스트림
+     * @param category 카테고리명
+     * @param filePath 파일 경로 (예: /mariadb/backup.sh)
+     * @return 삭제 결과 응답
      */
-    public void downloadFile(Long id, OutputStream outputStream) {
-        ResourceFile resourceFile = getResourceFile(id);
-        Path filePath = Paths.get(baseReleasePath, resourceFile.getFilePath());
+    public ResourceFileDto.DeleteResponse deleteFile(String category, String filePath) {
+        log.info("파일 삭제 요청 - category: {}, filePath: {}", category, filePath);
 
-        log.info("리소스 파일 다운로드 - ID: {}, 경로: {}", id, filePath);
+        String normalizedCategory = category.toLowerCase();
+        String normalizedPath = filePath.replaceAll("^/+", "");
+        Path fullPath = Paths.get(baseReleasePath, RESOURCES_DIR, normalizedCategory, normalizedPath);
 
-        if (!Files.exists(filePath)) {
-            throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "파일이 존재하지 않습니다: " + resourceFile.getFilePath());
+        if (!Files.exists(fullPath)) {
+            throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "파일/디렉토리를 찾을 수 없습니다: " + filePath);
         }
 
-        try (InputStream is = Files.newInputStream(filePath)) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = is.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
+        try {
+            if (Files.isDirectory(fullPath)) {
+                // 디렉토리인 경우 내부 파일까지 모두 삭제
+                try (Stream<Path> walk = Files.walk(fullPath)) {
+                    walk.sorted(Comparator.reverseOrder())
+                            .forEach(path -> {
+                                try {
+                                    Files.delete(path);
+                                } catch (IOException e) {
+                                    log.warn("파일 삭제 실패: {}", path, e);
+                                }
+                            });
+                }
+                log.info("디렉토리 삭제 완료 - path: {}", fullPath);
+            } else {
+                Files.delete(fullPath);
+                log.info("파일 삭제 완료 - path: {}", fullPath);
             }
-            outputStream.flush();
+
+            return new ResourceFileDto.DeleteResponse(
+                    normalizedCategory,
+                    "/" + normalizedPath,
+                    "삭제되었습니다."
+            );
+
         } catch (IOException e) {
-            log.error("파일 다운로드 실패: {}", e.getMessage(), e);
+            log.error("파일 삭제 실패 - category: {}, error: {}", category, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.FILE_DELETE_FAILED, "파일 삭제에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 카테고리 전체 파일 ZIP 다운로드
+     *
+     * @param category     카테고리명
+     * @param outputStream 출력 스트림
+     */
+    public void downloadAllFiles(String category, OutputStream outputStream) {
+        log.info("전체 파일 다운로드 요청 - category: {}", category);
+
+        String normalizedCategory = category.toLowerCase();
+        Path categoryPath = Paths.get(baseReleasePath, RESOURCES_DIR, normalizedCategory);
+
+        if (!Files.exists(categoryPath) || !Files.isDirectory(categoryPath)) {
+            throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "파일이 없습니다");
+        }
+
+        try {
+            List<StreamingZipUtil.ZipFileEntry> fileEntries = new ArrayList<>();
+            try (Stream<Path> stream = Files.walk(categoryPath)) {
+                stream.filter(Files::isRegularFile)
+                        .forEach(path -> {
+                            String relativePath = categoryPath.relativize(path).toString().replace("\\", "/");
+                            fileEntries.add(new StreamingZipUtil.ZipFileEntry(path, relativePath));
+                        });
+            }
+
+            if (fileEntries.isEmpty()) {
+                throw new BusinessException(ErrorCode.FILE_NOT_FOUND, "다운로드할 파일이 없습니다");
+            }
+
+            StreamingZipUtil.compressFilesToStream(outputStream, fileEntries);
+            log.info("전체 파일 다운로드 완료 - category: {}, fileCount: {}", category, fileEntries.size());
+
+        } catch (IOException e) {
+            log.error("전체 파일 다운로드 실패 - category: {}, error: {}", category, e.getMessage(), e);
             throw new BusinessException(ErrorCode.FILE_DOWNLOAD_FAILED, "파일 다운로드에 실패했습니다");
         }
     }
 
     /**
-     * 리소스 파일 수정
-     *
-     * @param id      리소스 파일 ID
-     * @param request 수정 요청 정보
-     * @return 수정된 리소스 파일 엔티티
+     * 카테고리 전체 파일 크기 조회 (압축 전)
      */
-    @Transactional
-    public ResourceFile updateFile(Long id, ResourceFileDto.UpdateRequest request) {
-        log.info("리소스 파일 수정 시작 - ID: {}, 파일명: {}", id, request.resourceFileName());
+    public long getTotalSize(String category) {
+        String normalizedCategory = category.toLowerCase();
+        Path categoryPath = Paths.get(baseReleasePath, RESOURCES_DIR, normalizedCategory);
 
-        ResourceFile resourceFile = getResourceFile(id);
+        if (!Files.exists(categoryPath)) {
+            return 0L;
+        }
 
-        // 엔티티 업데이트 (파일은 수정하지 않고 메타데이터만 수정)
-        resourceFile.setFileCategory(request.fileCategory().toUpperCase());
-        resourceFile.setSubCategory(request.subCategory() != null ? request.subCategory().toUpperCase() : null);
-        resourceFile.setResourceFileName(request.resourceFileName());
-        resourceFile.setDescription(request.description());
-
-        log.info("리소스 파일 수정 완료 - ID: {}", id);
-        return resourceFile;
+        try (Stream<Path> stream = Files.walk(categoryPath)) {
+            return stream.filter(Files::isRegularFile)
+                    .mapToLong(path -> {
+                        try {
+                            return Files.size(path);
+                        } catch (IOException e) {
+                            return 0L;
+                        }
+                    })
+                    .sum();
+        } catch (IOException e) {
+            return 0L;
+        }
     }
 
-    /**
-     * 리소스 파일 삭제
-     *
-     * @param id 리소스 파일 ID
-     */
-    @Transactional
-    public void deleteFile(Long id) {
-        ResourceFile resourceFile = getResourceFile(id);
-        Path filePath = Paths.get(baseReleasePath, resourceFile.getFilePath());
+    // ========================================
+    // Private Helper Methods
+    // ========================================
 
-        log.info("리소스 파일 삭제 시작 - ID: {}, 경로: {}", id, filePath);
+    private CategoryStats calculateCategoryStats(Path categoryPath) {
+        int[] fileCount = {0};
+        long[] totalSize = {0L};
 
-        // 실제 파일 삭제
-        try {
-            if (Files.exists(filePath)) {
-                Files.delete(filePath);
-                log.info("실제 파일 삭제 완료: {}", filePath);
-            } else {
-                log.warn("삭제할 파일이 존재하지 않음: {}", filePath);
+        try (Stream<Path> stream = Files.walk(categoryPath)) {
+            stream.filter(Files::isRegularFile)
+                    .forEach(path -> {
+                        fileCount[0]++;
+                        try {
+                            totalSize[0] += Files.size(path);
+                        } catch (IOException e) {
+                            // ignore
+                        }
+                    });
+        } catch (IOException e) {
+            log.warn("카테고리 통계 계산 실패: {}", categoryPath, e);
+        }
+
+        return new CategoryStats(fileCount[0], totalSize[0]);
+    }
+
+    private FileTreeResult buildFileTree(Path rootPath, String category) {
+        int[] fileCount = {0};
+        long[] totalSize = {0L};
+
+        String resourceRelativeBase = RESOURCES_DIR + "/" + category;
+        ResourceFileDto.FileNode rootNode = buildDirectoryNode(rootPath, rootPath, resourceRelativeBase, fileCount, totalSize);
+
+        return new FileTreeResult(rootNode, fileCount[0], totalSize[0]);
+    }
+
+    private ResourceFileDto.FileNode buildDirectoryNode(Path currentPath, Path rootPath,
+            String resourceRelativeBase, int[] fileCount, long[] totalSize) {
+        List<ResourceFileDto.FileNode> children = new ArrayList<>();
+
+        try (Stream<Path> stream = Files.list(currentPath)) {
+            List<Path> sortedPaths = stream
+                    .sorted(Comparator
+                            .comparing((Path p) -> Files.isDirectory(p) ? 0 : 1)
+                            .thenComparing(p -> p.getFileName().toString().toLowerCase()))
+                    .toList();
+
+            for (Path path : sortedPaths) {
+                String relativePath = "/" + rootPath.relativize(path).toString().replace("\\", "/");
+                String name = path.getFileName().toString();
+                String filePathStr = resourceRelativeBase + "/" + rootPath.relativize(path).toString().replace("\\", "/");
+
+                if (Files.isDirectory(path)) {
+                    ResourceFileDto.FileNode dirNode = buildDirectoryNode(path, rootPath, resourceRelativeBase, fileCount, totalSize);
+                    children.add(dirNode);
+                } else {
+                    try {
+                        long size = Files.size(path);
+                        fileCount[0]++;
+                        totalSize[0] += size;
+                        children.add(ResourceFileDto.FileNode.file(name, relativePath, filePathStr, size));
+                    } catch (IOException e) {
+                        log.warn("파일 크기 조회 실패: {}", path, e);
+                        children.add(ResourceFileDto.FileNode.file(name, relativePath, filePathStr, 0L));
+                    }
+                }
             }
         } catch (IOException e) {
-            log.error("파일 삭제 실패: {}", e.getMessage(), e);
-            // 파일 삭제 실패해도 DB 레코드는 삭제 진행
+            log.error("디렉토리 읽기 실패: {}", currentPath, e);
         }
 
-        // DB 레코드 삭제
-        resourceFileRepository.delete(resourceFile);
-        log.info("리소스 파일 삭제 완료 - ID: {}", id);
+        String relativePath = currentPath.equals(rootPath)
+                ? "/"
+                : "/" + rootPath.relativize(currentPath).toString().replace("\\", "/");
+        String name = currentPath.equals(rootPath)
+                ? "root"
+                : currentPath.getFileName().toString();
+        String filePathStr = currentPath.equals(rootPath)
+                ? resourceRelativeBase
+                : resourceRelativeBase + "/" + rootPath.relativize(currentPath).toString().replace("\\", "/");
+
+        return ResourceFileDto.FileNode.directory(name, relativePath, filePathStr, children);
     }
 
-    /**
-     * 리소스 파일 단건 조회
-     */
-    public ResourceFile getResourceFile(Long id) {
-        return resourceFileRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND,
-                        "리소스 파일을 찾을 수 없습니다: " + id));
-    }
+    private List<ResourceFileDto.UploadedFileInfo> extractZipFile(
+            MultipartFile zipFile, Path targetDir, String targetSubPath) throws IOException {
 
-    /**
-     * 전체 리소스 파일 목록 조회 (sortOrder 오름차순, 생성일시 내림차순)
-     */
-    public List<ResourceFile> listAllFiles() {
-        return resourceFileRepository.findAllByOrderBySortOrderAscCreatedAtDesc();
-    }
+        List<ResourceFileDto.UploadedFileInfo> uploadedFiles = new ArrayList<>();
 
-    /**
-     * 파일 카테고리별 리소스 파일 목록 조회 (sortOrder 오름차순, 생성일시 내림차순)
-     *
-     * @param fileCategory 파일 카테고리 (SCRIPT, DOCUMENT, ETC)
-     */
-    public List<ResourceFile> listFilesByCategory(String fileCategory) {
-        return resourceFileRepository.findByFileCategoryOrderBySortOrderAscCreatedAtDesc(fileCategory.toUpperCase());
-    }
+        try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream())) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                String entryName = entry.getName();
 
-    /**
-     * 리소스 파일 목록 조회 (카테고리 필터링 + 키워드 검색)
-     * QueryDSL을 사용한 다중 필드 키워드 검색 (리소스파일명, 파일명, 설명)
-     *
-     * @param fileCategory 파일 카테고리 (null이면 전체)
-     * @param keyword 검색 키워드 - 리소스파일명, 파일명, 설명 통합 검색 (null이면 전체)
-     * @return 리소스 파일 목록
-     */
-    public List<ResourceFile> listFilesWithFilters(String fileCategory, String keyword) {
-        return resourceFileRepository.findAllWithFilters(fileCategory, keyword);
-    }
+                if (entry.isDirectory()) {
+                    Files.createDirectories(targetDir.resolve(entryName));
+                    continue;
+                }
 
-    /**
-     * 리소스 파일 순서 변경
-     *
-     * @param request 순서 변경 요청
-     */
-    @Transactional
-    public void reorderResourceFiles(ResourceFileDto.ReorderResourceFilesRequest request) {
-        log.info("리소스 파일 순서 변경 시작 - fileCategory: {}, resourceFileIds: {}",
-                request.fileCategory(), request.resourceFileIds());
+                Path filePath = targetDir.resolve(entryName);
+                Files.createDirectories(filePath.getParent());
+                Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        List<Long> resourceFileIds = request.resourceFileIds();
-        if (resourceFileIds == null || resourceFileIds.isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "리소스 파일 ID 목록은 비어있을 수 없습니다");
-        }
+                String fileRelativePath = targetSubPath.isEmpty()
+                        ? entryName
+                        : targetSubPath + "/" + entryName;
 
-        // 모든 리소스 파일이 존재하고 동일한 fileCategory인지 확인
-        for (Long resourceFileId : resourceFileIds) {
-            ResourceFile resourceFile = getResourceFile(resourceFileId);
-            if (!request.fileCategory().equalsIgnoreCase(resourceFile.getFileCategory())) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                        "리소스 파일 " + resourceFileId + "는 " + request.fileCategory() + " 카테고리에 속하지 않습니다");
+                long fileSize = Files.size(filePath);
+                uploadedFiles.add(new ResourceFileDto.UploadedFileInfo(
+                        filePath.getFileName().toString(),
+                        "/" + fileRelativePath,
+                        fileSize
+                ));
+
+                zis.closeEntry();
             }
         }
 
-        // sortOrder 업데이트 (1부터 시작)
-        int sortOrder = 1;
-        for (Long resourceFileId : resourceFileIds) {
-            ResourceFile resourceFile = getResourceFile(resourceFileId);
-            resourceFile.setSortOrder(sortOrder++);
-        }
-
-        log.info("리소스 파일 순서 변경 완료 - fileCategory: {}", request.fileCategory());
+        return uploadedFiles;
     }
 
-    /**
-     * 파일명에서 확장자 추출 (대문자)
-     */
-    private String extractFileType(String fileName) {
-        int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex == -1 || lastDotIndex == fileName.length() - 1) {
-            return "UNKNOWN";
-        }
-        return fileName.substring(lastDotIndex + 1).toUpperCase();
+    private record CategoryStats(int fileCount, long totalSize) {
     }
 
-    /**
-     * 저장 경로 생성
-     *
-     * @param category     카테고리 (script, document, docker 등)
-     * @param subDirectory 서브 디렉토리 (MARIADB, CRATEDB, INFRAEYE1, INFRAEYE2 등)
-     * @param fileName     파일명
-     * @return 상대 경로 (예: resources/file/script/MARIADB/backup.sh)
-     */
-    private String buildRelativePath(String category, String subDirectory, String fileName) {
-        StringBuilder pathBuilder = new StringBuilder();
-        pathBuilder.append("resources/file/");
-        pathBuilder.append(category.toLowerCase());
-
-        if (subDirectory != null && !subDirectory.isBlank()) {
-            pathBuilder.append("/").append(subDirectory.toUpperCase());
-        }
-
-        pathBuilder.append("/").append(fileName);
-        return pathBuilder.toString();
-    }
-
-    /**
-     * 파일명 조회
-     */
-    public String getFileName(Long id) {
-        return getResourceFile(id).getFileName();
-    }
-
-    /**
-     * 파일 크기 조회
-     */
-    public long getFileSize(Long id) {
-        ResourceFile resourceFile = getResourceFile(id);
-        return resourceFile.getFileSize() != null ? resourceFile.getFileSize() : 0L;
-    }
-
-    /**
-     * 리소스 파일 내용 조회
-     *
-     * <p>텍스트 파일은 UTF-8 문자열로, 바이너리 파일은 Base64 인코딩하여 반환합니다.
-     *
-     * @param id 리소스 파일 ID
-     * @return 파일 내용 응답 (MIME 타입, 바이너리 여부, 내용 포함)
-     * @throws BusinessException 파일을 찾을 수 없거나 읽기 실패 시
-     */
-    public ResourceFileDto.FileContentResponse getFileContent(Long id) {
-        log.info("리소스 파일 내용 조회 - ID: {}", id);
-
-        ResourceFile resourceFile = getResourceFile(id);
-
-        // 절대 경로 조회
-        Path filePath = Paths.get(baseReleasePath, resourceFile.getFilePath());
-
-        if (!Files.exists(filePath)) {
-            throw new BusinessException(ErrorCode.FILE_NOT_FOUND,
-                    "파일을 찾을 수 없습니다: " + resourceFile.getFileName());
-        }
-
-        // 공통 유틸리티로 파일 내용 조회
-        FileContentUtil.FileContentResult result = FileContentUtil.readFileContent(filePath);
-
-        log.info("리소스 파일 내용 조회 완료 - ID: {}, fileName: {}, size: {} bytes, isBinary: {}",
-                id, result.fileName(), result.size(), result.isBinary());
-
-        return new ResourceFileDto.FileContentResponse(
-                id,
-                resourceFile.getFilePath(),
-                result.fileName(),
-                result.size(),
-                result.mimeType(),
-                result.isBinary(),
-                result.content()
-        );
+    private record FileTreeResult(
+            ResourceFileDto.FileNode rootNode,
+            int fileCount,
+            long totalSize
+    ) {
     }
 }

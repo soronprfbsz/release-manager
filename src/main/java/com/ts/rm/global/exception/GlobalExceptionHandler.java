@@ -18,6 +18,9 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MultipartException;
+import java.io.EOFException;
+import org.apache.catalina.connector.ClientAbortException;
 
 @Slf4j
 @RestControllerAdvice
@@ -200,10 +203,70 @@ public class GlobalExceptionHandler {
             message + " (필수 헤더 누락: " + headerName + ")"));
   }
 
+  // Multipart 요청 파싱 에러 (파일 업로드 중 클라이언트 취소 등)
+  @ExceptionHandler(MultipartException.class)
+  public ResponseEntity<ApiResponse<?>> handleMultipartException(MultipartException e,
+      Locale locale) {
+    // 클라이언트가 업로드를 취소한 경우 (ClientAbortException, EOFException)
+    if (isClientAbortException(e)) {
+      log.info("클라이언트가 파일 업로드를 취소했습니다");
+      // 클라이언트가 이미 연결을 끊었으므로 응답을 보내지 않음
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+    }
+
+    // 그 외 Multipart 에러 (파일 크기 초과 등)
+    log.warn("Multipart 요청 처리 실패: {}", e.getMessage());
+
+    String message =
+        messageSource.getMessage(ErrorCode.INVALID_INPUT_VALUE.getMessageKey(), null, locale);
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(ApiResponse.fail(ErrorCode.INVALID_INPUT_VALUE.getCode(),
+            message + " (파일 업로드 실패)"));
+  }
+
+  /**
+   * 클라이언트 연결 끊김 예외인지 확인
+   *
+   * <p>브라우저에서 업로드/다운로드 취소 시 발생하는 예외를 감지합니다.
+   *
+   * @param e 확인할 예외
+   * @return 클라이언트 연결 끊김 여부
+   */
+  private boolean isClientAbortException(Throwable e) {
+    Throwable current = e;
+    while (current != null) {
+      // Tomcat ClientAbortException 확인
+      if (current instanceof ClientAbortException) {
+        return true;
+      }
+      // EOFException 확인 (업로드 중 클라이언트 연결 끊김)
+      if (current instanceof EOFException) {
+        return true;
+      }
+      // 에러 메시지로 확인
+      String message = current.getMessage();
+      if (message != null && (message.contains("Connection reset by peer")
+              || message.contains("Broken pipe")
+              || message.contains("EOFException")
+              || message.contains("클라이언트가 연결을 끊었습니다"))) {
+        return true;
+      }
+      current = current.getCause();
+    }
+    return false;
+  }
+
   // 예상치 못한 서버 에러 (국제화 지원)
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<ApiResponse.ErrorDetail>> handleInternalError(Exception e,
       Locale locale) {
+    // 클라이언트가 연결을 끊은 경우 (업로드/다운로드 취소)
+    if (isClientAbortException(e)) {
+      log.info("클라이언트가 요청을 취소했습니다 (연결 끊김)");
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+    }
+
     log.error("Unexpected error occurred", e);
 
     String message =

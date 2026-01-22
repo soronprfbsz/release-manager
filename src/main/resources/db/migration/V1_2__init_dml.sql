@@ -15,10 +15,6 @@ INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VA
 ('FILE_CATEGORY', '파일 카테고리', '파일 기능적 대분류', TRUE),
 ('FILE_SUBCATEGORY_DATABASE', '데이터베이스 파일 서브 카테고리', 'DATABASE 카테고리 소분류', TRUE),
 ('FILE_SUBCATEGORY_ENGINE', '엔진 파일 서브 카테고리', 'ENGINE 카테고리 소분류', TRUE),
-('RESOURCE_FILE_CATEGORY', '리소스 파일 카테고리', '리소스 파일 기능적 대분류', TRUE),
-('RESOURCE_SUBCATEGORY_SCRIPT', '스크립트 서브 카테고리', 'SCRIPT 카테고리 소분류', TRUE),
-('RESOURCE_SUBCATEGORY_DOCKER', 'Docker 서브 카테고리', 'DOCKER 카테고리 소분류', TRUE),
-('RESOURCE_SUBCATEGORY_DOCUMENT', '문서 서브 카테고리', 'DOCUMENT 카테고리 소분류', TRUE),
 ('BACKUP_FILE_CATEGORY', '백업 파일 카테고리', '백업 파일 분류 (MARIADB, CRATEDB)', TRUE),
 ('POSITION', '직급', '엔지니어 직급 구분', TRUE),
 ('SERVICE_TYPE', '서비스 분류', '서비스 관리에서 사용하는 서비스 분류', TRUE),
@@ -31,7 +27,6 @@ INSERT INTO code_type (code_type_id, code_type_name, description, is_enabled) VA
 ('PUBLISHING_CATEGORY', '퍼블리싱 카테고리', '퍼블리싱 제품 분류', TRUE),
 ('PUBLISHING_SUBCATEGORY_INFRAEYE1', 'Infraeye 1 퍼블리싱 서브 카테고리', 'Infraeye 1 퍼블리싱 기능 분류', TRUE),
 ('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'Infraeye 2 퍼블리싱 서브 카테고리', 'Infraeye 2 퍼블리싱 기능 분류', TRUE),
-('PUBLISHING_SUBCATEGORY_COMMON', '공통 퍼블리싱 서브 카테고리', '공통 퍼블리싱 기능 분류', TRUE),
 ('DEPARTMENT_TYPE', '부서 유형', '부서 유형 구분 (개발/엔지니어)', TRUE);
 
 -- =========================================================
@@ -158,31 +153,6 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('FILE_SUBCATEGORY_ENGINE', 'OZ_CCTV', 'OZ_CCTV', '', 64, TRUE),
 ('FILE_SUBCATEGORY_ENGINE', 'ETC', 'ETC', '기타 파일', 65, TRUE);
 
--- RESOURCE_FILE_CATEGORY
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('RESOURCE_FILE_CATEGORY', 'SCRIPT', '스크립트', '스크립트 파일 (백업, 복원 등)', 1, TRUE),
-('RESOURCE_FILE_CATEGORY', 'DOCKER', 'Docker', 'Docker 관련 파일 (컴포즈, Dockerfile 등)', 2, TRUE),
-('RESOURCE_FILE_CATEGORY', 'DOCUMENT', '문서', '설치 가이드 및 기타 문서', 3, TRUE),
-('RESOURCE_FILE_CATEGORY', 'ETC', '기타', '기타 리소스 파일', 99, TRUE);
-
--- RESOURCE_SUBCATEGORY_SCRIPT
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('RESOURCE_SUBCATEGORY_SCRIPT', 'MARIADB', 'MariaDB', 'MariaDB 관련 스크립트', 1, TRUE),
-('RESOURCE_SUBCATEGORY_SCRIPT', 'CRATEDB', 'CrateDB', 'CrateDB 관련 스크립트', 2, TRUE),
-('RESOURCE_SUBCATEGORY_SCRIPT', 'ETC', '기타', '기타 스크립트', 99, TRUE);
-
--- RESOURCE_SUBCATEGORY_DOCKER
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('RESOURCE_SUBCATEGORY_DOCKER', 'SERVICE', '서비스 실행', 'Docker 서비스 실행 관련 파일', 1, TRUE),
-('RESOURCE_SUBCATEGORY_DOCKER', 'DOCKERFILE', 'Dockerfile', 'Dockerfile 및 빌드 관련 파일', 2, TRUE),
-('RESOURCE_SUBCATEGORY_DOCKER', 'ETC', '기타', '기타 Docker 파일', 99, TRUE);
-
--- RESOURCE_SUBCATEGORY_DOCUMENT
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE1', 'Infraeye 1', 'Infraeye 1 관련 문서', 1, TRUE),
-('RESOURCE_SUBCATEGORY_DOCUMENT', 'INFRAEYE2', 'Infraeye 2', 'Infraeye 2 관련 문서', 2, TRUE),
-('RESOURCE_SUBCATEGORY_DOCUMENT', 'ETC', '기타', '기타 문서', 99, TRUE);
-
 -- BACKUP_FILE_CATEGORY
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('BACKUP_FILE_CATEGORY', 'MARIADB', 'MariaDB', 'MariaDB 백업 파일', 1, TRUE),
@@ -204,10 +174,10 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 
 -- SERVICE_TYPE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('SERVICE_TYPE', 'infra', '개발/운영 인프라', '개발 및 운영 인프라 관련 서비스', 1, TRUE),
-('SERVICE_TYPE', 'infraeye1', 'Infraeye 1', 'Infraeye 1 관련 서비스', 2, TRUE),
-('SERVICE_TYPE', 'infraeye2', 'Infraeye 2', 'Infraeye 2 관련 서비스', 3, TRUE),
-('SERVICE_TYPE', 'etc', '기타', '기타 서비스', 99, TRUE);
+('SERVICE_TYPE', 'INFRA', '개발/운영 인프라', '개발 및 운영 인프라 관련 서비스', 1, TRUE),
+('SERVICE_TYPE', 'INFRAEYE1', 'Infraeye 1', 'Infraeye 1 관련 서비스', 2, TRUE),
+('SERVICE_TYPE', 'INFRAEYE2', 'Infraeye 2', 'Infraeye 2 관련 서비스', 3, TRUE),
+('SERVICE_TYPE', 'ETC', '기타', '기타 서비스', 99, TRUE);
 
 -- COMPONENT_TYPE
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -216,13 +186,11 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('COMPONENT_TYPE', 'ENGINE', '엔진', '엔진 접속 정보', 3, TRUE),
 ('COMPONENT_TYPE', 'ETC', '기타', '기타 접속 정보', 99, TRUE);
 
--- LINK_CATEGORY
+-- LINK_CATEGORY (SERVICE_TYPE과 동일)
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('LINK_CATEGORY', 'INFRAEYE', 'Infraeye(공통)', 'Infraeye(공통) 관련 링크', 1, TRUE),
+('LINK_CATEGORY', 'INFRA', '개발/운영 인프라', '개발 및 운영 인프라 관련 링크', 1, TRUE),
 ('LINK_CATEGORY', 'INFRAEYE1', 'Infraeye 1', 'Infraeye 1 관련 링크', 2, TRUE),
 ('LINK_CATEGORY', 'INFRAEYE2', 'Infraeye 2', 'Infraeye 2 관련 링크', 3, TRUE),
-('LINK_CATEGORY', 'INFRASTRUCTURE', '인프라', '인프라 관련 링크', 4, TRUE),
-('LINK_CATEGORY', 'TEAM-MANAGEMENT', '팀 관리 및 운영', '팀 내 공유 정보 링크', 5, TRUE),
 ('LINK_CATEGORY', 'ETC', '기타', '기타 링크', 99, TRUE);
 
 -- LINK_SUBCATEGORY
@@ -235,7 +203,6 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
 ('PUBLISHING_CATEGORY', 'INFRAEYE1', 'Infraeye 1', 'Infraeye 1 제품 퍼블리싱', 1, TRUE),
 ('PUBLISHING_CATEGORY', 'INFRAEYE2', 'Infraeye 2', 'Infraeye 2 제품 퍼블리싱', 2, TRUE),
-('PUBLISHING_CATEGORY', 'COMMON', '공통', '공통 퍼블리싱', 3, TRUE),
 ('PUBLISHING_CATEGORY', 'ETC', '기타', '기타 퍼블리싱', 99, TRUE);
 
 -- PUBLISHING_SUBCATEGORY_INFRAEYE1
@@ -250,12 +217,6 @@ INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_
 ('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'REPORT', '리포트', '리포트 관련 퍼블리싱', 2, TRUE),
 ('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'MONITORING', '모니터링', '모니터링 관련 퍼블리싱', 3, TRUE),
 ('PUBLISHING_SUBCATEGORY_INFRAEYE2', 'ETC', '기타', '기타 퍼블리싱', 99, TRUE);
-
--- PUBLISHING_SUBCATEGORY_COMMON
-INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
-('PUBLISHING_SUBCATEGORY_COMMON', 'COMPONENT', '컴포넌트', '공통 컴포넌트 퍼블리싱', 1, TRUE),
-('PUBLISHING_SUBCATEGORY_COMMON', 'LAYOUT', '레이아웃', '공통 레이아웃 퍼블리싱', 2, TRUE),
-('PUBLISHING_SUBCATEGORY_COMMON', 'ETC', '기타', '기타 퍼블리싱', 99, TRUE);
 
 -- FILE_SYNC_STATUS
 INSERT INTO code (code_type_id, code_id, code_name, description, sort_order, is_enabled) VALUES
@@ -407,21 +368,11 @@ INSERT INTO release_version_hierarchy (ancestor_id, descendant_id, depth) VALUES
 (3, 3, 0);
 
 -- =========================================================
--- resource_file 테이블 (resource_file_name 추가)
--- =========================================================
-
-INSERT INTO resource_file (file_type, file_category, sub_category, resource_file_name, file_name, file_path, file_size, description, sort_order, created_by, created_by_email) VALUES
--- SCRIPT - MARIADB (sort_order: 1, 2)
-('SH', 'SCRIPT', 'MARIADB', 'MariaDB 백업', 'mariadb_backup.sh', 'resources/file/script/MARIADB/mariadb_backup.sh', 11025, 'MariaDB 데이터베이스 백업 수행 셸 스크립트', 1, 1, 'admin@tscientific.co.kr'),
-('SH', 'SCRIPT', 'MARIADB', 'MariaDB 복원', 'mariadb_restore.sh', 'resources/file/script/MARIADB/mariadb_restore.sh', 12655, 'MariaDB 데이터베이스 복원 수행 셸 스크립트', 2, 1, 'admin@tscientific.co.kr'),
-('PDF', 'DOCUMENT', 'INFRAEYE2', 'Infraeye2 설치 가이드 문서', 'Infraeye2 설치가이드(OracleLinux8.6).pdf', 'resources/file/document/INFRAEYE2/Infraeye2 설치가이드(OracleLinux8.6).pdf', 2727778, 'Infraeye2 설치 상세 가이드 문서', 1, 1, 'admin@tscientific.co.kr');
-
--- =========================================================
 -- resource_link 테이블
 -- =========================================================
 
 INSERT INTO resource_link (link_category,sub_category,link_name,link_url,description,sort_order,created_by,created_by_email) VALUES
-('TEAM-MANAGEMENT','NOTION','개발 2팀 페이지','https://www.notion.so/tscientific/2-c32cc14be7904787a6acb88e8106edaf?source=copy_link','개발 2팀 노션 페이지',1,1,'admin@tscientific.co.kr'),
+('INFRA','NOTION','개발 2팀 페이지','https://www.notion.so/tscientific/2-c32cc14be7904787a6acb88e8106edaf?source=copy_link','개발 2팀 노션 페이지',1,1,'admin@tscientific.co.kr'),
 ('INFRAEYE2','SHARED-EXCEL','Infraeye 2 메뉴관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7B205c004f-cbe4-4296-8a32-3c39bf08e8af%7D&wdOrigin=TEAMS-MAGLEV.undefined_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1748848209807&web=1','관리대상: 메뉴, 역할별메뉴, 메뉴기능 기초데이터',1,1,'admin@tscientific.co.kr'),
 ('INFRAEYE2','SHARED-EXCEL','Infraeye 2 이벤트코드 관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7B11a03087-ecbc-4ae0-8b3e-4352edbdfc55%7D&wdOrigin=TEAMS-MAGLEV.teamsSdk_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1754539574091&web=1','관리대상: 이벤트코드종류, 이벤트코드, 성능지표, 성능지표(SMS)',2,1,'admin@tscientific.co.kr'),
 ('INFRAEYE2','SHARED-EXCEL','Infraeye 2 데이터코드 관리','https://itnomads.sharepoint.com/:x:/r/sites/TS_NMS/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7Be486a6da-e310-41a8-8df4-5ac94669f595%7D&wdOrigin=TEAMS-MAGLEV.teamsSdk_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1754539517973&web=1','관리대상: 데이터코드분류, 데이터코드',3,1,'admin@tscientific.co.kr'),
@@ -598,16 +549,16 @@ INSERT INTO menu_role (menu_id, role) VALUES
 -- service 테이블
 -- =========================================================
 INSERT INTO service (service_name,service_type,description,sort_order,created_by,created_by_email) VALUES
- ('infraeye 1 (common)','infraeye1','infraeye 1 공용 서비스',1,1,'admin@tscientific.co.kr'),
- ('infraeye 2 (dev)','infraeye2','infraeye 2 개발',2,1,'admin@tscientific.co.kr'),
- ('infraeye 2 (test)','infraeye2','infraeye 2 테스트',3,1,'admin@tscientific.co.kr'),
- ('gitea','infra','git 저장소',1,1,'admin@tscientific.co.kr'),
- ('jenkins','infra','gitea 연동 CI/CD',2,1,'admin@tscientific.co.kr'),
- ('NAS','infra','NAS 서버',3,1,'admin@tscientific.co.kr'),
- ('gitlab','infra','git 저장소 (release_manager)',4,1,'admin@tscientific.co.kr'),
- ('harbor','infra','도커 이미지 저장소 (private registry)',5,1,'admin@tscientific.co.kr'),
- ('infraeye 2 (common)','infraeye2','infraeye 2 공용 서비스',1,1,'admin@tscientific.co.kr'),
- ('release-manager','infra','제품 관리 솔루션',6,1,'admin@tscientific.co.kr');
+ ('infraeye 1 (common)','INFRAEYE1','infraeye 1 공용 서비스',1,1,'admin@tscientific.co.kr'),
+ ('infraeye 2 (dev)','INFRAEYE2','infraeye 2 개발',2,1,'admin@tscientific.co.kr'),
+ ('infraeye 2 (test)','INFRAEYE2','infraeye 2 테스트',3,1,'admin@tscientific.co.kr'),
+ ('gitea','INFRA','git 저장소',1,1,'admin@tscientific.co.kr'),
+ ('jenkins','INFRA','gitea 연동 CI/CD',2,1,'admin@tscientific.co.kr'),
+ ('NAS','INFRA','NAS 서버',3,1,'admin@tscientific.co.kr'),
+ ('gitlab','INFRA','git 저장소 (release_manager)',4,1,'admin@tscientific.co.kr'),
+ ('harbor','INFRA','도커 이미지 저장소 (private registry)',5,1,'admin@tscientific.co.kr'),
+ ('infraeye 2 (common)','INFRAEYE2','infraeye 2 공용 서비스',1,1,'admin@tscientific.co.kr'),
+ ('release-manager','INFRA','제품 관리 솔루션',6,1,'admin@tscientific.co.kr');
 
 INSERT INTO service_component (service_id,component_type,component_name,host,port,url,ssh_port,description,sort_order,created_by,created_by_email) VALUES
  (6,'WEB','nas - web','10.110.1.99',5000,'http://10.110.1.99',NULL,'NAS 서버',1,1,'admin@tscientific.co.kr'),

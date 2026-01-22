@@ -1,248 +1,219 @@
 package com.ts.rm.domain.resourcefile.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * ResourceFile DTO
+ *
+ * <p>리소스 파일 관리를 위한 DTO (파일시스템 기반)
  */
 public final class ResourceFileDto {
 
     private ResourceFileDto() {
     }
 
-    /**
-     * 리소스 파일 업로드 요청
-     */
-    @Schema(description = "리소스 파일 업로드 요청")
-    public record UploadRequest(
-            @Schema(description = "파일 카테고리",
-                    example = "SCRIPT",
-                    allowableValues = {"SCRIPT", "DOCKER", "DOCUMENT", "ETC"})
-            @NotBlank(message = "파일 카테고리는 필수입니다")
-            String fileCategory,
-
-            @Schema(description = "하위 카테고리\n" +
-                    "- SCRIPT: MARIADB, CRATEDB, ETC\n" +
-                    "- DOCKER: SERVICE, DOCKERFILE, ETC\n" +
-                    "- DOCUMENT: INFRAEYE1, INFRAEYE2, ETC\n" +
-                    "- ETC: ETC",
-                    example = "MARIADB")
-            String subCategory,
-
-            @Schema(description = "리소스 파일 관리용 이름", example = "MariaDB 백업 스크립트 v1.0")
-            @NotBlank(message = "리소스 파일 이름은 필수입니다")
-            String resourceFileName,
-
-            @Schema(description = "파일 설명", example = "MariaDB 백업 스크립트")
-            String description,
-
-            @Schema(description = "생성자 이메일 ", example = "admin@company.com")
-            @NotBlank(message = "생성자 이메일은 필수입니다")
-            String createdByEmail
-    ) {
-    }
+    // ========================================
+    // File Tree DTOs
+    // ========================================
 
     /**
-     * 리소스 파일 수정 요청
+     * 파일 트리 노드 (디렉토리 또는 파일)
      */
-    @Schema(description = "리소스 파일 수정 요청")
-    public record UpdateRequest(
-            @Schema(description = "파일 카테고리",
-                    example = "SCRIPT",
-                    allowableValues = {"SCRIPT", "DOCKER", "DOCUMENT", "ETC"})
-            @NotBlank(message = "파일 카테고리는 필수입니다")
-            String fileCategory,
+    @Schema(description = "파일 트리 노드")
+    public record FileNode(
+            @Schema(description = "파일/디렉토리 이름", example = "mariadb")
+            String name,
 
-            @Schema(description = "하위 카테고리\n" +
-                    "- SCRIPT: MARIADB, CRATEDB, ETC\n" +
-                    "- DOCKER: SERVICE, DOCKERFILE, ETC\n" +
-                    "- DOCUMENT: INFRAEYE1, INFRAEYE2, ETC\n" +
-                    "- ETC: ETC",
-                    example = "MARIADB")
-            String subCategory,
-
-            @Schema(description = "리소스 파일 관리용 이름", example = "MariaDB 백업 스크립트 v2.0")
-            @NotBlank(message = "리소스 파일 이름은 필수입니다")
-            String resourceFileName,
-
-            @Schema(description = "파일 설명", example = "MariaDB 백업 스크립트 (개선 버전)")
-            String description
-    ) {
-    }
-
-    /**
-     * 리소스 파일 상세 응답
-     */
-    @Schema(description = "리소스 파일 상세 응답")
-    public record DetailResponse(
-            @Schema(description = "리소스 파일 ID", example = "1")
-            Long resourceFileId,
-
-            @Schema(description = "파일 타입 (확장자)", example = "SCRIPT")
-            String fileType,
-
-            @Schema(description = "파일 카테고리", example = "SCRIPT")
-            String fileCategory,
-
-            @Schema(description = "서브 카테고리", example = "MARIADB_BACKUP")
-            String subCategory,
-
-            @Schema(description = "리소스 파일 관리용 이름", example = "MariaDB 백업 스크립트 v1.0")
-            String resourceFileName,
-
-            @Schema(description = "파일명", example = "mariadb_backup.sh")
-            String fileName,
-
-            @Schema(description = "파일 경로", example = "resources/file/script/MARIADB/mariadb_backup.sh")
-            String filePath,
-
-            @Schema(description = "파일 크기 (bytes)", example = "11025")
-            Long fileSize,
-
-            @Schema(description = "체크섬 (SHA-256)", example = "a1b2c3d4...")
-            String checksum,
-
-            @Schema(description = "파일 설명", example = "MariaDB 백업 스크립트")
-            String description,
-
-            @Schema(description = "생성자 이메일", example = "admin@company.com")
-            String createdByEmail,
-
-            @Schema(description = "생성자 이름", example = "홍길동")
-            String createdByName,
-
-            @Schema(description = "생성자 아바타 스타일", example = "lorelei")
-            String createdByAvatarStyle,
-
-            @Schema(description = "생성자 아바타 시드", example = "abc123")
-            String createdByAvatarSeed,
-
-            @Schema(description = "생성자 탈퇴 여부", example = "false")
-            Boolean isDeletedCreator,
-
-            @Schema(description = "생성일시", example = "2025-12-04T10:30:00")
-            LocalDateTime createdAt
-    ) {
-    }
-
-    /**
-     * 리소스 파일 목록 응답 (간략)
-     */
-    @Schema(description = "리소스 파일 목록 응답")
-    public record SimpleResponse(
-            @Schema(description = "리소스 파일 ID", example = "1")
-            Long resourceFileId,
-
-            @Schema(description = "파일 타입 (확장자)", example = "SCRIPT")
-            String fileType,
-
-            @Schema(description = "파일 카테고리", example = "SCRIPT")
-            String fileCategory,
-
-            @Schema(description = "서브 카테고리", example = "MARIADB_BACKUP")
-            String subCategory,
-
-            @Schema(description = "리소스 파일 관리용 이름", example = "MariaDB 백업 스크립트 v1.0")
-            String resourceFileName,
-
-            @Schema(description = "파일명", example = "mariadb_backup.sh")
-            String fileName,
-
-            @Schema(description = "파일 경로", example = "resources/file/script/MARIADB/mariadb_backup.sh")
-            String filePath,
-
-            @Schema(description = "파일 크기 (bytes)", example = "11025")
-            Long fileSize,
-
-            @Schema(description = "파일 설명", example = "MariaDB 백업 스크립트")
-            String description,
-
-            @Schema(description = "생성일시", example = "2025-12-04T10:30:00")
-            LocalDateTime createdAt
-    ) {
-    }
-
-    /**
-     * 분류 가이드 응답
-     */
-    @Schema(description = "리소스 파일 분류 가이드")
-    public record CategoryGuideResponse(
-            @Schema(description = "카테고리 코드", example = "SCRIPT")
-            String code,
-
-            @Schema(description = "카테고리 표시명", example = "스크립트")
-            String displayName,
-
-            @Schema(description = "카테고리 설명", example = "스크립트 파일 (백업, 복원 등)")
-            String description,
-
-            @Schema(description = "하위 카테고리 목록")
-            java.util.List<SubCategoryInfo> subCategories
-    ) {
-    }
-
-    /**
-     * 하위 카테고리 정보
-     */
-    @Schema(description = "하위 카테고리 정보")
-    public record SubCategoryInfo(
-            @Schema(description = "하위 카테고리 코드", example = "MARIADB")
-            String code,
-
-            @Schema(description = "하위 카테고리 표시명", example = "MariaDB")
-            String displayName,
-
-            @Schema(description = "하위 카테고리 설명", example = "MariaDB 관련 스크립트")
-            String description
-    ) {
-    }
-
-    /**
-     * 리소스 파일 순서 변경 요청
-     */
-    @Schema(description = "리소스 파일 순서 변경 요청")
-    public record ReorderResourceFilesRequest(
-            @Schema(description = "파일 카테고리",
-                    example = "SCRIPT",
-                    allowableValues = {"SCRIPT", "DOCKER", "DOCUMENT", "ETC"})
-            @NotBlank(message = "파일 카테고리는 필수입니다")
-            String fileCategory,
-
-            @Schema(description = "정렬할 리소스 파일 ID 목록 (순서대로)", example = "[1, 3, 2, 4]")
-            @NotEmpty(message = "리소스 파일 ID 목록은 비어있을 수 없습니다")
-            List<Long> resourceFileIds
-    ) {
-    }
-
-    /**
-     * 파일 내용 응답
-     */
-    @Schema(description = "파일 내용 응답")
-    public record FileContentResponse(
-            @Schema(description = "리소스 파일 ID", example = "1")
-            Long resourceFileId,
-
-            @Schema(description = "파일 경로", example = "resources/file/script/MARIADB/backup.sh")
+            @Schema(description = "상대 경로", example = "/mariadb")
             String path,
 
+            @Schema(description = "파일 경로 (resources/file/{category}/ 포함)", example = "resources/file/script/mariadb/backup.sh")
+            String filePath,
+
+            @Schema(description = "타입 (file 또는 directory)", example = "directory")
+            String type,
+
+            @Schema(description = "파일 크기 (파일인 경우만, bytes)", example = "1024")
+            Long size,
+
+            @Schema(description = "하위 노드 (디렉토리인 경우만)")
+            List<FileNode> children
+    ) {
+        /**
+         * 디렉토리 노드 생성
+         */
+        public static FileNode directory(String name, String path, String filePath, List<FileNode> children) {
+            return new FileNode(name, path, filePath, "directory", null, children);
+        }
+
+        /**
+         * 파일 노드 생성
+         */
+        public static FileNode file(String name, String path, String filePath, Long size) {
+            return new FileNode(name, path, filePath, "file", size, null);
+        }
+    }
+
+    // ========================================
+    // Response DTOs
+    // ========================================
+
+    /**
+     * 카테고리 목록 응답
+     */
+    @Schema(description = "카테고리 목록 응답")
+    public record CategoriesResponse(
+            @Schema(description = "카테고리 수", example = "3")
+            int categoryCount,
+
+            @Schema(description = "카테고리 목록")
+            List<CategoryInfo> categories
+    ) {
+    }
+
+    /**
+     * 카테고리 정보
+     */
+    @Schema(description = "카테고리 정보")
+    public record CategoryInfo(
+            @Schema(description = "카테고리명 (폴더명)", example = "script")
+            String category,
+
+            @Schema(description = "파일 수", example = "5")
+            int fileCount,
+
+            @Schema(description = "총 파일 크기 (bytes)", example = "102400")
+            long totalSize
+    ) {
+    }
+
+    /**
+     * 파일 트리 응답
+     */
+    @Schema(description = "파일 트리 응답")
+    public record FilesResponse(
+            @Schema(description = "카테고리명", example = "script")
+            String category,
+
+            @Schema(description = "파일 존재 여부", example = "true")
+            boolean hasFiles,
+
+            @Schema(description = "총 파일 수", example = "5")
+            int totalFileCount,
+
+            @Schema(description = "총 파일 크기 (bytes)", example = "102400")
+            long totalSize,
+
+            @Schema(description = "파일 트리")
+            FileNode files
+    ) {
+    }
+
+    /**
+     * 디렉토리 생성 응답
+     */
+    @Schema(description = "디렉토리 생성 응답")
+    public record DirectoryResponse(
+            @Schema(description = "카테고리명", example = "script")
+            String category,
+
+            @Schema(description = "생성된 디렉토리 경로", example = "/mariadb/scripts")
+            String createdPath,
+
+            @Schema(description = "메시지", example = "디렉토리가 생성되었습니다.")
+            String message
+    ) {
+    }
+
+    /**
+     * 파일 업로드 응답
+     */
+    @Schema(description = "파일 업로드 응답")
+    public record UploadResponse(
+            @Schema(description = "카테고리명", example = "script")
+            String category,
+
+            @Schema(description = "업로드된 파일 수", example = "3")
+            int uploadedFileCount,
+
+            @Schema(description = "업로드된 파일 목록")
+            List<UploadedFileInfo> uploadedFiles,
+
+            @Schema(description = "메시지", example = "3개 파일이 업로드되었습니다.")
+            String message
+    ) {
+    }
+
+    /**
+     * 업로드된 파일 정보
+     */
+    @Schema(description = "업로드된 파일 정보")
+    public record UploadedFileInfo(
             @Schema(description = "파일명", example = "backup.sh")
             String fileName,
 
+            @Schema(description = "파일 경로", example = "/mariadb/backup.sh")
+            String path,
+
             @Schema(description = "파일 크기 (bytes)", example = "1024")
-            long size,
+            long size
+    ) {
+    }
 
-            @Schema(description = "MIME 타입", example = "application/x-sh")
-            String mimeType,
+    /**
+     * 파일 삭제 응답
+     */
+    @Schema(description = "파일 삭제 응답")
+    public record DeleteResponse(
+            @Schema(description = "카테고리명", example = "script")
+            String category,
 
-            @Schema(description = "바이너리 파일 여부 (true면 content는 Base64 인코딩됨)", example = "false")
-            boolean isBinary,
+            @Schema(description = "삭제된 파일 경로", example = "/mariadb/backup.sh")
+            String deletedPath,
 
-            @Schema(description = "파일 내용 (텍스트 또는 Base64)")
-            String content
+            @Schema(description = "메시지", example = "삭제되었습니다.")
+            String message
+    ) {
+    }
+
+    // ========================================
+    // Category DTOs
+    // ========================================
+
+    /**
+     * 카테고리 생성 요청
+     */
+    @Schema(description = "카테고리 생성 요청")
+    public record CategoryCreateRequest(
+            @Schema(description = "카테고리명 (폴더명)", example = "docker")
+            String categoryName
+    ) {
+    }
+
+    /**
+     * 카테고리 생성 응답
+     */
+    @Schema(description = "카테고리 생성 응답")
+    public record CategoryCreateResponse(
+            @Schema(description = "생성된 카테고리명", example = "docker")
+            String category,
+
+            @Schema(description = "메시지", example = "카테고리가 생성되었습니다.")
+            String message
+    ) {
+    }
+
+    /**
+     * 카테고리 삭제 응답
+     */
+    @Schema(description = "카테고리 삭제 응답")
+    public record CategoryDeleteResponse(
+            @Schema(description = "삭제된 카테고리명", example = "docker")
+            String category,
+
+            @Schema(description = "메시지", example = "카테고리가 삭제되었습니다.")
+            String message
     ) {
     }
 }
