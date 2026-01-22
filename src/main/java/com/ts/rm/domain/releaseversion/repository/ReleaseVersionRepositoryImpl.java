@@ -95,7 +95,8 @@ public class ReleaseVersionRepositoryImpl implements ReleaseVersionRepositoryCus
                 .selectFrom(rv)
                 .where(
                         rv.project.projectId.eq(projectId),
-                        rv.releaseType.eq(releaseType)
+                        rv.releaseType.eq(releaseType),
+                        rv.hotfixVersion.eq(0)  // 핫픽스 제외
                 )
                 .orderBy(rv.createdAt.desc())
                 .limit(limit)
