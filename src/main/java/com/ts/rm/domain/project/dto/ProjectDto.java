@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Builder;
 
 /**
@@ -127,21 +128,28 @@ public final class ProjectDto {
             @Schema(description = "파일 크기 (파일인 경우만, bytes)", example = "1024")
             Long size,
 
+            @Schema(description = "수정 날짜 (파일인 경우만)", example = "2025-01-22T10:30:00")
+            LocalDateTime modifiedAt,
+
+            @Schema(description = "파일 유형/MIME 타입 (파일인 경우만)", example = "text/x-sql")
+            String mimeType,
+
             @Schema(description = "하위 노드 (디렉토리인 경우만)")
-            java.util.List<OnboardingFileNode> children
+            List<OnboardingFileNode> children
     ) {
         /**
          * 디렉토리 노드 생성
          */
-        public static OnboardingFileNode directory(String name, String path, String filePath, java.util.List<OnboardingFileNode> children) {
-            return new OnboardingFileNode(name, path, filePath, "directory", null, children);
+        public static OnboardingFileNode directory(String name, String path, String filePath, List<OnboardingFileNode> children) {
+            return new OnboardingFileNode(name, path, filePath, "directory", null, null, null, children);
         }
 
         /**
          * 파일 노드 생성
          */
-        public static OnboardingFileNode file(String name, String path, String filePath, Long size) {
-            return new OnboardingFileNode(name, path, filePath, "file", size, null);
+        public static OnboardingFileNode file(String name, String path, String filePath, Long size,
+                LocalDateTime modifiedAt, String mimeType) {
+            return new OnboardingFileNode(name, path, filePath, "file", size, modifiedAt, mimeType, null);
         }
     }
 

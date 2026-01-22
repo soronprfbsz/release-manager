@@ -7,7 +7,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.analytics.dto.AnalyticsDto.CustomerPatchCount;
 import com.ts.rm.domain.analytics.dto.AnalyticsDto.MonthlyCustomerPatchRaw;
 import com.ts.rm.domain.customer.entity.QCustomer;
-import com.ts.rm.domain.patch.entity.QPatch;
+import com.ts.rm.domain.patch.entity.QPatchHistory;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Repository;
  * 패치 분석 Repository 구현체
  *
  * <p>QueryDSL을 사용한 패치 분석 집계 쿼리 구현
+ * <p>patch_history 테이블 사용 (patch_file은 용량 문제로 삭제될 수 있으므로)
  */
 @Repository
 @RequiredArgsConstructor
@@ -37,7 +38,7 @@ public class PatchAnalyticsRepositoryImpl implements PatchAnalyticsRepository {
     @Override
     public List<CustomerPatchCount> findTopCustomersByPatchCount(String projectId,
             LocalDateTime startDate, int topN) {
-        QPatch patch = QPatch.patch;
+        QPatchHistory patchHistory = QPatchHistory.patchHistory;
         QCustomer customer = QCustomer.customer;
 
         return queryFactory
@@ -45,20 +46,20 @@ public class PatchAnalyticsRepositoryImpl implements PatchAnalyticsRepository {
                         customer.customerId,
                         customer.customerCode,
                         customer.customerName,
-                        patch.count()))
-                .from(patch)
-                .join(patch.customer, customer)
+                        patchHistory.count()))
+                .from(patchHistory)
+                .join(patchHistory.customer, customer)
                 .where(
-                        patch.project.projectId.eq(projectId),
-                        patch.createdAt.goe(startDate),
-                        patch.customer.isNotNull()
+                        patchHistory.project.projectId.eq(projectId),
+                        patchHistory.createdAt.goe(startDate),
+                        patchHistory.customer.isNotNull()
                 )
                 .groupBy(
                         customer.customerId,
                         customer.customerCode,
                         customer.customerName
                 )
-                .orderBy(patch.count().desc(), customer.customerName.asc())
+                .orderBy(patchHistory.count().desc(), customer.customerName.asc())
                 .limit(topN)
                 .fetch();
     }
@@ -75,26 +76,26 @@ public class PatchAnalyticsRepositoryImpl implements PatchAnalyticsRepository {
     @Override
     public List<MonthlyCustomerPatchRaw> findMonthlyCustomerPatchCounts(String projectId,
             LocalDateTime startDate) {
-        QPatch patch = QPatch.patch;
+        QPatchHistory patchHistory = QPatchHistory.patchHistory;
         QCustomer customer = QCustomer.customer;
 
         // DATE_FORMAT(created_at, '%Y-%m') 형식으로 월별 그룹화
         StringTemplate yearMonthTemplate = Expressions.stringTemplate(
                 "DATE_FORMAT({0}, '%Y-%m')",
-                patch.createdAt
+                patchHistory.createdAt
         );
 
         return queryFactory
                 .select(Projections.constructor(MonthlyCustomerPatchRaw.class,
                         yearMonthTemplate,
                         customer.customerName,
-                        patch.count()))
-                .from(patch)
-                .join(patch.customer, customer)
+                        patchHistory.count()))
+                .from(patchHistory)
+                .join(patchHistory.customer, customer)
                 .where(
-                        patch.project.projectId.eq(projectId),
-                        patch.createdAt.goe(startDate),
-                        patch.customer.isNotNull()
+                        patchHistory.project.projectId.eq(projectId),
+                        patchHistory.createdAt.goe(startDate),
+                        patchHistory.customer.isNotNull()
                 )
                 .groupBy(yearMonthTemplate, customer.customerName)
                 .orderBy(yearMonthTemplate.asc(), customer.customerName.asc())

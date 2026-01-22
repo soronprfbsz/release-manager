@@ -6,8 +6,10 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.patch.entity.Patch;
 import com.ts.rm.domain.patch.entity.QPatch;
 import com.ts.rm.global.querydsl.QuerydslPaginationUtil;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -108,5 +110,20 @@ public class PatchRepositoryImpl implements PatchRepositoryCustom {
         return (customerCode != null && !customerCode.isBlank())
                 ? patch.customer.customerCode.eq(customerCode)
                 : null;
+    }
+
+    @Override
+    public Set<String> findExistingPatchNames(Set<String> patchNames) {
+        if (patchNames == null || patchNames.isEmpty()) {
+            return Set.of();
+        }
+
+        List<String> existingNames = queryFactory
+                .select(patch.patchName)
+                .from(patch)
+                .where(patch.patchName.in(patchNames))
+                .fetch();
+
+        return new HashSet<>(existingNames);
     }
 }

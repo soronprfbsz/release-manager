@@ -6,6 +6,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ts.rm.domain.patch.entity.PatchHistory;
 import com.ts.rm.domain.patch.entity.QPatchHistory;
 import com.ts.rm.global.querydsl.QuerydslPaginationUtil;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -63,6 +64,29 @@ public class PatchHistoryRepositoryImpl implements PatchHistoryRepositoryCustom 
                 (java.util.List<com.querydsl.core.types.OrderSpecifier<?>>) null,
                 patchHistory.createdAt.desc()
         );
+    }
+
+    @Override
+    public List<PatchHistory> findRecentByProjectIdAndReleaseType(String projectId, String releaseType, int limit) {
+        return queryFactory
+                .selectFrom(patchHistory)
+                .where(
+                        patchHistory.project.projectId.eq(projectId),
+                        patchHistory.releaseType.eq(releaseType)
+                )
+                .orderBy(patchHistory.createdAt.desc())
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<PatchHistory> findRecentByProjectId(String projectId, int limit) {
+        return queryFactory
+                .selectFrom(patchHistory)
+                .where(patchHistory.project.projectId.eq(projectId))
+                .orderBy(patchHistory.createdAt.desc())
+                .limit(limit)
+                .fetch();
     }
 
     /**

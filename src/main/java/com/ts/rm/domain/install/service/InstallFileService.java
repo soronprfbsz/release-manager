@@ -5,6 +5,7 @@ import com.ts.rm.domain.project.entity.Project;
 import com.ts.rm.domain.project.repository.ProjectRepository;
 import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.file.FileContentUtil;
 import com.ts.rm.global.file.StreamingZipUtil;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -12,6 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -349,12 +353,14 @@ public class InstallFileService {
                 } else {
                     try {
                         long size = Files.size(path);
+                        LocalDateTime modifiedAt = getLastModifiedTime(path);
+                        String mimeType = FileContentUtil.getMimeType(path);
                         fileCount[0]++;
                         totalSize[0] += size;
-                        children.add(InstallFileDto.FileNode.file(name, relativePath, filePathStr, size));
+                        children.add(InstallFileDto.FileNode.file(name, relativePath, filePathStr, size, modifiedAt, mimeType));
                     } catch (IOException e) {
-                        log.warn("파일 크기 조회 실패: {}", path, e);
-                        children.add(InstallFileDto.FileNode.file(name, relativePath, filePathStr, 0L));
+                        log.warn("파일 정보 조회 실패: {}", path, e);
+                        children.add(InstallFileDto.FileNode.file(name, relativePath, filePathStr, 0L, null, null));
                     }
                 }
             }
@@ -373,6 +379,14 @@ public class InstallFileService {
                 : installRelativeBase + "/" + rootPath.relativize(currentPath).toString().replace("\\", "/");
 
         return InstallFileDto.FileNode.directory(name, relativePath, filePathStr, children);
+    }
+
+    /**
+     * 파일의 수정 날짜 조회
+     */
+    private LocalDateTime getLastModifiedTime(Path path) throws IOException {
+        FileTime fileTime = Files.getLastModifiedTime(path);
+        return LocalDateTime.ofInstant(fileTime.toInstant(), ZoneId.systemDefault());
     }
 
     private List<InstallFileDto.UploadedFileInfo> extractZipFile(

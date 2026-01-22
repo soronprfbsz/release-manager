@@ -1,6 +1,7 @@
 package com.ts.rm.domain.resourcefile.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -37,6 +38,12 @@ public final class ResourceFileDto {
             @Schema(description = "파일 크기 (파일인 경우만, bytes)", example = "1024")
             Long size,
 
+            @Schema(description = "수정 날짜 (파일인 경우만)", example = "2025-01-22T10:30:00")
+            LocalDateTime modifiedAt,
+
+            @Schema(description = "파일 유형/MIME 타입 (파일인 경우만)", example = "text/x-sql")
+            String mimeType,
+
             @Schema(description = "하위 노드 (디렉토리인 경우만)")
             List<FileNode> children
     ) {
@@ -44,14 +51,15 @@ public final class ResourceFileDto {
          * 디렉토리 노드 생성
          */
         public static FileNode directory(String name, String path, String filePath, List<FileNode> children) {
-            return new FileNode(name, path, filePath, "directory", null, children);
+            return new FileNode(name, path, filePath, "directory", null, null, null, children);
         }
 
         /**
          * 파일 노드 생성
          */
-        public static FileNode file(String name, String path, String filePath, Long size) {
-            return new FileNode(name, path, filePath, "file", size, null);
+        public static FileNode file(String name, String path, String filePath, Long size,
+                LocalDateTime modifiedAt, String mimeType) {
+            return new FileNode(name, path, filePath, "file", size, modifiedAt, mimeType, null);
         }
     }
 

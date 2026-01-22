@@ -2,6 +2,7 @@ package com.ts.rm.domain.patch.repository;
 
 import com.ts.rm.domain.patch.entity.Patch;
 import java.util.List;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -32,4 +33,15 @@ public interface PatchRepositoryCustom {
      * @return 패치 목록 페이지
      */
     Page<Patch> findAllWithFilters(String projectId, String releaseType, String customerCode, Pageable pageable);
+
+    /**
+     * 주어진 패치명 목록 중 실제 존재하는 패치명 조회
+     *
+     * <p>patch_history와 patch_file 비교 시 사용
+     * <p>존재하지 않는 패치명은 파일이 삭제된 것으로 간주
+     *
+     * @param patchNames 확인할 패치명 목록
+     * @return 실제 존재하는 패치명 Set
+     */
+    Set<String> findExistingPatchNames(Set<String> patchNames);
 }

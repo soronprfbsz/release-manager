@@ -20,40 +20,111 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface DashboardControllerDocs {
 
     @Operation(
-            summary = "대시보드 최근 데이터 조회",
-            description = "프로젝트별 최신 설치본 1개, 최근 릴리즈 버전 N개, 최근 생성 패치 N개를 조회합니다.\n\n"
-                    + "**파라미터**:\n"
-                    + "- `versionLimit`: 최근 릴리즈 버전 조회 개수 (기본값: 3)\n"
-                    + "- `patchLimit`: 최근 생성 패치 조회 개수 (기본값: 3)",
+            summary = "표준본 최신 릴리즈 버전 조회",
+            description = "프로젝트별 표준본(STANDARD) 최신 릴리즈 버전을 조회합니다.\n\n"
+                    + "**응답 정보**:\n"
+                    + "- 버전 정보, 파일 카테고리 목록\n"
+                    + "- 생성자 정보 (이름, 이메일, 아바타)",
             responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = DashboardResponse.class)
+                            schema = @Schema(implementation = RecentStandardApiResponse.class)
                     )
             )
     )
-    ResponseEntity<ApiResponse<DashboardDto.Response>> getRecentData(
+    ResponseEntity<ApiResponse<DashboardDto.RecentStandardResponse>> getRecentStandardVersions(
             @Parameter(description = "프로젝트 ID", required = true, example = "infraeye2")
             @PathVariable String projectId,
 
-            @Parameter(description = "최근 릴리즈 버전 조회 개수", example = "3")
-            @RequestParam(defaultValue = "3") int versionLimit,
+            @Parameter(description = "조회 개수", example = "5")
+            @RequestParam(defaultValue = "5") int limit
+    );
 
-            @Parameter(description = "최근 생성 패치 조회 개수", example = "3")
-            @RequestParam(defaultValue = "3") int patchLimit
+    @Operation(
+            summary = "커스텀본 최신 릴리즈 버전 조회",
+            description = "프로젝트별 커스텀본(CUSTOM) 최신 릴리즈 버전을 조회합니다.\n\n"
+                    + "**응답 정보**:\n"
+                    + "- 버전 정보, 파일 카테고리 목록\n"
+                    + "- 고객사 정보 (ID, 코드, 이름)\n"
+                    + "- 생성자 정보 (이름, 이메일, 아바타)",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = RecentCustomApiResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<DashboardDto.RecentCustomResponse>> getRecentCustomVersions(
+            @Parameter(description = "프로젝트 ID", required = true, example = "infraeye2")
+            @PathVariable String projectId,
+
+            @Parameter(description = "조회 개수", example = "5")
+            @RequestParam(defaultValue = "5") int limit
+    );
+
+    @Operation(
+            summary = "최근 생성 패치 조회 (표준+커스텀)",
+            description = "프로젝트별 최근 생성된 패치를 조회합니다 (표준+커스텀 모두).\n\n"
+                    + "**응답 정보**:\n"
+                    + "- 패치 정보 (이름, 버전 범위, 릴리즈 타입)\n"
+                    + "- 파일 삭제 여부 (patch_file 테이블에서 삭제 시 true)\n"
+                    + "- 고객사 정보 (CUSTOM 타입인 경우)\n"
+                    + "- 담당자 정보 (이름, 이메일, 아바타)\n"
+                    + "- 생성자 정보 (이름, 이메일, 아바타)",
+            responses = @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = RecentPatchApiResponse.class)
+                    )
+            )
+    )
+    ResponseEntity<ApiResponse<DashboardDto.RecentPatchResponse>> getRecentPatches(
+            @Parameter(description = "프로젝트 ID", required = true, example = "infraeye2")
+            @PathVariable String projectId,
+
+            @Parameter(description = "조회 개수", example = "5")
+            @RequestParam(defaultValue = "5") int limit
     );
 
     /**
-     * Swagger 스키마용 wrapper 클래스 - 대시보드 응답
+     * Swagger 스키마용 wrapper 클래스 - 표준본 최신 버전 응답
      */
-    @Schema(description = "대시보드 API 응답")
-    class DashboardResponse {
+    @Schema(description = "표준본 최신 릴리즈 버전 API 응답")
+    class RecentStandardApiResponse {
         @Schema(description = "응답 상태", example = "success")
         public String status;
 
-        @Schema(description = "대시보드 데이터")
-        public DashboardDto.Response data;
+        @Schema(description = "표준본 최신 버전 데이터")
+        public DashboardDto.RecentStandardResponse data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 커스텀본 최신 버전 응답
+     */
+    @Schema(description = "커스텀본 최신 릴리즈 버전 API 응답")
+    class RecentCustomApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "커스텀본 최신 버전 데이터")
+        public DashboardDto.RecentCustomResponse data;
+    }
+
+    /**
+     * Swagger 스키마용 wrapper 클래스 - 최근 패치 응답
+     */
+    @Schema(description = "최근 생성 패치 API 응답")
+    class RecentPatchApiResponse {
+        @Schema(description = "응답 상태", example = "success")
+        public String status;
+
+        @Schema(description = "최근 패치 데이터")
+        public DashboardDto.RecentPatchResponse data;
     }
 }

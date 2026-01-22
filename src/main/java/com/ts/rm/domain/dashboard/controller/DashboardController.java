@@ -24,13 +24,32 @@ public class DashboardController implements DashboardControllerDocs {
     private final DashboardService dashboardService;
 
     @Override
-    @GetMapping("/recent")
-    public ResponseEntity<ApiResponse<DashboardDto.Response>> getRecentData(
+    @GetMapping("/recent/standard")
+    public ResponseEntity<ApiResponse<DashboardDto.RecentStandardResponse>> getRecentStandardVersions(
             @PathVariable String id,
-            @RequestParam(defaultValue = "3") int versionLimit,
-            @RequestParam(defaultValue = "3") int patchLimit) {
+            @RequestParam(defaultValue = "5") int limit) {
 
-        DashboardDto.Response response = dashboardService.getRecentData(id, versionLimit, patchLimit);
+        DashboardDto.RecentStandardResponse response = dashboardService.getRecentStandardVersions(id, limit);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Override
+    @GetMapping("/recent/custom")
+    public ResponseEntity<ApiResponse<DashboardDto.RecentCustomResponse>> getRecentCustomVersions(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "5") int limit) {
+
+        DashboardDto.RecentCustomResponse response = dashboardService.getRecentCustomVersions(id, limit);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Override
+    @GetMapping("/recent/patch")
+    public ResponseEntity<ApiResponse<DashboardDto.RecentPatchResponse>> getRecentPatches(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "5") int limit) {
+
+        DashboardDto.RecentPatchResponse response = dashboardService.getRecentPatches(id, limit);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

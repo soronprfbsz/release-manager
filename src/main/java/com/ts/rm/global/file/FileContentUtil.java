@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,85 @@ public final class FileContentUtil {
 
     /** 기본 최대 파일 크기 (10MB) */
     public static final long DEFAULT_MAX_SIZE_BYTES = 10 * 1024 * 1024;
+
+    /** 확장자 → MIME 타입 매핑 (Files.probeContentType 실패 시 fallback) */
+    private static final Map<String, String> EXTENSION_MIME_MAP = Map.ofEntries(
+            // 텍스트
+            Map.entry("txt", "text/plain"),
+            Map.entry("md", "text/markdown"),
+            Map.entry("csv", "text/csv"),
+            Map.entry("log", "text/plain"),
+            // 웹
+            Map.entry("html", "text/html"),
+            Map.entry("htm", "text/html"),
+            Map.entry("css", "text/css"),
+            Map.entry("js", "text/javascript"),
+            Map.entry("ts", "text/typescript"),
+            Map.entry("jsx", "text/javascript"),
+            Map.entry("tsx", "text/typescript"),
+            Map.entry("json", "application/json"),
+            Map.entry("xml", "application/xml"),
+            Map.entry("yaml", "application/yaml"),
+            Map.entry("yml", "application/yaml"),
+            // 프로그래밍 언어
+            Map.entry("java", "text/x-java-source"),
+            Map.entry("py", "text/x-python"),
+            Map.entry("c", "text/x-c"),
+            Map.entry("cpp", "text/x-c++"),
+            Map.entry("h", "text/x-c"),
+            Map.entry("hpp", "text/x-c++"),
+            Map.entry("go", "text/x-go"),
+            Map.entry("rs", "text/x-rust"),
+            Map.entry("rb", "text/x-ruby"),
+            Map.entry("php", "text/x-php"),
+            Map.entry("kt", "text/x-kotlin"),
+            Map.entry("swift", "text/x-swift"),
+            Map.entry("scala", "text/x-scala"),
+            // 스크립트/데이터
+            Map.entry("sh", "text/x-shellscript"),
+            Map.entry("bash", "text/x-shellscript"),
+            Map.entry("bat", "text/x-batch"),
+            Map.entry("cmd", "text/x-batch"),
+            Map.entry("ps1", "text/x-powershell"),
+            Map.entry("sql", "text/x-sql"),
+            Map.entry("properties", "text/x-java-properties"),
+            Map.entry("conf", "text/plain"),
+            Map.entry("ini", "text/plain"),
+            Map.entry("toml", "text/x-toml"),
+            // 이미지
+            Map.entry("png", "image/png"),
+            Map.entry("jpg", "image/jpeg"),
+            Map.entry("jpeg", "image/jpeg"),
+            Map.entry("gif", "image/gif"),
+            Map.entry("svg", "image/svg+xml"),
+            Map.entry("ico", "image/x-icon"),
+            Map.entry("webp", "image/webp"),
+            Map.entry("bmp", "image/bmp"),
+            // 압축/아카이브
+            Map.entry("zip", "application/zip"),
+            Map.entry("tar", "application/x-tar"),
+            Map.entry("gz", "application/gzip"),
+            Map.entry("7z", "application/x-7z-compressed"),
+            Map.entry("rar", "application/vnd.rar"),
+            // 문서
+            Map.entry("pdf", "application/pdf"),
+            Map.entry("doc", "application/msword"),
+            Map.entry("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            Map.entry("xls", "application/vnd.ms-excel"),
+            Map.entry("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            Map.entry("ppt", "application/vnd.ms-powerpoint"),
+            Map.entry("pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+            // 실행 파일
+            Map.entry("exe", "application/x-msdownload"),
+            Map.entry("dll", "application/x-msdownload"),
+            Map.entry("jar", "application/java-archive"),
+            Map.entry("war", "application/java-archive"),
+            // 설정 파일
+            Map.entry("env", "text/plain"),
+            Map.entry("gitignore", "text/plain"),
+            Map.entry("dockerfile", "text/plain"),
+            Map.entry("makefile", "text/plain")
+    );
 
     /**
      * 파일 내용 조회 결과
@@ -202,5 +282,54 @@ public final class FileContentUtil {
                mimeType.equals("application/yaml") ||
                mimeType.endsWith("+xml") ||
                mimeType.endsWith("+json");
+    }
+
+    /**
+     * 파일의 MIME 타입 조회
+     *
+     * <p>Files.probeContentType()을 우선 시도하고, 실패 시 확장자 기반으로 판단합니다.
+     *
+     * <p>사용 예시:
+     * <pre>{@code
+     * String mimeType = FileContentUtil.getMimeType(Paths.get("/path/to/file.sql"));
+     * // 결과: "text/x-sql"
+     * }</pre>
+     *
+     * @param path 파일 경로
+     * @return MIME 타입 (판단 불가 시 "application/octet-stream")
+     */
+    public static String getMimeType(Path path) {
+        if (path == null) {
+            return "application/octet-stream";
+        }
+
+        // 1. Files.probeContentType() 시도
+        try {
+            String mimeType = Files.probeContentType(path);
+            if (mimeType != null) {
+                return mimeType;
+            }
+        } catch (IOException e) {
+            log.debug("MIME 타입 probing 실패: {}", path, e);
+        }
+
+        // 2. 확장자 기반 판단
+        String fileName = path.getFileName().toString().toLowerCase();
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex > 0 && dotIndex < fileName.length() - 1) {
+            String extension = fileName.substring(dotIndex + 1);
+            String mimeType = EXTENSION_MIME_MAP.get(extension);
+            if (mimeType != null) {
+                return mimeType;
+            }
+        }
+
+        // 3. 특수 파일명 처리 (확장자 없는 파일)
+        if (fileName.equals("dockerfile") || fileName.equals("makefile") ||
+                fileName.equals(".gitignore") || fileName.equals(".env")) {
+            return "text/plain";
+        }
+
+        return "application/octet-stream";
     }
 }
