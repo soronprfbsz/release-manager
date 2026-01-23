@@ -194,6 +194,9 @@ public class BoardService {
         post.setCreatedByEmail(creator.getEmail());
 
         // 기본값 설정
+        if (post.getContent() == null) {
+            post.setContent("");
+        }
         if (request.isPinned() == null) {
             post.setIsPinned(false);
         }

@@ -34,7 +34,6 @@ public final class BoardPostDto {
             String title,
 
             @Schema(description = "본문 (마크다운)", example = "## 개선 내용\n로그인 시 2FA 지원을 요청합니다.")
-            @NotBlank(message = "본문은 필수입니다")
             String content,
 
             @Schema(description = "썸네일 이미지 URL", example = "https://example.com/thumb.png")
