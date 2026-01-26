@@ -33,7 +33,7 @@ public interface BoardPostDtoMapper {
     BoardPostDto.Response toResponse(BoardPost post);
 
     @Mapping(target = "topicId", source = "topic.topicId")
-    @Mapping(target = "contentPreview", expression = "java(truncateContent(post.getContent(), 100))")
+    @Mapping(target = "contentPreview", expression = "java(truncateContent(post.getContent(), 200))")
     @Mapping(target = "createdByEmail", source = "createdByEmail")
     @Mapping(target = "createdByName", source = "creator.accountName")
     @Mapping(target = "createdByAvatarStyle", source = "creator.avatarStyle")

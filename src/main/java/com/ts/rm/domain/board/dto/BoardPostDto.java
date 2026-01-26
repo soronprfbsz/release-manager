@@ -158,7 +158,7 @@ public final class BoardPostDto {
             @Schema(description = "제목", example = "로그인 기능 개선 요청")
             String title,
 
-            @Schema(description = "내용 미리보기 (최대 100자)", example = "로그인 시 2FA 지원을 요청합니다...")
+            @Schema(description = "내용 미리보기 (최대 200자)", example = "로그인 시 2FA 지원을 요청합니다...")
             String contentPreview,
 
             @Schema(description = "썸네일 이미지 URL", example = "https://example.com/thumb.png")
