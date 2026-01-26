@@ -189,7 +189,10 @@ public final class BoardPostDto {
             String createdByAvatarSeed,
 
             @Schema(description = "생성일시")
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+
+            @Schema(description = "수정일시")
+            LocalDateTime updatedAt
     ) {
 
     }
