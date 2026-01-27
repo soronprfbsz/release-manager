@@ -128,17 +128,14 @@ public final class ApiLogDto {
      */
     @Schema(description = "API 로그 검색 조건")
     public record SearchCondition(
+            @Schema(description = "통합 검색 키워드 (요청 URI, 계정 이메일, 계정 이름 OR 검색)", example = "admin")
+            String keyword,
+
             @Schema(description = "HTTP 메서드", example = "GET")
             String httpMethod,
 
-            @Schema(description = "요청 URI (부분 일치)", example = "/api/auth")
-            String requestUri,
-
             @Schema(description = "응답 상태 코드", example = "200")
             Integer responseStatus,
-
-            @Schema(description = "계정 이메일 (부분 일치)", example = "admin")
-            String accountEmail,
 
             @Schema(description = "클라이언트 IP", example = "192.168.1.1")
             String clientIp,
@@ -154,7 +151,7 @@ public final class ApiLogDto {
         }
 
         public static SearchCondition empty() {
-            return new SearchCondition(null, null, null, null, null, null, null);
+            return new SearchCondition(null, null, null, null, null, null);
         }
     }
 }

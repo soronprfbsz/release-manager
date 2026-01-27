@@ -37,17 +37,16 @@ public class ApiLogController implements ApiLogControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ApiLogDto.ListResponse>>> searchLogs(
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String httpMethod,
-            @RequestParam(required = false) String requestUri,
             @RequestParam(required = false) Integer responseStatus,
-            @RequestParam(required = false) String accountEmail,
             @RequestParam(required = false) String clientIp,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         ApiLogDto.SearchCondition condition = new ApiLogDto.SearchCondition(
-                httpMethod, requestUri, responseStatus, accountEmail, clientIp, startDate, endDate);
+                keyword, httpMethod, responseStatus, clientIp, startDate, endDate);
 
         Page<ApiLogDto.ListResponse> logs = apiLogService.searchLogs(condition, pageable);
         return ResponseEntity.ok(ApiResponse.success(logs));
