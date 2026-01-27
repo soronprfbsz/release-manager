@@ -48,4 +48,14 @@ public interface ReleaseVersionHierarchyRepositoryCustom {
      */
     List<ReleaseVersion> findAllByProjectIdAndReleaseTypeAndCustomerWithHierarchy(String projectId,
             String releaseType, String customerCode);
+
+    /**
+     * Descendant ID로 계층 구조 삭제
+     */
+    void deleteByDescendantId(Long descendantId);
+
+    /**
+     * Ancestor ID로 계층 구조 삭제
+     */
+    void deleteByAncestorId(Long ancestorId);
 }

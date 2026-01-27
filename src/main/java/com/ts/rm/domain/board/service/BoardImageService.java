@@ -264,7 +264,7 @@ public class BoardImageService {
      */
     @Transactional
     public void unlinkImagesFromPost(Long postId) {
-        int count = boardImageRepository.unlinkImagesFromPost(postId);
+        long count = boardImageRepository.unlinkImagesFromPost(postId);
         log.info("게시글 이미지 연결 해제 - postId: {}, count: {}", postId, count);
     }
 

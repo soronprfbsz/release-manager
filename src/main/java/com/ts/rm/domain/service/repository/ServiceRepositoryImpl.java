@@ -6,6 +6,7 @@ import com.ts.rm.domain.service.entity.QService;
 import com.ts.rm.domain.service.entity.QServiceComponent;
 import com.ts.rm.domain.service.entity.Service;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -57,5 +58,56 @@ public class ServiceRepositoryImpl implements ServiceRepositoryCustom {
         return service.serviceName.containsIgnoreCase(trimmedKeyword)
                 .or(service.serviceType.containsIgnoreCase(trimmedKeyword))
                 .or(service.description.containsIgnoreCase(trimmedKeyword));
+    }
+
+    @Override
+    public Optional<Service> findByIdWithComponents(Long serviceId) {
+        Service result = queryFactory
+                .selectFrom(service)
+                .leftJoin(service.components, component).fetchJoin()
+                .where(service.serviceId.eq(serviceId))
+                .fetchOne();
+        return Optional.ofNullable(result);
+    }
+
+    @Override
+    public List<Service> findByServiceTypeWithComponents(String serviceType) {
+        return queryFactory
+                .selectDistinct(service)
+                .from(service)
+                .leftJoin(service.components, component).fetchJoin()
+                .where(service.serviceType.eq(serviceType))
+                .orderBy(service.sortOrder.asc(), service.createdAt.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<Service> findByServiceNameContainingWithComponents(String serviceName) {
+        return queryFactory
+                .selectDistinct(service)
+                .from(service)
+                .leftJoin(service.components, component).fetchJoin()
+                .where(service.serviceName.containsIgnoreCase(serviceName))
+                .orderBy(service.sortOrder.asc(), service.createdAt.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<Service> findAllWithComponents() {
+        return queryFactory
+                .selectDistinct(service)
+                .from(service)
+                .leftJoin(service.components, component).fetchJoin()
+                .orderBy(service.sortOrder.asc(), service.createdAt.desc())
+                .fetch();
+    }
+
+    @Override
+    public Integer findMaxSortOrderByServiceType(String serviceType) {
+        return queryFactory
+                .select(service.sortOrder.max())
+                .from(service)
+                .where(service.serviceType.eq(serviceType))
+                .fetchOne();
     }
 }

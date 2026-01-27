@@ -25,4 +25,9 @@ public interface PublishingRepositoryCustom {
             Long customerId,
             String keyword
     );
+
+    /**
+     * 카테고리별 최대 sortOrder 조회
+     */
+    Integer findMaxSortOrderByPublishingCategory(String publishingCategory);
 }

@@ -18,4 +18,9 @@ public interface ResourceLinkRepositoryCustom {
      * @return 리소스 링크 목록
      */
     List<ResourceLink> findAllWithFilters(String linkCategory, String keyword);
+
+    /**
+     * 링크 카테고리별 최대 sortOrder 조회
+     */
+    Integer findMaxSortOrderByLinkCategory(String linkCategory);
 }

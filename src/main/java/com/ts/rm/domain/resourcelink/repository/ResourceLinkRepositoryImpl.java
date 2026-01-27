@@ -54,4 +54,14 @@ public class ResourceLinkRepositoryImpl implements ResourceLinkRepositoryCustom 
                 .or(resourceLink.linkUrl.containsIgnoreCase(trimmedKeyword))
                 .or(resourceLink.description.containsIgnoreCase(trimmedKeyword));
     }
+
+    @Override
+    public Integer findMaxSortOrderByLinkCategory(String linkCategory) {
+        Integer maxSortOrder = queryFactory
+                .select(resourceLink.sortOrder.max())
+                .from(resourceLink)
+                .where(resourceLink.linkCategory.eq(linkCategory))
+                .fetchOne();
+        return maxSortOrder != null ? maxSortOrder : 0;
+    }
 }

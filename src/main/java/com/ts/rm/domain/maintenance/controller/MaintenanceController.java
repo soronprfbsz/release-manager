@@ -1,0 +1,130 @@
+package com.ts.rm.domain.maintenance.controller;
+
+import com.ts.rm.domain.maintenance.dto.MaintenanceResultDto;
+import com.ts.rm.domain.maintenance.service.BoardImageCleanupService;
+import com.ts.rm.domain.scheduler.service.ScheduleJobHistoryService;
+import com.ts.rm.global.exception.BusinessException;
+import com.ts.rm.global.exception.ErrorCode;
+import com.ts.rm.global.logging.service.ApiLogService;
+import com.ts.rm.global.response.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * Maintenance Controller
+ *
+ * <p>시스템 유지보수 API (스케줄러에서 호출)
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/maintenance")
+@RequiredArgsConstructor
+public class MaintenanceController implements MaintenanceControllerDocs {
+
+    private final BoardImageCleanupService boardImageCleanupService;
+    private final ScheduleJobHistoryService scheduleJobHistoryService;
+    private final ApiLogService apiLogService;
+
+    private static final String SCHEDULER_HEADER = "X-Schedule-Job";
+
+    /**
+     * 게시판 유령 이미지 정리
+     *
+     * <p>post_id가 NULL이고 업로드 후 일정 시간이 지난 이미지를 삭제
+     *
+     * @param retentionHours 보관 시간 (기본값: 24시간)
+     */
+    @Override
+    @DeleteMapping("/board-images")
+    public ResponseEntity<ApiResponse<MaintenanceResultDto.CleanupResult>> cleanupBoardImages(
+            @RequestParam(defaultValue = "24") int retentionHours,
+            HttpServletRequest request) {
+        validateMaintenanceAccess(request);
+        log.info("게시판 유령 이미지 정리 API 호출 - retentionHours: {}", retentionHours);
+        MaintenanceResultDto.CleanupResult result = boardImageCleanupService.cleanupOrphanImages(retentionHours);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    /**
+     * 스케줄 실행 이력 정리
+     *
+     * <p>일정 기간이 지난 스케줄 실행 이력을 삭제
+     *
+     * @param retentionDays 보관 기간 (기본값: 90일)
+     */
+    @Override
+    @DeleteMapping("/schedule-histories")
+    public ResponseEntity<ApiResponse<MaintenanceResultDto.CleanupResult>> cleanupScheduleHistories(
+            @RequestParam(defaultValue = "90") int retentionDays,
+            HttpServletRequest request) {
+        validateMaintenanceAccess(request);
+        log.info("스케줄 실행 이력 정리 API 호출 - retentionDays: {}", retentionDays);
+
+        int deletedCount = scheduleJobHistoryService.deleteOldHistories(retentionDays);
+
+        MaintenanceResultDto.CleanupResult result = MaintenanceResultDto.CleanupResult.of(
+                "schedule-histories-cleanup",
+                deletedCount,
+                String.format("%d일 이상 지난 스케줄 실행 이력 %d건 삭제 완료", retentionDays, deletedCount));
+
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    /**
+     * API 로그 정리
+     *
+     * <p>일정 기간이 지난 API 로그를 삭제
+     *
+     * @param retentionDays 보관 기간 (기본값: 30일)
+     */
+    @Override
+    @DeleteMapping("/api-logs")
+    public ResponseEntity<ApiResponse<MaintenanceResultDto.CleanupResult>> cleanupApiLogs(
+            @RequestParam(defaultValue = "30") int retentionDays,
+            HttpServletRequest request) {
+        validateMaintenanceAccess(request);
+        log.info("API 로그 정리 API 호출 - retentionDays: {}", retentionDays);
+
+        long deletedCount = apiLogService.deleteOldLogs(retentionDays);
+
+        MaintenanceResultDto.CleanupResult result = MaintenanceResultDto.CleanupResult.of(
+                "api-log-cleanup",
+                (int) deletedCount,
+                String.format("%d일 이상 지난 API 로그 %d건 삭제 완료", retentionDays, deletedCount));
+
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    /**
+     * 유지보수 API 접근 검증
+     *
+     * <p>스케줄러 내부 호출(X-Scheduled-Job 헤더) 또는 인증된 사용자만 접근 가능
+     */
+    private void validateMaintenanceAccess(HttpServletRequest request) {
+        // 스케줄러 내부 호출인 경우 허용
+        String schedulerHeader = request.getHeader(SCHEDULER_HEADER);
+        if (schedulerHeader != null && !schedulerHeader.isBlank()) {
+            log.debug("스케줄러 내부 호출 - jobName: {}", schedulerHeader);
+            return;
+        }
+
+        // 인증된 사용자인 경우 허용
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal())) {
+            log.debug("인증된 사용자 호출 - user: {}", authentication.getName());
+            return;
+        }
+
+        // 그 외의 경우 거부
+        throw new BusinessException(ErrorCode.FORBIDDEN, "유지보수 API 접근 권한이 없습니다.");
+    }
+}

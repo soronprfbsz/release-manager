@@ -5,16 +5,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
  * BoardImage Repository
  */
 @Repository
-public interface BoardImageRepository extends JpaRepository<BoardImage, Long> {
+public interface BoardImageRepository extends JpaRepository<BoardImage, Long>, BoardImageRepositoryCustom {
 
     /**
      * 파일 경로로 이미지 조회
@@ -45,18 +42,4 @@ public interface BoardImageRepository extends JpaRepository<BoardImage, Long> {
      * 게시글에 연결된 이미지 수 조회
      */
     long countByPostPostId(Long postId);
-
-    /**
-     * 미사용 이미지 삭제 (배치 작업용)
-     */
-    @Modifying
-    @Query("DELETE FROM BoardImage bi WHERE bi.post IS NULL AND bi.uploadedAt < :threshold")
-    int deleteOrphanedImagesBefore(@Param("threshold") LocalDateTime threshold);
-
-    /**
-     * 게시글의 이미지 연결 해제 (게시글 삭제 전 호출)
-     */
-    @Modifying
-    @Query("UPDATE BoardImage bi SET bi.post = NULL WHERE bi.post.postId = :postId")
-    int unlinkImagesFromPost(@Param("postId") Long postId);
 }

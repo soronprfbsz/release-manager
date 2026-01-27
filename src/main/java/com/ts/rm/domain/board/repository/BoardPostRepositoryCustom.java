@@ -1,6 +1,7 @@
 package com.ts.rm.domain.board.repository;
 
 import com.ts.rm.domain.board.entity.BoardPost;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -23,4 +24,34 @@ public interface BoardPostRepositoryCustom {
      * @return 게시글 페이지
      */
     Page<BoardPost> findAllWithFilters(String topicId, String keyword, Boolean isPublished, Pageable pageable);
+
+    /**
+     * 게시글 상세 조회 (토픽, 작성자 정보 포함)
+     */
+    Optional<BoardPost> findByIdWithTopic(Long postId);
+
+    /**
+     * 조회수 증가
+     */
+    void incrementViewCount(Long postId);
+
+    /**
+     * 좋아요 수 증가
+     */
+    void incrementLikeCount(Long postId);
+
+    /**
+     * 좋아요 수 감소
+     */
+    void decrementLikeCount(Long postId);
+
+    /**
+     * 댓글 수 증가
+     */
+    void incrementCommentCount(Long postId);
+
+    /**
+     * 댓글 수 감소
+     */
+    void decrementCommentCount(Long postId);
 }

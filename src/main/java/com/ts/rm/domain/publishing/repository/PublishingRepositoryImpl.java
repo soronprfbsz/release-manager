@@ -84,4 +84,14 @@ public class PublishingRepositoryImpl implements PublishingRepositoryCustom {
         return publishing.publishingName.containsIgnoreCase(trimmedKeyword)
                 .or(publishing.description.containsIgnoreCase(trimmedKeyword));
     }
+
+    @Override
+    public Integer findMaxSortOrderByPublishingCategory(String publishingCategory) {
+        Integer maxSortOrder = queryFactory
+                .select(publishing.sortOrder.max())
+                .from(publishing)
+                .where(publishing.publishingCategory.eq(publishingCategory))
+                .fetchOne();
+        return maxSortOrder != null ? maxSortOrder : 0;
+    }
 }

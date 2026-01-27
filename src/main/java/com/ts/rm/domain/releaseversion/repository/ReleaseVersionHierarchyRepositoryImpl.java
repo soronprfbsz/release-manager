@@ -124,4 +124,22 @@ public class ReleaseVersionHierarchyRepositoryImpl implements
                 )
                 .fetch();
     }
+
+    @Override
+    public void deleteByDescendantId(Long descendantId) {
+        QReleaseVersionHierarchy h = QReleaseVersionHierarchy.releaseVersionHierarchy;
+        queryFactory
+                .delete(h)
+                .where(h.descendant.releaseVersionId.eq(descendantId))
+                .execute();
+    }
+
+    @Override
+    public void deleteByAncestorId(Long ancestorId) {
+        QReleaseVersionHierarchy h = QReleaseVersionHierarchy.releaseVersionHierarchy;
+        queryFactory
+                .delete(h)
+                .where(h.ancestor.releaseVersionId.eq(ancestorId))
+                .execute();
+    }
 }

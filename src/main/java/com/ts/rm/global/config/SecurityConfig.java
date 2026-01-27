@@ -77,6 +77,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/publishing/*/serve/**").permitAll() // 퍼블리싱 파일 서빙 (브라우저 열기)
                         .requestMatchers("/api/publishing/*/download").permitAll() // 퍼블리싱 전체 다운로드 (ZIP)
                         .requestMatchers(HttpMethod.GET, "/api/board/images/**").permitAll() // 게시판 이미지 조회 (업로드/삭제는 인증 필요)
+                        // 스케줄러 내부 호출용 maintenance API (X-Schedule-Job 헤더로 검증)
+                        .requestMatchers("/api/maintenance/**").permitAll()
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )

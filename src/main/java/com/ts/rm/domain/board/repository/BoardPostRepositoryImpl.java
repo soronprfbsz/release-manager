@@ -10,6 +10,7 @@ import com.ts.rm.domain.board.entity.QBoardTopic;
 import com.ts.rm.global.querydsl.QuerydslPaginationUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -102,5 +103,67 @@ public class BoardPostRepositoryImpl implements BoardPostRepositoryCustom {
      */
     private BooleanExpression isPublishedCondition(Boolean isPublished) {
         return isPublished != null ? post.isPublished.eq(isPublished) : null;
+    }
+
+    @Override
+    public Optional<BoardPost> findByIdWithTopic(Long postId) {
+        BoardPost result = queryFactory
+                .selectFrom(post)
+                .leftJoin(post.topic, topic).fetchJoin()
+                .leftJoin(post.creator).fetchJoin()
+                .where(post.postId.eq(postId))
+                .fetchOne();
+        return Optional.ofNullable(result);
+    }
+
+    @Override
+    public void incrementViewCount(Long postId) {
+        queryFactory
+                .update(post)
+                .set(post.viewCount, post.viewCount.add(1))
+                .where(post.postId.eq(postId))
+                .execute();
+    }
+
+    @Override
+    public void incrementLikeCount(Long postId) {
+        queryFactory
+                .update(post)
+                .set(post.likeCount, post.likeCount.add(1))
+                .where(post.postId.eq(postId))
+                .execute();
+    }
+
+    @Override
+    public void decrementLikeCount(Long postId) {
+        queryFactory
+                .update(post)
+                .set(post.likeCount,
+                        new com.querydsl.core.types.dsl.CaseBuilder()
+                                .when(post.likeCount.gt(0)).then(post.likeCount.subtract(1))
+                                .otherwise(0))
+                .where(post.postId.eq(postId))
+                .execute();
+    }
+
+    @Override
+    public void incrementCommentCount(Long postId) {
+        queryFactory
+                .update(post)
+                .set(post.commentCount, post.commentCount.add(1))
+                .where(post.postId.eq(postId))
+                .execute();
+    }
+
+    @Override
+    public void decrementCommentCount(Long postId) {
+        queryFactory
+                .update(post)
+                .set(post.commentCount,
+                        new com.querydsl.core.types.dsl.CaseBuilder()
+                                .when(post.commentCount.gt(0)).then(post.commentCount.subtract(1))
+                                .otherwise(0))
+                .where(post.postId.eq(postId))
+                .execute();
     }
 }
