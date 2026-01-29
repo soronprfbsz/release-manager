@@ -93,7 +93,8 @@ public class ApiLogService {
                 : accountRepository.findAllById(accountIds).stream()
                         .collect(Collectors.toMap(Account::getAccountId, Function.identity()));
 
-        return logs.map(apiLog -> toListResponse(apiLog, accountMap.get(apiLog.getAccountId())));
+        return logs.map(apiLog -> toListResponse(apiLog,
+                apiLog.getAccountId() != null ? accountMap.get(apiLog.getAccountId()) : null));
     }
 
     /**
