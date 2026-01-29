@@ -16,6 +16,7 @@ import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.file.FileChecksumUtil;
 import com.ts.rm.global.file.FileContentUtil;
 import com.ts.rm.global.file.StreamingZipUtil;
+import com.ts.rm.global.file.ZipExtractUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,8 +26,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -539,54 +539,46 @@ public class PublishingService {
     private List<PublishingFile> extractZipAndSaveFiles(MultipartFile zipFile, Publishing publishing) {
         List<PublishingFile> files = new ArrayList<>();
         Path publishingDir = getPublishingDirectory(publishing);
+        AtomicInteger sortOrder = new AtomicInteger(1);
 
         try {
             Files.createDirectories(publishingDir);
 
-            try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream())) {
-                ZipEntry entry;
-                int sortOrder = 1;
+            ZipExtractUtil.extractWithCallback(zipFile.getInputStream(), publishingDir, (entry, filePath) -> {
+                try {
+                    // 파일 메타데이터 생성
+                    String fileName = filePath.getFileName().toString();
+                    String fileType = extractFileType(fileName);
+                    String relativePath = PUBLISHING_DIR + "/" + publishing.getPublishingName() + "/" + entry.getName();
+                    long fileSize = Files.size(filePath);
+                    String checksum = FileChecksumUtil.calculateChecksum(filePath);
 
-                while ((entry = zis.getNextEntry()) != null) {
-                    if (entry.isDirectory()) {
-                        // 디렉토리 생성
-                        Path dirPath = publishingDir.resolve(entry.getName());
-                        Files.createDirectories(dirPath);
-                    } else {
-                        // 파일 저장
-                        Path filePath = publishingDir.resolve(entry.getName());
-                        Files.createDirectories(filePath.getParent());
-                        Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
+                    PublishingFile publishingFile = PublishingFile.builder()
+                            .publishing(publishing)
+                            .fileType(fileType)
+                            .fileName(fileName)
+                            .filePath(relativePath)
+                            .fileSize(fileSize)
+                            .checksum(checksum)
+                            .sortOrder(sortOrder.getAndIncrement())
+                            .build();
 
-                        // 파일 메타데이터 생성
-                        String fileName = filePath.getFileName().toString();
-                        String fileType = extractFileType(fileName);
-                        String relativePath = PUBLISHING_DIR + "/" + publishing.getPublishingName() + "/" + entry.getName();
-                        long fileSize = Files.size(filePath);
-                        String checksum = FileChecksumUtil.calculateChecksum(filePath);
-
-                        PublishingFile publishingFile = PublishingFile.builder()
-                                .publishing(publishing)
-                                .fileType(fileType)
-                                .fileName(fileName)
-                                .filePath(relativePath)
-                                .fileSize(fileSize)
-                                .checksum(checksum)
-                                .sortOrder(sortOrder++)
-                                .build();
-
-                        files.add(publishingFileRepository.save(publishingFile));
-                    }
-                    zis.closeEntry();
+                    files.add(publishingFileRepository.save(publishingFile));
+                } catch (IOException e) {
+                    log.warn("파일 메타데이터 생성 실패: {}", filePath, e);
                 }
-            }
+            });
 
             log.info("ZIP 파일 해제 완료 - 퍼블리싱 ID: {}, 파일 수: {}", publishing.getPublishingId(), files.size());
             return files;
 
-        } catch (IOException e) {
+        } catch (BusinessException e) {
             log.error("ZIP 파일 해제 실패: {}", e.getMessage(), e);
             // 실패 시 생성된 디렉토리 정리
+            deleteDirectoryRecursively(publishingDir);
+            throw e;
+        } catch (Exception e) {
+            log.error("ZIP 파일 해제 실패: {}", e.getMessage(), e);
             deleteDirectoryRecursively(publishingDir);
             throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "ZIP 파일 처리에 실패했습니다: " + e.getMessage());
         }

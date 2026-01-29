@@ -8,6 +8,7 @@ import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.file.FileContentUtil;
 import com.ts.rm.global.file.StreamingZipUtil;
+import com.ts.rm.global.file.ZipExtractUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -421,26 +420,11 @@ public class ProjectService {
 
         List<ProjectDto.UploadedFileInfo> uploadedFiles = new ArrayList<>();
 
-        try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream())) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                String entryName = entry.getName();
-
-                // 디렉토리인 경우 생성만
-                if (entry.isDirectory()) {
-                    Files.createDirectories(targetDir.resolve(entryName));
-                    continue;
-                }
-
-                // 파일인 경우 저장
-                Path filePath = targetDir.resolve(entryName);
-                Files.createDirectories(filePath.getParent());
-                Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
-
-                // 상대 경로 계산
+        ZipExtractUtil.extractWithCallback(zipFile.getInputStream(), targetDir, (entry, filePath) -> {
+            try {
                 String fileRelativePath = targetSubPath.isEmpty()
-                        ? entryName
-                        : targetSubPath + "/" + entryName;
+                        ? entry.getName()
+                        : targetSubPath + "/" + entry.getName();
 
                 long fileSize = Files.size(filePath);
                 uploadedFiles.add(new ProjectDto.UploadedFileInfo(
@@ -448,10 +432,10 @@ public class ProjectService {
                         "/" + fileRelativePath,
                         fileSize
                 ));
-
-                zis.closeEntry();
+            } catch (IOException e) {
+                log.warn("파일 크기 조회 실패: {}", filePath, e);
             }
-        }
+        });
 
         return uploadedFiles;
     }

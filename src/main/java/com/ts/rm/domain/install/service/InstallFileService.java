@@ -7,6 +7,7 @@ import com.ts.rm.global.exception.BusinessException;
 import com.ts.rm.global.exception.ErrorCode;
 import com.ts.rm.global.file.FileContentUtil;
 import com.ts.rm.global.file.StreamingZipUtil;
+import com.ts.rm.global.file.ZipExtractUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -20,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -394,23 +393,11 @@ public class InstallFileService {
 
         List<InstallFileDto.UploadedFileInfo> uploadedFiles = new ArrayList<>();
 
-        try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream())) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                String entryName = entry.getName();
-
-                if (entry.isDirectory()) {
-                    Files.createDirectories(targetDir.resolve(entryName));
-                    continue;
-                }
-
-                Path filePath = targetDir.resolve(entryName);
-                Files.createDirectories(filePath.getParent());
-                Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
-
+        ZipExtractUtil.extractWithCallback(zipFile.getInputStream(), targetDir, (entry, filePath) -> {
+            try {
                 String fileRelativePath = targetSubPath.isEmpty()
-                        ? entryName
-                        : targetSubPath + "/" + entryName;
+                        ? entry.getName()
+                        : targetSubPath + "/" + entry.getName();
 
                 long fileSize = Files.size(filePath);
                 uploadedFiles.add(new InstallFileDto.UploadedFileInfo(
@@ -418,10 +405,10 @@ public class InstallFileService {
                         "/" + fileRelativePath,
                         fileSize
                 ));
-
-                zis.closeEntry();
+            } catch (IOException e) {
+                log.warn("파일 크기 조회 실패: {}", filePath, e);
             }
-        }
+        });
 
         return uploadedFiles;
     }
