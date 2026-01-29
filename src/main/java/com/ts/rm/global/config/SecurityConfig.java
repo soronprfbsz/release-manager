@@ -5,6 +5,7 @@ import com.ts.rm.global.security.jwt.JwtAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.http.HttpMethod;
@@ -38,7 +39,31 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * 퍼블리싱 파일 서빙용 SecurityFilterChain
+     *
+     * <p>SVG, 이미지 등이 object/embed 태그로 임베드될 수 있도록 X-Frame-Options를 비활성화합니다.
+     * 이 체인은 기본 체인보다 먼저 적용됩니다.
+     */
     @Bean
+    @Order(1)
+    public SecurityFilterChain publishingServeFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/api/publishing/*/serve/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configure(http))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // X-Frame-Options 비활성화 - SVG 등 리소스가 임베드될 수 있도록
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.disable()))
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 // CSRF 비활성화 (JWT 사용으로 불필요)

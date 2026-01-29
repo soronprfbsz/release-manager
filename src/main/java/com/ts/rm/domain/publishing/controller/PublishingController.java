@@ -172,6 +172,8 @@ public class PublishingController implements PublishingControllerDocs {
      * <p>index.html 및 관련 리소스(CSS, JS, 이미지 등)를 브라우저에서 직접 볼 수 있도록 서빙합니다.
      * 예: /api/publishing/1/serve/index.html
      *     /api/publishing/1/serve/css/style.css
+     *
+     * <p>참고: X-Frame-Options는 SecurityConfig의 publishingServeFilterChain에서 비활성화됩니다.
      */
     @GetMapping("/{id}/serve/**")
     public ResponseEntity<Resource> serveFile(
