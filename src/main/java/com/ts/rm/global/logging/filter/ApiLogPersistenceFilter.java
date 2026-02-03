@@ -54,7 +54,8 @@ public class ApiLogPersistenceFilter extends OncePerRequestFilter {
      * 로깅 제외 경로 패턴 (suffix 매칭) - 대용량 파일 다운로드
      */
     private static final List<String> EXCLUDE_PATH_SUFFIXES = List.of(
-            "/download"
+            "/download",
+            "/zip-download"
     );
 
     /**
