@@ -38,7 +38,7 @@ public class ApiLogPersistenceFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
 
     /**
-     * 로깅 제외 경로
+     * 로깅 제외 경로 (prefix 매칭)
      */
     private static final List<String> EXCLUDE_PATHS = List.of(
             "/actuator",
@@ -46,7 +46,15 @@ public class ApiLogPersistenceFilter extends OncePerRequestFilter {
             "/api-docs",
             "/favicon.ico",
             "/ws",
-            "/webjars"
+            "/webjars",
+            "/publishing"
+    );
+
+    /**
+     * 로깅 제외 경로 패턴 (suffix 매칭) - 대용량 파일 다운로드
+     */
+    private static final List<String> EXCLUDE_PATH_SUFFIXES = List.of(
+            "/download"
     );
 
     /**
@@ -118,7 +126,14 @@ public class ApiLogPersistenceFilter extends OncePerRequestFilter {
      */
     private boolean shouldSkip(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        return EXCLUDE_PATHS.stream().anyMatch(uri::startsWith);
+
+        // prefix 매칭 (정적 경로)
+        if (EXCLUDE_PATHS.stream().anyMatch(uri::startsWith)) {
+            return true;
+        }
+
+        // suffix 매칭 (대용량 파일 다운로드 API)
+        return EXCLUDE_PATH_SUFFIXES.stream().anyMatch(uri::endsWith);
     }
 
     /**
