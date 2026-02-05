@@ -233,7 +233,17 @@ public class AccountService {
         // 권한 수정
         if (request.role() != null && !request.role().isBlank()) {
             try {
-                AccountRole.valueOf(request.role());
+                AccountRole requestedRole = AccountRole.valueOf(request.role());
+
+                // ADMIN 권한 부여는 ADMIN만 가능
+                if (requestedRole == AccountRole.ADMIN) {
+                    String currentRole = SecurityUtil.getCurrentRole();
+                    if (!AccountRole.ADMIN.name().equals(currentRole)) {
+                        log.warn("Non-ADMIN user attempted to assign ADMIN role. currentRole: {}, targetAccountId: {}", currentRole, accountId);
+                        throw new BusinessException(ErrorCode.FORBIDDEN);
+                    }
+                }
+
                 account.setRole(request.role());
                 log.debug("Role updated to {} for accountId: {}", request.role(), accountId);
             } catch (IllegalArgumentException e) {
