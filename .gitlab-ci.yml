@@ -17,7 +17,7 @@ variables:
   MARIADB_DATABASE: "release_manager"
   REDIS_HOST: "${SERVER_HOST}"
   REDIS_PORT: "16379"
-  SERVER_ENVIRONMENT: "prod"
+  SERVER_ENVIRONMENT: "production"
   RELEASE_DIR: "/mnt/release-manager/resources"
   # JWT_SECRET: GitLab CI/CD Variables에서 Masked 변수로 등록 필요
   # MARIA_DB_ROOT_PASSWORD: GitLab CI/CD Variables에서 Masked 변수로 등록 필요
