@@ -17,8 +17,13 @@ variables:
   MARIADB_DATABASE: "release_manager"
   REDIS_HOST: "${SERVER_HOST}"
   REDIS_PORT: "16379"
+  SERVER_ENVIRONMENT: "prod"
   RELEASE_DIR: "/mnt/release-manager/resources"
-  JWT_SECRET: "your-secret-key-at-least-256-bits-long-for-hs256-algorithm"
+  # JWT_SECRET: GitLab CI/CD Variables에서 Masked 변수로 등록 필요
+  # MARIA_DB_ROOT_PASSWORD: GitLab CI/CD Variables에서 Masked 변수로 등록 필요
+  # MARIADB_USERNAME: GitLab CI/CD Variables에서 Masked 변수로 등록 필요
+  # MARIADB_PASSWORD: GitLab CI/CD Variables에서 Masked 변수로 등록 필요
+  # REDIS_PASSWORD: GitLab CI/CD Variables에서 Masked 변수로 등록 필요
 
   # Docker Image
   DOCKER_IMAGE_NAME: "ts/${SERVER_NAME}"
@@ -166,6 +171,7 @@ stages:
     - apk add --no-cache curl rsync
     - |
       echo "SERVER_NAME=${SERVER_NAME}" > .env
+      echo "SERVER_ENVIRONMENT=${SERVER_ENVIRONMENT}" >> .env
       echo "SERVER_HOST=${SERVER_HOST}" >> .env
       echo "SERVER_PORT=${SERVER_PORT}" >> .env
       echo "SERVER_EXTERNAL_PORT=${SERVER_EXTERNAL_PORT}" >> .env

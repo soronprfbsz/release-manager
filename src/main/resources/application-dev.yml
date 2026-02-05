@@ -1,10 +1,10 @@
 # Development Profile Configuration
-# 개발 환경에서는 상세한 로깅을 제공하여 디버깅을 용이하게 합니다.
+# 개발 환경
 
 # API Logging Configuration
 app:
   api-logging:
-    enabled: true  # dev 환경에서는 API 로깅 활성화
+    enabled: true  # API 로깅 활성화
   jwt:
     refresh-token-expiration-ms: 604800000  # 7일 (밀리초)
 
@@ -13,7 +13,7 @@ server:
   servlet:
     session:
       cookie:
-        secure: false  # 개발 환경에서는 HTTP 허용 (HTTPS 불필요)
+        secure: false  # HTTP 허용 (HTTPS 불필요)
 
 # Logging Configuration - Development
 logging:
