@@ -277,7 +277,7 @@ build-main:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   tags:
-    - main-runner
+    - rm-runner-106
   environment:
     name: production
 
@@ -286,7 +286,7 @@ test-main:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   tags:
-    - main-runner
+    - rm-runner-106
   environment:
     name: production
 
@@ -295,7 +295,7 @@ docker-build-main:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   tags:
-    - main-runner
+    - rm-runner-106
   dependencies:
     - build-main
   environment:
@@ -306,7 +306,7 @@ harbor-push-main:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   tags:
-    - main-runner
+    - rm-runner-106
   dependencies:
     - docker-build-main
   environment:
@@ -317,7 +317,7 @@ deploy-main:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   tags:
-    - main-runner
+    - rm-runner-106
   dependencies:
     - build-main
     - docker-build-main
